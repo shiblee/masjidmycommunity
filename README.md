@@ -4,7 +4,7 @@ Basic Node.js + React starter.
 
 ## Structure
 
-- `server/` — Express backend (API on port 5000)
+- `server/` — Express backend (API on port 5050), MySQL via Sequelize
 - `client/` — React frontend (Vite, dev server on port 5173)
 
 ## Setup
@@ -17,7 +17,7 @@ npm install
 npm run dev
 ```
 
-Update `server/.env` with your own `MONGO_URI` and `JWT_SECRET`.
+Requires a running MySQL server (e.g. MAMP). Update `server/.env` with your DB host/port/credentials and `JWT_SECRET`.
 
 ### Client
 
