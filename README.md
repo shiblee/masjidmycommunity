@@ -1,6 +1,8 @@
-# My Project
+# Masjid My Community
 
-Basic Node.js + React starter.
+**Empowering Masjids. Strengthening Communities.**
+
+A crowdfunding and empowerment platform connecting verified masjids with donors who want to fund construction, renovation, education, sustainability, and community welfare projects. Includes a public marketing site and an admin panel for managing masjids, campaigns, donations, and verification.
 
 ## Structure
 

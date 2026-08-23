@@ -14,4 +14,18 @@ const auth = (req, res, next) => {
   }
 };
 
+export const requireAdmin = (req, res, next) => {
+  if (req.user?.type === "user") {
+    return res.status(403).json({ message: "Admin access required." });
+  }
+  next();
+};
+
+export const requireUser = (req, res, next) => {
+  if (req.user?.type !== "user") {
+    return res.status(403).json({ message: "Account access required." });
+  }
+  next();
+};
+
 export default auth;
