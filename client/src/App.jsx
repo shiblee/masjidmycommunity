@@ -14,6 +14,13 @@ import RaiseConcern from "./pages/RaiseConcern.jsx";
 import CookiePolicy from "./pages/CookiePolicy.jsx";
 import Auth from "./pages/Auth.jsx";
 import Account from "./pages/Account.jsx";
+import ExploreMasjids from "./pages/ExploreMasjids.jsx";
+import MasjidProfile from "./pages/MasjidProfile.jsx";
+import MyMasjids from "./pages/masjid/MyMasjids.jsx";
+import MasjidWizard from "./pages/masjid/MasjidWizard.jsx";
+import MyCampaigns from "./pages/campaign/MyCampaigns.jsx";
+import CampaignWizard from "./pages/campaign/CampaignWizard.jsx";
+import CampaignProfile from "./pages/CampaignProfile.jsx";
 import RequireUserAuth from "./components/RequireUserAuth.jsx";
 import AdminApp from "./admin/AdminApp.jsx";
 
@@ -59,11 +66,62 @@ function App() {
           <Route path="/raise-a-concern" element={<RaiseConcern />} />
           <Route path="/cookie-policy" element={<CookiePolicy />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/explore-masjids" element={<ExploreMasjids />} />
+          <Route path="/masjid/:id" element={<MasjidProfile />} />
+          <Route path="/campaign/:slug" element={<CampaignProfile />} />
           <Route
             path="/account"
             element={
               <RequireUserAuth>
                 <Account />
+              </RequireUserAuth>
+            }
+          />
+          <Route
+            path="/account/masjids"
+            element={
+              <RequireUserAuth>
+                <MyMasjids />
+              </RequireUserAuth>
+            }
+          />
+          <Route
+            path="/account/masjids/new"
+            element={
+              <RequireUserAuth>
+                <MasjidWizard />
+              </RequireUserAuth>
+            }
+          />
+          <Route
+            path="/account/masjids/:id"
+            element={
+              <RequireUserAuth>
+                <MasjidWizard />
+              </RequireUserAuth>
+            }
+          />
+          <Route
+            path="/account/campaigns"
+            element={
+              <RequireUserAuth>
+                <MyCampaigns />
+              </RequireUserAuth>
+            }
+          />
+          <Route
+            path="/account/campaigns/new"
+            element={
+              <RequireUserAuth>
+                <CampaignWizard />
+              </RequireUserAuth>
+            }
+          />
+          <Route
+            path="/account/campaigns/:id"
+            element={
+              <RequireUserAuth>
+                <CampaignWizard />
               </RequireUserAuth>
             }
           />

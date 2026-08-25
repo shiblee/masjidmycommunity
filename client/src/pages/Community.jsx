@@ -1,4 +1,43 @@
 import React, { useEffect, useMemo, useState } from "react";
+import axios from "axios";
+
+function timeAgo(dateStr) {
+  const diffMs = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diffMs / 60000);
+  if (mins < 1) return "Just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  return `${days}d ago`;
+}
+
+const LIVE_TYPE_MAP = {
+  masjid_approved: "masjid_update",
+  campaign_approved: "campaign_launch",
+  donation: "donation",
+  milestone: "milestone",
+};
+
+function mapLiveActivity(a) {
+  const isMasjid = a.type === "masjid_approved";
+  const isCampaignEvent = a.type === "campaign_approved" || a.type === "donation" || a.type === "milestone";
+  const campaignCta = a.metadata?.campaignSlug ? { label: "View Campaign", href: `/campaign/${a.metadata.campaignSlug}` } : undefined;
+
+  return {
+    id: `live-${a.id}`,
+    type: LIVE_TYPE_MAP[a.type] || "community_story",
+    actor: {
+      name: isMasjid ? a.metadata?.masjidName || a.title : isCampaignEvent ? a.metadata?.masjidName || a.metadata?.campaignTitle || a.title : "Masjid My Community",
+      verified: isMasjid,
+      location: a.metadata?.location || "",
+    },
+    time: timeAgo(a.publishedAt || a.createdAt),
+    text: a.body || a.title,
+    images: a.imageUrl ? [`http://localhost:5050${a.imageUrl}`] : undefined,
+    cta: isMasjid && a.relatedMasjidId ? { label: "View Masjid", href: `/masjid/${a.relatedMasjidId}` } : campaignCta,
+  };
+}
 
 const FILTERS = [
   { key: "all", label: "All Updates" },
@@ -423,8 +462,17 @@ function CommunityPost({ post }) {
 
 function Community() {
   const [filter, setFilter] = useState("all");
+  const [liveActivities, setLiveActivities] = useState([]);
 
-  const filteredPosts = useMemo(() => posts.filter((p) => matchesFilter(p, filter)), [filter]);
+  useEffect(() => {
+    axios
+      .get("http://localhost:5050/api/community/activities")
+      .then(({ data }) => setLiveActivities(data.activities.map(mapLiveActivity)))
+      .catch(() => {});
+  }, []);
+
+  const allPosts = useMemo(() => [...liveActivities, ...posts], [liveActivities]);
+  const filteredPosts = useMemo(() => allPosts.filter((p) => matchesFilter(p, filter)), [allPosts, filter]);
 
   useEffect(() => {
     const els = document.querySelectorAll(".reveal");

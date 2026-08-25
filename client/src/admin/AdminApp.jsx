@@ -6,7 +6,10 @@ import AdminLayout from "./components/AdminLayout.jsx";
 import RequireAuth from "./components/RequireAuth.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import Masjids from "./pages/Masjids.jsx";
+import MasjidReview from "./pages/MasjidReview.jsx";
+import CommunityWall from "./pages/CommunityWall.jsx";
 import Campaigns from "./pages/Campaigns.jsx";
+import CampaignReview from "./pages/CampaignReview.jsx";
 import Donations from "./pages/Donations.jsx";
 import Donors from "./pages/Donors.jsx";
 import Projects from "./pages/Projects.jsx";
@@ -34,7 +37,10 @@ function AdminApp() {
       >
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="masjids" element={<Masjids />} />
+        <Route path="masjids/:id" element={<MasjidReview />} />
+        <Route path="community-wall" element={<CommunityWall />} />
         <Route path="campaigns" element={<Campaigns />} />
+        <Route path="campaigns/:id" element={<CampaignReview />} />
         <Route path="donations" element={<Donations />} />
         <Route path="donors" element={<Donors />} />
         <Route path="projects" element={<Projects />} />

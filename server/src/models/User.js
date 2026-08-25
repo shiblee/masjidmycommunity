@@ -53,7 +53,7 @@ const User = sequelize.define(
       allowNull: true,
     },
     otpPurpose: {
-      type: DataTypes.ENUM("register", "reset_password"),
+      type: DataTypes.ENUM("register", "reset_password", "update_contact"),
       allowNull: true,
     },
     otpTarget: {
@@ -68,6 +68,14 @@ const User = sequelize.define(
     lastLoginAt: {
       type: DataTypes.DATE,
       allowNull: true,
+    },
+    // Bumped on password change; embedded in the JWT so older tokens issued
+    // before the change stop being accepted (a lightweight session-rotation
+    // mechanism — this app has no server-side session store to revoke).
+    tokenVersion: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
     },
   },
   {

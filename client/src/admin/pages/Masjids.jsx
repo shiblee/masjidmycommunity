@@ -1,152 +1,107 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import Icon from "../components/Icons.jsx";
 import StatusBadge from "../components/StatusBadge.jsx";
 import Pagination from "../components/Pagination.jsx";
-import { MASJIDS, currency } from "../mockData.js";
+import adminApi from "../services/adminApi.js";
 
-const PAGE_SIZE = 6;
+const TABS = [
+  { key: "all", label: "All Masjids" },
+  { key: "submitted", label: "Pending Verification" },
+  { key: "under_review", label: "Under Review" },
+  { key: "changes_requested", label: "Changes Requested" },
+  { key: "approved", label: "Approved" },
+  { key: "rejected", label: "Rejected" },
+  { key: "inactive", label: "Inactive" },
+];
 
 function Masjids() {
-  const [query, setQuery] = useState("");
-  const [status, setStatus] = useState("all");
-  const [region, setRegion] = useState("all");
+  const [tab, setTab] = useState("all");
+  const [q, setQ] = useState("");
   const [page, setPage] = useState(1);
+  const [data, setData] = useState({ masjids: [], total: 0, pageSize: 20, counts: {} });
+  const [loading, setLoading] = useState(true);
 
-  const filtered = useMemo(() => {
-    return MASJIDS.filter((m) => {
-      const matchesQuery =
-        !query.trim() ||
-        m.name.toLowerCase().includes(query.toLowerCase()) ||
-        m.city.toLowerCase().includes(query.toLowerCase()) ||
-        m.country.toLowerCase().includes(query.toLowerCase());
-      const matchesStatus = status === "all" || m.status === status;
-      const matchesRegion = region === "all" || m.region === region;
-      return matchesQuery && matchesStatus && matchesRegion;
-    });
-  }, [query, status, region]);
+  useEffect(() => {
+    setLoading(true);
+    adminApi
+      .get("/masjids", { params: { status: tab, q: q || undefined, page } })
+      .then(({ data }) => setData(data))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [tab, q, page]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const pageItems = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-
-  const setAndResetPage = (setter) => (v) => {
-    setter(v);
-    setPage(1);
-  };
-
-  const regions = ["all", ...Array.from(new Set(MASJIDS.map((m) => m.region)))];
-
-  const counts = {
-    total: MASJIDS.length,
-    verified: MASJIDS.filter((m) => m.status === "verified").length,
-    pending: MASJIDS.filter((m) => m.status === "pending").length,
-  };
+  const totalPages = Math.max(1, Math.ceil(data.total / data.pageSize));
 
   return (
     <>
       <div className="amx-page-head">
         <div>
-          <span className="amx-crumb">Directory</span>
-          <h1>Masjids</h1>
-          <p>
-            {counts.total} registered · {counts.verified} verified · {counts.pending} pending review
-          </p>
-        </div>
-        <div className="amx-page-actions">
-          <button className="amx-btn amx-btn-outline">
-            <Icon name="download" size={16} />
-            Export
-          </button>
-          <button className="amx-btn amx-btn-accent">
-            <Icon name="plus" size={16} />
-            Add Masjid
-          </button>
+          <span className="amx-crumb">Trust &amp; Safety</span>
+          <h1>Masjid Management</h1>
+          <p>Review and manage masjid registrations submitted by users</p>
         </div>
       </div>
 
       <div className="amx-card amx-panel">
-        <div className="amx-filters">
-          <div className="amx-search">
-            <Icon name="search" />
-            <input
-              type="text"
-              placeholder="Search by masjid, city, or country…"
-              value={query}
-              onChange={(e) => setAndResetPage(setQuery)(e.target.value)}
-            />
-          </div>
-          <select className="amx-select" value={status} onChange={(e) => setAndResetPage(setStatus)(e.target.value)}>
-            <option value="all">All statuses</option>
-            <option value="verified">Verified</option>
-            <option value="pending">Pending</option>
-            <option value="rejected">Rejected</option>
-          </select>
-          <select className="amx-select" value={region} onChange={(e) => setAndResetPage(setRegion)(e.target.value)}>
-            {regions.map((r) => (
-              <option value={r} key={r}>
-                {r === "all" ? "All regions" : r}
-              </option>
-            ))}
-          </select>
+        <div className="amx-tabs" style={{ marginBottom: 20, flexWrap: "wrap" }}>
+          {TABS.map((t) => (
+            <button key={t.key} className={tab === t.key ? "active" : ""} onClick={() => { setTab(t.key); setPage(1); }}>
+              {t.label}{t.key !== "all" && data.counts?.[t.key] !== undefined ? ` (${data.counts[t.key]})` : ""}
+            </button>
+          ))}
         </div>
 
-        {pageItems.length === 0 ? (
+        <div className="amx-topbar-search" style={{ maxWidth: 360, marginBottom: 20 }}>
+          <Icon name="search" />
+          <input type="text" placeholder="Search masjids, cities, countries…" value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} />
+        </div>
+
+        {!loading && data.masjids.length === 0 && (
           <div className="amx-empty">
-            <Icon name="mosque" />
-            <strong>No masjids match your filters</strong>
-            <span>Try adjusting the search term or filters above.</span>
-          </div>
-        ) : (
-          <div className="amx-table-wrap">
-            <table className="amx-table">
-              <thead>
-                <tr>
-                  <th>Masjid</th>
-                  <th>Location</th>
-                  <th>Campaigns</th>
-                  <th>Funds Raised</th>
-                  <th>Registered</th>
-                  <th>Status</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {pageItems.map((m) => (
-                  <tr key={m.id}>
-                    <td>
-                      <div className="amx-cell-main">
-                        <span className="amx-avatar" style={{ width: 32, height: 32, background: "var(--a-bg)", color: "var(--a-navy-soft)" }}>
-                          <Icon name="mosque" size={15} />
-                        </span>
-                        <div>
-                          <div>{m.name}</div>
-                          <div className="amx-cell-sub">{m.id}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td>
-                      {m.city}, {m.country}
-                    </td>
-                    <td>{m.campaigns}</td>
-                    <td className="num">{currency(m.raised)}</td>
-                    <td>{m.registered}</td>
-                    <td>
-                      <StatusBadge status={m.status} />
-                    </td>
-                    <td>
-                      <div className="amx-row-actions">
-                        <button className="amx-icon-action" aria-label="View" style={{ color: "var(--a-navy-soft)" }}>
-                          <Icon name="arrowRight" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <Icon name="inbox" />
+            <strong>No masjids here</strong>
+            <span>Nothing matches this filter right now.</span>
           </div>
         )}
 
-        <Pagination page={page} totalPages={totalPages} totalItems={filtered.length} pageSize={PAGE_SIZE} onChange={setPage} />
+        {data.masjids.length > 0 && (
+          <div className="amx-table-wrap">
+          <table className="amx-table">
+            <thead>
+              <tr>
+                <th>Masjid</th>
+                <th>Location</th>
+                <th>Registered</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.masjids.map((m) => (
+                <tr key={m.id}>
+                  <td>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <div className="amx-verify-thumb" style={{ width: 36, height: 36 }}>
+                        {m.coverPhotoUrl ? <img src={`http://localhost:5050${m.coverPhotoUrl}`} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 8 }} /> : <Icon name="mosque" size={16} />}
+                      </div>
+                      <strong>{m.name}</strong>
+                    </div>
+                  </td>
+                  <td>{[m.city, m.country].filter(Boolean).join(", ") || "—"}</td>
+                  <td>{new Date(m.createdAt).toLocaleDateString()}</td>
+                  <td><StatusBadge status={m.status} /></td>
+                  <td style={{ textAlign: "right" }}>
+                    <Link to={`/admin/masjids/${m.id}`} className="amx-btn amx-btn-sm amx-btn-outline">Review</Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          </div>
+        )}
+
+        <Pagination page={page} totalPages={totalPages} totalItems={data.total} pageSize={data.pageSize} onChange={setPage} />
       </div>
     </>
   );

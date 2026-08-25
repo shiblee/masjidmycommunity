@@ -22,6 +22,7 @@ const NAV_ITEMS = [
   { to: "/admin/reports", label: "Reports & Analytics", icon: "reports" },
   { to: "/admin/users", label: "Users", icon: "users" },
   { to: "/admin/registered-users", label: "Registered Users", icon: "globe" },
+  { to: "/admin/community-wall", label: "Community Wall", icon: "megaphone" },
   { to: "/admin/content", label: "Content Management", icon: "content" },
   { to: "/admin/notifications", label: "Notifications", icon: "bell" },
   { to: "/admin/settings", label: "Settings", icon: "settings" },

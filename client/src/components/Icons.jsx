@@ -15,6 +15,23 @@ const ICONS = {
   bulb: { d: ["M9 18h6M10 22h4M12 2a6 6 0 00-6 6c0 2.5 1.5 3.8 2.5 5 .6.7 1 1.3 1 2h5c0-.7.4-1.3 1-2 1-1.2 2.5-2.5 2.5-5a6 6 0 00-6-6z"] },
   compass: { circle: { cx: 12, cy: 12, r: 9 }, d: ["M15.5 8.5l-2 5-5 2 2-5z"] },
   link: { d: ["M10 14a5 5 0 007.07 0l2.83-2.83a5 5 0 00-7.07-7.07L11.5 4.5", "M14 10a5 5 0 00-7.07 0L4.1 12.83a5 5 0 007.07 7.07L12.5 19.5"] },
+  camera: { rect: { x: 2, y: 6, width: 20, height: 14, rx: 3 }, circle: { cx: 12, cy: 13, r: 4 }, d: ["M8 6l1.5-2.5h5L16 6"] },
+  upload: { d: ["M12 16V4M7 9l5-5 5 5", "M4 16v3a2 2 0 002 2h12a2 2 0 002-2v-3"] },
+  trash: { d: ["M3 6h18", "M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2", "M6 6l1 14a2 2 0 002 2h6a2 2 0 002-2l1-14"] },
+  check: { d: ["M20 6L9 17l-5-5"] },
+  star: { d: ["M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"] },
+  chevronLeft: { d: ["M15 18l-6-6 6-6"] },
+  chevronRight: { d: ["M9 18l6-6-6-6"] },
+  mapPin: { circle: { cx: 12, cy: 10, r: 3 }, d: ["M12 21s7-6.5 7-11a7 7 0 00-14 0c0 4.5 7 11 7 11z"] },
+  phone: { d: ["M4 4h4l2 5-2.5 1.5a11 11 0 005 5L14 13l5 2v4a2 2 0 01-2 2A16 16 0 014 6a2 2 0 012-2z"] },
+  mail: { rect: { x: 2, y: 4, width: 20, height: 16, rx: 2 }, d: ["M2 6l10 7 10-7"] },
+  building: { rect: { x: 4, y: 3, width: 16, height: 18, rx: 1 }, d: ["M8 7h2M14 7h2M8 11h2M14 11h2M8 15h2M14 15h2M10 21v-4h4v4"] },
+  wallet: { rect: { x: 2, y: 6, width: 20, height: 14, rx: 2 }, d: ["M16 12h4v4h-4a2 2 0 010-4z", "M2 10h20"] },
+  search: { circle: { cx: 11, cy: 11, r: 7 }, d: ["M21 21l-4.3-4.3"] },
+  x: { d: ["M18 6L6 18", "M6 6l12 12"] },
+  plus: { d: ["M12 5v14M5 12h14"] },
+  imageIcon: { rect: { x: 3, y: 3, width: 18, height: 18, rx: 2 }, circle: { cx: 8.5, cy: 8.5, r: 1.5 }, d: ["M21 15l-5-5L5 21"] },
+  play: { d: ["M6 4l14 8-14 8V4z"] },
 };
 
 export function Icon({ name, size = 24 }) {

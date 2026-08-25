@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { getStoredUser, clearUserSession } from "../utils/userAuthStorage.js";
 
 const links = [
-  { href: "/how-it-works", label: "How It Works" },
+  { href: "/explore-masjids", label: "Explore Masjids" },
   { href: "/community", label: "My Community" },
   { href: "/our-impact", label: "Impact" },
   { href: "/about", label: "About Us" },
@@ -34,20 +34,25 @@ function Navbar() {
   const [user, setUser] = useState(() => getStoredUser());
   const [headerHeight, setHeaderHeight] = useState(74);
   const menuRef = useRef(null);
-  const headerWrapRef = useRef(null);
+  const announceRef = useRef(null);
+  const navElRef = useRef(null);
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const isLinkActive = (href) => !href.startsWith("#") && pathname === href;
 
   useClickOutside(menuRef, () => setMenuOpen(false));
 
+  // Measured as two elements rather than one wrapping div: a shared wrapper
+  // sized to hug its children leaves position:sticky on the header with zero
+  // room to stick within, since a sticky element can't stick past its own
+  // containing block's edge. The announce bar and header stay siblings so
+  // the header's sticky containing block is the full page instead.
   useEffect(() => {
-    const el = headerWrapRef.current;
-    if (!el) return;
-    const update = () => setHeaderHeight(el.offsetHeight);
+    const update = () => setHeaderHeight((announceRef.current?.offsetHeight || 0) + (navElRef.current?.offsetHeight || 0));
     update();
     const ro = new ResizeObserver(update);
-    ro.observe(el);
+    if (announceRef.current) ro.observe(announceRef.current);
+    if (navElRef.current) ro.observe(navElRef.current);
     window.addEventListener("resize", update);
     return () => {
       ro.disconnect();
@@ -70,12 +75,11 @@ function Navbar() {
 
   return (
     <>
-      <div ref={headerWrapRef}>
-        <div className="announce">
-          🕌 Empowering masjids. Strengthening communities. Join the global movement.
-          <Link to="/#campaigns">Explore campaigns →</Link>
-        </div>
-        <header className="nav">
+      <div className="announce" ref={announceRef}>
+        🕌 Empowering masjids. Strengthening communities. Join the global movement.
+        <Link to="/#campaigns">Explore campaigns →</Link>
+      </div>
+      <header className="nav" ref={navElRef}>
         <div className="nav-inner">
           <Link to="/" className="logo">
             <img src="/logo.svg" alt="Masjid My Community logo" />
@@ -130,7 +134,6 @@ function Navbar() {
           </div>
         </div>
         </header>
-      </div>
       <div className={`mobile-menu${open ? " open" : ""}`} style={{ top: headerHeight }}>
         {user && (
           <div className="mobile-menu-account">

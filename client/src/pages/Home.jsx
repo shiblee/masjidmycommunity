@@ -1,13 +1,34 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
+import axios from "axios";
 
-const campaignData = [
-  { name: "Al-Furqan Masjid", loc: "Jakarta, Indonesia", cat: "Construction", title: "Help Build a New Prayer Hall", raised: 18400, goal: 30000, supporters: 412, days: 22, badge: "Verified", img: "https://images.unsplash.com/photo-1549526725-5c188c251c37?auto=format&fit=crop&w=800&q=75" },
-  { name: "Masjid Al-Noor", loc: "Casablanca, Morocco", cat: "Solar Energy", title: "Solar Energy for Our Masjid", raised: 6800, goal: 12000, supporters: 198, days: 11, badge: "Verified", img: "https://images.unsplash.com/photo-1713691132931-1cc66e362cdc?auto=format&fit=crop&w=800&q=75" },
-  { name: "Baitul Ilm", loc: "Birmingham, UK", cat: "Education", title: "Support Islamic Education", raised: 9200, goal: 15000, supporters: 265, days: 30, badge: "Verified", img: "https://images.unsplash.com/photo-1554720372-43797b5b4a70?auto=format&fit=crop&w=800&q=75" },
-  { name: "Masjid Al-Ihsan", loc: "Dakar, Senegal", cat: "Water", title: "Clean Water for the Community", raised: 8400, goal: 8400, supporters: 640, days: 0, badge: "Funded", img: "https://images.unsplash.com/photo-1705923620684-683a7473b504?auto=format&fit=crop&w=800&q=75" },
-  { name: "Sultan Ahmed Center", loc: "Istanbul, Turkey", cat: "Renovation", title: "Renovate Our Historic Masjid", raised: 41200, goal: 60000, supporters: 890, days: 44, badge: "Verified", img: "https://images.unsplash.com/photo-1690827453261-7209da189b4c?auto=format&fit=crop&w=800&q=75" },
-  { name: "Masjid Al-Taqwa", loc: "Toronto, Canada", cat: "Digital Facilities", title: "Digital Learning Center", raised: 11300, goal: 20000, supporters: 301, days: 18, badge: "Verified", img: "https://images.unsplash.com/photo-1599230080795-a48439229cb7?auto=format&fit=crop&w=800&q=75" },
-];
+// Live campaigns are fetched from the API on mount (see Home()); this shapes
+// them into the same card fields the (formerly static) mock data used, so
+// the existing filter/save/render UX below needed no redesign.
+function toCardShape(c) {
+  const goal = c.goalAmount ? Number(c.goalAmount) : null;
+  const isFunded = ["goal_reached", "completed"].includes(c.status) || (goal && c.amountRaised >= goal);
+  let days = 0;
+  if (!isFunded && c.endDate) {
+    days = Math.max(0, Math.ceil((new Date(c.endDate).getTime() - Date.now()) / 86400000));
+  } else if (!isFunded) {
+    days = 30;
+  }
+  return {
+    id: c.id,
+    slug: c.slug,
+    name: c.masjid?.name || "",
+    loc: [c.masjid?.city, c.masjid?.country].filter(Boolean).join(", "),
+    cat: c.category?.name || "Community Welfare",
+    title: c.title,
+    raised: c.amountRaised || 0,
+    goal: goal || c.amountRaised || 1,
+    supporters: c.donorCount || 0,
+    days: isFunded ? 0 : days,
+    badge: isFunded ? "Funded" : "Verified",
+    img: c.coverPhotoUrl ? `http://localhost:5050${c.coverPhotoUrl}` : "",
+  };
+}
 
 const masjidData = [
   { name: "Masjid An-Noor", loc: "Dhaka, Bangladesh", flag: "🇧🇩", year: 2009, camps: 2, served: "3,200", img: "https://images.unsplash.com/photo-1549526725-5c188c251c37?auto=format&fit=crop&w=500&q=75" },
@@ -414,12 +435,7 @@ function handleProgramTilt(e) {
 function resetProgramTilt(e) {
   e.currentTarget.style.transform = "";
 }
-const campaignCats = [...new Set(campaignData.map((c) => c.cat))];
 const resourceTypes = [...new Set(resources.map((r) => r.type))];
-const campaignCountByCat = campaignData.reduce((acc, c) => {
-  acc[c.cat] = (acc[c.cat] || 0) + 1;
-  return acc;
-}, {});
 
 function handleCatMouseMove(e) {
   const rect = e.currentTarget.getBoundingClientRect();
@@ -473,14 +489,28 @@ function Home() {
     }
   });
 
-  const toggleSaved = (name) => {
+  const toggleSaved = (id) => {
     setSaved((prev) => {
       const next = new Set(prev);
-      next.has(name) ? next.delete(name) : next.add(name);
+      next.has(id) ? next.delete(id) : next.add(id);
       localStorage.setItem(SAVED_KEY, JSON.stringify([...next]));
       return next;
     });
   };
+
+  const [liveCampaigns, setLiveCampaigns] = useState(null);
+  useEffect(() => {
+    axios
+      .get("http://localhost:5050/api/campaigns/public", { params: { pageSize: 48 } })
+      .then(({ data }) => setLiveCampaigns(data.campaigns.map(toCardShape)))
+      .catch(() => setLiveCampaigns([]));
+  }, []);
+  const campaignData = liveCampaigns || [];
+  const campaignCats = useMemo(() => [...new Set(campaignData.map((c) => c.cat))], [campaignData]);
+  const campaignCountByCat = useMemo(
+    () => campaignData.reduce((acc, c) => ({ ...acc, [c.cat]: (acc[c.cat] || 0) + 1 }), {}),
+    [campaignData]
+  );
 
   const [followed, setFollowed] = useState(() => {
     try {
@@ -520,7 +550,7 @@ function Home() {
     campaignFilter === "All"
       ? campaignData
       : campaignFilter === "__saved__"
-      ? campaignData.filter((c) => saved.has(c.name))
+      ? campaignData.filter((c) => saved.has(c.id))
       : campaignData.filter((c) => c.cat === campaignFilter);
 
   useEffect(() => {
@@ -639,14 +669,16 @@ function Home() {
             </button>
           </div>
           <div className="filter-count">
-            Showing {filteredCampaigns.length} of {campaignData.length} campaigns
+            {liveCampaigns === null ? "Loading campaigns…" : `Showing ${filteredCampaigns.length} of ${campaignData.length} campaigns`}
           </div>
 
-          {filteredCampaigns.length === 0 ? (
+          {liveCampaigns !== null && filteredCampaigns.length === 0 ? (
             <div className="campaign-empty">
               <p>
                 {campaignFilter === "__saved__"
                   ? "No saved campaigns yet — tap the heart on a card to keep track of one."
+                  : campaignData.length === 0
+                  ? "No live campaigns right now — check back soon."
                   : `No live campaigns in ${campaignFilter} right now — check back soon.`}
               </p>
               <button className="btn btn-outline-ink" style={{ marginTop: "16px" }} onClick={() => setCampaignFilter("All")}>
@@ -657,10 +689,10 @@ function Home() {
             <div className="campaign-grid" style={{ marginTop: "12px" }} key={campaignFilter}>
               {filteredCampaigns.map((c, i) => {
                 const pct = Math.min(100, Math.round((c.raised / c.goal) * 100));
-                const isSaved = saved.has(c.name);
+                const isSaved = saved.has(c.id);
                 const urgent = c.days > 0 && c.days <= 14;
                 return (
-                  <div className="campaign-card" style={{ animationDelay: `${i * 0.06}s` }} key={c.name}>
+                  <Link to={`/campaign/${c.slug}`} className="campaign-card" style={{ animationDelay: `${i * 0.06}s` }} key={c.id}>
                     <div className="campaign-img">
                       <CardImg src={c.img} seed={i} alt="Masjid campaign" />
                       <span className="campaign-badge">✓ {c.badge}</span>
@@ -669,7 +701,7 @@ function Home() {
                         className={`campaign-save${isSaved ? " active" : ""}`}
                         aria-label={isSaved ? "Remove from saved campaigns" : "Save campaign"}
                         aria-pressed={isSaved}
-                        onClick={() => toggleSaved(c.name)}
+                        onClick={(e) => { e.preventDefault(); toggleSaved(c.id); }}
                       >
                         <svg viewBox="0 0 24 24">
                           <path d="M12 21s-6.7-4.35-9.3-8.1C.8 10.1 1.4 6.8 4 5.2c2-1.2 4.4-.6 5.7 1 .7.8 1.4 1.8 2.3 1.8s1.6-1 2.3-1.8c1.3-1.6 3.7-2.2 5.7-1 2.6 1.6 3.2 4.9 1.3 7.7C18.7 16.65 12 21 12 21z" />
@@ -691,14 +723,14 @@ function Home() {
                         </span>
                       </div>
                     </div>
-                  </div>
+                  </Link>
                 );
               })}
             </div>
           )}
 
           <div style={{ textAlign: "center", marginTop: "44px" }}>
-            <a href="#" className="btn btn-outline-ink">
+            <a href="#campaigns" className="btn btn-outline-ink">
               View All Campaigns <span className="btn-arrow">→</span>
             </a>
           </div>

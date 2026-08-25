@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import { Op } from "sequelize";
 import User from "../models/User.js";
 import { sendWelcomeEmail, sendOtpEmail } from "../services/emailService.js";
+import { recordNewUserActivity } from "../services/communityActivityService.js";
 
 const OTP_TTL_MS = 5 * 60 * 1000;
 const SESSION_EXPIRY = "12h";
@@ -57,7 +58,7 @@ function toPublicUser(user) {
 }
 
 function signUserToken(user, remember) {
-  return jwt.sign({ id: user.id, type: "user" }, process.env.JWT_SECRET, {
+  return jwt.sign({ id: user.id, type: "user", tv: user.tokenVersion }, process.env.JWT_SECRET, {
     expiresIn: remember ? REMEMBER_EXPIRY : SESSION_EXPIRY,
   });
 }
@@ -167,22 +168,39 @@ export const verifyOtp = async (req, res) => {
       if (user.otpTarget === "email") user.emailVerified = true;
       else user.mobileVerified = true;
       user.status = "active";
-    }
 
-    user.otpCode = null;
-    user.otpExpiresAt = null;
-    user.otpPurpose = null;
-    user.otpTarget = null;
-    user.otpAttempts = 0;
-    await user.save();
+      user.otpCode = null;
+      user.otpExpiresAt = null;
+      user.otpPurpose = null;
+      user.otpTarget = null;
+      user.otpAttempts = 0;
+      await user.save();
 
-    if (purpose === "register") {
       sendWelcomeEmail(user).catch(() => {});
+      recordNewUserActivity().catch(() => {});
       const token = signUserToken(user);
       return res.json({ token, user: toPublicUser(user), verified: true });
     }
 
-    // reset_password purpose: verification alone doesn't log the user in — resetPassword handles the rest
+    if (purpose === "update_contact") {
+      if (user.otpTarget === "email") user.emailVerified = true;
+      else user.mobileVerified = true;
+
+      user.otpCode = null;
+      user.otpExpiresAt = null;
+      user.otpPurpose = null;
+      user.otpTarget = null;
+      user.otpAttempts = 0;
+      await user.save();
+
+      return res.json({ verified: true, purpose, user: toPublicUser(user) });
+    }
+
+    // reset_password purpose: this step only confirms the code is correct.
+    // The OTP fields stay in place so the follow-up resetPassword call can
+    // validate the same code again before it actually changes the password.
+    user.otpAttempts = 0;
+    await user.save();
     res.json({ verified: true, purpose });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -262,6 +280,94 @@ export const me = async (req, res) => {
     const user = await User.findByPk(req.user.id);
     if (!user) return res.status(404).json({ message: "Account not found." });
     res.json({ user: toPublicUser(user) });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const updateProfile = async (req, res) => {
+  try {
+    const user = await User.findByPk(req.user.id);
+    if (!user) return res.status(404).json({ message: "Account not found." });
+
+    if (req.body.fullName !== undefined) {
+      if (!req.body.fullName.trim()) return res.status(400).json({ message: "Full name is required." });
+      user.fullName = req.body.fullName.trim();
+    }
+
+    if (req.body.email !== undefined) {
+      const nextEmail = req.body.email.trim().toLowerCase();
+      if (nextEmail && !EMAIL_RE.test(nextEmail)) return res.status(400).json({ message: "Enter a valid email address." });
+      if (nextEmail && nextEmail !== user.email) {
+        const existing = await User.findOne({ where: { email: nextEmail } });
+        if (existing) return res.status(409).json({ message: "That email is already in use by another account." });
+        user.email = nextEmail;
+        user.emailVerified = false;
+      }
+    }
+
+    if (req.body.mobile !== undefined) {
+      const nextMobile = req.body.mobile.trim();
+      if (nextMobile && !MOBILE_RE.test(nextMobile)) return res.status(400).json({ message: "Enter a valid 10-digit mobile number." });
+      if (nextMobile && nextMobile !== user.mobile) {
+        const existing = await User.findOne({ where: { mobile: nextMobile } });
+        if (existing) return res.status(409).json({ message: "That mobile number is already in use by another account." });
+        user.mobile = nextMobile;
+        user.mobileVerified = false;
+      }
+    }
+
+    await user.save();
+    res.json({ user: toPublicUser(user) });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const sendContactUpdateOtp = async (req, res) => {
+  try {
+    const user = await User.findByPk(req.user.id);
+    if (!user) return res.status(404).json({ message: "Account not found." });
+
+    const target = req.body.target === "mobile" ? "mobile" : "email";
+    if (target === "email" && !user.email) return res.status(400).json({ message: "Add an email address first." });
+    if (target === "mobile" && !user.mobile) return res.status(400).json({ message: "Add a mobile number first." });
+
+    const { otp, emailResult } = await issueOtp(user, "update_contact", target);
+    res.json({
+      otpTarget: target,
+      maskedTarget: maskTarget(target, user),
+      demoOtp: otp,
+      emailSent: emailResult.sent,
+      message: `A verification code has been sent to your ${target}.`,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const changePassword = async (req, res) => {
+  try {
+    const user = await User.findByPk(req.user.id);
+    if (!user) return res.status(404).json({ message: "Account not found." });
+
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ message: "Current and new password are required." });
+    }
+    if (newPassword.length < 8 || !/[A-Za-z]/.test(newPassword) || !/[0-9]/.test(newPassword)) {
+      return res.status(400).json({ message: "New password must be at least 8 characters and include a letter and a number." });
+    }
+
+    const matches = await bcrypt.compare(currentPassword, user.password);
+    if (!matches) return res.status(400).json({ message: "Current password is incorrect." });
+
+    user.password = await bcrypt.hash(newPassword, 10);
+    user.tokenVersion += 1;
+    await user.save();
+
+    const token = signUserToken(user, true);
+    res.json({ message: "Password updated successfully.", token, user: toPublicUser(user) });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

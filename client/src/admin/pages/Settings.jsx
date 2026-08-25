@@ -11,6 +11,7 @@ const SECTIONS = [
   { key: "security", label: "Security", icon: "lock" },
   { key: "notifications", label: "Notifications", icon: "bell" },
   { key: "platform", label: "Platform", icon: "settings" },
+  { key: "masjid-categories", label: "Masjid Categories", icon: "mosque" },
 ];
 
 function initialsOf(name) {
@@ -44,6 +45,10 @@ function Settings() {
   const [notifs, setNotifs] = useState(null);
   const [platform, setPlatform] = useState(null);
 
+  const [categories, setCategories] = useState([]);
+  const [newCategory, setNewCategory] = useState("");
+  const [categorySaving, setCategorySaving] = useState(false);
+
   const showToast = (message) => {
     setToast(message);
     setTimeout(() => setToast(null), 2600);
@@ -64,7 +69,49 @@ function Settings() {
         setLoadError(err.response?.data?.message || "Couldn't load your settings. Please refresh the page.");
       })
       .finally(() => setLoading(false));
+
+    adminApi
+      .get("/masjid-categories")
+      .then(({ data }) => setCategories(data.categories))
+      .catch(() => {});
   }, []);
+
+  const addCategory = async (e) => {
+    e.preventDefault();
+    if (!newCategory.trim()) return;
+    setCategorySaving(true);
+    try {
+      const { data } = await adminApi.post("/masjid-categories", { name: newCategory.trim() });
+      setCategories((c) => [...c, data.category]);
+      setNewCategory("");
+      showToast("Category added.");
+    } catch (err) {
+      showToast(err.response?.data?.message || "Couldn't add that category.");
+    } finally {
+      setCategorySaving(false);
+    }
+  };
+
+  const toggleCategoryActive = async (cat) => {
+    setCategories((c) => c.map((x) => (x.id === cat.id ? { ...x, isActive: !x.isActive } : x)));
+    try {
+      await adminApi.patch(`/masjid-categories/${cat.id}`, { isActive: !cat.isActive });
+    } catch {
+      setCategories((c) => c.map((x) => (x.id === cat.id ? { ...x, isActive: cat.isActive } : x)));
+      showToast("Couldn't save that change.");
+    }
+  };
+
+  const deleteCategory = async (cat) => {
+    setCategories((c) => c.filter((x) => x.id !== cat.id));
+    try {
+      await adminApi.delete(`/masjid-categories/${cat.id}`);
+      showToast("Category removed.");
+    } catch {
+      setCategories((c) => [...c, cat]);
+      showToast("Couldn't remove that category.");
+    }
+  };
 
   const saveProfile = async (e) => {
     e.preventDefault();
@@ -512,6 +559,45 @@ function Settings() {
                   </select>
                 </div>
               </div>
+            </>
+          )}
+          {section === "masjid-categories" && (
+            <>
+              <div className="amx-panel-head">
+                <div>
+                  <h3>Masjid Categories</h3>
+                  <div className="amx-panel-sub">Manage the category options shown in the Register Your Masjid form</div>
+                </div>
+              </div>
+
+              <form onSubmit={addCategory} style={{ display: "flex", gap: 10, marginBottom: 22 }}>
+                <input
+                  type="text"
+                  placeholder="New category name"
+                  value={newCategory}
+                  onChange={(e) => setNewCategory(e.target.value)}
+                  style={{ flex: 1 }}
+                />
+                <button type="submit" className="amx-btn amx-btn-primary" disabled={categorySaving || !newCategory.trim()}>
+                  <Icon name="plus" size={15} /> Add
+                </button>
+              </form>
+
+              {categories.map((cat) => (
+                <div className="amx-settings-row" key={cat.id}>
+                  <div>
+                    <strong>{cat.name}</strong>
+                    <span>{cat.isActive ? "Visible to users" : "Hidden from the registration form"}</span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                    <Toggle on={cat.isActive} onClick={() => toggleCategoryActive(cat)} />
+                    <button type="button" className="amx-icon-action" aria-label="Delete" title="Delete" onClick={() => deleteCategory(cat)}>
+                      <Icon name="trash" size={15} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+              {categories.length === 0 && <p className="amx-panel-sub">No categories yet — add one above.</p>}
             </>
           )}
         </div>
