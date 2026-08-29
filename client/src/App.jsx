@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Outlet, useLocation } from "react-router-dom";
 import Navbar from "./components/Navbar.jsx";
 import Footer from "./components/Footer.jsx";
 import CookieConsent from "./components/CookieConsent.jsx";
@@ -54,7 +54,7 @@ function App() {
       <ScrollToTop />
       <Routes>
         <Route element={<MarketingLayout />}>
-          <Route path="/" element={<Navigate to="/auth?intent=campaign" replace />} />
+          <Route path="/" element={<Auth defaultIntent="campaign" />} />
           <Route path="/my-community" element={<Community />} />
           <Route path="/how-it-works" element={<HowItWorks />} />
           <Route path="/our-impact" element={<OurImpact />} />

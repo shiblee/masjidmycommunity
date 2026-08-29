@@ -122,10 +122,10 @@ function getArtCopy(mode, intent) {
   }
 }
 
-function Auth() {
+function Auth({ defaultIntent } = {}) {
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const intent = params.get("intent");
+  const intent = params.get("intent") || defaultIntent || null;
 
   const [mode, setMode] = useState("login");
 
