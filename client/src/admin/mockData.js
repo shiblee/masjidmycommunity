@@ -77,16 +77,6 @@ export const USERS = [
   { id: "USR-05", name: "Noor Fatima", email: "noor.f@masjidmycommunity.org", role: "Support Agent", status: "suspended", initials: "NF", last: "12d ago" },
 ];
 
-export const CONTENT_ITEMS = [
-  { id: "CT-01", title: "Home Page — Hero & Featured Campaigns", type: "Page", status: "published", updated: "Aug 18, 2026", author: "Hamza Yousef" },
-  { id: "CT-02", title: "How It Works — Donor Journey", type: "Page", status: "published", updated: "Aug 10, 2026", author: "Hamza Yousef" },
-  { id: "CT-03", title: "Winter Relief Drive — Campaign Story", type: "Campaign Story", status: "published", updated: "Aug 21, 2026", author: "Aisha Karim" },
-  { id: "CT-04", title: "FAQ — Donor & Masjid Questions", type: "Page", status: "draft", updated: "Aug 19, 2026", author: "Mariam Siddiqui" },
-  { id: "CT-05", title: "Ramadan 2027 Announcement Banner", type: "Announcement", status: "scheduled", updated: "Aug 20, 2026", author: "Aisha Karim" },
-  { id: "CT-06", title: "Terms of Use", type: "Legal", status: "published", updated: "Jul 2, 2026", author: "Aisha Karim" },
-  { id: "CT-07", title: "Masjid Al-Falah — Featured Story", type: "Masjid Story", status: "review", updated: "Aug 17, 2026", author: "Hamza Yousef" },
-];
-
 export function currency(n) {
   return `₹${n.toLocaleString("en-IN")}`;
 }

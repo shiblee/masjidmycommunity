@@ -13,6 +13,65 @@ import Campaign from "../models/Campaign.js";
 import { maskEmail, maskMobile } from "../utils/mask.js";
 import { mediaTypeOf, IMAGE_MAX_BYTES } from "../middleware/upload.js";
 import ContentSettings from "../models/ContentSettings.js";
+import { notifyUser } from "../services/notificationService.js";
+
+function notifyReply({ parentUserId, actorId, actorName, body, link }) {
+  if (!parentUserId || parentUserId === actorId) return;
+  notifyUser({
+    userId: parentUserId,
+    type: "comment_reply",
+    title: "New reply to your comment",
+    body: `${actorName} replied: "${body.length > 140 ? `${body.slice(0, 140)}…` : body}"`,
+    link,
+  }).catch(() => {});
+}
+
+// `@[masjid:<id>:<name>]` / `@[campaign:<slug>:<title>]` tokens are inserted
+// by MentionTextarea's autocomplete (see mentionSearch above) — this is the
+// write-side counterpart, notifying whoever owns the mentioned masjid/campaign.
+const MENTION_TOKEN_RE = /@\[(masjid|campaign):([^\]:]+):[^\]]+\]/g;
+
+async function notifyMentions(body, { actorId, actorName }) {
+  if (!body) return;
+  const masjidIds = new Set();
+  const campaignSlugs = new Set();
+  let m;
+  MENTION_TOKEN_RE.lastIndex = 0;
+  while ((m = MENTION_TOKEN_RE.exec(body))) {
+    if (m[1] === "masjid") masjidIds.add(Number(m[2]));
+    else campaignSlugs.add(m[2]);
+  }
+  if (!masjidIds.size && !campaignSlugs.size) return;
+
+  const [masjids, campaigns] = await Promise.all([
+    masjidIds.size ? Masjid.findAll({ where: { id: { [Op.in]: [...masjidIds] } }, attributes: ["id", "userId", "name"] }) : [],
+    campaignSlugs.size ? Campaign.findAll({ where: { slug: { [Op.in]: [...campaignSlugs] } }, attributes: ["id", "createdBy", "title"] }) : [],
+  ]);
+
+  const link = "/my-community";
+  for (const masjid of masjids) {
+    if (masjid.userId === actorId) continue;
+    notifyUser({
+      userId: masjid.userId,
+      type: "wall_mention",
+      title: "Your masjid was mentioned on the Community Wall",
+      body: `${actorName} mentioned ${masjid.name} in a Wall post.`,
+      link,
+      relatedMasjidId: masjid.id,
+    }).catch(() => {});
+  }
+  for (const campaign of campaigns) {
+    if (campaign.createdBy === actorId) continue;
+    notifyUser({
+      userId: campaign.createdBy,
+      type: "wall_mention",
+      title: "Your campaign was mentioned on the Community Wall",
+      body: `${actorName} mentioned "${campaign.title}" in a Wall post.`,
+      link,
+      relatedCampaignId: campaign.id,
+    }).catch(() => {});
+  }
+}
 
 async function getContentLimits() {
   const settings = await ContentSettings.findByPk(1);
@@ -354,8 +413,9 @@ export const createComment = async (req, res) => {
     const activity = await CommunityActivity.findOne({ where: { id: activityId, status: "published" } });
     if (!activity) return res.status(404).json({ message: "Post not found." });
 
+    let parent = null;
     if (parentId) {
-      const parent = await Comment.findOne({ where: { id: parentId, activityId } });
+      parent = await Comment.findOne({ where: { id: parentId, activityId } });
       if (!parent) return res.status(400).json({ message: "Invalid comment to reply to." });
     }
 
@@ -367,6 +427,11 @@ export const createComment = async (req, res) => {
 
     const comment = await Comment.create({ activityId, parentId: parentId || null, userId: req.user.id, body: body.trim() });
     const user = await User.findByPk(req.user.id, { attributes: ["id", "fullName"] });
+
+    if (parent) {
+      notifyReply({ parentUserId: parent.userId, actorId: req.user.id, actorName: user?.fullName || "Someone", body: comment.body, link: "/my-community" });
+    }
+    notifyMentions(comment.body, { actorId: req.user.id, actorName: user?.fullName || "Someone" });
 
     res.status(201).json({
       comment: {
@@ -516,6 +581,8 @@ export const createPost = async (req, res) => {
       : [];
 
     const user = await User.findByPk(req.user.id, { attributes: ["id", "fullName"] });
+
+    notifyMentions(activity.body, { actorId: req.user.id, actorName: user?.fullName || "Someone" });
 
     res.status(201).json({
       activity: {
@@ -716,8 +783,9 @@ export const createImageComment = async (req, res) => {
     const image = await PostImage.findOne({ where: { id: imageId, status: "visible" } });
     if (!image) return res.status(404).json({ message: "Image not found." });
 
+    let parent = null;
     if (parentId) {
-      const parent = await Comment.findOne({ where: { id: parentId, imageId } });
+      parent = await Comment.findOne({ where: { id: parentId, imageId } });
       if (!parent) return res.status(400).json({ message: "Invalid comment to reply to." });
     }
 
@@ -735,6 +803,11 @@ export const createImageComment = async (req, res) => {
       body: body.trim(),
     });
     const user = await User.findByPk(req.user.id, { attributes: ["id", "fullName"] });
+
+    if (parent) {
+      notifyReply({ parentUserId: parent.userId, actorId: req.user.id, actorName: user?.fullName || "Someone", body: comment.body, link: "/my-community" });
+    }
+    notifyMentions(comment.body, { actorId: req.user.id, actorName: user?.fullName || "Someone" });
 
     res.status(201).json({
       comment: {

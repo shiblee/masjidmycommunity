@@ -19,7 +19,6 @@ import ReportsAnalytics from "./pages/ReportsAnalytics.jsx";
 import RegisteredUsers from "./pages/RegisteredUsers.jsx";
 import RegisteredUserDetail from "./pages/RegisteredUserDetail.jsx";
 import UserActivityHistory from "./pages/UserActivityHistory.jsx";
-import ContentManagement from "./pages/ContentManagement.jsx";
 import Notifications from "./pages/Notifications.jsx";
 import EmailTemplateEditor from "./pages/EmailTemplateEditor.jsx";
 import Settings from "./pages/Settings.jsx";
@@ -56,7 +55,6 @@ function AdminApp() {
         <Route path="registered-users" element={<RegisteredUsers />} />
         <Route path="registered-users/:id" element={<RegisteredUserDetail />} />
         <Route path="registered-users/:id/activity" element={<UserActivityHistory />} />
-        <Route path="content" element={<ContentManagement />} />
         <Route path="notifications" element={<Notifications />} />
         <Route path="notifications/templates/:key" element={<EmailTemplateEditor />} />
         <Route path="meta" element={<Navigate to="/admin/meta/masjid-category" replace />} />

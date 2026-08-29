@@ -22,7 +22,6 @@ const NAV_ITEMS = [
   { to: "/admin/verification", label: "Verification", icon: "verify" },
   { to: "/admin/reports", label: "Reports & Analytics", icon: "reports" },
   { to: "/admin/community-wall", label: "Community Wall", icon: "megaphone" },
-  { to: "/admin/content", label: "Content Management", icon: "content" },
   { to: "/admin/concerns", label: "Raise a Concern", icon: "shield" },
   { to: "/admin/moderation", label: "Reported Content", icon: "flag" },
   { to: "/admin/notifications", label: "Notifications", icon: "bell" },
