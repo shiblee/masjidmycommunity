@@ -3,12 +3,10 @@ import { useParams, Link } from "react-router-dom";
 import { Icon } from "../components/Icons.jsx";
 import MediaThumb from "../components/MediaThumb.jsx";
 import axios from "axios";
+import { API_BASE, API_ORIGIN } from "../config.js";
+import { formatDate } from "../utils/formatDateTime.js";
 
-const API = "http://localhost:5050/api/campaigns/public";
-
-const DONATION_TYPE_LABEL = {
-  general_sadaqah: "General Sadaqah", zakat: "Zakat", waqf: "Waqf", other: "Other",
-};
+const API = `${API_BASE}/campaigns/public`;
 
 function CampaignProfile() {
   const { slug } = useParams();
@@ -49,7 +47,7 @@ function CampaignProfile() {
   return (
     <main className="msj-page">
       <section className="msj-profile-hero on-ink">
-        {cover && <MediaThumb src={`http://localhost:5050${cover.url}`} mediaType={cover.mediaType} className="msj-profile-hero-img" videoProps={{ controls: true }} />}
+        {cover && <MediaThumb src={`${API_ORIGIN}${cover.url}`} mediaType={cover.mediaType} className="msj-profile-hero-img" videoProps={{ controls: true }} />}
         <div className="msj-profile-hero-overlay" />
         <div className="wrap msj-profile-hero-content">
           <span className="msj-verified-badge"><Icon name="shieldCheck" size={13} /> Admin Reviewed</span>
@@ -67,23 +65,23 @@ function CampaignProfile() {
                 {photos.map((p, i) => (
                   <button key={p.id} type="button" className={i === active ? "active" : ""} onClick={() => setActive(i)}>
                     {p.mediaType === "video" ? (
-                      <span className="msj-thumb-video"><MediaThumb src={`http://localhost:5050${p.url}`} mediaType="video" /><Icon name="play" size={14} /></span>
+                      <span className="msj-thumb-video"><MediaThumb src={`${API_ORIGIN}${p.url}`} mediaType="video" /><Icon name="play" size={14} /></span>
                     ) : (
-                      <MediaThumb src={`http://localhost:5050${p.url}`} />
+                      <MediaThumb src={`${API_ORIGIN}${p.url}`} />
                     )}
                   </button>
                 ))}
               </div>
             )}
 
-            {campaign.donationType === "zakat" && <span className="camp-zakat-badge" style={{ marginTop: 32 }}><Icon name="check" size={12} /> Zakat Eligible</span>}
+            {campaign.donationType === "Zakat" && <span className="camp-zakat-badge" style={{ marginTop: 32 }}><Icon name="check" size={12} /> Zakat Eligible</span>}
 
-            <div className="section-head" style={{ marginTop: campaign.donationType === "zakat" ? 12 : 32 }}>
+            <div className="section-head" style={{ marginTop: campaign.donationType === "Zakat" ? 12 : 32 }}>
               <span className="eyebrow">About This Campaign</span>
               <h2>{campaign.title}</h2>
             </div>
             <p className="msj-profile-about">{campaign.description}</p>
-            {campaign.donationType === "zakat" && campaign.zakatEligibilityNote && (
+            {campaign.donationType === "Zakat" && campaign.zakatEligibilityNote && (
               <p className="msj-note" style={{ marginTop: 12 }}><strong>Zakat eligibility:</strong> {campaign.zakatEligibilityNote}</p>
             )}
 
@@ -112,7 +110,7 @@ function CampaignProfile() {
                 <div style={{ marginTop: 12 }}>
                   {updates.map((u) => (
                     <div className="camp-update-card" key={u.id}>
-                      <time>{new Date(u.createdAt).toLocaleDateString()}</time>
+                      <time>{formatDate(u.createdAt)}</time>
                       <h4>{u.title}</h4>
                       <p>{u.body}</p>
                     </div>
@@ -130,7 +128,7 @@ function CampaignProfile() {
                 <span><strong>₹{Number(campaign.amountRaised).toLocaleString("en-IN")}</strong> raised</span>
                 {campaign.goalAmount && <span>of ₹{Number(campaign.goalAmount).toLocaleString("en-IN")}</span>}
               </div>
-              <p className="msj-list-meta" style={{ marginTop: 4 }}>{campaign.donorCount ?? 0} contributions · {category?.name || DONATION_TYPE_LABEL[campaign.donationType]}</p>
+              <p className="msj-list-meta" style={{ marginTop: 4 }}>{campaign.donorCount ?? 0} contributions · {category?.name || campaign.donationType}</p>
 
               <h4 style={{ marginTop: 20, marginBottom: 6, fontSize: 14 }}>How to Contribute</h4>
               {donationAccount ? (

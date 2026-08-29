@@ -4,6 +4,16 @@ const UPI_RE = /^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z][a-zA-Z0-9.\-_]{1,63}$/;
 // RBI format: 4-letter bank code, a reserved "0", then a 6-character branch code.
 const IFSC_RE = /^[A-Z]{4}0[A-Z0-9]{6}$/;
 const ACCOUNT_RE = /^\d{9,18}$/;
+// A bank-registered holder name: letters, spaces, and the punctuation banks
+// commonly allow (apostrophes, hyphens, periods) — not digits or symbols.
+const NAME_RE = /^[A-Za-z][A-Za-z.'\- ]{1,99}$/;
+
+export function validateHolderName(value) {
+  const name = value?.trim();
+  if (!name) return "";
+  if (!NAME_RE.test(name)) return "Enter a valid name — letters, spaces, and basic punctuation only.";
+  return "";
+}
 
 export function validateUpiId(value) {
   const upi = value?.trim();
@@ -36,6 +46,9 @@ export function validateDonationAccount(donation) {
   if (upiError) errors.upiId = upiError;
   if (donation.upiId?.trim() && !donation.upiAccountHolder?.trim()) {
     errors.upiAccountHolder = "Add the name registered against this UPI ID.";
+  } else {
+    const upiHolderError = validateHolderName(donation.upiAccountHolder);
+    if (upiHolderError) errors.upiAccountHolder = upiHolderError;
   }
 
   const accountError = validateAccountNumber(donation.accountNumber);
@@ -45,13 +58,13 @@ export function validateDonationAccount(donation) {
   if (ifscError) errors.ifscCode = ifscError;
 
   if (donation.accountNumber?.trim()) {
-    if (!donation.confirmAccountNumber?.trim()) {
-      errors.confirmAccountNumber = "Re-enter the account number to confirm it.";
-    } else if (donation.accountNumber.trim() !== donation.confirmAccountNumber.trim()) {
-      errors.confirmAccountNumber = "Account numbers do not match.";
-    }
     if (!donation.ifscCode?.trim()) errors.ifscCode = "IFSC is required with a bank account number.";
-    if (!donation.accountHolderName?.trim()) errors.accountHolderName = "Add the account holder's name.";
+    if (!donation.accountHolderName?.trim()) {
+      errors.accountHolderName = "Add the account holder's name.";
+    } else {
+      const holderError = validateHolderName(donation.accountHolderName);
+      if (holderError) errors.accountHolderName = holderError;
+    }
     if (!donation.bankName?.trim()) errors.bankName = "Add the bank's name.";
   }
 

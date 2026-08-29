@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import Icon from "../components/Icons.jsx";
 import StatusBadge from "../components/StatusBadge.jsx";
 import adminApi from "../services/adminApi.js";
+import { formatDateTime } from "../../utils/formatDateTime.js";
 
 const SECTIONS = [
   { key: "overview", label: "Overview", icon: "dashboard" },
@@ -13,16 +14,27 @@ const SECTIONS = [
 const TYPE_LABEL = {
   otp_verification: "OTP Verification",
   welcome_registration: "Welcome Email",
+  account_status_changed: "Account Status Changed",
+  masjid_submitted_admin: "New Masjid – Admin Notification",
+  masjid_submitted_user: "Masjid Submission Acknowledgement",
+  masjid_changes_requested_user: "Masjid Changes Requested",
+  campaign_submitted_admin: "New Campaign – Admin Notification",
+  campaign_submitted_user: "Campaign Submission Acknowledgement",
+  campaign_changes_requested_user: "Campaign Changes Requested",
+  campaign_change_response_admin: "Campaign Change Response – Admin Notification",
+  campaign_approved_user: "Campaign Approved",
+  campaign_rejected_user: "Campaign Rejected",
+  campaign_status_updated_user: "Campaign Status Updated",
+  concern_submitted_admin: "New Concern – Admin Notification",
+  concern_submitted_user: "Concern Submission Acknowledgement",
+  concern_resolved_user: "Concern Resolved",
+  contact_message_admin: "New Contact Message – Admin Notification",
 };
 
 function Toggle({ on, onClick, disabled }) {
   return <button type="button" className={`amx-toggle${on ? " on" : ""}`} onClick={onClick} disabled={disabled} aria-pressed={on} />;
 }
 
-function formatDateTime(value) {
-  if (!value) return "—";
-  return new Date(value).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
-}
 
 function TestEmailModal({ templateKey, onClose }) {
   const [to, setTo] = useState("");
@@ -425,6 +437,43 @@ function Notifications() {
                   <span>Master switch — turn off to pause all automated emails platform-wide.</span>
                 </div>
                 <Toggle on={settings.enabled} onClick={() => setSettings((s) => ({ ...s, enabled: !s.enabled }))} />
+              </div>
+
+              <button className="amx-btn amx-btn-accent" style={{ marginTop: 20 }} onClick={saveSettings} disabled={settingsLoading || savingSettings}>
+                {savingSettings ? "Saving…" : "Save Settings"}
+              </button>
+            </div>
+          )}
+
+          {section === "settings" && settings && (
+            <div className="amx-card amx-panel" style={{ marginTop: 20 }}>
+              <div className="amx-panel-head">
+                <div>
+                  <h3>Notification Email Configuration</h3>
+                  <div className="amx-panel-sub">Where system notification emails are sent, beyond the general Sender Email above</div>
+                </div>
+              </div>
+
+              <div className="amx-form-grid">
+                <div className="amx-form-group">
+                  <label>New Masjid Notification Email</label>
+                  <input
+                    type="text"
+                    placeholder="admin@example.com"
+                    value={settings.adminNotificationEmail || ""}
+                    onChange={(e) => setSettings((s) => ({ ...s, adminNotificationEmail: e.target.value }))}
+                  />
+                  <span className="amx-panel-sub" style={{ display: "block", marginTop: 6 }}>
+                    Receives an alert every time a user submits a masjid for review.
+                  </span>
+                </div>
+                <div className="amx-form-group">
+                  <label>Notification / Sender Email</label>
+                  <input type="text" value={settings.senderEmail} disabled />
+                  <span className="amx-panel-sub" style={{ display: "block", marginTop: 6 }}>
+                    Used as the "From" address for the masjid submission acknowledgement and every other system email — configured as Sender Email Address above.
+                  </span>
+                </div>
               </div>
 
               <button className="amx-btn amx-btn-accent" style={{ marginTop: 20 }} onClick={saveSettings} disabled={settingsLoading || savingSettings}>

@@ -8,8 +8,10 @@ const MAP = {
   ok: { cls: "amx-badge-ok", label: "Completed" },
   completed: { cls: "amx-badge-ok", label: "Completed" },
   goal_reached: { cls: "amx-badge-ok", label: "Goal Reached" },
+  resolved: { cls: "amx-badge-ok", label: "Resolved" },
 
   pending: { cls: "amx-badge-warn", label: "Pending" },
+  open: { cls: "amx-badge-warn", label: "Open" },
   pending_verification: { cls: "amx-badge-warn", label: "Pending Verification" },
   submitted: { cls: "amx-badge-warn", label: "Submitted" },
   under_review: { cls: "amx-badge-warn", label: "Under Review" },
@@ -23,11 +25,13 @@ const MAP = {
   paused: { cls: "amx-badge-warn", label: "Paused" },
 
   rejected: { cls: "amx-badge-danger", label: "Rejected" },
+  deleted: { cls: "amx-badge-danger", label: "Deleted" },
   failed: { cls: "amx-badge-danger", label: "Failed" },
   suspended: { cls: "amx-badge-danger", label: "Suspended" },
   cancelled: { cls: "amx-badge-danger", label: "Cancelled" },
 
   inactive: { cls: "amx-badge-neutral", label: "Inactive" },
+  closed: { cls: "amx-badge-neutral", label: "Closed" },
   neutral: { cls: "amx-badge-neutral", label: "—" },
 };
 

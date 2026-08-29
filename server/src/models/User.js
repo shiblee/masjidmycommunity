@@ -77,6 +77,46 @@ const User = sequelize.define(
       allowNull: false,
       defaultValue: 0,
     },
+    profilePhoto: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    gender: {
+      type: DataTypes.ENUM("male", "female", "other", "prefer_not_to_say"),
+      allowNull: true,
+    },
+    maritalStatus: {
+      type: DataTypes.ENUM("single", "married", "other"),
+      allowNull: true,
+    },
+    dateOfBirth: {
+      type: DataTypes.DATEONLY,
+      allowNull: true,
+    },
+    locationLabel: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    locationCity: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    locationState: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    locationCountry: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    locationLat: {
+      type: DataTypes.FLOAT,
+      allowNull: true,
+    },
+    locationLng: {
+      type: DataTypes.FLOAT,
+      allowNull: true,
+    },
   },
   {
     tableName: "users",

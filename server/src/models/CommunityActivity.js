@@ -5,12 +5,26 @@ const CommunityActivity = sequelize.define(
   "CommunityActivity",
   {
     type: {
-      type: DataTypes.ENUM("new_user", "masjid_approved", "campaign_approved", "donation", "milestone", "project_update", "announcement"),
+      type: DataTypes.ENUM(
+        "new_user",
+        "masjid_approved",
+        "campaign_approved",
+        "donation",
+        "milestone",
+        "project_update",
+        "announcement",
+        "community_post"
+      ),
       allowNull: false,
     },
     title: { type: DataTypes.STRING, allowNull: true },
     body: { type: DataTypes.TEXT, allowNull: true },
     imageUrl: { type: DataTypes.STRING, allowNull: true },
+
+    // User-authored Wall posts only ("community_post"). Images live in their
+    // own PostImage rows (so each can carry its own likes/comments/reports);
+    // video stays a single URL here since only one is allowed per post.
+    mediaVideoUrl: { type: DataTypes.STRING, allowNull: true },
 
     relatedMasjidId: { type: DataTypes.INTEGER, allowNull: true },
     relatedUserId: { type: DataTypes.INTEGER, allowNull: true },
@@ -25,6 +39,10 @@ const CommunityActivity = sequelize.define(
     },
     isPinned: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
     publishedAt: { type: DataTypes.DATE, allowNull: true },
+
+    // Community-report moderation, for activity posts with no masjid/campaign
+    // to attach the report to instead (e.g. a new-member post).
+    reportCount: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
   },
   {
     tableName: "community_activities",

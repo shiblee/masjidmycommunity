@@ -8,8 +8,11 @@ import CampaignDocument from "../models/CampaignDocument.js";
 import CampaignHistory from "../models/CampaignHistory.js";
 import Donation from "../models/Donation.js";
 import Masjid from "../models/Masjid.js";
+import User from "../models/User.js";
 import { amountRaised } from "./campaignController.js";
 import { recordCampaignApprovedActivity, recordDonationActivity, recordMilestoneActivity } from "../services/communityActivityService.js";
+import { sendCampaignApprovedEmail, sendCampaignRejectedEmail, sendCampaignChangesRequestedEmail, sendCampaignStatusUpdatedEmail } from "../services/emailService.js";
+import { notifyUser } from "../services/notificationService.js";
 
 async function logHistory(campaignId, action, note, actorName) {
   await CampaignHistory.create({ campaignId, action, actorType: "admin", actorName: actorName || "Admin", note: note || null });
@@ -106,6 +109,19 @@ export const approve = async (req, res) => {
     ]);
     await recordCampaignApprovedActivity(campaign, masjid, cover?.url || null);
 
+    const owner = await User.findByPk(campaign.createdBy);
+    if (owner) {
+      sendCampaignApprovedEmail(campaign, owner, masjid).catch(() => {});
+      notifyUser({
+        userId: owner.id,
+        type: "campaign_approved",
+        title: "Your campaign is now live",
+        body: `"${campaign.title}" has been approved and is now live.`,
+        link: `/account/my-campaigns/${campaign.id}`,
+        relatedCampaignId: campaign.id,
+      }).catch(() => {});
+    }
+
     res.json({ campaign: campaign.toJSON() });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -126,6 +142,19 @@ export const reject = async (req, res) => {
     await campaign.save();
     await logHistory(campaign.id, "rejected", reason.trim(), req.user.email);
 
+    const [owner, masjid] = await Promise.all([User.findByPk(campaign.createdBy), Masjid.findByPk(campaign.masjidId)]);
+    if (owner) {
+      sendCampaignRejectedEmail(campaign, owner, masjid).catch(() => {});
+      notifyUser({
+        userId: owner.id,
+        type: "campaign_rejected",
+        title: "Your campaign was not approved",
+        body: `"${campaign.title}" was rejected: ${reason.trim()}`,
+        link: `/account/my-campaigns/${campaign.id}`,
+        relatedCampaignId: campaign.id,
+      }).catch(() => {});
+    }
+
     res.json({ campaign: campaign.toJSON() });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -145,6 +174,19 @@ export const requestChanges = async (req, res) => {
     campaign.reviewedAt = new Date();
     await campaign.save();
     await logHistory(campaign.id, "changes_requested", note.trim(), req.user.email);
+
+    const [owner, masjid] = await Promise.all([User.findByPk(campaign.createdBy), Masjid.findByPk(campaign.masjidId)]);
+    if (owner) {
+      sendCampaignChangesRequestedEmail(campaign, owner, masjid).catch(() => {});
+      notifyUser({
+        userId: owner.id,
+        type: "campaign_changes_requested",
+        title: "Admin requested changes to your campaign",
+        body: `Changes have been requested for "${campaign.title}": ${note.trim()}`,
+        link: `/account/my-campaigns/${campaign.id}`,
+        relatedCampaignId: campaign.id,
+      }).catch(() => {});
+    }
 
     res.json({ campaign: campaign.toJSON() });
   } catch (error) {
@@ -167,6 +209,10 @@ export const addNote = async (req, res) => {
   }
 };
 
+const STATUS_LABEL = {
+  paused: "Paused", active: "Active", completed: "Completed", cancelled: "Cancelled", goal_reached: "Goal Reached",
+};
+
 async function transition(req, res, { from, to, action }) {
   try {
     const campaign = await Campaign.findByPk(req.params.id);
@@ -178,6 +224,21 @@ async function transition(req, res, { from, to, action }) {
     if (to === "completed") campaign.completedAt = new Date();
     await campaign.save();
     await logHistory(campaign.id, action, null, req.user.email);
+
+    const [owner, masjid] = await Promise.all([User.findByPk(campaign.createdBy), Masjid.findByPk(campaign.masjidId)]);
+    if (owner) {
+      const statusLabel = STATUS_LABEL[to] || to;
+      sendCampaignStatusUpdatedEmail(campaign, owner, masjid, statusLabel).catch(() => {});
+      notifyUser({
+        userId: owner.id,
+        type: "campaign_status_updated",
+        title: "Your campaign status changed",
+        body: `"${campaign.title}" is now ${statusLabel}.`,
+        link: `/account/my-campaigns/${campaign.id}`,
+        relatedCampaignId: campaign.id,
+      }).catch(() => {});
+    }
+
     res.json({ campaign: campaign.toJSON() });
   } catch (error) {
     res.status(500).json({ message: error.message });

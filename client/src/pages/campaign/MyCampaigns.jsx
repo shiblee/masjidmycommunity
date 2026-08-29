@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { Icon } from "../../components/Icons.jsx";
+import { API_ORIGIN } from "../../config.js";
+import { formatDate } from "../../utils/formatDateTime.js";
 import campaignApi from "../../services/campaignApi.js";
+import masjidApi from "../../services/masjidApi.js";
 import MediaThumb from "../../components/MediaThumb.jsx";
 
 const STATUS_LABEL = {
@@ -13,12 +16,46 @@ const EDITABLE = new Set(["draft", "changes_requested"]);
 const LIVE = new Set(["active", "paused", "goal_reached", "completed"]);
 
 function MyCampaigns() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlMasjidId = searchParams.get("masjidId") || "";
+  const [masjids, setMasjids] = useState(null);
+  const [masjidId, setMasjidId] = useState(urlMasjidId);
   const [campaigns, setCampaigns] = useState(null);
   const [error, setError] = useState("");
 
+  // Keep local state in sync with the URL — both when the URL changes out
+  // from under us (e.g. a Wall link landing here with a different masjidId)
+  // and, via the select's onChange below, the other way around.
+  useEffect(() => { setMasjidId(urlMasjidId); }, [urlMasjidId]);
+
+  const changeMasjidFilter = (value) => {
+    setMasjidId(value);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (value) next.set("masjidId", value);
+      else next.delete("masjidId");
+      return next;
+    });
+  };
+
   useEffect(() => {
-    campaignApi.get("/mine").then(({ data }) => setCampaigns(data.campaigns)).catch(() => setError("Couldn't load your campaigns."));
-  }, []);
+    masjidApi.get("/mine").then(({ data }) => {
+      setMasjids([...data.masjids].sort((a, b) => a.name.localeCompare(b.name)));
+      // Nothing to pick from with a single masjid — scope to it automatically
+      // instead of making the owner filter for their only option.
+      if (!urlMasjidId && data.masjids.length === 1) changeMasjidFilter(String(data.masjids[0].id));
+    }).catch(() => setMasjids([]));
+  }, [urlMasjidId]);
+
+  useEffect(() => {
+    campaignApi
+      .get("/mine", { params: masjidId ? { masjidId } : undefined })
+      .then(({ data }) => setCampaigns(data.campaigns))
+      .catch(() => setError("Couldn't load your campaigns."));
+  }, [masjidId]);
+
+  const startCampaignLink = masjidId ? `/account/my-campaigns/new?masjidId=${masjidId}` : "/account/my-campaigns/new";
+  const selectedMasjid = masjids?.find((m) => String(m.id) === String(masjidId));
 
   return (
     <main className="acct-page">
@@ -29,7 +66,7 @@ function MyCampaigns() {
             <h1>My Campaigns</h1>
             <p>Launch and track fundraising campaigns for your verified masjids.</p>
           </div>
-          <Link to="/account/campaigns/new" className="btn btn-gold" style={{ marginLeft: "auto" }}>
+          <Link to={startCampaignLink} className="btn btn-gold" style={{ marginLeft: "auto" }}>
             <Icon name="plus" size={16} /> Start a Campaign
           </Link>
         </div>
@@ -39,12 +76,22 @@ function MyCampaigns() {
         <div className="wrap">
           {error && <div className="auth-alert"><Icon name="info" size={17} />{error}</div>}
 
+          {masjids && masjids.length > 1 && (
+            <div className="auth-field" style={{ maxWidth: 320, marginBottom: 24 }}>
+              <label>Filter by Masjid</label>
+              <select value={masjidId} onChange={(e) => changeMasjidFilter(e.target.value)}>
+                <option value="">All Masjids</option>
+                {masjids.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+              </select>
+            </div>
+          )}
+
           {campaigns && campaigns.length === 0 && (
             <div className="msj-empty-state">
               <Icon name="flag" size={30} />
-              <h3>You haven't started a campaign yet</h3>
+              <h3>{selectedMasjid ? `No campaigns yet for ${selectedMasjid.name}` : "You haven't started a campaign yet"}</h3>
               <p>Once your masjid is approved, you can launch a campaign to raise funds for a specific project.</p>
-              <Link to="/account/campaigns/new" className="btn btn-gold">Start a Campaign <span className="btn-arrow">→</span></Link>
+              <Link to={startCampaignLink} className="btn btn-gold">Start a Campaign <span className="btn-arrow">→</span></Link>
             </div>
           )}
 
@@ -54,7 +101,7 @@ function MyCampaigns() {
               return (
                 <div className="msj-list-card" key={c.id}>
                   <div className="msj-list-thumb">
-                    <MediaThumb src={c.coverPhotoUrl ? `http://localhost:5050${c.coverPhotoUrl}` : null} />
+                    <MediaThumb src={c.coverPhotoUrl ? `${API_ORIGIN}${c.coverPhotoUrl}` : null} />
                   </div>
                   <div className="msj-list-body">
                     <div className="msj-list-top">
@@ -70,9 +117,9 @@ function MyCampaigns() {
                         </div>
                       </div>
                     )}
-                    <p className="msj-list-meta">Created {new Date(c.createdAt).toLocaleDateString()}</p>
+                    <p className="msj-list-meta">Created {formatDate(c.createdAt)}</p>
                     <div className="msj-list-actions">
-                      <Link to={`/account/campaigns/${c.id}`}>{EDITABLE.has(c.status) ? "Edit" : "View Details"}</Link>
+                      <Link to={`/account/my-campaigns/${c.id}`}>{EDITABLE.has(c.status) ? "Edit" : "View Details"}</Link>
                       {LIVE.has(c.status) && <Link to={`/campaign/${c.slug}`}>View Public Page</Link>}
                     </div>
                   </div>

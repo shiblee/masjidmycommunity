@@ -1,37 +1,33 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import axios from "axios";
+import { API_BASE, API_ORIGIN } from "../../config.js";
 import { Icon } from "../../components/Icons.jsx";
 import masjidApi from "../../services/masjidApi.js";
 import AddressAutocomplete from "../../components/AddressAutocomplete.jsx";
-import LocationMap from "../../components/LocationMap.jsx";
 import MediaThumb from "../../components/MediaThumb.jsx";
-import { validateDonationAccount, validateUpiId, validateIfsc, validateAccountNumber } from "../../utils/donationValidation.js";
 
 const STEPS = [
   { key: "basic", label: "Basic Info" },
-  { key: "location", label: "Location" },
   { key: "contact", label: "Contact & Verification" },
-  { key: "donation", label: "Donation Account" },
   { key: "photos", label: "Photos & Media" },
   { key: "review", label: "Review & Submit" },
 ];
 
 const ABOUT_MAX = 5000;
-const CURRENT_YEAR = new Date().getFullYear();
 
 const PHOTO_CATEGORIES = [
+  { key: "community", label: "Community Activities" },
   { key: "exterior", label: "Exterior View" },
+  { key: "facilities", label: "Facilities" },
   { key: "interior", label: "Interior View" },
   { key: "prayer_hall", label: "Prayer Hall" },
-  { key: "community", label: "Community Activities" },
-  { key: "facilities", label: "Facilities" },
   { key: "other", label: "Other" },
 ];
 
 function emptyForm() {
   return {
-    name: "", tagline: "", about: "", yearEstablished: "", category: "",
+    name: "", tagline: "", about: "", category: "",
     address: "", area: "", city: "", district: "", state: "", country: "", postalCode: "", mapLink: "",
     formattedAddress: "", latitude: null, longitude: null,
     imamName: "", contactMobile: "", contactEmail: "",
@@ -40,40 +36,48 @@ function emptyForm() {
 
 const STATUS_LABEL = {
   draft: "Draft", submitted: "Submitted", under_review: "Under Review",
-  changes_requested: "Changes Requested", approved: "Approved", rejected: "Rejected", inactive: "Inactive",
+  changes_requested: "Changes Requested", approved: "Approved", rejected: "Rejected", inactive: "Inactive", deleted: "Deleted",
 };
 
-function Field({ label, children, hint, error }) {
+function Field({ label, children, hint, error, required }) {
   return (
     <div className={`auth-field${error ? " has-error" : ""}`}>
-      <label>{label}</label>
+      <label>{label}{required && <span className="msj-required">*</span>}</label>
       {children}
       {error ? <span className="auth-field-error">{error}</span> : hint ? <span className="msj-field-hint">{hint}</span> : null}
     </div>
   );
 }
 
-function MasjidWizard() {
+function WizardShell({ embedded, children }) {
+  if (embedded) return <div className="cw-wizard-embed">{children}</div>;
+  return (
+    <main className="msj-page">
+      <div className="wrap py-lg">{children}</div>
+    </main>
+  );
+}
+
+function MasjidWizard({ embedded = false }) {
   const { id } = useParams();
   const navigate = useNavigate();
+  const backTo = embedded ? "/my-community" : "/account/my-masjids";
+  const backLabel = embedded ? "Back to Community Wall" : "Back to My Masjids";
 
   const [masjidId, setMasjidId] = useState(id || null);
   const [status, setStatus] = useState("draft");
   const [adminFeedback, setAdminFeedback] = useState(null);
   const [form, setForm] = useState(emptyForm());
-  const [yearError, setYearError] = useState("");
   const [categories, setCategories] = useState([]);
   const [emailVerified, setEmailVerified] = useState(false);
   const [mobileVerified, setMobileVerified] = useState(false);
-  const [donation, setDonation] = useState({ upiId: "", upiAccountHolder: "", bankName: "", accountHolderName: "", accountNumber: "", confirmAccountNumber: "", ifscCode: "", branchName: "" });
-  const [donationErrors, setDonationErrors] = useState({});
   const [photos, setPhotos] = useState([]);
   const [uploadCategory, setUploadCategory] = useState("exterior");
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(!!id);
   const [loaded, setLoaded] = useState(!id);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
+  const [errors, setErrors] = useState({});
   const [submitted, setSubmitted] = useState(false);
 
   const [otpTarget, setOtpTarget] = useState(null);
@@ -82,10 +86,17 @@ function MasjidWizard() {
   const [demoOtp, setDemoOtp] = useState("");
   const [otpError, setOtpError] = useState("");
 
+  // Advancing steps doesn't change the URL (this wizard can be embedded
+  // inline on the Community Wall), so the router's own scroll-to-top never
+  // fires here — do it manually whenever the visible step changes.
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  }, [step, submitted]);
+
   useEffect(() => {
     axios
-      .get("http://localhost:5050/api/masjids/public/categories")
-      .then(({ data }) => setCategories(data.categories))
+      .get(`${API_BASE}/masjids/public/categories`)
+      .then(({ data }) => setCategories([...data.categories].sort((a, b) => a.name.localeCompare(b.name))))
       .catch(() => {});
   }, []);
 
@@ -106,28 +117,29 @@ function MasjidWizard() {
     }));
   };
 
-  // Dragging the pin is a precision adjustment, so the address line the user
-  // already chose is kept — only the coordinates and the surrounding
-  // administrative fields follow the pin.
-  const applyPinLocation = (fields) => {
-    setForm((f) => ({
-      ...f,
-      address: f.address || fields.address || "",
-      formattedAddress: fields.formattedAddress || f.formattedAddress,
-      area: fields.area || f.area,
-      city: fields.city || f.city,
-      district: fields.district || f.district,
-      state: fields.state || f.state,
-      country: fields.country || f.country,
-      postalCode: fields.postalCode || f.postalCode,
-      mapLink: fields.mapLink || f.mapLink,
-      latitude: fields.latitude ?? f.latitude,
-      longitude: fields.longitude ?? f.longitude,
-    }));
-  };
-
   useEffect(() => {
-    if (!id) return;
+    if (!id) {
+      // Navigating here from an existing masjid's edit page (e.g. via "Add a
+      // Masjid" in the sidebar) reuses this same component instance — React
+      // Router doesn't remount it just because the :id param disappeared, so
+      // without this the previous masjid's data would stay on screen under
+      // the new /new URL.
+      setMasjidId(null);
+      setStatus("draft");
+      setAdminFeedback(null);
+      setForm(emptyForm());
+      setEmailVerified(false);
+      setMobileVerified(false);
+      setPhotos([]);
+      setStep(1);
+      setErrors({});
+      setSubmitted(false);
+      setLoading(false);
+      setLoaded(true);
+      return;
+    }
+    setLoading(true);
+    setLoaded(false);
     masjidApi
       .get(`/${id}`)
       .then(({ data }) => {
@@ -136,7 +148,7 @@ function MasjidWizard() {
         setStatus(m.status);
         setAdminFeedback(m.adminFeedback);
         setForm({
-          name: m.name || "", tagline: m.tagline || "", about: m.about || "", yearEstablished: m.yearEstablished || "", category: m.category || "",
+          name: m.name || "", tagline: m.tagline || "", about: m.about || "", category: m.category || "",
           address: m.address || "", area: m.area || "", city: m.city || "", district: m.district || "", state: m.state || "", country: m.country || "",
           postalCode: m.postalCode || "", mapLink: m.mapLink || "",
           formattedAddress: m.formattedAddress || "",
@@ -147,45 +159,38 @@ function MasjidWizard() {
         setEmailVerified(m.emailVerified);
         setMobileVerified(m.mobileVerified);
         setPhotos(m.photos || []);
-        if (m.donationAccount) setDonation((d) => ({ ...d, ...m.donationAccount, accountNumber: "", confirmAccountNumber: "" }));
         setLoaded(true);
       })
-      .catch(() => setError("Couldn't load this masjid."))
+      .catch(() => setErrors({ form: "Couldn't load this masjid." }))
       .finally(() => setLoading(false));
   }, [id]);
 
   const readOnly = !!masjidId && !["draft", "changes_requested"].includes(status);
-  const setField = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
-
-  const setYearField = (e) => {
-    const v = e.target.value.replace(/\D/g, "").slice(0, 4);
-    setForm((f) => ({ ...f, yearEstablished: v }));
-    if (!v) { setYearError(""); return; }
-    if (v.length < 4) { setYearError(""); return; }
-    const year = Number(v);
-    setYearError(year < 1300 || year > CURRENT_YEAR ? `Enter a valid year between 1300 and ${CURRENT_YEAR}.` : "");
+  const setField = (key) => (e) => {
+    setForm((f) => ({ ...f, [key]: e.target.value }));
+    setErrors((er) => ({ ...er, [key]: null }));
   };
 
   const validateStep = () => {
-    if (step === 1 && form.yearEstablished && (form.yearEstablished.length < 4 || yearError)) {
-      setError(`Enter a valid year between 1300 and ${CURRENT_YEAR}, or leave it blank.`);
-      return false;
-    }
-    if (step === 3) {
-      if (!form.contactMobile?.trim()) {
-        setError("A contact mobile number is required.");
+    if (step === 2) {
+      if (!form.imamName?.trim()) {
+        setErrors({ imamName: "Imam name is required." });
         return false;
       }
-      if (!/^\d{10}$/.test(form.contactMobile.trim())) {
-        setError("Enter a valid 10-digit mobile number.");
+      if (!form.contactMobile?.trim()) {
+        setErrors({ contactMobile: "A contact mobile number is required." });
+        return false;
+      }
+      if (!/^[6-9]\d{9}$/.test(form.contactMobile.trim())) {
+        setErrors({ contactMobile: "Enter a valid 10-digit Indian mobile number." });
         return false;
       }
       if (!mobileVerified) {
-        setError("Please verify the contact mobile number before continuing.");
+        setErrors({ contactMobile: "Please verify the contact mobile number before continuing." });
         return false;
       }
       if (form.contactEmail?.trim() && !emailVerified) {
-        setError("Please verify the email address, or clear it to continue without one.");
+        setErrors({ contactEmail: "Please verify the email address, or clear it to continue without one." });
         return false;
       }
     }
@@ -199,17 +204,17 @@ function MasjidWizard() {
     // An existing masjid must finish loading first, otherwise the still-empty
     // initial form would be written over the saved record.
     if (id && !loaded) {
-      setError("Still loading this masjid — please try again in a moment.");
+      setErrors({ form: "Still loading this masjid — please try again in a moment." });
       return false;
     }
 
     setSaving(true);
-    setError("");
+    setErrors({});
     try {
       let mid = masjidId;
       if (!mid) {
         if (!form.name.trim()) {
-          setError("Masjid name is required.");
+          setErrors({ name: "Masjid name is required." });
           return false;
         }
         const { data } = await masjidApi.post("/", { name: form.name });
@@ -220,7 +225,9 @@ function MasjidWizard() {
       await masjidApi.patch(`/${mid}`, form);
       return true;
     } catch (err) {
-      setError(err.response?.data?.message || "Couldn't save. Please try again.");
+      const field = err.response?.data?.field;
+      const message = err.response?.data?.message || "Couldn't save. Please try again.";
+      setErrors(field ? { [field]: message } : { form: message });
       return false;
     } finally {
       setSaving(false);
@@ -236,7 +243,7 @@ function MasjidWizard() {
 
   const saveAsDraft = async () => {
     const ok = await saveCurrentStep();
-    if (ok) navigate("/account/masjids");
+    if (ok) navigate("/account/my-masjids");
   };
 
   const sendOtp = async (target) => {
@@ -250,7 +257,7 @@ function MasjidWizard() {
       setDemoOtp(data.demoOtp || "");
       setOtpTarget(target);
     } catch (err) {
-      setError(err.response?.data?.message || "Couldn't send the verification code.");
+      setErrors((er) => ({ ...er, [target === "email" ? "contactEmail" : "contactMobile"]: err.response?.data?.message || "Couldn't send the verification code." }));
     } finally {
       setOtpSending(false);
     }
@@ -268,33 +275,6 @@ function MasjidWizard() {
     }
   };
 
-  const setDonationField = (key) => (e) => {
-    const { value } = e.target;
-    setDonation((d) => ({ ...d, [key]: value }));
-    setDonationErrors((errs) => (errs[key] ? { ...errs, [key]: "" } : errs));
-  };
-
-  const saveDonation = async () => {
-    const errors = validateDonationAccount(donation);
-    setDonationErrors(errors);
-    if (Object.keys(errors).length > 0) {
-      setError("Please correct the highlighted donation account details.");
-      return false;
-    }
-
-    setSaving(true);
-    setError("");
-    try {
-      await masjidApi.put(`/${masjidId}/donation-account`, donation);
-      return true;
-    } catch (err) {
-      setError(err.response?.data?.message || "Couldn't save donation account details.");
-      return false;
-    } finally {
-      setSaving(false);
-    }
-  };
-
   const handleFiles = async (e) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
@@ -302,12 +282,12 @@ function MasjidWizard() {
     files.forEach((f) => fd.append("photos", f));
     fd.append("category", uploadCategory);
     setSaving(true);
-    setError("");
+    setErrors((er) => ({ ...er, photos: null }));
     try {
       const { data } = await masjidApi.post(`/${masjidId}/photos`, fd);
       setPhotos((p) => [...p, ...data.photos]);
     } catch (err) {
-      setError(err.response?.data?.message || "Couldn't upload photo(s).");
+      setErrors((er) => ({ ...er, photos: err.response?.data?.message || "Couldn't upload photo(s)." }));
     } finally {
       setSaving(false);
       e.target.value = "";
@@ -333,62 +313,61 @@ function MasjidWizard() {
 
   const doSubmit = async () => {
     setSaving(true);
-    setError("");
+    setErrors((er) => ({ ...er, submit: null }));
     try {
       await masjidApi.post(`/${masjidId}/submit`);
       setSubmitted(true);
     } catch (err) {
-      setError(err.response?.data?.message || "Couldn't submit for verification.");
+      setErrors((er) => ({ ...er, submit: err.response?.data?.message || "Couldn't submit for verification." }));
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) return <main className="msj-page"><div className="wrap py-lg"><p>Loading…</p></div></main>;
+  if (loading) return <WizardShell embedded={embedded}><p>Loading…</p></WizardShell>;
 
   if (submitted) {
     return (
-      <main className="msj-page">
-        <div className="wrap py-lg msj-confirm">
+      <WizardShell embedded={embedded}>
+        <div className="msj-confirm">
           <div className="msj-confirm-icon"><Icon name="check" size={32} /></div>
           <h1>Your Masjid registration has been successfully submitted for verification.</h1>
           <p>Our team will review the details you provided. You can track the approval status any time from My Masjids.</p>
-          <Link to="/account/masjids" className="btn btn-gold">Go to My Masjids <span className="btn-arrow">→</span></Link>
+          <Link to="/account/my-masjids" className="btn btn-gold">Go to My Masjids <span className="btn-arrow">→</span></Link>
         </div>
-      </main>
+      </WizardShell>
     );
   }
 
   if (readOnly) {
     return (
-      <main className="msj-page">
-        <div className="wrap py-lg">
-          <Link to="/account/masjids" className="msj-back-link"><Icon name="chevronLeft" size={16} /> Back to My Masjids</Link>
-          <div className="section-head" style={{ marginTop: 16 }}>
+      <WizardShell embedded={embedded}>
+        <Link to={backTo} className="msj-back-link"><Icon name="chevronLeft" size={16} /> {backLabel}</Link>
+        <div className="section-head" style={{ marginTop: 16, maxWidth: "none" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
             <span className="eyebrow">{form.name}</span>
-            <h2>Registration Details</h2>
             <span className={`acct-status-pill ${status}`}>{STATUS_LABEL[status]}</span>
           </div>
-          {adminFeedback && (
-            <div className="msj-feedback-banner">
-              <strong>{status === "rejected" ? "Reason for rejection" : "Admin feedback"}</strong>
-              <p>{adminFeedback}</p>
-            </div>
-          )}
-          <MasjidSummary form={form} donation={donation} photos={photos} emailVerified={emailVerified} mobileVerified={mobileVerified} />
+          <h2>Registration Details</h2>
         </div>
-      </main>
+        {adminFeedback && (
+          <div className="msj-feedback-banner">
+            <strong>{status === "rejected" ? "Reason for rejection" : "Admin feedback"}</strong>
+            <p>{adminFeedback}</p>
+          </div>
+        )}
+        <MasjidSummary form={form} photos={photos} emailVerified={emailVerified} mobileVerified={mobileVerified} />
+      </WizardShell>
     );
   }
 
   return (
-    <main className="msj-page">
-      <div className="wrap py-lg">
-        <Link to="/account/masjids" className="msj-back-link"><Icon name="chevronLeft" size={16} /> Back to My Masjids</Link>
+    <WizardShell embedded={embedded}>
+      <Link to={backTo} className="msj-back-link"><Icon name="chevronLeft" size={16} /> {backLabel}</Link>
 
-        <div className="section-head" style={{ marginTop: 16, marginBottom: 32 }}>
+        <div className="section-head msj-wizard-title-head" style={{ marginTop: 16, marginBottom: 32 }}>
           <span className="eyebrow">Register Your Masjid</span>
-          <h2>{form.name || "New Masjid Registration"}</h2>
+          <h2 className="msj-wizard-title">{form.name || "New Masjid Registration"}</h2>
         </div>
 
         {adminFeedback && status === "changes_requested" && (
@@ -407,70 +386,42 @@ function MasjidWizard() {
           ))}
         </div>
 
-        {error && <div className="auth-alert" style={{ marginBottom: 20 }}><Icon name="info" size={17} />{error}</div>}
+        {errors.form && <div className="auth-alert" style={{ marginBottom: 20 }}><Icon name="info" size={17} />{errors.form}</div>}
 
-        <div className={`card msj-step-card${step === 2 || step === 5 || step === 6 ? " msj-step-card-wide" : ""}`}>
+        <div className={`card msj-step-card${step === 3 || step === 4 ? " msj-step-card-wide" : ""}`}>
           {step === 1 && (
             <>
-              <h3>Basic Masjid Information</h3>
-              <Field label="Masjid Name"><input value={form.name} onChange={setField("name")} placeholder="e.g. Al-Noor Masjid" /></Field>
-              <Field label="Tagline / Short Description"><input value={form.tagline} onChange={setField("tagline")} placeholder="A brief line that captures your masjid" /></Field>
-              <Field label="About the Masjid" hint={`${form.about.length} / ${ABOUT_MAX} characters`}>
+              <Field label="Masjid Name" required error={errors.name}><input value={form.name} onChange={setField("name")} placeholder="e.g. Al-Noor Masjid" maxLength={255} /></Field>
+              <Field label="Tagline / Short Description" error={errors.tagline}>
+                <input value={form.tagline} onChange={setField("tagline")} placeholder="A brief line that captures your masjid" maxLength={255} />
+              </Field>
+              <Field label="About the Masjid" required error={errors.about}>
                 <textarea rows={5} maxLength={ABOUT_MAX} value={form.about} onChange={setField("about")} placeholder="Share the masjid's history, community, and mission" />
               </Field>
-              <div className="msj-field-row">
-                <Field label="Year Established (optional)" hint={yearError}>
-                  <input value={form.yearEstablished} onChange={setYearField} placeholder="e.g. 1998" inputMode="numeric" maxLength={4} />
-                </Field>
-                <Field label="Masjid Category (optional)">
-                  <select value={form.category} onChange={setField("category")}>
-                    <option value="">Select a category</option>
-                    {categories.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
-                  </select>
-                </Field>
-              </div>
+              <Field label="Masjid Category" error={errors.category}>
+                <select value={form.category} onChange={setField("category")}>
+                  <option value="">Select a category</option>
+                  {categories.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
+                </select>
+              </Field>
+              <Field label="Address" required error={errors.address} hint={!errors.address ? "Search for the masjid by name or address — the rest of the location details fill in automatically." : undefined}>
+                <AddressAutocomplete
+                  value={form.address}
+                  onChange={(v) => setForm((f) => ({ ...f, address: v }))}
+                  onResolved={applyResolvedAddress}
+                  placeholder="e.g. Jama Masjid, Delhi"
+                />
+              </Field>
             </>
           )}
 
           {step === 2 && (
             <>
-              <h3>Location &amp; Address</h3>
-              <div className="msj-location-grid">
-                <div>
-                  <Field label="Address" hint="Search for the masjid by name or address — the fields below and the map pin fill in automatically.">
-                    <AddressAutocomplete
-                      value={form.address}
-                      onChange={(v) => setForm((f) => ({ ...f, address: v }))}
-                      onResolved={applyResolvedAddress}
-                      placeholder="e.g. Jama Masjid, Delhi"
-                    />
-                  </Field>
-                  <div className="msj-field-row">
-                    <Field label="Area / Locality"><input value={form.area} onChange={setField("area")} /></Field>
-                    <Field label="City"><input value={form.city} onChange={setField("city")} /></Field>
-                  </div>
-                  <div className="msj-field-row">
-                    <Field label="District"><input value={form.district} onChange={setField("district")} /></Field>
-                    <Field label="State / Province"><input value={form.state} onChange={setField("state")} /></Field>
-                  </div>
-                  <div className="msj-field-row">
-                    <Field label="Country"><input value={form.country} onChange={setField("country")} /></Field>
-                    <Field label="Postal / ZIP Code"><input value={form.postalCode} onChange={setField("postalCode")} /></Field>
-                  </div>
-                </div>
-
-                <LocationMap latitude={form.latitude} longitude={form.longitude} onPinMoved={applyPinLocation} />
-              </div>
-            </>
-          )}
-
-          {step === 3 && (
-            <>
-              <h3>Contact &amp; Verification</h3>
-              <Field label="Imam Name"><input value={form.imamName} onChange={setField("imamName")} /></Field>
+              <Field label="Imam Name" required error={errors.imamName}><input value={form.imamName} onChange={setField("imamName")} maxLength={255} /></Field>
 
               <VerifiableField
-                label="Contact Mobile Number *"
+                label="Contact Mobile Number"
+                required
                 value={form.contactMobile}
                 onChange={(e) => setField("contactMobile")({ target: { value: e.target.value.replace(/\D/g, "").slice(0, 10) } })}
                 placeholder="10-digit mobile number"
@@ -478,87 +429,22 @@ function MasjidWizard() {
                 verified={mobileVerified}
                 sending={otpSending}
                 onVerify={() => sendOtp("mobile")}
-                hint="Required. Must be verified before you can submit."
+                error={errors.contactMobile}
               />
               <VerifiableField
-                label="Email Address (optional)"
+                label="Email Address"
                 value={form.contactEmail}
                 onChange={setField("contactEmail")}
                 placeholder="masjid@example.com"
                 verified={emailVerified}
                 sending={otpSending}
                 onVerify={() => sendOtp("email")}
-                hint="Optional — but if you add one, it must be verified too."
+                error={errors.contactEmail}
               />
             </>
           )}
 
-          {step === 4 && (
-            <>
-              <h3>Donation Account Details</h3>
-              <p className="msj-note" style={{ marginBottom: 20 }}>Kept private until an admin validates it. Not shown publicly.</p>
-              <h4 className="msj-subhead">UPI Details</h4>
-              <div className="msj-field-row">
-                <Field label="UPI ID" error={donationErrors.upiId} hint="For example name@okhdfcbank or 9876543210@paytm.">
-                  <input
-                    value={donation.upiId || ""}
-                    onChange={setDonationField("upiId")}
-                    onBlur={() => setDonationErrors((e) => ({ ...e, upiId: validateUpiId(donation.upiId) }))}
-                    placeholder="name@okhdfcbank"
-                    autoComplete="off"
-                  />
-                </Field>
-                <Field label="UPI Account Holder Name" error={donationErrors.upiAccountHolder}>
-                  <input value={donation.upiAccountHolder || ""} onChange={setDonationField("upiAccountHolder")} />
-                </Field>
-              </div>
-              <h4 className="msj-subhead">Bank Details</h4>
-              <div className="msj-field-row">
-                <Field label="Bank Name" error={donationErrors.bankName}>
-                  <input value={donation.bankName || ""} onChange={setDonationField("bankName")} />
-                </Field>
-                <Field label="Account Holder Name" error={donationErrors.accountHolderName}>
-                  <input value={donation.accountHolderName || ""} onChange={setDonationField("accountHolderName")} />
-                </Field>
-              </div>
-              <div className="msj-field-row">
-                <Field label="Account Number" error={donationErrors.accountNumber}>
-                  <input
-                    value={donation.accountNumber || ""}
-                    onChange={(e) => setDonation((d) => ({ ...d, accountNumber: e.target.value.replace(/\D/g, "").slice(0, 18) }))}
-                    onBlur={() => setDonationErrors((e) => ({ ...e, accountNumber: validateAccountNumber(donation.accountNumber) }))}
-                    inputMode="numeric"
-                    autoComplete="off"
-                  />
-                </Field>
-                <Field label="Confirm Account Number" error={donationErrors.confirmAccountNumber}>
-                  <input
-                    value={donation.confirmAccountNumber || ""}
-                    onChange={(e) => setDonation((d) => ({ ...d, confirmAccountNumber: e.target.value.replace(/\D/g, "").slice(0, 18) }))}
-                    inputMode="numeric"
-                    autoComplete="off"
-                    onPaste={(e) => e.preventDefault()}
-                  />
-                </Field>
-              </div>
-              <div className="msj-field-row">
-                <Field label="IFSC / Routing Code" error={donationErrors.ifscCode} hint="11 characters, for example HDFC0001234.">
-                  <input
-                    value={donation.ifscCode || ""}
-                    onChange={(e) => setDonation((d) => ({ ...d, ifscCode: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 11) }))}
-                    onBlur={() => setDonationErrors((e) => ({ ...e, ifscCode: validateIfsc(donation.ifscCode) }))}
-                    placeholder="HDFC0001234"
-                    autoComplete="off"
-                  />
-                </Field>
-                <Field label="Branch Name (optional)">
-                  <input value={donation.branchName || ""} onChange={setDonationField("branchName")} />
-                </Field>
-              </div>
-            </>
-          )}
-
-          {step === 5 && (
+          {step === 3 && (
             <>
               <h3>Photos &amp; Media</h3>
               <p className="msj-note" style={{ marginBottom: 16 }}>Photos: JPG, PNG, or WEBP, up to 5MB each. Videos: MP4, WEBM, or MOV, up to 50MB each. Choose a category, then upload.</p>
@@ -571,10 +457,11 @@ function MasjidWizard() {
                   <input type="file" accept="image/png,image/jpeg,image/webp,video/mp4,video/webm,video/quicktime" multiple hidden onChange={handleFiles} />
                 </label>
               </div>
+              {errors.photos && <span className="auth-field-error" style={{ display: "block", marginBottom: 12 }}>{errors.photos}</span>}
               <div className="msj-photo-grid msj-photo-grid-lg">
                 {photos.map((p, i) => (
                   <div className="msj-photo-card" key={p.id}>
-                    <MediaThumb src={`http://localhost:5050${p.url}`} mediaType={p.mediaType} videoProps={{ controls: true }} />
+                    <MediaThumb src={`${API_ORIGIN}${p.url}`} mediaType={p.mediaType} videoProps={{ controls: true }} />
                     {p.isCover && <span className="msj-cover-badge"><Icon name="star" size={12} /> Cover</span>}
                     <span className="msj-photo-cat">{PHOTO_CATEGORIES.find((c) => c.key === p.category)?.label || p.category}</span>
                     <div className="msj-photo-actions">
@@ -590,10 +477,11 @@ function MasjidWizard() {
             </>
           )}
 
-          {step === 6 && (
+          {step === 4 && (
             <>
               <h3>Review &amp; Submit</h3>
-              <MasjidSummary form={form} donation={donation} photos={photos} emailVerified={emailVerified} mobileVerified={mobileVerified} onEdit={setStep} />
+              <MasjidSummary form={form} photos={photos} emailVerified={emailVerified} mobileVerified={mobileVerified} onEdit={setStep} />
+              {errors.submit && <span className="auth-field-error" style={{ display: "block", marginTop: 12 }}>{errors.submit}</span>}
             </>
           )}
 
@@ -603,13 +491,11 @@ function MasjidWizard() {
             </div>
             <div style={{ display: "flex", gap: 12 }}>
               <button className="btn btn-outline-ink" onClick={saveAsDraft} type="button" disabled={saving}>Save as Draft</button>
-              {step === 4 && <button className="btn btn-outline-ink" onClick={async () => { const ok = await saveDonation(); if (ok) setStep(5); }} type="button" disabled={saving}>Next <span className="btn-arrow">→</span></button>}
-              {step < STEPS.length && step !== 4 && <button className="btn btn-gold" onClick={goNext} type="button" disabled={saving}>{saving ? "Saving…" : "Next"} <span className="btn-arrow">→</span></button>}
+              {step < STEPS.length && <button className="btn btn-gold" onClick={goNext} type="button" disabled={saving}>{saving ? "Saving…" : "Next"} <span className="btn-arrow">→</span></button>}
               {step === STEPS.length && <button className="btn btn-gold" onClick={doSubmit} type="button" disabled={saving}>{saving ? "Submitting…" : "Submit for Verification"} <span className="btn-arrow">→</span></button>}
             </div>
           </div>
         </div>
-      </div>
 
       {otpTarget && (
         <div className="msj-modal-overlay" onClick={() => setOtpTarget(null)}>
@@ -627,14 +513,14 @@ function MasjidWizard() {
           </div>
         </div>
       )}
-    </main>
+    </WizardShell>
   );
 }
 
-function VerifiableField({ label, value, onChange, placeholder, maxLength, verified, sending, onVerify, hint, error }) {
+function VerifiableField({ label, value, onChange, placeholder, maxLength, verified, sending, onVerify, hint, error, required }) {
   return (
     <div className={`auth-field msj-verifiable-field${error ? " has-error" : ""}`}>
-      <label>{label}</label>
+      <label>{label}{required && <span className="msj-required">*</span>}</label>
       <div className="msj-verifiable-row">
         <input value={value} onChange={onChange} placeholder={placeholder} maxLength={maxLength} />
         {verified ? (
@@ -648,37 +534,30 @@ function VerifiableField({ label, value, onChange, placeholder, maxLength, verif
   );
 }
 
-function MasjidSummary({ form, donation, photos, emailVerified, mobileVerified, onEdit }) {
+function MasjidSummary({ form, photos, emailVerified, mobileVerified, onEdit }) {
   // A video can never be the cover (enforced server-side too) — a masjid
   // with only videos uploaded falls back to the branded placeholder instead
   // of silently rendering a video where a still image is expected.
   const cover = photos.find((p) => p.isCover) || photos.find((p) => p.mediaType !== "video");
   return (
     <div className="msj-summary">
-      <MediaThumb src={cover ? `http://localhost:5050${cover.url}` : null} className="msj-summary-cover" />
+      <MediaThumb src={cover ? `${API_ORIGIN}${cover.url}` : null} className="msj-summary-cover" />
       <div className="msj-summary-block">
         <div className="msj-summary-head"><h4>Basic Information</h4>{onEdit && <button type="button" onClick={() => onEdit(1)}>Edit</button>}</div>
         <p><strong>{form.name}</strong>{form.tagline && ` — ${form.tagline}`}</p>
         <p>{form.about}</p>
-      </div>
-      <div className="msj-summary-block">
-        <div className="msj-summary-head"><h4>Location</h4>{onEdit && <button type="button" onClick={() => onEdit(2)}>Edit</button>}</div>
         <p>{[form.address, form.area, form.city, form.district, form.state, form.country, form.postalCode].filter(Boolean).join(", ")}</p>
       </div>
       <div className="msj-summary-block">
-        <div className="msj-summary-head"><h4>Contact &amp; Verification</h4>{onEdit && <button type="button" onClick={() => onEdit(3)}>Edit</button>}</div>
+        <div className="msj-summary-head"><h4>Contact &amp; Verification</h4>{onEdit && <button type="button" onClick={() => onEdit(2)}>Edit</button>}</div>
         <p>Imam: {form.imamName || "—"}</p>
         <p>{form.contactEmail || "—"} {emailVerified && "(verified)"} · {form.contactMobile || "—"} {mobileVerified && "(verified)"}</p>
       </div>
       <div className="msj-summary-block">
-        <div className="msj-summary-head"><h4>Donation Account</h4>{onEdit && <button type="button" onClick={() => onEdit(4)}>Edit</button>}</div>
-        <p>{donation?.bankName ? `${donation.bankName} · ${donation.accountHolderName || ""}` : "Not provided"}{donation?.upiId ? ` · UPI: ${donation.upiId}` : ""}</p>
-      </div>
-      <div className="msj-summary-block">
-        <div className="msj-summary-head"><h4>Photographs</h4>{onEdit && <button type="button" onClick={() => onEdit(5)}>Edit</button>}</div>
+        <div className="msj-summary-head"><h4>Photographs</h4>{onEdit && <button type="button" onClick={() => onEdit(3)}>Edit</button>}</div>
         <div className="msj-photo-grid msj-photo-grid-lg">
           {photos.map((p) => (
-            <MediaThumb key={p.id} src={`http://localhost:5050${p.url}`} mediaType={p.mediaType} className="msj-summary-thumb" videoProps={{ controls: true }} />
+            <MediaThumb key={p.id} src={`${API_ORIGIN}${p.url}`} mediaType={p.mediaType} className="msj-summary-thumb" videoProps={{ controls: true }} />
           ))}
           {photos.length === 0 && <p>No photographs uploaded.</p>}
         </div>

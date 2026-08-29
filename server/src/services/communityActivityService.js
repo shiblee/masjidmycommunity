@@ -35,11 +35,16 @@ export async function recordActivity({
   }
 }
 
-export async function recordNewUserActivity() {
+export async function recordNewUserActivity(user) {
   return recordActivity({
     type: "new_user",
-    title: "A new member has joined Masjid My Community.",
+    title: `${user.fullName} joined Masjid My Community.`,
     body: "Welcome to the community — together in trust, transparency, and impact.",
+    relatedUserId: user.id,
+    // A snapshot at join time — the wall/admin views still join live to the
+    // User table for anything that can change (status, contact details), so
+    // this is only ever used as a display fallback if that user is deleted.
+    metadata: { fullName: user.fullName, username: user.username },
   });
 }
 

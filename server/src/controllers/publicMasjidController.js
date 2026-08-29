@@ -2,6 +2,8 @@ import { Op } from "sequelize";
 import Masjid from "../models/Masjid.js";
 import MasjidPhoto from "../models/MasjidPhoto.js";
 import MasjidCategory from "../models/MasjidCategory.js";
+import Bank from "../models/Bank.js";
+import DeletionReason from "../models/DeletionReason.js";
 
 const PUBLIC_STATUS = "approved";
 
@@ -13,7 +15,7 @@ async function withCover(masjid) {
 export const listPublic = async (req, res) => {
   try {
     const { q, city, country, page = 1, pageSize = 12 } = req.query;
-    const where = { status: PUBLIC_STATUS };
+    const where = { status: PUBLIC_STATUS, moderationStatus: "active" };
     if (city) where.city = city;
     if (country) where.country = country;
     if (q) {
@@ -34,7 +36,7 @@ export const listPublic = async (req, res) => {
 
 export const getPublicOne = async (req, res) => {
   try {
-    const masjid = await Masjid.findOne({ where: { id: req.params.id, status: PUBLIC_STATUS } });
+    const masjid = await Masjid.findOne({ where: { id: req.params.id, status: PUBLIC_STATUS, moderationStatus: "active" } });
     if (!masjid) return res.status(404).json({ message: "Masjid not found." });
 
     const photos = await MasjidPhoto.findAll({ where: { masjidId: masjid.id }, order: [["sortOrder", "ASC"]] });
@@ -48,6 +50,24 @@ export const listCategories = async (req, res) => {
   try {
     const categories = await MasjidCategory.findAll({ where: { isActive: true }, order: [["sortOrder", "ASC"]], attributes: ["id", "name"] });
     res.json({ categories });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const listBanks = async (req, res) => {
+  try {
+    const banks = await Bank.findAll({ where: { isActive: true }, order: [["sortOrder", "ASC"]], attributes: ["id", "name"] });
+    res.json({ banks });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const listDeletionReasons = async (req, res) => {
+  try {
+    const reasons = await DeletionReason.findAll({ where: { isActive: true }, order: [["sortOrder", "ASC"]], attributes: ["id", "name"] });
+    res.json({ reasons });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

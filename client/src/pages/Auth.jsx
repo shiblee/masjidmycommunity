@@ -135,7 +135,7 @@ function Auth() {
   const [showLoginPw, setShowLoginPw] = useState(false);
   const [remember, setRemember] = useState(true);
   const [loginLoading, setLoginLoading] = useState(false);
-  const [loginError, setLoginError] = useState("");
+  const [loginErrors, setLoginErrors] = useState({});
 
   // register
   const [reg, setReg] = useState({ fullName: "", contact: "", password: "" });
@@ -165,12 +165,12 @@ function Auth() {
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const [showResetPw, setShowResetPw] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
-  const [resetError, setResetError] = useState("");
+  const [resetErrors, setResetErrors] = useState({});
   const [resetDone, setResetDone] = useState(false);
 
   const [verifySuccess, setVerifySuccess] = useState(false);
 
-  const goToAccount = () => navigate(intent ? `/account?intent=${intent}` : "/account");
+  const goToAccount = () => navigate("/my-community");
 
   const startOtpFlow = (data, purpose) => {
     setOtpCtx({ userId: data.userId, otpTarget: data.otpTarget, maskedTarget: data.maskedTarget, purpose });
@@ -184,11 +184,12 @@ function Auth() {
 
   const submitLogin = async (e) => {
     e.preventDefault();
-    setLoginError("");
-    if (!loginId.trim() || !loginPassword) {
-      setLoginError("Please enter your credentials.");
-      return;
-    }
+    const errs = {};
+    if (!loginId.trim()) errs.identifier = "Enter your email address or mobile number.";
+    if (!loginPassword) errs.password = "Enter your password.";
+    setLoginErrors(errs);
+    if (Object.keys(errs).length) return;
+
     setLoginLoading(true);
     try {
       const { data } = await userApi.post("/login", { identifier: loginId.trim(), password: loginPassword, remember });
@@ -199,7 +200,7 @@ function Auth() {
       if (resp?.code === "UNVERIFIED") {
         startOtpFlow({ userId: resp.userId, otpTarget: resp.otpTarget, maskedTarget: resp.maskedTarget }, "register");
       } else {
-        setLoginError(resp?.message || "Something went wrong. Please try again.");
+        setLoginErrors({ password: resp?.message || "Something went wrong. Please try again." });
       }
     } finally {
       setLoginLoading(false);
@@ -243,7 +244,12 @@ function Auth() {
       });
       startOtpFlow(data, "register");
     } catch (err) {
-      setRegError(err.response?.data?.message || "Something went wrong. Please try again.");
+      const message = err.response?.data?.message || "Something went wrong. Please try again.";
+      if (err.response?.status === 409) {
+        setRegErrors((er) => ({ ...er, contact: message }));
+      } else {
+        setRegError(message);
+      }
     } finally {
       setRegLoading(false);
     }
@@ -317,15 +323,15 @@ function Auth() {
 
   const submitReset = async (e) => {
     e.preventDefault();
-    setResetError("");
+    const errs = {};
     if (newPassword.length < 8 || !/[A-Za-z]/.test(newPassword) || !/[0-9]/.test(newPassword)) {
-      setResetError("At least 8 characters with a letter and a number.");
-      return;
+      errs.newPassword = "At least 8 characters with a letter and a number.";
+    } else if (newPassword !== confirmNewPassword) {
+      errs.confirm = "Passwords do not match.";
     }
-    if (newPassword !== confirmNewPassword) {
-      setResetError("Passwords do not match.");
-      return;
-    }
+    setResetErrors(errs);
+    if (Object.keys(errs).length) return;
+
     setResetLoading(true);
     try {
       await userApi.post("/reset-password", {
@@ -340,10 +346,10 @@ function Auth() {
         setResetDone(false);
         setNewPassword("");
         setConfirmNewPassword("");
-        setLoginError("");
+        setLoginErrors({});
       }, 1800);
     } catch (err) {
-      setResetError(err.response?.data?.message || "Something went wrong. Please try again.");
+      setResetErrors({ form: err.response?.data?.message || "Something went wrong. Please try again." });
     } finally {
       setResetLoading(false);
     }
@@ -388,11 +394,6 @@ function Auth() {
                 </div>
 
                 <form onSubmit={submitLogin} noValidate>
-                  {loginError && (
-                    <div className="auth-alert">
-                      <InfoIcon /> {loginError}
-                    </div>
-                  )}
                   <div className="auth-field">
                     <label htmlFor="login-id">Email or Mobile Number</label>
                     <input
@@ -401,11 +402,12 @@ function Auth() {
                       value={loginId}
                       onChange={(e) => {
                         setLoginId(e.target.value);
-                        setLoginError("");
+                        setLoginErrors((er) => ({ ...er, identifier: null }));
                       }}
                       placeholder="you@example.com or 10-digit mobile number"
                       autoComplete="username"
                     />
+                    {loginErrors.identifier && <span className="auth-field-error">{loginErrors.identifier}</span>}
                   </div>
                   <div className="auth-field">
                     <label htmlFor="login-password">Password</label>
@@ -416,7 +418,7 @@ function Auth() {
                         value={loginPassword}
                         onChange={(e) => {
                           setLoginPassword(e.target.value);
-                          setLoginError("");
+                          setLoginErrors((er) => ({ ...er, password: null }));
                         }}
                         placeholder="Enter your password"
                         autoComplete="current-password"
@@ -425,6 +427,7 @@ function Auth() {
                         <EyeIcon off={showLoginPw} />
                       </button>
                     </div>
+                    {loginErrors.password && <span className="auth-field-error">{loginErrors.password}</span>}
                   </div>
                   <div className="auth-row-between">
                     <label className="auth-checkbox">
@@ -602,11 +605,6 @@ function Auth() {
                 <h2 className="auth-step-title">Reset your password</h2>
                 <p className="auth-step-sub">Enter your email address or mobile number and we'll send you a code.</p>
                 <form onSubmit={submitForgot} noValidate>
-                  {forgotError && (
-                    <div className="auth-alert">
-                      <InfoIcon /> {forgotError}
-                    </div>
-                  )}
                   <div className="auth-field">
                     <label htmlFor="forgot-id">Email or Mobile Number</label>
                     <input
@@ -619,6 +617,7 @@ function Auth() {
                       }}
                       placeholder="you@example.com or 10-digit mobile number"
                     />
+                    {forgotError && <span className="auth-field-error">{forgotError}</span>}
                   </div>
                   <button type="submit" className="btn btn-gold auth-submit" disabled={forgotLoading}>
                     {forgotLoading ? (
@@ -643,9 +642,9 @@ function Auth() {
                 <h2 className="auth-step-title">Set a new password</h2>
                 <p className="auth-step-sub">Choose a strong password to keep your account secure.</p>
                 <form onSubmit={submitReset} noValidate>
-                  {resetError && (
+                  {resetErrors.form && (
                     <div className="auth-alert">
-                      <InfoIcon /> {resetError}
+                      <InfoIcon /> {resetErrors.form}
                     </div>
                   )}
                   <div className="auth-field">
@@ -655,7 +654,10 @@ function Auth() {
                         id="reset-password"
                         type={showResetPw ? "text" : "password"}
                         value={newPassword}
-                        onChange={(e) => setNewPassword(e.target.value)}
+                        onChange={(e) => {
+                          setNewPassword(e.target.value);
+                          setResetErrors((er) => ({ ...er, newPassword: null }));
+                        }}
                         placeholder="At least 8 characters"
                         autoComplete="new-password"
                       />
@@ -663,6 +665,7 @@ function Auth() {
                         <EyeIcon off={showResetPw} />
                       </button>
                     </div>
+                    {resetErrors.newPassword && <span className="auth-field-error">{resetErrors.newPassword}</span>}
                   </div>
                   <div className="auth-field">
                     <label htmlFor="reset-confirm">Confirm New Password</label>
@@ -670,10 +673,14 @@ function Auth() {
                       id="reset-confirm"
                       type={showResetPw ? "text" : "password"}
                       value={confirmNewPassword}
-                      onChange={(e) => setConfirmNewPassword(e.target.value)}
+                      onChange={(e) => {
+                        setConfirmNewPassword(e.target.value);
+                        setResetErrors((er) => ({ ...er, confirm: null }));
+                      }}
                       placeholder="Re-enter your password"
                       autoComplete="new-password"
                     />
+                    {resetErrors.confirm && <span className="auth-field-error">{resetErrors.confirm}</span>}
                   </div>
                   <button type="submit" className="btn btn-gold auth-submit" disabled={resetLoading}>
                     {resetLoading ? (

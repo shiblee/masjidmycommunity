@@ -1,25 +1,32 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Icon } from "../../components/Icons.jsx";
+import { API_ORIGIN } from "../../config.js";
+import { formatDate } from "../../utils/formatDateTime.js";
 import masjidApi from "../../services/masjidApi.js";
 import MediaThumb from "../../components/MediaThumb.jsx";
+import MasjidDeleteFlow from "../../components/masjid/MasjidDeleteFlow.jsx";
 
 const STATUS_LABEL = {
   draft: "Draft", submitted: "Submitted", under_review: "Under Review",
-  changes_requested: "Changes Requested", approved: "Approved", rejected: "Rejected", inactive: "Inactive",
+  changes_requested: "Changes Requested", approved: "Approved", rejected: "Rejected", inactive: "Inactive", deleted: "Deleted",
 };
 const EDITABLE = new Set(["draft", "changes_requested"]);
 
 function MyMasjids() {
+  const navigate = useNavigate();
   const [masjids, setMasjids] = useState(null);
   const [error, setError] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
-  useEffect(() => {
+  const load = () => {
     masjidApi
       .get("/mine")
       .then(({ data }) => setMasjids(data.masjids))
       .catch(() => setError("Couldn't load your masjids."));
-  }, []);
+  };
+
+  useEffect(() => { load(); }, []);
 
   return (
     <main className="acct-page">
@@ -30,7 +37,7 @@ function MyMasjids() {
             <h1>My Masjids</h1>
             <p>Register and manage the masjids you represent on Masjid My Community.</p>
           </div>
-          <Link to="/account/masjids/new" className="btn btn-gold" style={{ marginLeft: "auto" }}>
+          <Link to="/account/my-masjids/new" className="btn btn-gold" style={{ marginLeft: "auto" }}>
             <Icon name="plus" size={16} /> Register Your Masjid
           </Link>
         </div>
@@ -45,7 +52,7 @@ function MyMasjids() {
               <Icon name="mosque" size={30} />
               <h3>You haven't registered a masjid yet</h3>
               <p>Register your masjid to start receiving verified visibility and, once approved, launch fundraising campaigns.</p>
-              <Link to="/account/masjids/new" className="btn btn-gold">Register Your Masjid <span className="btn-arrow">→</span></Link>
+              <Link to="/account/my-masjids/new" className="btn btn-gold">Register Your Masjid <span className="btn-arrow">→</span></Link>
             </div>
           )}
 
@@ -53,7 +60,7 @@ function MyMasjids() {
             {masjids?.map((m) => (
               <div className="msj-list-card" key={m.id}>
                 <div className="msj-list-thumb">
-                  <MediaThumb src={m.coverPhotoUrl ? `http://localhost:5050${m.coverPhotoUrl}` : null} />
+                  <MediaThumb src={m.coverPhotoUrl ? `${API_ORIGIN}${m.coverPhotoUrl}` : null} />
                 </div>
                 <div className="msj-list-body">
                   <div className="msj-list-top">
@@ -61,12 +68,21 @@ function MyMasjids() {
                     <span className={`acct-status-pill ${m.status}`}>{STATUS_LABEL[m.status]}</span>
                   </div>
                   <p className="msj-list-loc"><Icon name="mapPin" size={14} /> {[m.city, m.country].filter(Boolean).join(", ") || "Location not set"}</p>
-                  <p className="msj-list-meta">Registered {new Date(m.createdAt).toLocaleDateString()}</p>
+                  <p className="msj-list-meta">Registered {formatDate(m.createdAt)}</p>
+                  <button
+                    type="button"
+                    className="msj-list-campaigns"
+                    onClick={() => navigate(`/account/my-campaigns?masjidId=${m.id}`)}
+                  >
+                    Campaigns: <strong>{m.campaignCount}</strong>
+                  </button>
                   <div className="msj-list-actions">
-                    <Link to={`/account/masjids/${m.id}`}>{EDITABLE.has(m.status) ? "Edit" : "View Details"}</Link>
-                    {m.adminFeedback && <Link to={`/account/masjids/${m.id}`}>View Admin Feedback</Link>}
+                    <Link to={`/account/my-masjids/${m.id}`}>{EDITABLE.has(m.status) ? "Edit" : "View Details"}</Link>
+                    {m.adminFeedback && <Link to={`/account/my-masjids/${m.id}`}>View Admin Feedback</Link>}
                     {m.status === "approved" && <Link to={`/masjid/${m.id}`}>View Public Profile</Link>}
-                    {m.status === "approved" && <Link to={`/account/campaigns/new?masjidId=${m.id}`}>Create a Campaign</Link>}
+                    {m.status === "approved" && <Link to={`/account/my-campaigns/new?masjidId=${m.id}`}>Create a Campaign</Link>}
+                    {m.status === "approved" && <Link to={`/account/my-campaigns?masjidId=${m.id}`}>Manage Campaigns</Link>}
+                    <button type="button" className="danger" onClick={() => setDeleteTarget(m)}>Delete</button>
                   </div>
                 </div>
               </div>
@@ -74,6 +90,10 @@ function MyMasjids() {
           </div>
         </div>
       </section>
+
+      {deleteTarget && (
+        <MasjidDeleteFlow masjid={deleteTarget} onClose={() => setDeleteTarget(null)} onDeleted={load} />
+      )}
     </main>
   );
 }

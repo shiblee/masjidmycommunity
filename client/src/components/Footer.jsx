@@ -269,7 +269,7 @@ function Footer() {
                 <Link to="/#resources">Guides &amp; Learning</Link>
                 <Link to="/#faq">FAQ</Link>
                 <Link to="/about">About Masjid My Community</Link>
-                <a href="mailto:hello@masjidmycommunity.org">Contact</a>
+                <Link to="/contact">Contact</Link>
               </div>
               <div className="footer-col footer-app foot-reveal">
                 <h4>Get the App</h4>

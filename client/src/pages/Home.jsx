@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
+import { API_BASE, API_ORIGIN } from "../config.js";
 
 // Live campaigns are fetched from the API on mount (see Home()); this shapes
 // them into the same card fields the (formerly static) mock data used, so
@@ -26,7 +27,7 @@ function toCardShape(c) {
     supporters: c.donorCount || 0,
     days: isFunded ? 0 : days,
     badge: isFunded ? "Funded" : "Verified",
-    img: c.coverPhotoUrl ? `http://localhost:5050${c.coverPhotoUrl}` : "",
+    img: c.coverPhotoUrl ? `${API_ORIGIN}${c.coverPhotoUrl}` : "",
   };
 }
 
@@ -501,7 +502,7 @@ function Home() {
   const [liveCampaigns, setLiveCampaigns] = useState(null);
   useEffect(() => {
     axios
-      .get("http://localhost:5050/api/campaigns/public", { params: { pageSize: 48 } })
+      .get(`${API_BASE}/campaigns/public`, { params: { pageSize: 48 } })
       .then(({ data }) => setLiveCampaigns(data.campaigns.map(toCardShape)))
       .catch(() => setLiveCampaigns([]));
   }, []);

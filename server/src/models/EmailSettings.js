@@ -20,6 +20,10 @@ const EmailSettings = sequelize.define(
       type: DataTypes.STRING,
       allowNull: true,
     },
+    adminNotificationEmail: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
     provider: {
       type: DataTypes.STRING,
       allowNull: false,

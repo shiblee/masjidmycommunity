@@ -1,15 +1,8 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-
-const concernTypes = [
-  "Donation issue",
-  "Fundraising campaign concern",
-  "Masjid verification issue",
-  "Fund utilization concern",
-  "Account-related issue",
-  "Platform misuse",
-  "Something else",
-];
+import axios from "axios";
+import { API_BASE } from "../config.js";
+import { getStoredUser } from "../utils/userAuthStorage.js";
 
 const steps = [
   { num: "01", title: "You submit", body: "Your report reaches our trust & safety team, along with a reference number for your records." },
@@ -17,36 +10,57 @@ const steps = [
   { num: "03", title: "We follow up", body: "You'll hear back at the email you provide, typically within 48 hours, with the outcome or next steps." },
 ];
 
-function makeReference() {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  let code = "";
-  for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
-  return `CONCERN-${code}`;
-}
-
 function RaiseConcern() {
-  const [form, setForm] = useState({ type: "", reference: "", email: "", details: "" });
+  const user = getStoredUser();
+  const [types, setTypes] = useState([]);
+  const [form, setForm] = useState({
+    fullName: user?.fullName || "",
+    email: user?.email || "",
+    concernType: "",
+    subject: "",
+    relatedReference: "",
+    description: "",
+  });
   const [errors, setErrors] = useState({});
+  const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(null);
+
+  useEffect(() => {
+    axios
+      .get(`${API_BASE}/concerns/public/types`)
+      .then(({ data }) => setTypes([...data.types].sort((a, b) => a.name.localeCompare(b.name))))
+      .catch(() => {});
+  }, []);
 
   const update = (field) => (e) => {
     setForm((f) => ({ ...f, [field]: e.target.value }));
     setErrors((er) => ({ ...er, [field]: null }));
   };
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault();
     const next = {};
-    if (!form.type) next.type = "Please choose the type of concern.";
+    if (!form.fullName.trim()) next.fullName = "Please enter your name.";
     if (!/^\S+@\S+\.\S+$/.test(form.email)) next.email = "Enter a valid email so we can follow up.";
-    if (form.details.trim().length < 20) next.details = "Please provide at least a few sentences of detail.";
+    if (!form.concernType) next.concernType = "Please choose the type of concern.";
+    if (!form.subject.trim()) next.subject = "Please give this a short subject.";
+    if (form.description.trim().length < 20) next.description = "Please provide at least a few sentences of detail.";
     setErrors(next);
     if (Object.keys(next).length > 0) return;
-    setSubmitted(makeReference());
+
+    setSubmitting(true);
+    try {
+      const { data } = await axios.post(`${API_BASE}/concerns/public`, form);
+      setSubmitted(data.concern.reference);
+    } catch (err) {
+      setErrors({ form: err.response?.data?.message || "Couldn't submit your concern. Please try again." });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const resetForm = () => {
-    setForm({ type: "", reference: "", email: "", details: "" });
+    setForm({ fullName: user?.fullName || "", email: user?.email || "", concernType: "", subject: "", relatedReference: "", description: "" });
     setErrors({});
     setSubmitted(null);
   };
@@ -83,7 +97,7 @@ function RaiseConcern() {
           </p>
           <div className="ref mono">{submitted}</div>
           <p style={{ marginTop: "14px", color: "var(--text-on-paper-dim)", maxWidth: "440px", marginLeft: "auto", marginRight: "auto" }}>
-            We'll follow up at the email you provided within 48 hours. Keep your reference number for your records.
+            We've also sent a confirmation to your email. We'll follow up there within 48 hours — keep your reference number for your records.
           </p>
           <button className="btn btn-outline-ink" style={{ marginTop: "24px" }} onClick={resetForm}>
             Submit another concern
@@ -91,17 +105,31 @@ function RaiseConcern() {
         </div>
       ) : (
         <form className="concern-form" onSubmit={submit} noValidate>
+          {errors.form && <div className="concern-error" style={{ marginBottom: 8 }}>{errors.form}</div>}
+
+          <div className="concern-field">
+            <label htmlFor="concern-name">Your name</label>
+            <input id="concern-name" type="text" placeholder="Your full name" value={form.fullName} onChange={update("fullName")} />
+            {errors.fullName && <div className="concern-error">{errors.fullName}</div>}
+          </div>
+
           <div className="concern-field">
             <label htmlFor="concern-type">Type of concern</label>
-            <select id="concern-type" value={form.type} onChange={update("type")}>
+            <select id="concern-type" value={form.concernType} onChange={update("concernType")}>
               <option value="">Select one...</option>
-              {concernTypes.map((t) => (
-                <option value={t} key={t}>
-                  {t}
+              {types.map((t) => (
+                <option value={t.name} key={t.id}>
+                  {t.name}
                 </option>
               ))}
             </select>
-            {errors.type && <div className="concern-error">{errors.type}</div>}
+            {errors.concernType && <div className="concern-error">{errors.concernType}</div>}
+          </div>
+
+          <div className="concern-field">
+            <label htmlFor="concern-subject">Subject</label>
+            <input id="concern-subject" type="text" placeholder="A short summary of your concern" value={form.subject} onChange={update("subject")} />
+            {errors.subject && <div className="concern-error">{errors.subject}</div>}
           </div>
 
           <div className="concern-field">
@@ -110,8 +138,8 @@ function RaiseConcern() {
               id="concern-reference"
               type="text"
               placeholder="e.g. Masjid Al-Noor, Casablanca"
-              value={form.reference}
-              onChange={update("reference")}
+              value={form.relatedReference}
+              onChange={update("relatedReference")}
             />
           </div>
 
@@ -126,15 +154,15 @@ function RaiseConcern() {
             <textarea
               id="concern-details"
               placeholder="Share as much detail as you can — dates, amounts, and anything else that would help us look into this."
-              value={form.details}
-              onChange={update("details")}
+              value={form.description}
+              onChange={update("description")}
             />
-            {errors.details && <div className="concern-error">{errors.details}</div>}
+            {errors.description && <div className="concern-error">{errors.description}</div>}
           </div>
 
           <div>
-            <button type="submit" className="btn btn-gold">
-              Submit Report
+            <button type="submit" className="btn btn-gold" disabled={submitting}>
+              {submitting ? "Submitting…" : "Submit Report"}
             </button>
           </div>
         </form>

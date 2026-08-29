@@ -7,7 +7,10 @@ import CampaignDocument from "../models/CampaignDocument.js";
 import CampaignHistory from "../models/CampaignHistory.js";
 import Donation from "../models/Donation.js";
 import Masjid from "../models/Masjid.js";
+import User from "../models/User.js";
+import CampaignCategory from "../models/CampaignCategory.js";
 import { mediaTypeOf, IMAGE_MAX_BYTES } from "../middleware/upload.js";
+import { sendCampaignSubmittedAdminEmail, sendCampaignSubmittedUserEmail, sendCampaignChangeResponseAdminEmail } from "../services/emailService.js";
 
 const EDITABLE_STATUSES = new Set(["draft", "changes_requested"]);
 // Editing these on a campaign that's already public pulls it back for re-review
@@ -147,7 +150,7 @@ export const update = async (req, res) => {
     if (req.body.title !== undefined && !req.body.title?.trim()) {
       return res.status(400).json({ message: "Campaign title can't be empty." });
     }
-    if (req.body.donationType === "zakat" && !(req.body.zakatEligibilityNote ?? campaign.zakatEligibilityNote)?.trim()) {
+    if (req.body.donationType === "Zakat" && !(req.body.zakatEligibilityNote ?? campaign.zakatEligibilityNote)?.trim()) {
       return res.status(400).json({ message: "Explain how this campaign qualifies for Zakat before continuing." });
     }
     if (req.body.goalAmount !== undefined && req.body.goalAmount !== null && Number(req.body.goalAmount) <= 0) {
@@ -332,7 +335,7 @@ export const submit = async (req, res) => {
     const missing = required.filter((f) => !campaign[f]?.toString().trim());
     if (missing.length) return res.status(400).json({ message: `Please complete: ${missing.join(", ")}.` });
     if (!campaign.goalAmount || Number(campaign.goalAmount) <= 0) return res.status(400).json({ message: "Set a funding goal before submitting." });
-    if (campaign.donationType === "zakat" && !campaign.zakatEligibilityNote?.trim()) {
+    if (campaign.donationType === "Zakat" && !campaign.zakatEligibilityNote?.trim()) {
       return res.status(400).json({ message: "Explain how this campaign qualifies for Zakat before submitting." });
     }
 
@@ -343,11 +346,23 @@ export const submit = async (req, res) => {
     if (budgetTotal <= 0) return res.status(400).json({ message: "Add at least one budget line item before submitting." });
 
     const wasChangesRequested = campaign.status === "changes_requested";
+    const previousFeedback = campaign.adminFeedback;
     campaign.status = "under_review";
     campaign.adminFeedback = null;
     campaign.submittedAt = new Date();
     await campaign.save();
     await logHistory(campaign.id, wasChangesRequested ? "resubmitted" : "submitted", null, null);
+
+    const [submitter, masjid] = await Promise.all([User.findByPk(req.user.id), Masjid.findByPk(campaign.masjidId)]);
+    if (submitter) {
+      if (wasChangesRequested) {
+        sendCampaignChangeResponseAdminEmail(campaign, submitter, masjid, previousFeedback).catch(() => {});
+      } else {
+        const category = campaign.categoryId ? await CampaignCategory.findByPk(campaign.categoryId) : null;
+        sendCampaignSubmittedAdminEmail(campaign, submitter, masjid, category).catch(() => {});
+        sendCampaignSubmittedUserEmail(campaign, submitter, masjid).catch(() => {});
+      }
+    }
 
     res.json({ campaign: await serializeCampaign(campaign) });
   } catch (error) {

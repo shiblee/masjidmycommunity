@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Icon from "../components/Icons.jsx";
+import { API_ORIGIN } from "../../config.js";
 import StatusBadge from "../components/StatusBadge.jsx";
 import adminApi from "../services/adminApi.js";
 import MediaThumb from "../../components/MediaThumb.jsx";
+import { formatDateTime } from "../../utils/formatDateTime.js";
 
 function ReasonModal({ title, placeholder, extraFields, onCancel, onSubmit }) {
   const [text, setText] = useState("");
@@ -84,8 +86,6 @@ function Row({ label, value }) {
     </div>
   );
 }
-
-const DONATION_TYPE_LABEL = { general_sadaqah: "General Sadaqah", zakat: "Zakat", waqf: "Waqf", other: "Other" };
 
 function CampaignReview() {
   const { id } = useParams();
@@ -176,7 +176,7 @@ function CampaignReview() {
         <div>
           {cover && (
             <div style={{ width: "100%", height: 260, borderRadius: 14, marginBottom: 20, overflow: "hidden" }}>
-              <MediaThumb src={`http://localhost:5050${cover.url}`} mediaType={cover.mediaType} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              <MediaThumb src={`${API_ORIGIN}${cover.url}`} mediaType={cover.mediaType} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             </div>
           )}
 
@@ -187,8 +187,8 @@ function CampaignReview() {
           </Section>
 
           <Section title="Islamic Fundraising Classification">
-            <Row label="Type" value={DONATION_TYPE_LABEL[campaign.donationType]} />
-            {campaign.donationType === "zakat" && <Row label="Zakat Eligibility Note" value={campaign.zakatEligibilityNote} />}
+            <Row label="Type" value={campaign.donationType} />
+            {campaign.donationType === "Zakat" && <Row label="Zakat Eligibility Note" value={campaign.zakatEligibilityNote} />}
           </Section>
 
           <Section title="Funding & Budget">
@@ -202,7 +202,7 @@ function CampaignReview() {
             <div className="msj-photo-grid">
               {photos.map((p) => (
                 <div className="msj-photo-card" key={p.id}>
-                  <MediaThumb src={`http://localhost:5050${p.url}`} mediaType={p.mediaType} videoProps={{ controls: true }} />
+                  <MediaThumb src={`${API_ORIGIN}${p.url}`} mediaType={p.mediaType} videoProps={{ controls: true }} />
                   {p.isCover && <span className="msj-cover-badge"><Icon name="check" size={12} /> Cover</span>}
                 </div>
               ))}
@@ -224,7 +224,7 @@ function CampaignReview() {
             {donations.map((d) => (
               <div key={d.id} style={{ padding: "10px 0", borderBottom: "1px solid var(--a-border)" }}>
                 <strong>₹{Number(d.amount).toLocaleString("en-IN")}</strong> via {d.method} — {d.donorName || "Anonymous"}
-                <span className="amx-panel-sub" style={{ marginLeft: 8 }}>{new Date(d.createdAt).toLocaleString()}</span>
+                <span className="amx-panel-sub" style={{ marginLeft: 8 }}>{formatDateTime(d.createdAt)}</span>
               </div>
             ))}
             {donations.length === 0 && <p>No donations recorded yet.</p>}
@@ -234,7 +234,7 @@ function CampaignReview() {
             {history.map((h) => (
               <div key={h.id} style={{ padding: "10px 0", borderBottom: "1px solid var(--a-border)" }}>
                 <strong style={{ textTransform: "capitalize" }}>{h.action.replace(/_/g, " ")}</strong>
-                <span className="amx-panel-sub" style={{ marginLeft: 8 }}>{new Date(h.createdAt).toLocaleString()} · {h.actorType === "admin" ? h.actorName : "Owner"}</span>
+                <span className="amx-panel-sub" style={{ marginLeft: 8 }}>{formatDateTime(h.createdAt)} · {h.actorType === "admin" ? h.actorName : "Owner"}</span>
                 {h.note && <p style={{ marginTop: 4 }}>{h.note}</p>}
               </div>
             ))}
@@ -248,7 +248,7 @@ function CampaignReview() {
             <div style={{ display: "flex", flexDirection: "column", gap: 8, fontSize: 13.5 }}>
               <label style={{ display: "flex", gap: 8, alignItems: "flex-start" }}><input type="checkbox" defaultChecked={photos.length > 0} readOnly /> Photos/media provided</label>
               <label style={{ display: "flex", gap: 8, alignItems: "flex-start" }}><input type="checkbox" defaultChecked={budgetTotal > 0} readOnly /> Budget breakdown provided</label>
-              <label style={{ display: "flex", gap: 8, alignItems: "flex-start" }}><input type="checkbox" defaultChecked={campaign.donationType !== "zakat" || !!campaign.zakatEligibilityNote} readOnly /> Zakat eligibility explained (if applicable)</label>
+              <label style={{ display: "flex", gap: 8, alignItems: "flex-start" }}><input type="checkbox" defaultChecked={campaign.donationType !== "Zakat" || !!campaign.zakatEligibilityNote} readOnly /> Zakat eligibility explained (if applicable)</label>
               <label style={{ display: "flex", gap: 8, alignItems: "flex-start" }}><input type="checkbox" defaultChecked={masjid?.status === "approved"} readOnly /> Masjid is verified/approved</label>
             </div>
           </div>

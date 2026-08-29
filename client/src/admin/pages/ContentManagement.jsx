@@ -7,7 +7,7 @@ function ContentManagement() {
   const [query, setQuery] = useState("");
   const [type, setType] = useState("all");
 
-  const types = ["all", ...Array.from(new Set(CONTENT_ITEMS.map((c) => c.type)))];
+  const types = ["all", ...Array.from(new Set(CONTENT_ITEMS.map((c) => c.type))).sort((a, b) => a.localeCompare(b))];
 
   const filtered = useMemo(() => {
     return CONTENT_ITEMS.filter((c) => {

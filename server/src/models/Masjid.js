@@ -36,7 +36,7 @@ const Masjid = sequelize.define(
     otpAttempts: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
 
     status: {
-      type: DataTypes.ENUM("draft", "submitted", "under_review", "changes_requested", "approved", "rejected", "inactive"),
+      type: DataTypes.ENUM("draft", "submitted", "under_review", "changes_requested", "approved", "rejected", "inactive", "deleted"),
       allowNull: false,
       defaultValue: "draft",
     },
@@ -45,6 +45,20 @@ const Masjid = sequelize.define(
     submittedAt: { type: DataTypes.DATE, allowNull: true },
     reviewedAt: { type: DataTypes.DATE, allowNull: true },
     approvedAt: { type: DataTypes.DATE, allowNull: true },
+
+    // Set when the owner deletes the masjid (a soft delete — the record and
+    // its history are kept for audit purposes, just hidden from the owner's
+    // own list and excluded from public/admin views by default).
+    deletionReason: { type: DataTypes.STRING, allowNull: true },
+    deletionComment: { type: DataTypes.TEXT, allowNull: true },
+    deletedAt: { type: DataTypes.DATE, allowNull: true },
+
+    // Community-report moderation — separate from the approval `status` above.
+    // "under_review" here hides the masjid from the public directory/Wall
+    // without touching its approval state or any of its data.
+    moderationStatus: { type: DataTypes.ENUM("active", "under_review"), allowNull: false, defaultValue: "active" },
+    reportCount: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+    moderationReviewedAt: { type: DataTypes.DATE, allowNull: true },
   },
   {
     tableName: "masjids",

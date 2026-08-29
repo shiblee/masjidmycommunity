@@ -4,9 +4,10 @@ import { Icon } from "../components/Icons.jsx";
 import StaticLocationMap from "../components/StaticLocationMap.jsx";
 import MediaThumb from "../components/MediaThumb.jsx";
 import axios from "axios";
+import { API_BASE, API_ORIGIN } from "../config.js";
 
-const API = "http://localhost:5050/api/masjids/public";
-const CAMPAIGN_API = "http://localhost:5050/api/campaigns/public";
+const API = `${API_BASE}/masjids/public`;
+const CAMPAIGN_API = `${API_BASE}/campaigns/public`;
 
 function MasjidProfile() {
   const { id } = useParams();
@@ -53,7 +54,7 @@ function MasjidProfile() {
     <main className="msj-page">
       <section className="msj-profile-hero on-ink">
         {cover && (
-          <MediaThumb src={`http://localhost:5050${cover.url}`} mediaType={cover.mediaType} className="msj-profile-hero-img" videoProps={{ controls: true }} />
+          <MediaThumb src={`${API_ORIGIN}${cover.url}`} mediaType={cover.mediaType} className="msj-profile-hero-img" videoProps={{ controls: true }} />
         )}
         <div className="msj-profile-hero-overlay" />
         <div className="wrap msj-profile-hero-content">
@@ -73,11 +74,11 @@ function MasjidProfile() {
                   <button key={p.id} type="button" className={i === active ? "active" : ""} onClick={() => setActive(i)}>
                     {p.mediaType === "video" ? (
                       <span className="msj-thumb-video">
-                        <MediaThumb src={`http://localhost:5050${p.url}`} mediaType="video" />
+                        <MediaThumb src={`${API_ORIGIN}${p.url}`} mediaType="video" />
                         <Icon name="play" size={14} />
                       </span>
                     ) : (
-                      <MediaThumb src={`http://localhost:5050${p.url}`} />
+                      <MediaThumb src={`${API_ORIGIN}${p.url}`} />
                     )}
                   </button>
                 ))}

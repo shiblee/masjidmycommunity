@@ -11,7 +11,8 @@ const SECTIONS = [
   { key: "security", label: "Security", icon: "lock" },
   { key: "notifications", label: "Notifications", icon: "bell" },
   { key: "platform", label: "Platform", icon: "settings" },
-  { key: "masjid-categories", label: "Masjid Categories", icon: "mosque" },
+  { key: "reportPost", label: "Report Post", icon: "flag" },
+  { key: "content", label: "Community / Content", icon: "content" },
 ];
 
 function initialsOf(name) {
@@ -45,9 +46,15 @@ function Settings() {
   const [notifs, setNotifs] = useState(null);
   const [platform, setPlatform] = useState(null);
 
-  const [categories, setCategories] = useState([]);
-  const [newCategory, setNewCategory] = useState("");
-  const [categorySaving, setCategorySaving] = useState(false);
+  const [reportThreshold, setReportThreshold] = useState(10);
+  const [reportThresholdInput, setReportThresholdInput] = useState("10");
+  const [savingThreshold, setSavingThreshold] = useState(false);
+  const [thresholdError, setThresholdError] = useState("");
+
+  const [contentLimits, setContentLimits] = useState({ maxPostLength: 2000, maxCommentLength: 1000, maxReplyLength: 1000 });
+  const [contentLimitsInput, setContentLimitsInput] = useState({ maxPostLength: "2000", maxCommentLength: "1000", maxReplyLength: "1000" });
+  const [savingContentLimits, setSavingContentLimits] = useState(false);
+  const [contentLimitsError, setContentLimitsError] = useState("");
 
   const showToast = (message) => {
     setToast(message);
@@ -69,49 +76,31 @@ function Settings() {
         setLoadError(err.response?.data?.message || "Couldn't load your settings. Please refresh the page.");
       })
       .finally(() => setLoading(false));
+  }, []);
 
+  useEffect(() => {
     adminApi
-      .get("/masjid-categories")
-      .then(({ data }) => setCategories(data.categories))
+      .get("/moderation/settings")
+      .then(({ data }) => {
+        setReportThreshold(data.reportThreshold);
+        setReportThresholdInput(String(data.reportThreshold));
+      })
       .catch(() => {});
   }, []);
 
-  const addCategory = async (e) => {
-    e.preventDefault();
-    if (!newCategory.trim()) return;
-    setCategorySaving(true);
-    try {
-      const { data } = await adminApi.post("/masjid-categories", { name: newCategory.trim() });
-      setCategories((c) => [...c, data.category]);
-      setNewCategory("");
-      showToast("Category added.");
-    } catch (err) {
-      showToast(err.response?.data?.message || "Couldn't add that category.");
-    } finally {
-      setCategorySaving(false);
-    }
-  };
-
-  const toggleCategoryActive = async (cat) => {
-    setCategories((c) => c.map((x) => (x.id === cat.id ? { ...x, isActive: !x.isActive } : x)));
-    try {
-      await adminApi.patch(`/masjid-categories/${cat.id}`, { isActive: !cat.isActive });
-    } catch {
-      setCategories((c) => c.map((x) => (x.id === cat.id ? { ...x, isActive: cat.isActive } : x)));
-      showToast("Couldn't save that change.");
-    }
-  };
-
-  const deleteCategory = async (cat) => {
-    setCategories((c) => c.filter((x) => x.id !== cat.id));
-    try {
-      await adminApi.delete(`/masjid-categories/${cat.id}`);
-      showToast("Category removed.");
-    } catch {
-      setCategories((c) => [...c, cat]);
-      showToast("Couldn't remove that category.");
-    }
-  };
+  useEffect(() => {
+    adminApi
+      .get("/content-settings")
+      .then(({ data }) => {
+        setContentLimits(data);
+        setContentLimitsInput({
+          maxPostLength: String(data.maxPostLength),
+          maxCommentLength: String(data.maxCommentLength),
+          maxReplyLength: String(data.maxReplyLength),
+        });
+      })
+      .catch(() => {});
+  }, []);
 
   const saveProfile = async (e) => {
     e.preventDefault();
@@ -237,6 +226,56 @@ function Settings() {
     } catch {
       setNotifs((n) => ({ ...n, [key]: !nextVal }));
       showToast("Couldn't save that change. Please try again.");
+    }
+  };
+
+  const saveThreshold = async (e) => {
+    e.preventDefault();
+    const n = Number(reportThresholdInput);
+    if (!Number.isInteger(n) || n < 1) {
+      setThresholdError("Threshold must be a whole number of at least 1.");
+      return;
+    }
+    setThresholdError("");
+    setSavingThreshold(true);
+    try {
+      const { data } = await adminApi.patch("/moderation/settings", { reportThreshold: n });
+      setReportThreshold(data.reportThreshold);
+      setReportThresholdInput(String(data.reportThreshold));
+      showToast("Automatic moderation threshold saved.");
+    } catch (err) {
+      setThresholdError(err.response?.data?.message || "Couldn't save the threshold. Please try again.");
+    } finally {
+      setSavingThreshold(false);
+    }
+  };
+
+  const saveContentLimits = async (e) => {
+    e.preventDefault();
+    const parsed = {};
+    for (const field of ["maxPostLength", "maxCommentLength", "maxReplyLength"]) {
+      const n = Number(contentLimitsInput[field]);
+      if (!Number.isInteger(n) || n < 1) {
+        setContentLimitsError("Each limit must be a whole number of at least 1 character.");
+        return;
+      }
+      parsed[field] = n;
+    }
+    setContentLimitsError("");
+    setSavingContentLimits(true);
+    try {
+      const { data } = await adminApi.patch("/content-settings", parsed);
+      setContentLimits(data);
+      setContentLimitsInput({
+        maxPostLength: String(data.maxPostLength),
+        maxCommentLength: String(data.maxCommentLength),
+        maxReplyLength: String(data.maxReplyLength),
+      });
+      showToast("Character limits saved.");
+    } catch (err) {
+      setContentLimitsError(err.response?.data?.message || "Couldn't save these limits. Please try again.");
+    } finally {
+      setSavingContentLimits(false);
     }
   };
 
@@ -561,43 +600,105 @@ function Settings() {
               </div>
             </>
           )}
-          {section === "masjid-categories" && (
+
+          {section === "reportPost" && (
             <>
               <div className="amx-panel-head">
                 <div>
-                  <h3>Masjid Categories</h3>
-                  <div className="amx-panel-sub">Manage the category options shown in the Register Your Masjid form</div>
+                  <h3>Report Post Settings</h3>
+                  <div className="amx-panel-sub">Configure when reported content is automatically hidden pending your review</div>
                 </div>
               </div>
-
-              <form onSubmit={addCategory} style={{ display: "flex", gap: 10, marginBottom: 22 }}>
-                <input
-                  type="text"
-                  placeholder="New category name"
-                  value={newCategory}
-                  onChange={(e) => setNewCategory(e.target.value)}
-                  style={{ flex: 1 }}
-                />
-                <button type="submit" className="amx-btn amx-btn-primary" disabled={categorySaving || !newCategory.trim()}>
-                  <Icon name="plus" size={15} /> Add
+              <form onSubmit={saveThreshold} className="amx-form-grid">
+                <div className="amx-form-group">
+                  <label htmlFor="report-threshold">Automatic Moderation Threshold</label>
+                  <input
+                    id="report-threshold"
+                    type="number"
+                    min={1}
+                    step={1}
+                    value={reportThresholdInput}
+                    onChange={(e) => setReportThresholdInput(e.target.value)}
+                  />
+                  <div className="amx-panel-sub" style={{ marginTop: 6 }}>
+                    When a masjid, campaign, or Wall post receives this many reports, it is automatically hidden from the public Wall and flagged for admin review under{" "}
+                    <strong>Reported Content</strong>. It is never permanently deleted — only temporarily hidden pending your decision. Current value: <strong>{reportThreshold}</strong> reports.
+                  </div>
+                  {thresholdError && (
+                    <div className="amx-field-error">
+                      <Icon name="info" size={14} />
+                      {thresholdError}
+                    </div>
+                  )}
+                </div>
+                <button type="submit" className="amx-btn amx-btn-primary" disabled={savingThreshold} style={{ alignSelf: "end" }}>
+                  {savingThreshold ? "Saving…" : "Save Threshold"}
                 </button>
               </form>
+            </>
+          )}
 
-              {categories.map((cat) => (
-                <div className="amx-settings-row" key={cat.id}>
-                  <div>
-                    <strong>{cat.name}</strong>
-                    <span>{cat.isActive ? "Visible to users" : "Hidden from the registration form"}</span>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                    <Toggle on={cat.isActive} onClick={() => toggleCategoryActive(cat)} />
-                    <button type="button" className="amx-icon-action" aria-label="Delete" title="Delete" onClick={() => deleteCategory(cat)}>
-                      <Icon name="trash" size={15} />
-                    </button>
+          {section === "content" && (
+            <>
+              <div className="amx-panel-head">
+                <div>
+                  <h3>Community / Content Settings</h3>
+                  <div className="amx-panel-sub">Configure the maximum character length allowed for Wall posts, comments, and replies</div>
+                </div>
+              </div>
+              <form onSubmit={saveContentLimits} className="amx-form-grid">
+                <div className="amx-form-group">
+                  <label htmlFor="max-post-length">Maximum Post Length</label>
+                  <input
+                    id="max-post-length"
+                    type="number"
+                    min={1}
+                    step={1}
+                    value={contentLimitsInput.maxPostLength}
+                    onChange={(e) => setContentLimitsInput((s) => ({ ...s, maxPostLength: e.target.value }))}
+                  />
+                  <div className="amx-panel-sub" style={{ marginTop: 6 }}>
+                    Applies to Community Wall post text. Current: <strong>{contentLimits.maxPostLength}</strong> characters.
                   </div>
                 </div>
-              ))}
-              {categories.length === 0 && <p className="amx-panel-sub">No categories yet — add one above.</p>}
+                <div className="amx-form-group">
+                  <label htmlFor="max-comment-length">Maximum Comment Length</label>
+                  <input
+                    id="max-comment-length"
+                    type="number"
+                    min={1}
+                    step={1}
+                    value={contentLimitsInput.maxCommentLength}
+                    onChange={(e) => setContentLimitsInput((s) => ({ ...s, maxCommentLength: e.target.value }))}
+                  />
+                  <div className="amx-panel-sub" style={{ marginTop: 6 }}>
+                    Applies to top-level comments. Current: <strong>{contentLimits.maxCommentLength}</strong> characters.
+                  </div>
+                </div>
+                <div className="amx-form-group">
+                  <label htmlFor="max-reply-length">Maximum Reply Length</label>
+                  <input
+                    id="max-reply-length"
+                    type="number"
+                    min={1}
+                    step={1}
+                    value={contentLimitsInput.maxReplyLength}
+                    onChange={(e) => setContentLimitsInput((s) => ({ ...s, maxReplyLength: e.target.value }))}
+                  />
+                  <div className="amx-panel-sub" style={{ marginTop: 6 }}>
+                    Applies to replies at every nesting level. Current: <strong>{contentLimits.maxReplyLength}</strong> characters.
+                  </div>
+                </div>
+                {contentLimitsError && (
+                  <div className="amx-field-error">
+                    <Icon name="info" size={14} />
+                    {contentLimitsError}
+                  </div>
+                )}
+                <button type="submit" className="amx-btn amx-btn-primary" disabled={savingContentLimits} style={{ alignSelf: "end" }}>
+                  {savingContentLimits ? "Saving…" : "Save Limits"}
+                </button>
+              </form>
             </>
           )}
         </div>

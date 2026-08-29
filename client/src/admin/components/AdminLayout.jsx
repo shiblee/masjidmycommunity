@@ -12,6 +12,7 @@ function initialsOf(name) {
 
 const NAV_ITEMS = [
   { to: "/admin/dashboard", label: "Dashboard", icon: "dashboard" },
+  { to: "/admin/registered-users", label: "Users", icon: "globe" },
   { to: "/admin/masjids", label: "Masjids", icon: "mosque" },
   { to: "/admin/campaigns", label: "Campaigns", icon: "campaign" },
   { to: "/admin/donations", label: "Donations", icon: "donation" },
@@ -20,11 +21,12 @@ const NAV_ITEMS = [
   { to: "/admin/fund-utilization", label: "Fund Utilization", icon: "fund" },
   { to: "/admin/verification", label: "Verification", icon: "verify" },
   { to: "/admin/reports", label: "Reports & Analytics", icon: "reports" },
-  { to: "/admin/users", label: "Users", icon: "users" },
-  { to: "/admin/registered-users", label: "Registered Users", icon: "globe" },
   { to: "/admin/community-wall", label: "Community Wall", icon: "megaphone" },
   { to: "/admin/content", label: "Content Management", icon: "content" },
+  { to: "/admin/concerns", label: "Raise a Concern", icon: "shield" },
+  { to: "/admin/moderation", label: "Reported Content", icon: "flag" },
   { to: "/admin/notifications", label: "Notifications", icon: "bell" },
+  { to: "/admin/meta", label: "Meta", icon: "layers" },
   { to: "/admin/settings", label: "Settings", icon: "settings" },
 ];
 

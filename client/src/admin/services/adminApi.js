@@ -1,8 +1,9 @@
 import axios from "axios";
 import { getToken, clearSession } from "../authStorage.js";
+import { API_BASE } from "../../config.js";
 
 const adminApi = axios.create({
-  baseURL: "http://localhost:5050/api/admin",
+  baseURL: `${API_BASE}/admin`,
 });
 
 adminApi.interceptors.request.use((config) => {

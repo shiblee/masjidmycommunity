@@ -18,10 +18,13 @@ const Donation = sequelize.define(
       allowNull: false,
       defaultValue: "upi",
     },
+    // A snapshot of the campaign's classification at the time this donation
+    // was recorded — a plain string (not a master-data FK) since it's never
+    // independently edited, just copied from Campaign.donationType.
     donationType: {
-      type: DataTypes.ENUM("general_sadaqah", "zakat", "waqf", "other"),
+      type: DataTypes.STRING,
       allowNull: false,
-      defaultValue: "general_sadaqah",
+      defaultValue: "General Sadaqah",
     },
     status: {
       type: DataTypes.ENUM("recorded", "refunded", "disputed"),

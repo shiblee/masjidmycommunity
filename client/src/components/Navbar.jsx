@@ -1,10 +1,12 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { getStoredUser, clearUserSession } from "../utils/userAuthStorage.js";
+import userApi from "../services/userApi.js";
+import { API_ORIGIN } from "../config.js";
 
 const links = [
   { href: "/explore-masjids", label: "Explore Masjids" },
-  { href: "/community", label: "My Community" },
+  { href: "/my-community", label: "My Community" },
   { href: "/our-impact", label: "Impact" },
   { href: "/about", label: "About Us" },
 ];
@@ -16,6 +18,25 @@ function linkPath(href) {
 function initialsOf(name = "") {
   const parts = name.trim().split(/\s+/);
   return ((parts[0]?.[0] || "") + (parts.length > 1 ? parts[parts.length - 1]?.[0] || "" : "")).toUpperCase();
+}
+
+function UserAvatar({ user }) {
+  return user.profilePhoto ? (
+    <img className="nav-user-avatar nav-user-avatar-photo" src={`${API_ORIGIN}${user.profilePhoto}`} alt={user.fullName} />
+  ) : (
+    <span className="nav-user-avatar">{initialsOf(user.fullName)}</span>
+  );
+}
+
+function timeAgo(dateStr) {
+  const diffMs = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diffMs / 60000);
+  if (mins < 1) return "Just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  return `${days}d ago`;
 }
 
 function useClickOutside(ref, onOutside) {
@@ -31,9 +52,13 @@ function useClickOutside(ref, onOutside) {
 function Navbar() {
   const [open, setOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [user, setUser] = useState(() => getStoredUser());
   const [headerHeight, setHeaderHeight] = useState(74);
   const menuRef = useRef(null);
+  const notifRef = useRef(null);
   const announceRef = useRef(null);
   const navElRef = useRef(null);
   const { pathname } = useLocation();
@@ -41,6 +66,7 @@ function Navbar() {
   const isLinkActive = (href) => !href.startsWith("#") && pathname === href;
 
   useClickOutside(menuRef, () => setMenuOpen(false));
+  useClickOutside(notifRef, () => setNotifOpen(false));
 
   // Measured as two elements rather than one wrapping div: a shared wrapper
   // sized to hug its children leaves position:sticky on the header with zero
@@ -66,7 +92,49 @@ function Navbar() {
     return () => window.removeEventListener("mmc-user-session-updated", onSessionUpdated);
   }, []);
 
+  useEffect(() => {
+    if (!user) {
+      setNotifications([]);
+      setUnreadCount(0);
+      return;
+    }
+    let cancelled = false;
+    const load = () => {
+      userApi
+        .get("/notifications")
+        .then(({ data }) => {
+          if (cancelled) return;
+          setNotifications(data.notifications);
+          setUnreadCount(data.unreadCount);
+        })
+        .catch(() => {});
+    };
+    load();
+    const interval = setInterval(load, 30000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [user]);
+
+  const openNotification = (n) => {
+    setNotifOpen(false);
+    if (!n.isRead) {
+      userApi.patch(`/notifications/${n.id}/read`).then(({ data }) => setUnreadCount(data.unreadCount)).catch(() => {});
+      setNotifications((list) => list.map((x) => (x.id === n.id ? { ...x, isRead: true } : x)));
+    }
+    if (n.link) navigate(n.link);
+  };
+
+  const markAllNotificationsRead = () => {
+    userApi.patch("/notifications/read-all").then(() => setUnreadCount(0)).catch(() => {});
+    setNotifications((list) => list.map((x) => ({ ...x, isRead: true })));
+  };
+
   const logout = () => {
+    // Fire-and-forget: the server call records the logout event, but the
+    // user's session must clear locally even if the request fails.
+    userApi.post("/logout").catch(() => {});
     clearUserSession();
     setMenuOpen(false);
     setOpen(false);
@@ -97,10 +165,46 @@ function Navbar() {
             </ul>
           </nav>
           <div className="nav-actions">
+            {user && (
+              <div className="nav-notif" ref={notifRef}>
+                <button className="nav-notif-btn" onClick={() => setNotifOpen((o) => !o)} aria-label="Notifications">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+                    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                  </svg>
+                  {unreadCount > 0 && <span className="nav-notif-dot" />}
+                </button>
+                {notifOpen && (
+                  <div className="nav-notif-dropdown">
+                    <div className="nav-notif-dropdown-head">
+                      <strong>Notifications</strong>
+                      {unreadCount > 0 && (
+                        <button type="button" onClick={markAllNotificationsRead}>
+                          Mark all as read
+                        </button>
+                      )}
+                    </div>
+                    <div className="nav-notif-list">
+                      {notifications.length === 0 && <p className="nav-notif-empty">You're all caught up — no notifications yet.</p>}
+                      {notifications.map((n) => (
+                        <button type="button" key={n.id} className={`nav-notif-item${n.isRead ? "" : " unread"}`} onClick={() => openNotification(n)}>
+                          <span className="nav-notif-item-dot" />
+                          <span className="nav-notif-item-body">
+                            <span className="nav-notif-item-title">{n.title}</span>
+                            {n.body && <span className="nav-notif-item-text">{n.body}</span>}
+                            <span className="nav-notif-item-time">{timeAgo(n.createdAt)}</span>
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
             {user ? (
               <div className="nav-user" ref={menuRef}>
                 <button className={`nav-user-btn${menuOpen ? " open" : ""}`} onClick={() => setMenuOpen((o) => !o)}>
-                  <span className="nav-user-avatar">{initialsOf(user.fullName)}</span>
+                  <UserAvatar user={user} />
                   <span className="nav-user-name">{user.fullName.split(" ")[0]}</span>
                   <svg className="nav-user-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M6 9l6 6 6-6" />
@@ -112,8 +216,14 @@ function Navbar() {
                       <strong>{user.fullName}</strong>
                       <span>{user.email || user.mobile}</span>
                     </div>
-                    <Link to="/account" onClick={() => setMenuOpen(false)}>
-                      My Account
+                    <Link to="/account/my-masjids" onClick={() => setMenuOpen(false)}>
+                      My Masjids
+                    </Link>
+                    <Link to="/account/my-campaigns" onClick={() => setMenuOpen(false)}>
+                      My Campaigns
+                    </Link>
+                    <Link to="/account?edit=profile" onClick={() => setMenuOpen(false)}>
+                      Edit Profile
                     </Link>
                     <div className="nav-user-dropdown-sep" />
                     <button onClick={logout}>Log Out</button>
@@ -137,7 +247,7 @@ function Navbar() {
       <div className={`mobile-menu${open ? " open" : ""}`} style={{ top: headerHeight }}>
         {user && (
           <div className="mobile-menu-account">
-            <span className="nav-user-avatar">{initialsOf(user.fullName)}</span>
+            <UserAvatar user={user} />
             <div>
               <strong>{user.fullName}</strong>
               <span>{user.email || user.mobile}</span>
@@ -155,8 +265,18 @@ function Navbar() {
           </Link>
         ))}
         {user && (
-          <Link to="/account" onClick={() => setOpen(false)}>
-            My Account
+          <Link to="/account/my-masjids" onClick={() => setOpen(false)}>
+            My Masjids
+          </Link>
+        )}
+        {user && (
+          <Link to="/account/my-campaigns" onClick={() => setOpen(false)}>
+            My Campaigns
+          </Link>
+        )}
+        {user && (
+          <Link to="/account?edit=profile" onClick={() => setOpen(false)}>
+            Edit Profile
           </Link>
         )}
         <Link to="/#register" className="btn btn-gold" onClick={() => setOpen(false)}>

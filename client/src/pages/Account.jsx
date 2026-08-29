@@ -2,10 +2,23 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Icon } from "../components/Icons.jsx";
 import userApi from "../services/userApi.js";
-import { getStoredUser, setUserSession, clearUserSession } from "../utils/userAuthStorage.js";
+import { getStoredUser, setUserSession, updateStoredUser } from "../utils/userAuthStorage.js";
+import { API_ORIGIN } from "../config.js";
+import ProfileCompletion from "../components/profile/ProfileCompletion.jsx";
+import ProfilePhotoCard from "../components/profile/ProfilePhotoCard.jsx";
+import PersonalDetailsCard from "../components/profile/PersonalDetailsCard.jsx";
+import WorkExperienceCard from "../components/profile/WorkExperienceCard.jsx";
+import EducationCard from "../components/profile/EducationCard.jsx";
+import HobbiesCard from "../components/profile/HobbiesCard.jsx";
+import SkillsCard from "../components/profile/SkillsCard.jsx";
 
 const PROFILE_SECTIONS = [
-  { key: "profile", label: "Profile", icon: "people" },
+  { key: "photo", label: "Photo", icon: "camera" },
+  { key: "personal", label: "Personal Details", icon: "people" },
+  { key: "work-experience", label: "Work Experience", icon: "building" },
+  { key: "education", label: "Education", icon: "book" },
+  { key: "hobbies", label: "Hobbies & Interests", icon: "star" },
+  { key: "skills", label: "Skills", icon: "bulb" },
   { key: "security", label: "Security", icon: "shieldCheck" },
 ];
 
@@ -18,80 +31,22 @@ function ProfileSection({ user, onUserUpdated }) {
     setTimeout(() => setToast(null), 2600);
   };
 
-  // --- Profile tab ---
-  const [form, setForm] = useState({ fullName: user.fullName || "", email: user.email || "", mobile: user.mobile || "" });
-  const [emailVerified, setEmailVerified] = useState(user.emailVerified);
-  const [mobileVerified, setMobileVerified] = useState(user.mobileVerified);
-  const [profileError, setProfileError] = useState("");
-  const [savingProfile, setSavingProfile] = useState(false);
-
-  const [otpTarget, setOtpTarget] = useState(null);
-  const [otpSending, setOtpSending] = useState(false);
-  const [otpCode, setOtpCode] = useState("");
-  const [demoOtp, setDemoOtp] = useState("");
-  const [otpError, setOtpError] = useState("");
-
-  const saveProfile = async (e) => {
-    e.preventDefault();
-    setSavingProfile(true);
-    setProfileError("");
-    try {
-      const { data } = await userApi.patch("/me", form);
-      setEmailVerified(data.user.emailVerified);
-      setMobileVerified(data.user.mobileVerified);
-      onUserUpdated(data.user);
-      showToast("Profile updated.");
-    } catch (err) {
-      setProfileError(err.response?.data?.message || "Couldn't save your profile.");
-    } finally {
-      setSavingProfile(false);
-    }
-  };
-
-  const sendOtp = async (target) => {
-    setOtpSending(true);
-    setOtpError("");
-    setOtpCode("");
-    try {
-      const { data } = await userApi.post("/me/verify/send-otp", { target });
-      setDemoOtp(data.demoOtp || "");
-      setOtpTarget(target);
-    } catch (err) {
-      setProfileError(err.response?.data?.message || "Couldn't send the verification code.");
-    } finally {
-      setOtpSending(false);
-    }
-  };
-
-  const confirmOtp = async () => {
-    setOtpError("");
-    try {
-      const { data } = await userApi.post("/verify-otp", { userId: user.id, otp: otpCode });
-      if (data.user) {
-        setEmailVerified(data.user.emailVerified);
-        setMobileVerified(data.user.mobileVerified);
-        onUserUpdated(data.user);
-      }
-      setOtpTarget(null);
-    } catch (err) {
-      setOtpError(err.response?.data?.message || "Incorrect code.");
-    }
-  };
-
   // --- Security tab ---
   const [pw, setPw] = useState({ current: "", next: "", confirm: "" });
   const [showPw, setShowPw] = useState({ current: false, next: false, confirm: false });
-  const [pwError, setPwError] = useState("");
+  const [pwErrors, setPwErrors] = useState({});
   const [savingPw, setSavingPw] = useState(false);
 
   const savePassword = async (e) => {
     e.preventDefault();
-    setPwError("");
-    if (!pw.current || !pw.next) return setPwError("Enter your current password and a new password.");
-    if (pw.next.length < 8 || !/[A-Za-z]/.test(pw.next) || !/[0-9]/.test(pw.next)) {
-      return setPwError("New password must be at least 8 characters and include a letter and a number.");
-    }
-    if (pw.next !== pw.confirm) return setPwError("New password and confirmation don't match.");
+    const errs = {};
+    if (!pw.current) errs.current = "Enter your current password.";
+    else if (!pw.next) errs.next = "Enter a new password.";
+    else if (pw.next.length < 8 || !/[A-Za-z]/.test(pw.next) || !/[0-9]/.test(pw.next)) {
+      errs.next = "New password must be at least 8 characters and include a letter and a number.";
+    } else if (pw.next !== pw.confirm) errs.confirm = "New password and confirmation don't match.";
+    setPwErrors(errs);
+    if (Object.keys(errs).length) return;
 
     setSavingPw(true);
     try {
@@ -102,14 +57,15 @@ function ProfileSection({ user, onUserUpdated }) {
       setPw({ current: "", next: "", confirm: "" });
       showToast("Password updated.");
     } catch (err) {
-      setPwError(err.response?.data?.message || "Couldn't update your password.");
+      const message = err.response?.data?.message || "Couldn't update your password.";
+      setPwErrors({ current: /current password/i.test(message) ? message : undefined, form: /current password/i.test(message) ? undefined : message });
     } finally {
       setSavingPw(false);
     }
   };
 
   return (
-    <div className="section-head" style={{ marginTop: 48 }}>
+    <div className="section-head">
       <span className="eyebrow">Profile &amp; Security</span>
       <h2>Manage your account</h2>
 
@@ -123,52 +79,22 @@ function ProfileSection({ user, onUserUpdated }) {
           ))}
         </nav>
 
-        <div className="card acct-settings-card">
-          {section === "profile" && (
-            <form onSubmit={saveProfile}>
-              {profileError && <div className="auth-alert" style={{ marginBottom: 18 }}><Icon name="info" size={17} />{profileError}</div>}
+        {section !== "security" && (
+          <div className="profile-stack">
+            <ProfileCompletion user={user} />
+            {section === "photo" && <ProfilePhotoCard user={user} onUserUpdated={onUserUpdated} />}
+            {section === "personal" && <PersonalDetailsCard user={user} onUserUpdated={onUserUpdated} />}
+            {section === "work-experience" && <WorkExperienceCard />}
+            {section === "education" && <EducationCard />}
+            {section === "hobbies" && <HobbiesCard />}
+            {section === "skills" && <SkillsCard />}
+          </div>
+        )}
 
-              <div className="auth-field">
-                <label>Full Name</label>
-                <input value={form.fullName} onChange={(e) => setForm((f) => ({ ...f, fullName: e.target.value }))} />
-              </div>
-
-              <div className="auth-field msj-verifiable-field">
-                <label>Email Address</label>
-                <div className="msj-verifiable-row">
-                  <input value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} placeholder="you@example.com" />
-                  {form.email && emailVerified ? (
-                    <span className="acct-status-pill active"><Icon name="check" size={13} /> Verified</span>
-                  ) : form.email ? (
-                    <button className="btn btn-outline-ink" type="button" disabled={otpSending} onClick={() => sendOtp("email")}>{otpSending ? "Sending…" : "Verify"}</button>
-                  ) : null}
-                </div>
-              </div>
-
-              <div className="auth-field msj-verifiable-field">
-                <label>Mobile Number</label>
-                <div className="msj-verifiable-row">
-                  <input
-                    value={form.mobile}
-                    onChange={(e) => setForm((f) => ({ ...f, mobile: e.target.value.replace(/\D/g, "").slice(0, 10) }))}
-                    placeholder="10-digit mobile number"
-                    maxLength={10}
-                  />
-                  {form.mobile && mobileVerified ? (
-                    <span className="acct-status-pill active"><Icon name="check" size={13} /> Verified</span>
-                  ) : form.mobile ? (
-                    <button className="btn btn-outline-ink" type="button" disabled={otpSending} onClick={() => sendOtp("mobile")}>{otpSending ? "Sending…" : "Verify"}</button>
-                  ) : null}
-                </div>
-              </div>
-
-              <button type="submit" className="btn btn-gold" disabled={savingProfile}>{savingProfile ? "Saving…" : "Save Changes"}</button>
-            </form>
-          )}
-
-          {section === "security" && (
+        {section === "security" && (
+          <div className="card acct-settings-card">
             <form onSubmit={savePassword}>
-              {pwError && <div className="auth-alert" style={{ marginBottom: 18 }}><Icon name="info" size={17} />{pwError}</div>}
+              {pwErrors.form && <div className="auth-alert" style={{ marginBottom: 18 }}><Icon name="info" size={17} />{pwErrors.form}</div>}
 
               {["current", "next", "confirm"].map((key) => (
                 <div className="auth-field" key={key}>
@@ -177,7 +103,7 @@ function ProfileSection({ user, onUserUpdated }) {
                     <input
                       type={showPw[key] ? "text" : "password"}
                       value={pw[key]}
-                      onChange={(e) => setPw((p) => ({ ...p, [key]: e.target.value }))}
+                      onChange={(e) => { setPw((p) => ({ ...p, [key]: e.target.value })); setPwErrors((er) => ({ ...er, [key]: null })); }}
                       placeholder={key === "current" ? "Enter your current password" : "At least 8 characters"}
                       style={{ paddingRight: 44 }}
                     />
@@ -190,31 +116,15 @@ function ProfileSection({ user, onUserUpdated }) {
                       <Icon name={showPw[key] ? "eyeOff" : "eye"} size={18} />
                     </button>
                   </div>
+                  {pwErrors[key] && <span className="auth-field-error">{pwErrors[key]}</span>}
                 </div>
               ))}
 
               <button type="submit" className="btn btn-gold" disabled={savingPw}>{savingPw ? "Updating…" : "Update Password"}</button>
             </form>
-          )}
-        </div>
-      </div>
-
-      {otpTarget && (
-        <div className="msj-modal-overlay" onClick={() => setOtpTarget(null)}>
-          <div className="msj-modal" onClick={(e) => e.stopPropagation()}>
-            <button className="msj-modal-close" onClick={() => setOtpTarget(null)} aria-label="Close"><Icon name="x" size={16} /></button>
-            <h3>Verify {otpTarget === "email" ? "Email Address" : "Mobile Number"}</h3>
-            <p className="msj-modal-sub">Enter the 6-digit code sent to {otpTarget === "email" ? form.email : form.mobile}.</p>
-            {demoOtp && <p className="msj-note">Demo mode — verification code: <strong>{demoOtp}</strong></p>}
-            <div className="auth-field">
-              <input value={otpCode} onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="6-digit code" maxLength={6} style={{ letterSpacing: "6px", textAlign: "center", fontSize: 20 }} />
-            </div>
-            {otpError && <span className="auth-field-error">{otpError}</span>}
-            <button className="btn btn-gold" style={{ width: "100%", marginTop: 12 }} onClick={confirmOtp} type="button">Verify</button>
-            <button className="msj-resend-link" type="button" onClick={() => sendOtp(otpTarget)}>Resend code</button>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {toast && <div className="acct-toast"><Icon name="check" size={16} />{toast}</div>}
     </div>
@@ -222,9 +132,9 @@ function ProfileSection({ user, onUserUpdated }) {
 }
 
 const NEXT_STEPS = [
-  { icon: "mosque", title: "Register Your Masjid", desc: "Add your masjid's profile so it can be verified and featured.", cta: "My Masjids", to: "/account/masjids", live: true },
-  { icon: "flag", title: "Create a Campaign", desc: "Launch a fundraising campaign for your masjid's next project.", cta: "Start a Campaign", intentKey: "campaign" },
-  { icon: "chartUp", title: "Manage Campaigns", desc: "Track fundraising progress and update your active campaigns.", cta: "View Campaigns" },
+  { icon: "mosque", title: "Register Your Masjid", desc: "Add your masjid's profile so it can be verified and featured.", cta: "My Masjids", to: "/account/my-masjids", live: true },
+  { icon: "flag", title: "Create a Campaign", desc: "Launch a fundraising campaign for your masjid's next project.", cta: "Start a Campaign", intentKey: "campaign", to: "/account/my-campaigns/new", live: true },
+  { icon: "chartUp", title: "Manage Campaigns", desc: "Track fundraising progress and update your active campaigns.", cta: "View Campaigns", to: "/account/my-campaigns", live: true },
   { icon: "heart", title: "View Donations", desc: "See the contributions your campaigns have received.", cta: "View Donations" },
 ];
 
@@ -246,9 +156,11 @@ function Account() {
       .catch(() => {});
   }, []);
 
-  const logout = () => {
-    clearUserSession();
-    navigate("/");
+  const editingProfile = params.get("edit") === "profile";
+
+  const handleUserUpdated = (updatedUser) => {
+    setUser(updatedUser);
+    updateStoredUser(updatedUser);
   };
 
   if (!user) return null;
@@ -257,7 +169,11 @@ function Account() {
     <main className="acct-page">
       <section className="acct-hero on-ink">
         <div className="wrap acct-hero-inner">
-          <div className="acct-avatar">{initialsOf(user.fullName)}</div>
+          {user.profilePhoto ? (
+            <img className="acct-avatar acct-avatar-photo" src={`${API_ORIGIN}${user.profilePhoto}`} alt={user.fullName} />
+          ) : (
+            <div className="acct-avatar">{initialsOf(user.fullName)}</div>
+          )}
           <div>
             <span className="eyebrow">Your Account</span>
             <h1>Welcome, {user.fullName.split(" ")[0]}.</h1>
@@ -267,63 +183,50 @@ function Account() {
                 : "Manage your account and take the next step on Masjid My Community."}
             </p>
           </div>
-          <button className="btn btn-outline-paper acct-logout" onClick={logout}>
-            Log Out
-          </button>
         </div>
       </section>
 
-      <section className="py-sm">
+      <section className="py-sm" style={{ paddingTop: 36 }}>
         <div className="wrap">
-          <div className="acct-status-card">
-            <div>
-              <span className="acct-status-label">Account Status</span>
-              <span className={`acct-status-pill ${user.status}`}>
-                {user.status === "active" ? "Active" : user.status.replace("_", " ")}
-              </span>
-            </div>
-            <div>
-              <span className="acct-status-label">Username</span>
-              <span className="acct-status-value">{user.username}</span>
-            </div>
-            <div>
-              <span className="acct-status-label">Email</span>
-              <span className="acct-status-value">{user.email || "—"}</span>
-            </div>
-            <div>
-              <span className="acct-status-label">Mobile</span>
-              <span className="acct-status-value">{user.mobile || "—"}</span>
-            </div>
-          </div>
-
-          <ProfileSection user={user} onUserUpdated={setUser} />
-
-          <div className="section-head" style={{ marginTop: 48 }}>
-            <span className="eyebrow">What's next</span>
-            <h2>Continue your journey</h2>
-          </div>
-
-          <div className="acct-next-grid">
-            {NEXT_STEPS.map((s) => (
-              <div className={`acct-next-card${intent === s.intentKey || s.live ? " highlighted" : ""}`} key={s.title}>
-                {intent === s.intentKey || s.live ? <span className="acct-next-flag">{s.live ? "Available" : "Continue here"}</span> : <span className="acct-next-soon">Coming soon</span>}
-                <div className="acct-next-icon">
-                  <Icon name={s.icon} size={24} />
-                </div>
-                <h3>{s.title}</h3>
-                <p>{s.desc}</p>
-                {s.to ? (
-                  <button className="acct-next-cta" type="button" onClick={() => navigate(s.to)}>
-                    {s.cta} <span className="btn-arrow">→</span>
-                  </button>
-                ) : (
-                  <button className="acct-next-cta" type="button" title="This workflow is launching in the next phase.">
-                    {s.cta} <span className="btn-arrow">→</span>
-                  </button>
-                )}
+          {editingProfile ? (
+            <ProfileSection user={user} onUserUpdated={handleUserUpdated} />
+          ) : (
+            <>
+              <div className="section-head">
+                <span className="eyebrow">What's next</span>
+                <h2>Continue your journey</h2>
               </div>
-            ))}
-          </div>
+
+              <div className="acct-next-grid">
+                {NEXT_STEPS.map((s) => (
+                  <div
+                    className={`acct-next-card${intent === s.intentKey || s.live ? " highlighted" : ""}${s.to ? " clickable" : ""}`}
+                    key={s.title}
+                    role={s.to ? "button" : undefined}
+                    tabIndex={s.to ? 0 : undefined}
+                    onClick={s.to ? () => navigate(s.to) : undefined}
+                    onKeyDown={s.to ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); navigate(s.to); } } : undefined}
+                  >
+                    {intent === s.intentKey || s.live ? <span className="acct-next-flag">{s.live ? "Available" : "Continue here"}</span> : <span className="acct-next-soon">Coming soon</span>}
+                    <div className="acct-next-icon">
+                      <Icon name={s.icon} size={24} />
+                    </div>
+                    <h3>{s.title}</h3>
+                    <p>{s.desc}</p>
+                    {s.to ? (
+                      <span className="acct-next-cta">
+                        {s.cta} <span className="btn-arrow">→</span>
+                      </span>
+                    ) : (
+                      <span className="acct-next-cta" title="This workflow is launching in the next phase.">
+                        {s.cta} <span className="btn-arrow">→</span>
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       </section>
     </main>

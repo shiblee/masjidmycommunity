@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Icon from "../components/Icons.jsx";
+import { API_ORIGIN } from "../../config.js";
 import StatusBadge from "../components/StatusBadge.jsx";
 import Pagination from "../components/Pagination.jsx";
 import adminApi from "../services/adminApi.js";
+import { formatDate } from "../../utils/formatDateTime.js";
 
 const TABS = [
   { key: "all", label: "All Campaigns" },
@@ -79,7 +81,7 @@ function Campaigns() {
               const pct = c.progressPercent ?? 0;
               return (
                 <Link to={`/admin/campaigns/${c.id}`} className="amx-campaign-card" key={c.id} style={{ display: "block", color: "inherit" }}>
-                  <div className="amx-campaign-cover" style={{ background: c.coverPhotoUrl ? `url(http://localhost:5050${c.coverPhotoUrl}) center/cover` : "linear-gradient(135deg,#1E3A46,#2A4E5C)" }}>
+                  <div className="amx-campaign-cover" style={{ background: c.coverPhotoUrl ? `url(${API_ORIGIN}${c.coverPhotoUrl}) center/cover` : "linear-gradient(135deg,#1E3A46,#2A4E5C)" }}>
                     {!c.coverPhotoUrl && <Icon name="campaign" />}
                     <StatusBadge status={c.status} />
                   </div>
@@ -104,7 +106,7 @@ function Campaigns() {
                       </span>
                       <span>
                         <Icon name="clock" />
-                        {new Date(c.createdAt).toLocaleDateString()}
+                        {formatDate(c.createdAt)}
                       </span>
                     </div>
                   </div>

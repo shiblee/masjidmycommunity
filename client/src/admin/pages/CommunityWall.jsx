@@ -3,22 +3,23 @@ import Icon from "../components/Icons.jsx";
 import StatusBadge from "../components/StatusBadge.jsx";
 import Pagination from "../components/Pagination.jsx";
 import adminApi from "../services/adminApi.js";
+import { formatDateTime } from "../../utils/formatDateTime.js";
 
 const TYPES = [
   { key: "all", label: "All Types" },
-  { key: "new_user", label: "New User" },
-  { key: "masjid_approved", label: "Masjid Approved" },
   { key: "campaign_approved", label: "Campaign Approved" },
   { key: "donation", label: "Donation" },
   { key: "milestone", label: "Fundraising Milestone" },
+  { key: "masjid_approved", label: "Masjid Approved" },
+  { key: "new_user", label: "New User" },
   { key: "project_update", label: "Project Update" },
   { key: "announcement", label: "System Announcement" },
 ];
 const STATUSES = [
   { key: "all", label: "All Statuses" },
-  { key: "published", label: "Published" },
-  { key: "pending_review", label: "Pending Review" },
   { key: "hidden", label: "Hidden" },
+  { key: "pending_review", label: "Pending Review" },
+  { key: "published", label: "Published" },
 ];
 
 function EditModal({ activity, onCancel, onSave }) {
@@ -102,6 +103,7 @@ function CommunityWall() {
                 <tr>
                   <th>Type</th>
                   <th>Content</th>
+                  <th>User</th>
                   <th>Generated</th>
                   <th>Status</th>
                   <th></th>
@@ -115,7 +117,19 @@ function CommunityWall() {
                       <strong>{a.title}</strong>
                       <p className="amx-panel-sub" style={{ marginTop: 2 }}>{a.body}</p>
                     </td>
-                    <td>{new Date(a.createdAt).toLocaleString()}</td>
+                    <td>
+                      {a.user ? (
+                        <>
+                          <div>{a.user.fullName} <span className="amx-cell-sub">#{a.user.id}</span></div>
+                          <div className="amx-cell-sub">@{a.user.username}</div>
+                          <div className="amx-cell-sub">{a.user.email || a.user.mobile || "—"}</div>
+                          <StatusBadge status={a.user.status} />
+                        </>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                    <td>{formatDateTime(a.createdAt)}</td>
                     <td><StatusBadge status={a.status} /></td>
                     <td>
                       <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>

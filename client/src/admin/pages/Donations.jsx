@@ -12,7 +12,7 @@ function Donations() {
   const [method, setMethod] = useState("all");
   const [page, setPage] = useState(1);
 
-  const methods = ["all", ...Array.from(new Set(DONATIONS.map((d) => d.method)))];
+  const methods = ["all", ...Array.from(new Set(DONATIONS.map((d) => d.method))).sort((a, b) => a.localeCompare(b))];
 
   const filtered = useMemo(() => {
     return DONATIONS.filter((d) => {

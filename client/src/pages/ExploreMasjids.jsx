@@ -3,8 +3,9 @@ import { Link } from "react-router-dom";
 import { Icon } from "../components/Icons.jsx";
 import MediaThumb from "../components/MediaThumb.jsx";
 import axios from "axios";
+import { API_BASE, API_ORIGIN } from "../config.js";
 
-const API = "http://localhost:5050/api/masjids/public";
+const API = `${API_BASE}/masjids/public`;
 
 function ExploreMasjids() {
   const [masjids, setMasjids] = useState(null);
@@ -66,7 +67,7 @@ function ExploreMasjids() {
             {masjids?.map((m) => (
               <Link to={`/masjid/${m.id}`} className="msj-explore-card" key={m.id}>
                 <div className="msj-explore-thumb">
-                  <MediaThumb src={m.coverPhotoUrl ? `http://localhost:5050${m.coverPhotoUrl}` : null} />
+                  <MediaThumb src={m.coverPhotoUrl ? `${API_ORIGIN}${m.coverPhotoUrl}` : null} />
                   <span className="msj-verified-badge"><Icon name="shieldCheck" size={13} /> Verified</span>
                 </div>
                 <div className="msj-explore-body">

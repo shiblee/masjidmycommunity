@@ -1,4 +1,6 @@
+import { Op } from "sequelize";
 import CommunityActivity from "../models/CommunityActivity.js";
+import User from "../models/User.js";
 
 export const listAll = async (req, res) => {
   try {
@@ -20,7 +22,32 @@ export const listAll = async (req, res) => {
       offset,
     });
 
-    res.json({ activities: rows, total: count, page: Number(page) || 1, pageSize: limit });
+    const userIds = [...new Set(rows.filter((a) => a.type === "new_user" && a.relatedUserId).map((a) => a.relatedUserId))];
+    const users = userIds.length ? await User.findAll({ where: { id: { [Op.in]: userIds } } }) : [];
+    const userById = new Map(users.map((u) => [u.id, u]));
+
+    // Authorized admin surface — full contact details are fine here, unlike
+    // the masked-only public wall feed.
+    const activities = rows.map((a) => {
+      const json = a.toJSON();
+      if (a.type === "new_user" && a.relatedUserId) {
+        const u = userById.get(a.relatedUserId);
+        json.user = u
+          ? {
+              id: u.id,
+              fullName: u.fullName,
+              username: u.username,
+              email: u.email,
+              mobile: u.mobile,
+              status: u.status,
+              registeredAt: u.createdAt,
+            }
+          : null;
+      }
+      return json;
+    });
+
+    res.json({ activities, total: count, page: Number(page) || 1, pageSize: limit });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

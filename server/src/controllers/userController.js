@@ -1,9 +1,12 @@
+import fs from "fs";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { Op } from "sequelize";
 import User from "../models/User.js";
 import { sendWelcomeEmail, sendOtpEmail } from "../services/emailService.js";
 import { recordNewUserActivity } from "../services/communityActivityService.js";
+import { recordLoginSuccess, recordLoginFailure, recordLogout } from "../services/userActivityService.js";
+import { maskEmail, maskMobile } from "../utils/mask.js";
 
 const OTP_TTL_MS = 5 * 60 * 1000;
 const SESSION_EXPIRY = "12h";
@@ -14,17 +17,6 @@ const MOBILE_RE = /^[0-9]{10}$/;
 
 function generateOtp() {
   return String(Math.floor(100000 + Math.random() * 900000));
-}
-
-function maskEmail(email) {
-  const [name, domain] = email.split("@");
-  if (!domain) return email;
-  const visible = name.slice(0, Math.min(2, name.length));
-  return `${visible}${"*".repeat(Math.max(1, name.length - visible.length))}@${domain}`;
-}
-
-function maskMobile(mobile) {
-  return mobile.length <= 4 ? mobile : `${"*".repeat(mobile.length - 4)}${mobile.slice(-4)}`;
 }
 
 function maskTarget(otpTarget, user) {
@@ -54,11 +46,21 @@ function toPublicUser(user) {
     status: user.status,
     createdAt: user.createdAt,
     lastLoginAt: user.lastLoginAt,
+    profilePhoto: user.profilePhoto,
+    gender: user.gender,
+    maritalStatus: user.maritalStatus,
+    dateOfBirth: user.dateOfBirth,
+    locationLabel: user.locationLabel,
+    locationCity: user.locationCity,
+    locationState: user.locationState,
+    locationCountry: user.locationCountry,
+    locationLat: user.locationLat,
+    locationLng: user.locationLng,
   };
 }
 
-function signUserToken(user, remember) {
-  return jwt.sign({ id: user.id, type: "user", tv: user.tokenVersion }, process.env.JWT_SECRET, {
+function signUserToken(user, remember, sessionId) {
+  return jwt.sign({ id: user.id, type: "user", tv: user.tokenVersion, sid: sessionId }, process.env.JWT_SECRET, {
     expiresIn: remember ? REMEMBER_EXPIRY : SESSION_EXPIRY,
   });
 }
@@ -174,11 +176,15 @@ export const verifyOtp = async (req, res) => {
       user.otpPurpose = null;
       user.otpTarget = null;
       user.otpAttempts = 0;
+      // OTP verification immediately establishes an authenticated session,
+      // so it's a real login — record it the same way login() does.
+      user.lastLoginAt = new Date();
       await user.save();
 
       sendWelcomeEmail(user).catch(() => {});
-      recordNewUserActivity().catch(() => {});
-      const token = signUserToken(user);
+      recordNewUserActivity(user).catch(() => {});
+      const sessionId = await recordLoginSuccess(user, req, { loginMethod: "Registration + OTP" });
+      const token = signUserToken(user, false, sessionId);
       return res.json({ token, user: toPublicUser(user), verified: true });
     }
 
@@ -247,9 +253,13 @@ export const login = async (req, res) => {
     if (!user) return res.status(401).json({ message: invalidMessage });
 
     const matches = await bcrypt.compare(password, user.password);
-    if (!matches) return res.status(401).json({ message: invalidMessage });
+    if (!matches) {
+      recordLoginFailure(user, req, "Incorrect password").catch(() => {});
+      return res.status(401).json({ message: invalidMessage });
+    }
 
     if (user.status === "pending_verification") {
+      recordLoginFailure(user, req, "Account pending verification").catch(() => {});
       return res.status(403).json({
         message: "Please verify your account to continue.",
         code: "UNVERIFIED",
@@ -259,17 +269,30 @@ export const login = async (req, res) => {
       });
     }
     if (user.status === "suspended") {
+      recordLoginFailure(user, req, "Account suspended").catch(() => {});
       return res.status(403).json({ message: "This account has been suspended. Please contact support." });
     }
     if (user.status === "inactive") {
+      recordLoginFailure(user, req, "Account inactive").catch(() => {});
       return res.status(403).json({ message: "This account is inactive. Please contact support." });
     }
 
     user.lastLoginAt = new Date();
     await user.save();
 
-    const token = signUserToken(user, remember);
+    const sessionId = await recordLoginSuccess(user, req, { loginMethod: "password" });
+    const token = signUserToken(user, remember, sessionId);
     res.json({ token, user: toPublicUser(user) });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const logout = async (req, res) => {
+  try {
+    const user = await User.findByPk(req.user.id);
+    if (user) await recordLogout(user, req.user.sid, req, "user_initiated");
+    res.json({ message: "Logged out." });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -317,7 +340,72 @@ export const updateProfile = async (req, res) => {
       }
     }
 
+    const GENDERS = new Set(["male", "female", "other", "prefer_not_to_say"]);
+    if (req.body.gender !== undefined) {
+      if (req.body.gender && !GENDERS.has(req.body.gender)) return res.status(400).json({ message: "Enter a valid gender." });
+      user.gender = req.body.gender || null;
+    }
+
+    const MARITAL_STATUSES = new Set(["single", "married", "other"]);
+    if (req.body.maritalStatus !== undefined) {
+      if (req.body.maritalStatus && !MARITAL_STATUSES.has(req.body.maritalStatus)) return res.status(400).json({ message: "Enter a valid marital status." });
+      user.maritalStatus = req.body.maritalStatus || null;
+    }
+
+    if (req.body.dateOfBirth !== undefined) {
+      user.dateOfBirth = req.body.dateOfBirth || null;
+    }
+
+    if (req.body.location !== undefined) {
+      const loc = req.body.location || {};
+      user.locationLabel = loc.label || null;
+      user.locationCity = loc.city || null;
+      user.locationState = loc.state || null;
+      user.locationCountry = loc.country || null;
+      user.locationLat = loc.lat ?? null;
+      user.locationLng = loc.lng ?? null;
+    }
+
     await user.save();
+    res.json({ user: toPublicUser(user) });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const uploadProfilePhoto = async (req, res) => {
+  try {
+    const user = await User.findByPk(req.user.id);
+    if (!user) return res.status(404).json({ message: "Account not found." });
+    if (!req.file) return res.status(400).json({ message: "No photo was uploaded." });
+
+    const previousPath = user.profilePhoto;
+    user.profilePhoto = `/uploads/profile-photos/${req.file.filename}`;
+    await user.save();
+
+    if (previousPath) {
+      fs.unlink(`.${previousPath}`, () => {});
+    }
+
+    res.json({ user: toPublicUser(user) });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const removeProfilePhoto = async (req, res) => {
+  try {
+    const user = await User.findByPk(req.user.id);
+    if (!user) return res.status(404).json({ message: "Account not found." });
+
+    const previousPath = user.profilePhoto;
+    user.profilePhoto = null;
+    await user.save();
+
+    if (previousPath) {
+      fs.unlink(`.${previousPath}`, () => {});
+    }
+
     res.json({ user: toPublicUser(user) });
   } catch (error) {
     res.status(500).json({ message: error.message });

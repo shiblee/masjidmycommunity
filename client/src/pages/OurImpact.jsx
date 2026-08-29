@@ -288,7 +288,7 @@ function OurImpact() {
             <a href="/#campaigns" className="btn btn-gold">
               Explore Campaigns <span className="btn-arrow">→</span>
             </a>
-            <a href="/community" className="btn btn-outline-paper">
+            <a href="/my-community" className="btn btn-outline-paper">
               Visit the Community Wall <span className="btn-arrow">→</span>
             </a>
           </div>

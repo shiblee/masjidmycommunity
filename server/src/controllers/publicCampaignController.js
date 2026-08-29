@@ -3,6 +3,7 @@ import Campaign from "../models/Campaign.js";
 import CampaignPhoto from "../models/CampaignPhoto.js";
 import CampaignBudgetItem from "../models/CampaignBudgetItem.js";
 import CampaignCategory from "../models/CampaignCategory.js";
+import CampaignClassification from "../models/CampaignClassification.js";
 import CampaignUpdate from "../models/CampaignUpdate.js";
 import Masjid from "../models/Masjid.js";
 import MasjidDonationAccount from "../models/MasjidDonationAccount.js";
@@ -39,7 +40,7 @@ async function withCard(campaign) {
 export const listPublic = async (req, res) => {
   try {
     const { q, categoryId, donationType, page = 1, pageSize = 12 } = req.query;
-    const where = { status: { [Op.in]: PUBLIC_STATUSES } };
+    const where = { status: { [Op.in]: PUBLIC_STATUSES }, moderationStatus: "active" };
     if (categoryId) where.categoryId = categoryId;
     if (donationType) where.donationType = donationType;
     if (q) where[Op.or] = [{ title: { [Op.like]: `%${q}%` } }, { shortDescription: { [Op.like]: `%${q}%` } }];
@@ -58,7 +59,7 @@ export const listPublic = async (req, res) => {
 
 export const getPublicOne = async (req, res) => {
   try {
-    const campaign = await Campaign.findOne({ where: { slug: req.params.slug, status: { [Op.in]: PUBLIC_STATUSES } } });
+    const campaign = await Campaign.findOne({ where: { slug: req.params.slug, status: { [Op.in]: PUBLIC_STATUSES }, moderationStatus: "active" } });
     if (!campaign) return res.status(404).json({ message: "Campaign not found." });
 
     const [photos, budgetItems, updates, masjid, raised, category] = await Promise.all([
@@ -104,7 +105,7 @@ export const getPublicOne = async (req, res) => {
 export const listByMasjid = async (req, res) => {
   try {
     const campaigns = await Campaign.findAll({
-      where: { masjidId: req.params.masjidId, status: { [Op.in]: PUBLIC_STATUSES } },
+      where: { masjidId: req.params.masjidId, status: { [Op.in]: PUBLIC_STATUSES }, moderationStatus: "active" },
       order: [["approvedAt", "DESC"]],
     });
     res.json({ campaigns: await Promise.all(campaigns.map(withCard)) });
@@ -117,6 +118,15 @@ export const listCategories = async (req, res) => {
   try {
     const categories = await CampaignCategory.findAll({ where: { isActive: true }, order: [["sortOrder", "ASC"]], attributes: ["id", "name"] });
     res.json({ categories });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const listClassifications = async (req, res) => {
+  try {
+    const classifications = await CampaignClassification.findAll({ where: { isActive: true }, order: [["sortOrder", "ASC"]], attributes: ["id", "name"] });
+    res.json({ classifications });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

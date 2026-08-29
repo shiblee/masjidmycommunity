@@ -1,8 +1,9 @@
 import axios from "axios";
 import { getUserToken, clearUserSession } from "../utils/userAuthStorage.js";
+import { API_BASE } from "../config.js";
 
 const masjidApi = axios.create({
-  baseURL: "http://localhost:5050/api/masjids",
+  baseURL: `${API_BASE}/masjids`,
 });
 
 masjidApi.interceptors.request.use((config) => {

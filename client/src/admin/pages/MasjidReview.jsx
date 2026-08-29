@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Icon from "../components/Icons.jsx";
+import { API_ORIGIN } from "../../config.js";
 import StatusBadge from "../components/StatusBadge.jsx";
 import adminApi from "../services/adminApi.js";
 import StaticLocationMap from "../../components/StaticLocationMap.jsx";
 import MediaThumb from "../../components/MediaThumb.jsx";
+import { formatDateTime } from "../../utils/formatDateTime.js";
 
 function ReasonModal({ title, placeholder, onCancel, onSubmit }) {
   const [text, setText] = useState("");
@@ -47,7 +49,6 @@ function MasjidReview() {
   const navigate = useNavigate();
   const [masjid, setMasjid] = useState(null);
   const [photos, setPhotos] = useState([]);
-  const [donationAccount, setDonationAccount] = useState(null);
   const [history, setHistory] = useState([]);
   const [modal, setModal] = useState(null);
   const [toast, setToast] = useState(null);
@@ -57,7 +58,6 @@ function MasjidReview() {
     adminApi.get(`/masjids/${id}`).then(({ data }) => {
       setMasjid(data.masjid);
       setPhotos(data.photos);
-      setDonationAccount(data.donationAccount);
       setHistory(data.history);
     });
   };
@@ -110,14 +110,13 @@ function MasjidReview() {
         <div>
           {cover && (
             <div style={{ width: "100%", height: 260, borderRadius: 14, marginBottom: 20, overflow: "hidden" }}>
-              <MediaThumb src={`http://localhost:5050${cover.url}`} mediaType={cover.mediaType} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              <MediaThumb src={`${API_ORIGIN}${cover.url}`} mediaType={cover.mediaType} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             </div>
           )}
 
           <Section title="Basic Information">
             <Row label="Tagline" value={masjid.tagline} />
             <Row label="About" value={masjid.about} />
-            <Row label="Year Established" value={masjid.yearEstablished} />
             <Row label="Category" value={masjid.category} />
           </Section>
 
@@ -140,33 +139,11 @@ function MasjidReview() {
             <Row label="Mobile" value={`${masjid.contactMobile || "—"} ${masjid.mobileVerified ? "(verified)" : ""}`} />
           </Section>
 
-          <Section title="Donation Account">
-            {donationAccount ? (
-              <>
-                <Row label="UPI ID" value={donationAccount.upiId} />
-                <Row label="Bank" value={donationAccount.bankName} />
-                <Row label="Account Holder" value={donationAccount.accountHolderName} />
-                <Row label="Account Number" value={donationAccount.accountNumber} />
-                <Row label="IFSC / Routing" value={donationAccount.ifscCode} />
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <StatusBadge status={donationAccount.verified ? "verified" : "pending"} />
-                  {!donationAccount.verified && (
-                    <button className="amx-btn amx-btn-sm amx-btn-outline" onClick={() => act(() => adminApi.post(`/masjids/${id}/donation-account/verify`), "Donation account marked verified.")}>
-                      Mark Verified
-                    </button>
-                  )}
-                </div>
-              </>
-            ) : (
-              <p>No donation account submitted yet.</p>
-            )}
-          </Section>
-
           <Section title="Photos & Videos">
             <div className="msj-photo-grid">
               {photos.map((p) => (
                 <div className="msj-photo-card" key={p.id}>
-                  <MediaThumb src={`http://localhost:5050${p.url}`} mediaType={p.mediaType} videoProps={{ controls: true }} />
+                  <MediaThumb src={`${API_ORIGIN}${p.url}`} mediaType={p.mediaType} videoProps={{ controls: true }} />
                   {p.isCover && <span className="msj-cover-badge"><Icon name="check" size={12} /> Cover</span>}
                 </div>
               ))}
@@ -178,7 +155,7 @@ function MasjidReview() {
             {history.map((h) => (
               <div key={h.id} style={{ padding: "10px 0", borderBottom: "1px solid var(--a-border)" }}>
                 <strong style={{ textTransform: "capitalize" }}>{h.action.replace(/_/g, " ")}</strong>
-                <span className="amx-panel-sub" style={{ marginLeft: 8 }}>{new Date(h.createdAt).toLocaleString()} · {h.actorType === "admin" ? h.actorName : "Owner"}</span>
+                <span className="amx-panel-sub" style={{ marginLeft: 8 }}>{formatDateTime(h.createdAt)} · {h.actorType === "admin" ? h.actorName : "Owner"}</span>
                 {h.note && <p style={{ marginTop: 4 }}>{h.note}</p>}
               </div>
             ))}
@@ -201,11 +178,11 @@ function MasjidReview() {
               </button>
             </div>
           ) : masjid.status === "approved" ? (
-            <button className="amx-btn amx-btn-danger" disabled={busy} onClick={() => act(() => adminApi.post(`/masjids/${id}/deactivate`), "Masjid deactivated.")}>
+            <button className="amx-btn amx-btn-danger" style={{ width: "100%" }} disabled={busy} onClick={() => act(() => adminApi.post(`/masjids/${id}/deactivate`), "Masjid deactivated.")}>
               Deactivate
             </button>
           ) : masjid.status === "inactive" ? (
-            <button className="amx-btn amx-btn-accent" disabled={busy} onClick={() => act(() => adminApi.post(`/masjids/${id}/activate`), "Masjid reactivated.")}>
+            <button className="amx-btn amx-btn-accent" style={{ width: "100%" }} disabled={busy} onClick={() => act(() => adminApi.post(`/masjids/${id}/activate`), "Masjid reactivated.")}>
               Reactivate
             </button>
           ) : (

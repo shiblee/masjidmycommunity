@@ -1,10 +1,13 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Icon from "../components/Icons.jsx";
 import StatusBadge from "../components/StatusBadge.jsx";
 import Pagination from "../components/Pagination.jsx";
+import SortHeader from "../components/SortHeader.jsx";
 import adminApi from "../services/adminApi.js";
+import { formatDate, formatDateTime } from "../../utils/formatDateTime.js";
 
-const PAGE_SIZE = 8;
+const PAGE_SIZE = 100;
 
 const METHOD_LABEL = {
   email: "Email",
@@ -12,115 +15,41 @@ const METHOD_LABEL = {
   both: "Email + Mobile",
 };
 
-function formatDate(value) {
-  if (!value) return "—";
-  return new Date(value).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-}
-
-function formatDateTime(value) {
-  if (!value) return "Never";
-  return new Date(value).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
-}
-
 function initialsOf(name = "") {
   const parts = name.trim().split(/\s+/);
   return ((parts[0]?.[0] || "") + (parts.length > 1 ? parts[parts.length - 1]?.[0] || "" : "")).toUpperCase();
 }
 
-function UserDetailsModal({ user, onClose, onChangeStatus, actionLoading }) {
-  return (
-    <div className="amx-modal-overlay" onClick={onClose}>
-      <div className="amx-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 480 }}>
-        <button className="amx-modal-close" onClick={onClose} aria-label="Close">
-          <Icon name="x" size={16} />
-        </button>
-        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 18 }}>
-          <span className="amx-avatar" style={{ width: 48, height: 48, fontSize: 16 }}>
-            {initialsOf(user.fullName)}
-          </span>
-          <div>
-            <h3 style={{ margin: 0 }}>{user.fullName}</h3>
-            <p className="amx-modal-sub" style={{ margin: "2px 0 0" }}>
-              @{user.username}
-            </p>
-          </div>
-        </div>
+const SORT_COLUMNS = {
+  name: { label: "User", get: (u) => u.fullName?.toLowerCase() || "" },
+  contact: { label: "Contact", get: (u) => (u.email || u.mobile || "").toLowerCase() },
+  method: { label: "Method", get: (u) => (METHOD_LABEL[u.registrationMethod] || u.registrationMethod || "").toLowerCase() },
+  verification: { label: "Verification", get: (u) => (u.emailVerified || u.mobileVerified ? 1 : 0) },
+  status: { label: "Status", get: (u) => u.status || "" },
+  createdAt: { label: "Registered", get: (u) => new Date(u.createdAt).getTime() },
+  lastLoginAt: { label: "Last Login", get: (u) => (u.lastLoginAt ? new Date(u.lastLoginAt).getTime() : -1) },
+};
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 20 }}>
-          <div>
-            <div className="amx-cell-sub">User ID</div>
-            <div>#{user.id}</div>
-          </div>
-          <div>
-            <div className="amx-cell-sub">Registration Method</div>
-            <div>{METHOD_LABEL[user.registrationMethod] || user.registrationMethod}</div>
-          </div>
-          <div>
-            <div className="amx-cell-sub">Email Address</div>
-            <div>{user.email || "—"}</div>
-          </div>
-          <div>
-            <div className="amx-cell-sub">Mobile Number</div>
-            <div>{user.mobile || "—"}</div>
-          </div>
-          <div>
-            <div className="amx-cell-sub">Email Verified</div>
-            <div>{user.emailVerified ? "Yes" : "No"}</div>
-          </div>
-          <div>
-            <div className="amx-cell-sub">Mobile Verified</div>
-            <div>{user.mobileVerified ? "Yes" : "No"}</div>
-          </div>
-          <div>
-            <div className="amx-cell-sub">Registered On</div>
-            <div>{formatDate(user.createdAt)}</div>
-          </div>
-          <div>
-            <div className="amx-cell-sub">Last Login</div>
-            <div>{formatDateTime(user.lastLoginAt)}</div>
-          </div>
-        </div>
-
-        <div style={{ marginBottom: 8 }}>
-          <div className="amx-cell-sub" style={{ marginBottom: 8 }}>
-            Account Status
-          </div>
-          <StatusBadge status={user.status} />
-        </div>
-
-        {user.status !== "pending_verification" && (
-          <div style={{ display: "flex", gap: 10, marginTop: 18 }}>
-            {user.status !== "active" && (
-              <button className="amx-btn amx-btn-accent" style={{ flex: 1 }} disabled={actionLoading} onClick={() => onChangeStatus(user.id, "active")}>
-                Activate
-              </button>
-            )}
-            {user.status !== "inactive" && (
-              <button className="amx-btn amx-btn-outline" style={{ flex: 1 }} disabled={actionLoading} onClick={() => onChangeStatus(user.id, "inactive")}>
-                Deactivate
-              </button>
-            )}
-            {user.status !== "suspended" && (
-              <button className="amx-btn amx-btn-danger" style={{ flex: 1 }} disabled={actionLoading} onClick={() => onChangeStatus(user.id, "suspended")}>
-                Suspend
-              </button>
-            )}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
 
 function RegisteredUsers() {
+  const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("all");
   const [page, setPage] = useState(1);
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [actionLoading, setActionLoading] = useState(false);
+  const [sortKey, setSortKey] = useState("createdAt");
+  const [sortDir, setSortDir] = useState("desc");
+
+  const toggleSort = (key) => {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+  };
 
   const loadUsers = () => {
     setLoading(true);
@@ -150,10 +79,21 @@ function RegisteredUsers() {
     });
   }, [users, query, status]);
 
-  useEffect(() => setPage(1), [query, status]);
+  const sorted = useMemo(() => {
+    const getValue = SORT_COLUMNS[sortKey].get;
+    return [...filtered].sort((a, b) => {
+      const av = getValue(a);
+      const bv = getValue(b);
+      if (av < bv) return sortDir === "asc" ? -1 : 1;
+      if (av > bv) return sortDir === "asc" ? 1 : -1;
+      return 0;
+    });
+  }, [filtered, sortKey, sortDir]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  useEffect(() => setPage(1), [query, status, sortKey, sortDir]);
+
+  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
+  const paged = sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const counts = useMemo(() => {
     const c = { active: 0, pending_verification: 0, suspended: 0, inactive: 0 };
@@ -162,19 +102,6 @@ function RegisteredUsers() {
     });
     return c;
   }, [users]);
-
-  const changeStatus = async (id, nextStatus) => {
-    setActionLoading(true);
-    try {
-      const { data } = await adminApi.put(`/users/${id}/status`, { status: nextStatus });
-      setUsers((prev) => prev.map((u) => (u.id === id ? data.user : u)));
-      setSelectedUser(data.user);
-    } catch (err) {
-      setError(err.response?.data?.message || "Couldn't update this account.");
-    } finally {
-      setActionLoading(false);
-    }
-  };
 
   return (
     <>
@@ -248,8 +175,8 @@ function RegisteredUsers() {
           <select className="amx-select" value={status} onChange={(e) => setStatus(e.target.value)}>
             <option value="all">All statuses</option>
             <option value="active">Active</option>
-            <option value="pending_verification">Pending Verification</option>
             <option value="inactive">Inactive</option>
+            <option value="pending_verification">Pending Verification</option>
             <option value="suspended">Suspended</option>
           </select>
         </div>
@@ -277,13 +204,13 @@ function RegisteredUsers() {
             <table className="amx-table">
               <thead>
                 <tr>
-                  <th>User</th>
-                  <th>Contact</th>
-                  <th>Method</th>
-                  <th>Verification</th>
-                  <th>Status</th>
-                  <th>Registered</th>
-                  <th>Last Login</th>
+                  <SortHeader label="User" sortKey="name" activeKey={sortKey} direction={sortDir} onSort={toggleSort} />
+                  <SortHeader label="Contact" sortKey="contact" activeKey={sortKey} direction={sortDir} onSort={toggleSort} />
+                  <SortHeader label="Method" sortKey="method" activeKey={sortKey} direction={sortDir} onSort={toggleSort} />
+                  <SortHeader label="Verification" sortKey="verification" activeKey={sortKey} direction={sortDir} onSort={toggleSort} />
+                  <SortHeader label="Status" sortKey="status" activeKey={sortKey} direction={sortDir} onSort={toggleSort} />
+                  <SortHeader label="Registered" sortKey="createdAt" activeKey={sortKey} direction={sortDir} onSort={toggleSort} />
+                  <SortHeader label="Last Login" sortKey="lastLoginAt" activeKey={sortKey} direction={sortDir} onSort={toggleSort} />
                   <th></th>
                 </tr>
               </thead>
@@ -317,10 +244,14 @@ function RegisteredUsers() {
                       <StatusBadge status={u.status} />
                     </td>
                     <td>{formatDate(u.createdAt)}</td>
-                    <td>{formatDateTime(u.lastLoginAt)}</td>
+                    <td>
+                      <button className="amx-link-btn" onClick={() => navigate(`/admin/registered-users/${u.id}/activity`)}>
+                        {u.lastLoginAt ? formatDateTime(u.lastLoginAt) : "Never"}
+                      </button>
+                    </td>
                     <td>
                       <div className="amx-row-actions">
-                        <button className="amx-icon-action" aria-label="View details" onClick={() => setSelectedUser(u)}>
+                        <button className="amx-icon-action" aria-label="View details" onClick={() => navigate(`/admin/registered-users/${u.id}`)}>
                           <Icon name="eye" />
                         </button>
                       </div>
@@ -332,17 +263,8 @@ function RegisteredUsers() {
           </div>
         )}
 
-        <Pagination page={page} totalPages={totalPages} totalItems={filtered.length} pageSize={PAGE_SIZE} onChange={setPage} />
+        <Pagination page={page} totalPages={totalPages} totalItems={sorted.length} pageSize={PAGE_SIZE} onChange={setPage} />
       </div>
-
-      {selectedUser && (
-        <UserDetailsModal
-          user={selectedUser}
-          onClose={() => setSelectedUser(null)}
-          onChangeStatus={changeStatus}
-          actionLoading={actionLoading}
-        />
-      )}
     </>
   );
 }

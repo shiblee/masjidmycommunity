@@ -10,6 +10,7 @@ import {
   uploadPhotos,
   updatePhoto,
   deletePhoto,
+  deleteMasjid,
   sendMasjidOtp,
   confirmMasjidOtp,
   submit,
@@ -30,5 +31,6 @@ router.delete("/:id/photos/:photoId", deletePhoto);
 router.post("/:id/verify/send-otp", sendMasjidOtp);
 router.post("/:id/verify/confirm-otp", confirmMasjidOtp);
 router.post("/:id/submit", submit);
+router.post("/:id/delete", deleteMasjid);
 
 export default router;

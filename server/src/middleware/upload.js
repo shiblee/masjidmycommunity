@@ -14,6 +14,12 @@ fs.mkdirSync(CAMPAIGN_UPLOAD_ROOT, { recursive: true });
 const DOCUMENT_UPLOAD_ROOT = path.resolve("private_uploads", "campaign-documents");
 fs.mkdirSync(DOCUMENT_UPLOAD_ROOT, { recursive: true });
 
+const WALL_POST_UPLOAD_ROOT = path.resolve("uploads", "wall-post-media");
+fs.mkdirSync(WALL_POST_UPLOAD_ROOT, { recursive: true });
+
+const PROFILE_PHOTO_UPLOAD_ROOT = path.resolve("uploads", "profile-photos");
+fs.mkdirSync(PROFILE_PHOTO_UPLOAD_ROOT, { recursive: true });
+
 function diskStorageFor(root) {
   return multer.diskStorage({
     destination: (req, file, cb) => cb(null, root),
@@ -104,5 +110,46 @@ export function uploadCampaignDocuments(req, res, next) {
       return res.status(400).json({ message: `Each document must be under ${DOCUMENT_MAX_BYTES / (1024 * 1024)}MB.` });
     }
     res.status(400).json({ message: err.message || "Couldn't upload that file." });
+  });
+}
+
+const AUDIO_REJECTED_MESSAGE = "Audio files are not supported for Community Wall posts. Please upload text, an image, or a video.";
+
+const wallPostMediaUpload = multer({
+  storage: diskStorageFor(WALL_POST_UPLOAD_ROOT),
+  limits: { fileSize: VIDEO_MAX_BYTES, files: 6 },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith("audio/")) return cb(new Error(AUDIO_REJECTED_MESSAGE));
+    if (!ALLOWED.has(file.mimetype)) return cb(new Error("Only JPG, PNG, WEBP photos or MP4, WEBM, MOV videos are allowed."));
+    cb(null, true);
+  },
+});
+
+export function uploadWallPostMedia(req, res, next) {
+  wallPostMediaUpload.array("media", 6)(req, res, (err) => {
+    if (!err) return next();
+    if (err.code === "LIMIT_FILE_SIZE") {
+      return res.status(400).json({ message: `Each file must be under ${VIDEO_MAX_BYTES / (1024 * 1024)}MB (photos under ${IMAGE_MAX_BYTES / (1024 * 1024)}MB).` });
+    }
+    res.status(400).json({ message: err.message || "Couldn't upload that file." });
+  });
+}
+
+const profilePhotoUpload = multer({
+  storage: diskStorageFor(PROFILE_PHOTO_UPLOAD_ROOT),
+  limits: { fileSize: IMAGE_MAX_BYTES, files: 1 },
+  fileFilter: (req, file, cb) => {
+    if (!IMAGE_TYPES.has(file.mimetype)) return cb(new Error("Only JPG, PNG, or WEBP photos are allowed."));
+    cb(null, true);
+  },
+});
+
+export function uploadProfilePhoto(req, res, next) {
+  profilePhotoUpload.single("photo")(req, res, (err) => {
+    if (!err) return next();
+    if (err.code === "LIMIT_FILE_SIZE") {
+      return res.status(400).json({ message: `Photos must be under ${IMAGE_MAX_BYTES / (1024 * 1024)}MB.` });
+    }
+    res.status(400).json({ message: err.message || "Couldn't upload that photo." });
   });
 }

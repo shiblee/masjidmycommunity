@@ -16,12 +16,18 @@ import Projects from "./pages/Projects.jsx";
 import FundUtilization from "./pages/FundUtilization.jsx";
 import Verification from "./pages/Verification.jsx";
 import ReportsAnalytics from "./pages/ReportsAnalytics.jsx";
-import Users from "./pages/Users.jsx";
 import RegisteredUsers from "./pages/RegisteredUsers.jsx";
+import RegisteredUserDetail from "./pages/RegisteredUserDetail.jsx";
+import UserActivityHistory from "./pages/UserActivityHistory.jsx";
 import ContentManagement from "./pages/ContentManagement.jsx";
 import Notifications from "./pages/Notifications.jsx";
 import EmailTemplateEditor from "./pages/EmailTemplateEditor.jsx";
 import Settings from "./pages/Settings.jsx";
+import Meta from "./pages/Meta.jsx";
+import Concerns from "./pages/Concerns.jsx";
+import ConcernReview from "./pages/ConcernReview.jsx";
+import Moderation from "./pages/Moderation.jsx";
+import ModerationDetail from "./pages/ModerationDetail.jsx";
 
 function AdminApp() {
   return (
@@ -47,11 +53,18 @@ function AdminApp() {
         <Route path="fund-utilization" element={<FundUtilization />} />
         <Route path="verification" element={<Verification />} />
         <Route path="reports" element={<ReportsAnalytics />} />
-        <Route path="users" element={<Users />} />
         <Route path="registered-users" element={<RegisteredUsers />} />
+        <Route path="registered-users/:id" element={<RegisteredUserDetail />} />
+        <Route path="registered-users/:id/activity" element={<UserActivityHistory />} />
         <Route path="content" element={<ContentManagement />} />
         <Route path="notifications" element={<Notifications />} />
         <Route path="notifications/templates/:key" element={<EmailTemplateEditor />} />
+        <Route path="meta" element={<Navigate to="/admin/meta/masjid-category" replace />} />
+        <Route path="meta/:entityKey" element={<Meta />} />
+        <Route path="concerns" element={<Concerns />} />
+        <Route path="concerns/:id" element={<ConcernReview />} />
+        <Route path="moderation" element={<Moderation />} />
+        <Route path="moderation/:targetType/:targetId" element={<ModerationDetail />} />
         <Route path="settings" element={<Settings />} />
       </Route>
 

@@ -202,4 +202,277 @@ export async function sendOtpEmail(user, otp) {
   });
 }
 
+const ACCOUNT_STATUS_LABEL = { active: "Active", inactive: "Deactivated", suspended: "Suspended" };
+const ACCOUNT_STATUS_DETAIL = {
+  active: "Your account is active again and you now have full access to your dashboard, masjids, and campaigns.",
+  inactive: "Your account has been deactivated and you will not be able to sign in until it is reactivated by an admin. If you believe this is a mistake, please contact our support team.",
+  suspended: "Your account has been suspended due to a violation of our community guidelines. If you believe this is a mistake, please contact our support team.",
+};
+
+export async function sendAccountStatusEmail(user, status) {
+  if (!user.email) return { sent: false, skipped: true };
+  return sendNotification("account_status_changed", {
+    to: user.email,
+    variables: {
+      user_name: user.fullName,
+      account_status: ACCOUNT_STATUS_LABEL[status] || status,
+      status_detail: ACCOUNT_STATUS_DETAIL[status] || "",
+    },
+    userMeta: { userId: user.id, userName: user.fullName, userEmail: user.email },
+  });
+}
+
+export async function sendMasjidSubmittedAdminEmail(masjid, submitter) {
+  const settings = await EmailSettings.findOne();
+  const to = settings?.adminNotificationEmail;
+  return sendNotification("masjid_submitted_admin", {
+    to,
+    variables: {
+      masjid_name: masjid.name,
+      masjid_id: String(masjid.id),
+      category: masjid.category || "—",
+      submitted_by: submitter?.fullName || "—",
+      submission_date: new Date(masjid.submittedAt).toLocaleString("en-GB"),
+    },
+    userMeta: { userId: submitter?.id, userName: submitter?.fullName, userEmail: to },
+  });
+}
+
+export async function sendMasjidSubmittedUserEmail(masjid, user) {
+  if (!user.email) return { sent: false, skipped: true };
+  return sendNotification("masjid_submitted_user", {
+    to: user.email,
+    variables: {
+      user_name: user.fullName,
+      masjid_name: masjid.name,
+      masjid_id: String(masjid.id),
+      submission_date: new Date(masjid.submittedAt).toLocaleString("en-GB"),
+      status: "Under Review",
+    },
+    userMeta: { userId: user.id, userName: user.fullName, userEmail: user.email },
+  });
+}
+
+export async function sendMasjidChangesRequestedEmail(masjid, user) {
+  if (!user.email) return { sent: false, skipped: true };
+  return sendNotification("masjid_changes_requested_user", {
+    to: user.email,
+    variables: {
+      user_name: user.fullName,
+      masjid_name: masjid.name,
+      masjid_id: String(masjid.id),
+      changes_requested: masjid.adminFeedback || "",
+      request_date: new Date(masjid.reviewedAt || Date.now()).toLocaleString("en-GB"),
+    },
+    userMeta: { userId: user.id, userName: user.fullName, userEmail: user.email },
+  });
+}
+
+function money(amount) {
+  return `₹${Number(amount || 0).toLocaleString("en-IN")}`;
+}
+
+export async function sendCampaignSubmittedAdminEmail(campaign, submitter, masjid, category) {
+  const settings = await EmailSettings.findOne();
+  const to = settings?.adminNotificationEmail;
+  return sendNotification("campaign_submitted_admin", {
+    to,
+    variables: {
+      campaign_title: campaign.title,
+      campaign_id: String(campaign.id),
+      masjid_name: masjid?.name || "—",
+      submitted_by: submitter?.fullName || "—",
+      category: category?.name || "—",
+      donation_type: campaign.donationType || "—",
+      goal_amount: campaign.goalAmount ? money(campaign.goalAmount) : "—",
+      submission_date: new Date(campaign.submittedAt).toLocaleString("en-GB"),
+      status: "Under Review",
+      description: campaign.description || campaign.shortDescription || "—",
+    },
+    userMeta: { userId: submitter?.id, userName: submitter?.fullName, userEmail: to },
+  });
+}
+
+export async function sendCampaignSubmittedUserEmail(campaign, user, masjid) {
+  if (!user.email) return { sent: false, skipped: true };
+  return sendNotification("campaign_submitted_user", {
+    to: user.email,
+    variables: {
+      user_name: user.fullName,
+      campaign_title: campaign.title,
+      campaign_id: String(campaign.id),
+      masjid_name: masjid?.name || "—",
+      submission_date: new Date(campaign.submittedAt).toLocaleString("en-GB"),
+      status: "Under Review",
+    },
+    userMeta: { userId: user.id, userName: user.fullName, userEmail: user.email },
+  });
+}
+
+export async function sendCampaignChangesRequestedEmail(campaign, user, masjid) {
+  if (!user.email) return { sent: false, skipped: true };
+  return sendNotification("campaign_changes_requested_user", {
+    to: user.email,
+    variables: {
+      user_name: user.fullName,
+      campaign_title: campaign.title,
+      campaign_id: String(campaign.id),
+      masjid_name: masjid?.name || "—",
+      changes_requested: campaign.adminFeedback || "",
+      request_date: new Date(campaign.reviewedAt || Date.now()).toLocaleString("en-GB"),
+    },
+    userMeta: { userId: user.id, userName: user.fullName, userEmail: user.email },
+  });
+}
+
+export async function sendCampaignChangeResponseAdminEmail(campaign, submitter, masjid, originalRequest) {
+  const settings = await EmailSettings.findOne();
+  const to = settings?.adminNotificationEmail;
+  return sendNotification("campaign_change_response_admin", {
+    to,
+    variables: {
+      campaign_title: campaign.title,
+      campaign_id: String(campaign.id),
+      masjid_name: masjid?.name || "—",
+      submitted_by: submitter?.fullName || "—",
+      response_date: new Date(campaign.submittedAt).toLocaleString("en-GB"),
+      status: "Under Review",
+      original_request: originalRequest || "—",
+    },
+    userMeta: { userId: submitter?.id, userName: submitter?.fullName, userEmail: to },
+  });
+}
+
+export async function sendCampaignApprovedEmail(campaign, user, masjid) {
+  if (!user.email) return { sent: false, skipped: true };
+  return sendNotification("campaign_approved_user", {
+    to: user.email,
+    variables: {
+      user_name: user.fullName,
+      campaign_title: campaign.title,
+      campaign_id: String(campaign.id),
+      masjid_name: masjid?.name || "—",
+      approval_date: new Date(campaign.approvedAt || Date.now()).toLocaleString("en-GB"),
+    },
+    userMeta: { userId: user.id, userName: user.fullName, userEmail: user.email },
+  });
+}
+
+export async function sendCampaignRejectedEmail(campaign, user, masjid) {
+  if (!user.email) return { sent: false, skipped: true };
+  return sendNotification("campaign_rejected_user", {
+    to: user.email,
+    variables: {
+      user_name: user.fullName,
+      campaign_title: campaign.title,
+      campaign_id: String(campaign.id),
+      masjid_name: masjid?.name || "—",
+      rejection_reason: campaign.adminFeedback || "",
+      rejection_date: new Date(campaign.reviewedAt || Date.now()).toLocaleString("en-GB"),
+    },
+    userMeta: { userId: user.id, userName: user.fullName, userEmail: user.email },
+  });
+}
+
+export async function sendCampaignStatusUpdatedEmail(campaign, user, masjid, newStatusLabel) {
+  if (!user.email) return { sent: false, skipped: true };
+  return sendNotification("campaign_status_updated_user", {
+    to: user.email,
+    variables: {
+      user_name: user.fullName,
+      campaign_title: campaign.title,
+      campaign_id: String(campaign.id),
+      masjid_name: masjid?.name || "—",
+      new_status: newStatusLabel,
+      status_date: new Date().toLocaleString("en-GB"),
+    },
+    userMeta: { userId: user.id, userName: user.fullName, userEmail: user.email },
+  });
+}
+
+export async function sendConcernSubmittedAdminEmail(concern) {
+  const settings = await EmailSettings.findOne();
+  const to = settings?.adminNotificationEmail;
+  return sendNotification("concern_submitted_admin", {
+    to,
+    variables: {
+      concern_id: concern.reference,
+      user_name: concern.fullName,
+      user_contact: concern.email,
+      concern_type: concern.concernType,
+      subject: concern.subject,
+      related_reference: concern.relatedReference || "—",
+      submission_date: new Date(concern.createdAt).toLocaleString("en-GB"),
+      status: "Open",
+      description: concern.description,
+    },
+    userMeta: { userId: concern.userId, userName: concern.fullName, userEmail: to },
+  });
+}
+
+export async function sendConcernSubmittedUserEmail(concern) {
+  if (!concern.email) return { sent: false, skipped: true };
+  return sendNotification("concern_submitted_user", {
+    to: concern.email,
+    variables: {
+      user_name: concern.fullName,
+      concern_id: concern.reference,
+      concern_type: concern.concernType,
+      subject: concern.subject,
+      submission_date: new Date(concern.createdAt).toLocaleString("en-GB"),
+      status: "Open",
+    },
+    userMeta: { userId: concern.userId, userName: concern.fullName, userEmail: concern.email },
+  });
+}
+
+export async function sendConcernResolvedEmail(concern) {
+  if (!concern.email) return { sent: false, skipped: true };
+  return sendNotification("concern_resolved_user", {
+    to: concern.email,
+    variables: {
+      user_name: concern.fullName,
+      concern_id: concern.reference,
+      concern_type: concern.concernType,
+      subject: concern.subject,
+      submission_date: new Date(concern.createdAt).toLocaleString("en-GB"),
+      resolution_date: new Date(concern.resolvedAt || Date.now()).toLocaleString("en-GB"),
+      admin_remarks: concern.adminRemarks || "—",
+    },
+    userMeta: { userId: concern.userId, userName: concern.fullName, userEmail: concern.email },
+  });
+}
+
+export async function sendContactMessageEmail({ fullName, email, topic, message }) {
+  const settings = await EmailSettings.findOne();
+  const to = settings?.adminNotificationEmail;
+  return sendNotification("contact_message_admin", {
+    to,
+    variables: {
+      user_name: fullName,
+      user_contact: email,
+      topic,
+      submission_date: new Date().toLocaleString("en-GB"),
+      message_body: message,
+    },
+    userMeta: { userName: fullName, userEmail: to },
+  });
+}
+
+export async function sendModerationThresholdReachedEmail({ contentType, contentName, reportCount, threshold }) {
+  const settings = await EmailSettings.findOne();
+  const to = settings?.adminNotificationEmail;
+  return sendNotification("moderation_threshold_reached_admin", {
+    to,
+    variables: {
+      content_type: contentType,
+      content_name: contentName,
+      report_count: String(reportCount),
+      threshold: String(threshold),
+      hidden_date: new Date().toLocaleString("en-GB"),
+    },
+    userMeta: { userEmail: to },
+  });
+}
+
 export const emailServiceConfigured = isConfigured;

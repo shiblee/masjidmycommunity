@@ -14,9 +14,9 @@ const Campaign = sequelize.define(
     description: { type: DataTypes.TEXT, allowNull: true },
 
     donationType: {
-      type: DataTypes.ENUM("general_sadaqah", "zakat", "waqf", "other"),
+      type: DataTypes.STRING,
       allowNull: false,
-      defaultValue: "general_sadaqah",
+      defaultValue: "General Sadaqah",
     },
     zakatEligibilityNote: { type: DataTypes.TEXT, allowNull: true },
 
@@ -50,6 +50,13 @@ const Campaign = sequelize.define(
     reviewedAt: { type: DataTypes.DATE, allowNull: true },
     approvedAt: { type: DataTypes.DATE, allowNull: true },
     completedAt: { type: DataTypes.DATE, allowNull: true },
+
+    // Community-report moderation — separate from the approval `status` above.
+    // "under_review" here hides the campaign from the public listing/Wall
+    // without touching its approval state or any of its data.
+    moderationStatus: { type: DataTypes.ENUM("active", "under_review"), allowNull: false, defaultValue: "active" },
+    reportCount: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+    moderationReviewedAt: { type: DataTypes.DATE, allowNull: true },
   },
   {
     tableName: "campaigns",

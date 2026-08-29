@@ -1,8 +1,9 @@
 import axios from "axios";
 import { getUserToken, clearUserSession } from "../utils/userAuthStorage.js";
+import { API_BASE } from "../config.js";
 
 const userApi = axios.create({
-  baseURL: "http://localhost:5050/api/users",
+  baseURL: `${API_BASE}/users`,
 });
 
 userApi.interceptors.request.use((config) => {

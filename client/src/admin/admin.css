@@ -217,6 +217,10 @@
   width:52px; height:52px; border-radius:50%; background:var(--a-danger-bg); color:var(--a-danger);
   display:flex; align-items:center; justify-content:center; margin:0 auto 16px;
 }
+.amx-modal-neutral-icon{
+  width:52px; height:52px; border-radius:50%; background:var(--a-bg); color:var(--a-text-dim);
+  display:flex; align-items:center; justify-content:center; margin:0 auto 16px;
+}
 .amx-modal-success h3{ margin-bottom:10px; }
 .amx-modal-success p{ font-size:13.5px; color:var(--a-text-dim); line-height:1.6; margin:0 0 22px; }
 .amx-modal-success .amx-btn{ width:100%; }
@@ -349,7 +353,7 @@
 .amx-panel{ padding:22px 22px 20px; }
 .amx-panel-head{ display:flex; align-items:center; justify-content:space-between; gap:14px; margin-bottom:18px; }
 .amx-panel-head h3{ font-size:16px; font-weight:700; color:var(--a-text); margin:0; }
-.amx-panel-head .amx-panel-sub{ font-size:12.5px; color:var(--a-text-faint); margin-top:2px; }
+.amx-panel-sub{ font-size:12.5px; color:var(--a-text-faint); margin-top:2px; }
 .amx-panel-link{ font-size:13px; font-weight:700; color:var(--a-green-deep); display:inline-flex; align-items:center; gap:5px; }
 .amx-panel-link:hover{ color:var(--a-navy); }
 .amx-panel-link svg{ width:14px; height:14px; transition:transform .2s; }
@@ -383,6 +387,12 @@ table.amx-table{ width:100%; border-collapse:collapse; font-size:13.5px; }
   padding:0 14px 10px; border-bottom:1px solid var(--a-border);
 }
 .amx-table td{ padding:13px 14px; border-bottom:1px solid var(--a-border); color:var(--a-text); vertical-align:middle; }
+.amx-th-sort{
+  display:inline-flex; align-items:center; gap:4px; background:none; border:none; padding:0; margin:0;
+  font:inherit; text-transform:inherit; letter-spacing:inherit; color:inherit; cursor:pointer;
+}
+.amx-th-sort:hover{ color:var(--a-text); }
+.amx-th-sort svg{ width:11px; height:11px; opacity:.7; transition:transform .15s; }
 .amx-table tr:last-child td{ border-bottom:none; }
 .amx-table tbody tr{ transition:background .15s; }
 .amx-table tbody tr:hover{ background:var(--a-bg); }
@@ -489,13 +499,13 @@ table.amx-table{ width:100%; border-collapse:collapse; font-size:13.5px; }
    ========================================================= */
 .amx-settings-layout{ display:grid; grid-template-columns:220px 1fr; gap:22px; align-items:start; }
 .amx-settings-nav{ display:flex; flex-direction:column; gap:2px; position:sticky; top:130px; }
-.amx-settings-nav button{
+.amx-settings-nav button, .amx-settings-nav a{
   display:flex; align-items:center; gap:10px; text-align:left; padding:10px 12px; border-radius:9px; font-size:13.5px; font-weight:600;
-  color:var(--a-text-dim); background:none; border:none;
+  color:var(--a-text-dim); background:none; border:none; text-decoration:none;
 }
-.amx-settings-nav button:hover{ background:var(--a-bg); color:var(--a-text); }
-.amx-settings-nav button.active{ background:var(--a-navy); color:#fff; }
-.amx-settings-nav button svg{ width:16px; height:16px; }
+.amx-settings-nav button:hover, .amx-settings-nav a:hover{ background:var(--a-bg); color:var(--a-text); }
+.amx-settings-nav button.active, .amx-settings-nav a.active{ background:var(--a-navy); color:#fff; }
+.amx-settings-nav button svg, .amx-settings-nav a svg{ width:16px; height:16px; }
 .amx-form-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
 .amx-form-group{ margin-bottom:16px; }
 .amx-form-group label{ display:block; font-size:13px; font-weight:700; color:var(--a-text); margin-bottom:7px; }
@@ -544,6 +554,12 @@ table.amx-table{ width:100%; border-collapse:collapse; font-size:13.5px; }
   font-size:13px; font-weight:600; color:var(--a-text-dim); transition:color .2s;
 }
 .amx-back-link:hover{ color:var(--a-text); }
+
+.amx-link-btn{
+  background:none; border:none; padding:0; cursor:pointer; font:inherit; text-align:left;
+  color:var(--a-navy); text-decoration:underline; text-decoration-color:transparent; transition:text-decoration-color .2s;
+}
+.amx-link-btn:hover{ text-decoration-color:currentColor; }
 
 .amx-var-palette{
   display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:-6px 0 22px; padding:12px 14px;

@@ -13,6 +13,14 @@ const VARIABLE_HINTS = {
   otp_code: "The 6-digit verification code",
   platform_name: "Masjid My Community",
   current_year: "Current calendar year",
+  account_status: "The account's new status (Active / Deactivated / Suspended)",
+  status_detail: "A sentence explaining what the new account status means",
+  masjid_name: "The masjid's name",
+  masjid_id: "The masjid's ID number",
+  category: "The masjid's category",
+  submitted_by: "The full name of the person who submitted the masjid",
+  submission_date: "Date and time the masjid was submitted",
+  status: "The masjid's current review status",
 };
 
 function EmailTemplateEditor() {

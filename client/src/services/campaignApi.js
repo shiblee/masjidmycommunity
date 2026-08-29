@@ -1,8 +1,9 @@
 import axios from "axios";
 import { getUserToken, clearUserSession } from "../utils/userAuthStorage.js";
+import { API_BASE } from "../config.js";
 
 const campaignApi = axios.create({
-  baseURL: "http://localhost:5050/api/campaigns",
+  baseURL: `${API_BASE}/campaigns`,
 });
 
 campaignApi.interceptors.request.use((config) => {

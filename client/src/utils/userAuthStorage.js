@@ -42,6 +42,16 @@ export function setUserSession({ token, user, remember = true }) {
   window.dispatchEvent(new CustomEvent("mmc-user-session-updated", { detail: user }));
 }
 
+// Patches the stored session's user record in place (e.g. after a profile
+// field or photo saves) without touching the token, so every mounted
+// component listening for "mmc-user-session-updated" (the navbar, etc.)
+// picks up the change immediately instead of waiting for the next login.
+export function updateStoredUser(user) {
+  const store = localStorage.getItem(USER_KEY) !== null ? localStorage : sessionStorage.getItem(USER_KEY) !== null ? sessionStorage : null;
+  if (store) store.setItem(USER_KEY, JSON.stringify(user));
+  window.dispatchEvent(new CustomEvent("mmc-user-session-updated", { detail: user }));
+}
+
 export function clearUserSession() {
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(USER_KEY);

@@ -85,8 +85,8 @@ function Donors() {
           <select className="amx-select" value={tier} onChange={(e) => setTier(e.target.value)}>
             <option value="all">All tiers</option>
             <option value="Champion">Champion</option>
-            <option value="Regular">Regular</option>
             <option value="New">New</option>
+            <option value="Regular">Regular</option>
           </select>
         </div>
 
