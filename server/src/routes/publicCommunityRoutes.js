@@ -44,5 +44,6 @@ router.get("/images/:imageId/comments", optionalAuth, listImageComments);
 router.post("/images/:imageId/comments", auth, requireUser, createImageComment);
 router.patch("/images/:imageId/comments/:id", auth, requireUser, updateImageComment);
 router.delete("/images/:imageId/comments/:id", auth, requireUser, deleteImageComment);
+router.post("/images/:imageId/comments/:id/vote", auth, requireUser, castCommentVote);
 
 export default router;
