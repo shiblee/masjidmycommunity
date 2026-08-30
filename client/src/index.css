@@ -85,6 +85,7 @@ h1,h2,h3{ font-family:var(--sans); font-weight:450; line-height:1.05; letter-spa
   text-align:center; padding:9px 16px; letter-spacing:.02em; position:relative; z-index:60;
 }
 .announce a{ border-bottom:1px solid var(--gold); color:#fff; margin-left:8px; white-space:nowrap; }
+@media (max-width:760px){ .announce{ display:none; } }
 
 /* ===== NAV ===== */
 header.nav{
