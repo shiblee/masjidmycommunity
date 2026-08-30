@@ -195,8 +195,8 @@ function Auth({ defaultIntent } = {}) {
   const submitLogin = async (e) => {
     e.preventDefault();
     const errs = {};
-    if (!loginId.trim()) errs.identifier = "Enter your email address or mobile number.";
-    if (!loginPassword) errs.password = "Enter your password.";
+    if (!loginId.trim()) errs.identifier = t("auth.login.errEmailOrMobile", "Enter your email address or mobile number.");
+    if (!loginPassword) errs.password = t("auth.login.errPassword", "Enter your password.");
     setLoginErrors(errs);
     if (Object.keys(errs).length) return;
 
@@ -210,7 +210,7 @@ function Auth({ defaultIntent } = {}) {
       if (resp?.code === "UNVERIFIED") {
         startOtpFlow({ userId: resp.userId, otpTarget: resp.otpTarget, maskedTarget: resp.maskedTarget }, "register");
       } else {
-        setLoginErrors({ password: resp?.message || "Something went wrong. Please try again." });
+        setLoginErrors({ password: resp?.message || t("auth.errGeneric", "Something went wrong. Please try again.") });
       }
     } finally {
       setLoginLoading(false);
@@ -230,16 +230,16 @@ function Auth({ defaultIntent } = {}) {
     const isEmail = contact.includes("@");
     const mobileDigits = contact.replace(/[\s-]/g, "");
 
-    if (!reg.fullName.trim()) errs.fullName = "Full name is required.";
+    if (!reg.fullName.trim()) errs.fullName = t("auth.register.errFullName", "Full name is required.");
     if (!contact) {
-      errs.contact = "Provide an email address or a mobile number.";
+      errs.contact = t("auth.register.errContactRequired", "Provide an email address or a mobile number.");
     } else if (isEmail && !/^\S+@\S+\.\S+$/.test(contact)) {
-      errs.contact = "Enter a valid email address.";
+      errs.contact = t("auth.register.errEmailInvalid", "Enter a valid email address.");
     } else if (!isEmail && !/^[0-9]{10}$/.test(mobileDigits)) {
-      errs.contact = "Enter a valid 10-digit mobile number.";
+      errs.contact = t("auth.register.errMobileInvalid", "Enter a valid 10-digit mobile number.");
     }
     if (reg.password.length < 8 || !/[A-Za-z]/.test(reg.password) || !/[0-9]/.test(reg.password)) {
-      errs.password = "At least 8 characters with a letter and a number.";
+      errs.password = t("auth.register.errPassword", "At least 8 characters with a letter and a number.");
     }
     setRegErrors(errs);
     if (Object.keys(errs).length) return;
@@ -254,7 +254,7 @@ function Auth({ defaultIntent } = {}) {
       });
       startOtpFlow(data, "register");
     } catch (err) {
-      const message = err.response?.data?.message || "Something went wrong. Please try again.";
+      const message = err.response?.data?.message || t("auth.errGeneric", "Something went wrong. Please try again.");
       if (err.response?.status === 409) {
         setRegErrors((er) => ({ ...er, contact: message }));
       } else {

@@ -58,11 +58,22 @@ const DEFAULTS = [
   ["auth", "auth.register.creatingAccount", "Creating account…", "खाता बनाया जा रहा है…", "اکاؤنٹ بنایا جا رہا ہے…", "جارٍ إنشاء الحساب…"],
   ["auth", "auth.register.alreadyHaveAccount", "Already have an account?", "पहले से खाता है?", "پہلے سے اکاؤنٹ ہے؟", "لديك حساب بالفعل؟"],
   ["auth", "auth.register.signIn", "Sign in", "साइन इन करें", "سائن ان کریں", "تسجيل الدخول"],
+  ["auth", "auth.errGeneric", "Something went wrong. Please try again.", "कुछ गलत हो गया। कृपया पुनः प्रयास करें।", "کچھ غلط ہو گیا۔ براہ کرم دوبارہ کوشش کریں۔", "حدث خطأ ما. يرجى المحاولة مرة أخرى."],
+  ["auth", "auth.login.errEmailOrMobile", "Enter your email address or mobile number.", "अपना ईमेल पता या मोबाइल नंबर दर्ज करें।", "اپنا ای میل ایڈریس یا موبائل نمبر درج کریں۔", "أدخل بريدك الإلكتروني أو رقم جوالك."],
+  ["auth", "auth.login.errPassword", "Enter your password.", "अपना पासवर्ड दर्ज करें।", "اپنا پاس ورڈ درج کریں۔", "أدخل كلمة المرور."],
+  ["auth", "auth.register.errFullName", "Full name is required.", "पूरा नाम आवश्यक है।", "پورا نام درکار ہے۔", "الاسم الكامل مطلوب."],
+  ["auth", "auth.register.errContactRequired", "Provide an email address or a mobile number.", "एक ईमेल पता या मोबाइल नंबर दर्ज करें।", "ای میل ایڈریس یا موبائل نمبر فراہم کریں۔", "يرجى تقديم بريد إلكتروني أو رقم جوال."],
+  ["auth", "auth.register.errEmailInvalid", "Enter a valid email address.", "एक मान्य ईमेल पता दर्ज करें।", "ایک درست ای میل ایڈریس درج کریں۔", "أدخل بريدًا إلكترونيًا صالحًا."],
+  ["auth", "auth.register.errMobileInvalid", "Enter a valid 10-digit mobile number.", "एक मान्य 10 अंकों का मोबाइल नंबर दर्ज करें।", "ایک درست 10 ہندسوں کا موبائل نمبر درج کریں۔", "أدخل رقم جوال صالحًا مكوّنًا من 10 أرقام."],
+  ["auth", "auth.register.errPassword", "At least 8 characters with a letter and a number.", "कम से कम 8 वर्ण, जिनमें एक अक्षर और एक अंक हो।", "کم از کم 8 حروف، جن میں ایک حرف اور ایک ہندسہ ہو۔", "8 أحرف على الأقل تحتوي على حرف ورقم."],
 ];
 
+// Additive, not "seed once": every deploy that adds new keys to DEFAULTS
+// above needs those new rows to land even though earlier keys already
+// exist. ignoreDuplicates (INSERT IGNORE) inserts only rows that don't
+// already match the (key, languageCode) unique index, so it never
+// overwrites a value an admin has since edited by hand.
 export async function ensureTranslationDefaults() {
-  const count = await Translation.count();
-  if (count > 0) return;
   const rows = [];
   for (const [category, key, en, hi, ur, ar] of DEFAULTS) {
     rows.push({ key, category, languageCode: "en", value: en });
@@ -70,5 +81,5 @@ export async function ensureTranslationDefaults() {
     rows.push({ key, category, languageCode: "ur", value: ur });
     rows.push({ key, category, languageCode: "ar", value: ar });
   }
-  await Translation.bulkCreate(rows);
+  await Translation.bulkCreate(rows, { ignoreDuplicates: true });
 }
