@@ -181,6 +181,7 @@ function Auth({ defaultIntent } = {}) {
   const [resendKey, setResendKey] = useState(0);
   const [resending, setResending] = useState(false);
   const [demoOtp, setDemoOtp] = useState("");
+  const [otpEmailSent, setOtpEmailSent] = useState(false);
   const [otpSettings, setOtpSettings] = useState({ expiryMinutes: 5, resendCooldownSeconds: RESEND_SECONDS });
   const timer = useCountdown(mode === "otp", resendKey, otpSettings.resendCooldownSeconds);
 
@@ -219,6 +220,7 @@ function Auth({ defaultIntent } = {}) {
     setOtpError("");
     setOtpErrorCode("");
     setDemoOtp(data.demoOtp || "");
+    setOtpEmailSent(!!data.emailSent);
     setResendKey((k) => k + 1);
     setMode("otp");
   };
@@ -358,6 +360,7 @@ function Auth({ defaultIntent } = {}) {
     try {
       const { data } = await userApi.post("/resend-otp", { userId: otpCtx.userId });
       setDemoOtp(data.demoOtp || "");
+      setOtpEmailSent(!!data.emailSent);
       setOtpValue("");
       setResendKey((k) => k + 1);
     } catch (err) {
@@ -666,7 +669,11 @@ function Auth({ defaultIntent } = {}) {
 
                 {demoOtp && (
                   <div className="auth-demo-otp">
-                    <InfoIcon /> {t("auth.otp.demoMode", "Demo mode — no live gateway connected yet. Your code is")} <strong>{demoOtp}</strong>.
+                    <InfoIcon />{" "}
+                    {otpEmailSent
+                      ? t("auth.otp.shownMode", "For your convenience, your code is also shown here:")
+                      : t("auth.otp.demoMode", "Demo mode — no live gateway connected yet. Your code is")}{" "}
+                    <strong>{demoOtp}</strong>.
                   </div>
                 )}
 

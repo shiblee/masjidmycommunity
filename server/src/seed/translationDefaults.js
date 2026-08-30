@@ -85,6 +85,7 @@ const DEFAULTS = [
   ["auth", "auth.otp.viaSms", "via SMS.", "एसएमएस के माध्यम से।", "ایس ایم ایس کے ذریعے۔", "عبر الرسائل النصية."],
   ["auth", "auth.otp.expiresIn", "It expires in {minutes} minutes.", "यह {minutes} मिनट में समाप्त हो जाएगा।", "یہ {minutes} منٹ میں ختم ہو جائے گا۔", "تنتهي صلاحيته خلال {minutes} دقيقة."],
   ["auth", "auth.otp.demoMode", "Demo mode — no live gateway connected yet. Your code is", "डेमो मोड — अभी तक कोई लाइव गेटवे कनेक्ट नहीं है। आपका कोड है", "ڈیمو موڈ — ابھی تک کوئی لائیو گیٹ وے منسلک نہیں ہے۔ آپ کا کوڈ ہے", "وضع تجريبي — لم يتم توصيل بوابة فعلية بعد. رمزك هو"],
+  ["auth", "auth.otp.shownMode", "For your convenience, your code is also shown here:", "आपकी सुविधा के लिए, आपका कोड यहां भी दिखाया गया है:", "آپ کی سہولت کے لیے، آپ کا کوڈ یہاں بھی دکھایا گیا ہے:", "لراحتك، يظهر رمزك هنا أيضًا:"],
   ["auth", "auth.otp.verifying", "Verifying…", "सत्यापित हो रहा है…", "تصدیق ہو رہی ہے…", "جارٍ التحقق…"],
   ["auth", "auth.otp.verify", "Verify", "सत्यापित करें", "تصدیق کریں", "تحقّق"],
   ["auth", "auth.otp.resendIn", "Resend code in", "कोड पुनः भेजने में", "کوڈ دوبارہ بھیجنے میں", "إعادة إرسال الرمز خلال"],
