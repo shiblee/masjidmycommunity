@@ -309,6 +309,7 @@ function Footer() {
           </div>
         </div>
       </footer>
+      <div className="footer-mobile-copy">© 2026 Masjid My Community.</div>
       <BackToTop />
     </>
   );
