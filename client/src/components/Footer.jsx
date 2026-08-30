@@ -9,6 +9,61 @@ const languages = [
   { code: "id", label: "ID — Bahasa Indonesia" },
 ];
 
+function useClickOutside(ref, onOutside) {
+  useEffect(() => {
+    function handle(e) {
+      if (ref.current && !ref.current.contains(e.target)) onOutside();
+    }
+    document.addEventListener("mousedown", handle);
+    return () => document.removeEventListener("mousedown", handle);
+  }, [ref, onOutside]);
+}
+
+// A custom listbox instead of a native <select> — this control always sits at
+// the very bottom of the page, so a native select's popup (which Chrome opens
+// upward/downward based on viewport space, and which real mobile OSes render
+// as a full native picker rather than a page-positioned popup) had nowhere
+// good to open and looked broken. This version always opens upward, since
+// there's rarely room below a footer control, and its position is CSS we
+// control directly instead of leaving to the browser/OS.
+function LanguageSelect({ triggerClassName }) {
+  const [open, setOpen] = useState(false);
+  const [selected, setSelected] = useState(languages[0]);
+  const ref = useRef(null);
+  useClickOutside(ref, () => setOpen(false));
+
+  return (
+    <div className="footer-lang" ref={ref}>
+      <button type="button" className={triggerClassName} onClick={() => setOpen((o) => !o)} aria-haspopup="listbox" aria-expanded={open}>
+        {selected.label}
+        <svg className={`footer-lang-chev${open ? " open" : ""}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M6 9l6 6 6-6" />
+        </svg>
+      </button>
+      {open && (
+        <ul className="footer-lang-dropdown" role="listbox">
+          {languages.map((l) => (
+            <li key={l.code}>
+              <button
+                type="button"
+                className={l.code === selected.code ? "active" : ""}
+                role="option"
+                aria-selected={l.code === selected.code}
+                onClick={() => {
+                  setSelected(l);
+                  setOpen(false);
+                }}
+              >
+                {l.label}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 function VisitorCounter() {
   const ref = useRef(null);
   const [count, setCount] = useState(0);
@@ -283,26 +338,14 @@ function Footer() {
               <NavLink to="/cookie-policy">Cookie Policy</NavLink>
             </nav>
             <div className="selectors">
-              <select className="foot-select" defaultValue="en" aria-label="Language">
-                {languages.map((l) => (
-                  <option value={l.code} key={l.code}>
-                    {l.label}
-                  </option>
-                ))}
-              </select>
+              <LanguageSelect triggerClassName="foot-select" />
             </div>
           </div>
         </div>
       </footer>
       <div className="footer-mobile">
         <span className="footer-mobile-copy">© 2026 Masjid My Community.</span>
-        <select className="footer-mobile-select" defaultValue="en" aria-label="Language">
-          {languages.map((l) => (
-            <option value={l.code} key={l.code}>
-              {l.label}
-            </option>
-          ))}
-        </select>
+        <LanguageSelect triggerClassName="footer-mobile-select" />
       </div>
       <BackToTop />
     </>

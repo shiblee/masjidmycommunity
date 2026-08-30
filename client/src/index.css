@@ -761,11 +761,26 @@ footer{
   }
 }
 .footer-mobile-copy{ font-size:13px; color:var(--text-on-paper-dim); }
+
+/* Shared custom-dropdown trigger/list, used by both the dark desktop footer
+   and light mobile footer via a different trigger class (see below). */
+.footer-lang{ position:relative; }
+.footer-lang-chev{ width:14px; height:14px; flex-shrink:0; transition:transform .2s; }
+.footer-lang-chev.open{ transform:rotate(180deg); }
+.footer-lang-dropdown{
+  position:absolute; bottom:calc(100% + 8px); left:0; min-width:100%; width:max-content; list-style:none; margin:0; padding:6px;
+  background:#fff; border-radius:12px; border:1px solid var(--line); box-shadow:0 24px 48px -20px rgba(11,31,30,.35); z-index:60;
+}
+.footer-lang-dropdown li button{
+  display:block; width:100%; text-align:left; padding:9px 12px; border-radius:8px; font-size:13.5px;
+  font-family:var(--sans); color:var(--text-on-paper); background:none; border:none; cursor:pointer; transition:background .15s;
+}
+.footer-lang-dropdown li button:hover{ background:var(--paper-dim); }
+.footer-lang-dropdown li button.active{ color:var(--teal-deep); font-weight:700; }
+
 .footer-mobile-select{
-  appearance:none; background:#fff; border:1px solid var(--line); border-radius:100px; color:var(--text-on-paper-dim);
-  font-size:13px; font-family:var(--mono); padding:7px 30px 7px 14px; cursor:pointer;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236FA82C' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
-  background-repeat:no-repeat; background-position:right 8px center; background-size:14px;
+  display:flex; align-items:center; gap:8px; appearance:none; background:#fff; border:1px solid var(--line); border-radius:100px;
+  color:var(--text-on-paper-dim); font-size:13px; font-family:var(--mono); padding:7px 14px; cursor:pointer;
 }
 
 .foot-reveal{ opacity:0; transform:translateY(20px); transition:opacity .7s var(--ease), transform .7s var(--ease); }
@@ -833,13 +848,10 @@ footer{
 
 .selectors{ display:flex; gap:10px; }
 .foot-select{
-  appearance:none; background:transparent; border:1px solid rgba(141,198,63,.3); border-radius:100px; color:var(--text-on-ink-dim);
-  font-size:13px; font-family:var(--mono); padding:7px 30px 7px 14px; cursor:pointer;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23A3D65C' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
-  background-repeat:no-repeat; background-position:right 8px center; background-size:14px;
+  display:flex; align-items:center; gap:8px; appearance:none; background:transparent; border:1px solid rgba(141,198,63,.3);
+  border-radius:100px; color:var(--text-on-ink-dim); font-size:13px; font-family:var(--mono); padding:7px 14px; cursor:pointer;
 }
 .foot-select:hover{ border-color:var(--teal); color:var(--text-on-ink); }
-.foot-select option{ background:var(--ink-soft); color:var(--text-on-ink); }
 
 .foot-legal{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; font-size:13px; font-family:var(--mono); }
 .foot-legal a{ color:var(--text-on-ink-dim); transition:color .2s; }
@@ -912,7 +924,7 @@ footer{
 }
 .mobile-donate .txt{ color:var(--text-on-ink); font-size:13.5px; line-height:1.35; }
 .mobile-donate .txt strong{ display:block; font-size:16.5px; font-weight:600; }
-@media (max-width:760px){ .mobile-donate{ display:flex; } body{ padding-bottom:74px; } }
+@media (max-width:760px){ .mobile-donate{ display:flex; } }
 
 /* ===== LEGAL PAGE (Terms of Use) ===== */
 .legal-page{ padding:64px 0 100px; position:relative; }
