@@ -77,6 +77,8 @@ const DEFAULTS = [
   ["auth", "auth.loginOtp.sending", "Sending code…", "कोड भेजा जा रहा है…", "کوڈ بھیجا جا رہا ہے…", "جارٍ إرسال الرمز…"],
   ["auth", "auth.loginOtp.sendCode", "Send Code", "कोड भेजें", "کوڈ بھیجیں", "إرسال الرمز"],
   ["auth", "auth.loginOtp.back", "← Back to password sign in", "← पासवर्ड साइन इन पर वापस जाएं", "← پاس ورڈ سائن ان پر واپس جائیں", "← العودة إلى تسجيل الدخول بكلمة المرور"],
+  ["auth", "auth.otp.loginArt.title", "Almost signed in.", "साइन इन होने वाला ही है।", "سائن ان ہونے کے قریب۔", "أنت على وشك تسجيل الدخول."],
+  ["auth", "auth.otp.loginArt.sub", "Enter the code we sent you to finish signing in.", "साइन इन पूरा करने के लिए हमारे द्वारा भेजा गया कोड दर्ज करें।", "سائن ان مکمل کرنے کے لیے ہمارے بھیجے گئے کوڈ کو درج کریں۔", "أدخل الرمز الذي أرسلناه لإكمال تسجيل الدخول."],
   ["auth", "auth.otp.title", "Enter verification code", "सत्यापन कोड दर्ज करें", "تصدیقی کوڈ درج کریں", "أدخل رمز التحقق"],
   ["auth", "auth.otp.sentTo", "We've sent a {length}-digit code to", "हमने {length}-अंकों का कोड भेजा है", "ہم نے {length} ہندسوں کا کوڈ بھیج دیا ہے", "لقد أرسلنا رمزًا مكوّنًا من {length} أرقام إلى"],
   ["auth", "auth.otp.viaEmail", "via email.", "ईमेल के माध्यम से।", "ای میل کے ذریعے۔", "عبر البريد الإلكتروني."],

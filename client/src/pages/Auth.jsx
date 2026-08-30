@@ -101,7 +101,7 @@ function OtpInputs({ value, onChange, disabled, autoFocus }) {
   );
 }
 
-function getArtCopy(mode, intent, t) {
+function getArtCopy(mode, intent, t, otpPurpose) {
   if (intent === "campaign" && (mode === "login" || mode === "register")) {
     return {
       eyebrow: t("auth.art.campaign.eyebrow", "Start a Campaign"),
@@ -123,6 +123,13 @@ function getArtCopy(mode, intent, t) {
         sub: t("auth.art.loginOtp.sub", "We'll send a one-time code to your email or mobile number."),
       };
     case "otp":
+      if (otpPurpose === "login") {
+        return {
+          eyebrow: t("auth.art.loginOtp.eyebrow", "Sign In"),
+          title: t("auth.otp.loginArt.title", "Almost signed in."),
+          sub: t("auth.otp.loginArt.sub", "Enter the code we sent you to finish signing in."),
+        };
+      }
       return { eyebrow: "Verify", title: "Almost there.", sub: "Verify your account to unlock the full Masjid My Community experience." };
     case "forgot":
       return { eyebrow: "Account Recovery", title: "Forgot your password?", sub: "No problem — we'll send you a code to reset it." };
@@ -416,7 +423,7 @@ function Auth({ defaultIntent } = {}) {
     }
   };
 
-  const art = getArtCopy(mode, intent, t);
+  const art = getArtCopy(mode, intent, t, otpCtx?.purpose);
 
   return (
     <div className="auth-page">
