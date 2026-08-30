@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.masjidmycommunity.app",
+      "sha256_cert_fingerprints": [
+        "09:A7:20:1C:11:20:6A:39:79:DD:AF:C6:86:16:38:C3:07:FF:4E:92:63:6B:E7:4E:E5:63:8B:28:CC:E3:BA:1F"
+      ]
+    }
+  }
+]
