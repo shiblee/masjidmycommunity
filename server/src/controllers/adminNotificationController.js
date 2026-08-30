@@ -203,6 +203,13 @@ export const sendTestEmail = async (req, res) => {
     if (result.skipped) {
       return res.status(400).json({ message: "This template is inactive, or email notifications are disabled in Email Settings." });
     }
+    // sendNotification() catches its own SMTP errors internally (so a bad
+    // transport never breaks the caller's flow) rather than throwing — this
+    // path was previously unchecked, so a real send failure (e.g. bad SMTP
+    // credentials) was silently reported back as "Test email sent."
+    if (!result.sent) {
+      return res.status(502).json({ message: result.error || "Couldn't send the test email." });
+    }
     res.json({ message: result.dev ? "Test email logged to server console (dev mode — no SMTP configured)." : "Test email sent.", dev: !!result.dev });
   } catch (error) {
     res.status(500).json({ message: error.message });
