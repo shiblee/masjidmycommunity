@@ -9,14 +9,6 @@ const languages = [
   { code: "id", label: "ID — Bahasa Indonesia" },
 ];
 
-const regions = [
-  { code: "global", label: "🌐 Global" },
-  { code: "in", label: "🇮🇳 India" },
-  { code: "uk", label: "🇬🇧 United Kingdom" },
-  { code: "us", label: "🇺🇸 United States" },
-  { code: "ae", label: "🇦🇪 UAE" },
-];
-
 function VisitorCounter() {
   const ref = useRef(null);
   const [count, setCount] = useState(0);
@@ -298,18 +290,20 @@ function Footer() {
                   </option>
                 ))}
               </select>
-              <select className="foot-select" defaultValue="global" aria-label="Region">
-                {regions.map((r) => (
-                  <option value={r.code} key={r.code}>
-                    {r.label}
-                  </option>
-                ))}
-              </select>
             </div>
           </div>
         </div>
       </footer>
-      <div className="footer-mobile-copy">© 2026 Masjid My Community.</div>
+      <div className="footer-mobile">
+        <span className="footer-mobile-copy">© 2026 Masjid My Community.</span>
+        <select className="footer-mobile-select" defaultValue="en" aria-label="Language">
+          {languages.map((l) => (
+            <option value={l.code} key={l.code}>
+              {l.label}
+            </option>
+          ))}
+        </select>
+      </div>
       <BackToTop />
     </>
   );
