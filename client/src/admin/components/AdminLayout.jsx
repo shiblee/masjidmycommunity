@@ -26,6 +26,7 @@ const NAV_ITEMS = [
   { to: "/admin/moderation", label: "Reported Content", icon: "flag" },
   { to: "/admin/notifications", label: "Notifications", icon: "bell" },
   { to: "/admin/meta", label: "Meta", icon: "layers" },
+  { to: "/admin/translations", label: "Translations", icon: "content" },
   { to: "/admin/settings", label: "Settings", icon: "settings" },
 ];
 

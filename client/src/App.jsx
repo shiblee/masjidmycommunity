@@ -21,6 +21,7 @@ import MyCampaigns from "./pages/campaign/MyCampaigns.jsx";
 import CampaignProfile from "./pages/CampaignProfile.jsx";
 import RequireUserAuth from "./components/RequireUserAuth.jsx";
 import AdminApp from "./admin/AdminApp.jsx";
+import { LanguageProvider } from "./i18n/LanguageContext.jsx";
 
 function ScrollToTop() {
   const { pathname, hash } = useLocation();
@@ -50,7 +51,8 @@ function MarketingLayout() {
 
 function App() {
   return (
-    <BrowserRouter>
+    <LanguageProvider>
+      <BrowserRouter>
       <ScrollToTop />
       <Routes>
         <Route element={<MarketingLayout />}>
@@ -100,6 +102,7 @@ function App() {
         <Route path="/admin/*" element={<AdminApp />} />
       </Routes>
     </BrowserRouter>
+    </LanguageProvider>
   );
 }
 

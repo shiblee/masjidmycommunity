@@ -12,6 +12,8 @@ import { ensureDeletionReasonDefaults } from "./seed/deletionReasonDefaults.js";
 import { ensureReportReasonDefaults } from "./seed/reportReasonDefaults.js";
 import { ensureModerationSettings } from "./seed/moderationSettingsDefaults.js";
 import { ensureContentSettings } from "./seed/contentSettingsDefaults.js";
+import { ensureLanguageDefaults } from "./seed/languageDefaults.js";
+import { ensureTranslationDefaults } from "./seed/translationDefaults.js";
 
 const PORT = process.env.PORT || 5000;
 
@@ -28,6 +30,8 @@ connectDB()
       ensureReportReasonDefaults(),
       ensureModerationSettings(),
       ensureContentSettings(),
+      ensureLanguageDefaults(),
+      ensureTranslationDefaults(),
     ])
   )
   .catch((error) => console.error("Failed to seed defaults:", error.message))

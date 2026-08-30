@@ -3,13 +3,16 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { getStoredUser, clearUserSession } from "../utils/userAuthStorage.js";
 import userApi from "../services/userApi.js";
 import { API_ORIGIN } from "../config.js";
+import { useTranslation } from "../i18n/LanguageContext.jsx";
 
-const links = [
-  { href: "/explore-masjids", label: "Explore Masjids" },
-  { href: "/my-community", label: "My Community" },
-  { href: "/our-impact", label: "Impact" },
-  { href: "/about", label: "About Us" },
-];
+function useNavLinks(t) {
+  return [
+    { href: "/explore-masjids", label: t("nav.exploreMasjids", "Explore Masjids") },
+    { href: "/my-community", label: t("nav.myCommunity", "My Community") },
+    { href: "/our-impact", label: t("nav.impact", "Impact") },
+    { href: "/about", label: t("nav.aboutUs", "About Us") },
+  ];
+}
 
 function linkPath(href) {
   return href.startsWith("#") ? `/${href}` : href;
@@ -50,6 +53,8 @@ function useClickOutside(ref, onOutside) {
 }
 
 function Navbar() {
+  const { t } = useTranslation();
+  const links = useNavLinks(t);
   const [open, setOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
@@ -144,8 +149,8 @@ function Navbar() {
   return (
     <>
       <div className="announce" ref={announceRef}>
-        🕌 Empowering masjids. Strengthening communities. Join the global movement.
-        <Link to="/#campaigns">Explore campaigns →</Link>
+        🕌 {t("nav.announce", "Empowering masjids. Strengthening communities. Join the global movement.")}
+        <Link to="/explore-masjids">{t("nav.exploreCampaigns", "Explore campaigns →")}</Link>
       </div>
       <header className="nav" ref={navElRef}>
         <div className="nav-inner">
@@ -177,15 +182,15 @@ function Navbar() {
                 {notifOpen && (
                   <div className="nav-notif-dropdown">
                     <div className="nav-notif-dropdown-head">
-                      <strong>Notifications</strong>
+                      <strong>{t("nav.notifications", "Notifications")}</strong>
                       {unreadCount > 0 && (
                         <button type="button" onClick={markAllNotificationsRead}>
-                          Mark all as read
+                          {t("nav.markAllRead", "Mark all as read")}
                         </button>
                       )}
                     </div>
                     <div className="nav-notif-list">
-                      {notifications.length === 0 && <p className="nav-notif-empty">You're all caught up — no notifications yet.</p>}
+                      {notifications.length === 0 && <p className="nav-notif-empty">{t("nav.noNotifications", "You're all caught up — no notifications yet.")}</p>}
                       {notifications.map((n) => (
                         <button type="button" key={n.id} className={`nav-notif-item${n.isRead ? "" : " unread"}`} onClick={() => openNotification(n)}>
                           <span className="nav-notif-item-dot" />
@@ -217,23 +222,23 @@ function Navbar() {
                       <span>{user.email || user.mobile}</span>
                     </div>
                     <Link to="/account/my-masjids" onClick={() => setMenuOpen(false)}>
-                      My Masjids
+                      {t("nav.myMasjids", "My Masjids")}
                     </Link>
                     <Link to="/account/my-campaigns" onClick={() => setMenuOpen(false)}>
-                      My Campaigns
+                      {t("nav.myCampaigns", "My Campaigns")}
                     </Link>
                     <Link to="/account?edit=profile" onClick={() => setMenuOpen(false)}>
-                      Edit Profile
+                      {t("nav.editProfile", "Edit Profile")}
                     </Link>
                     <div className="nav-user-dropdown-sep" />
-                    <button onClick={logout}>Log Out</button>
+                    <button onClick={logout}>{t("nav.logOut", "Log Out")}</button>
                   </div>
                 )}
               </div>
             ) : (
               <>
-                <Link to="/auth" className="login-link">Log in</Link>
-                <Link to="/auth?intent=campaign" className="nav-cta">Start a Campaign</Link>
+                <Link to="/auth" className="login-link">{t("nav.logIn", "Log in")}</Link>
+                <Link to="/auth?intent=campaign" className="nav-cta">{t("nav.startCampaign", "Start a Campaign")}</Link>
               </>
             )}
             <button className="burger" aria-label="Menu" onClick={() => setOpen((o) => !o)}>
@@ -266,25 +271,25 @@ function Navbar() {
         ))}
         {user && (
           <Link to="/account/my-masjids" onClick={() => setOpen(false)}>
-            My Masjids
+            {t("nav.myMasjids", "My Masjids")}
           </Link>
         )}
         {user && (
           <Link to="/account/my-campaigns" onClick={() => setOpen(false)}>
-            My Campaigns
+            {t("nav.myCampaigns", "My Campaigns")}
           </Link>
         )}
         {user && (
           <Link to="/account?edit=profile" onClick={() => setOpen(false)}>
-            Edit Profile
+            {t("nav.editProfile", "Edit Profile")}
           </Link>
         )}
         <Link to="/#register" className="btn btn-gold" onClick={() => setOpen(false)}>
-          Register Your Masjid
+          {t("nav.registerMasjid", "Register Your Masjid")}
         </Link>
         {user && (
           <button type="button" className="mobile-menu-logout" onClick={logout}>
-            Log Out
+            {t("nav.logOut", "Log Out")}
           </button>
         )}
       </div>

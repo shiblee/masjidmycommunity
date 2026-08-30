@@ -12,7 +12,8 @@
   --text-on-ink-dim: rgba(255,255,255,0.72);
   --text-on-paper: #17262C;
   --text-on-paper-dim: rgba(23,38,44,0.66);
-  --sans: 'Montserrat', sans-serif;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans", "Noto Sans Devanagari", Helvetica, Arial, sans-serif;
+  --sans-rtl: "Noto Nastaliq Urdu", "Noto Sans Arabic", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --mono: 'IBM Plex Mono', monospace;
   --arabic: 'Noto Naskh Arabic', serif;
   --radius: 4px;
@@ -29,6 +30,18 @@ body{
      spillover without that side effect. */
   overflow-x:clip;
 }
+[dir="rtl"] body{ font-family:var(--sans-rtl); }
+
+/* ===== RTL (Phase 1 pilot: Navbar, Footer, Auth) =====
+   Flexbox's default row direction already mirrors automatically under
+   dir="rtl" — these are only the rules that hardcode a physical left/right
+   rather than a logical/direction-aware one. */
+[dir="rtl"] .btn-arrow{ display:inline-block; transform:scaleX(-1); }
+[dir="rtl"] .auth-input-wrap input{ padding-right:14px; padding-left:42px; }
+[dir="rtl"] .auth-pw-toggle{ right:auto; left:10px; }
+[dir="rtl"] .nav-notif-dropdown,
+[dir="rtl"] .nav-user-dropdown{ right:auto; left:0; }
+[dir="rtl"] .footer-lang-dropdown{ left:auto; right:0; }
 @media (prefers-reduced-motion: reduce){
   *{ animation-duration:.001ms !important; animation-iteration-count:1 !important; transition-duration:.001ms !important; scroll-behavior:auto !important; }
 }

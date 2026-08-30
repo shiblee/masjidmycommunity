@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import GeometricPattern from "../components/GeometricPattern.jsx";
 import userApi from "../services/userApi.js";
 import { setUserSession } from "../utils/userAuthStorage.js";
+import { useTranslation } from "../i18n/LanguageContext.jsx";
 
 const OTP_LENGTH = 6;
 const RESEND_SECONDS = 60;
@@ -100,17 +101,21 @@ function OtpInputs({ value, onChange, disabled, autoFocus }) {
   );
 }
 
-function getArtCopy(mode, intent) {
+function getArtCopy(mode, intent, t) {
   if (intent === "campaign" && (mode === "login" || mode === "register")) {
     return {
-      eyebrow: "Start a Campaign",
-      title: "One step before you begin.",
-      sub: "Sign in or create your account — it only takes a minute — and you'll be ready to launch your campaign.",
+      eyebrow: t("auth.art.campaign.eyebrow", "Start a Campaign"),
+      title: t("auth.art.campaign.title", "One step before you begin."),
+      sub: t("auth.art.campaign.sub", "Sign in or create your account — it only takes a minute — and you'll be ready to launch your campaign."),
     };
   }
   switch (mode) {
     case "register":
-      return { eyebrow: "Create Account", title: "Join the movement.", sub: "Register a masjid, launch a campaign, or support one that matters to you." };
+      return {
+        eyebrow: t("auth.art.register.eyebrow", "Create Account"),
+        title: t("auth.art.register.title", "Join the movement."),
+        sub: t("auth.art.register.sub", "Register a masjid, launch a campaign, or support one that matters to you."),
+      };
     case "otp":
       return { eyebrow: "Verify", title: "Almost there.", sub: "Verify your account to unlock the full Masjid My Community experience." };
     case "forgot":
@@ -118,11 +123,16 @@ function getArtCopy(mode, intent) {
     case "reset":
       return { eyebrow: "Account Recovery", title: "Set a new password.", sub: "Choose a strong password to keep your account secure." };
     default:
-      return { eyebrow: "Welcome Back", title: "Sign in to your account.", sub: "Manage your campaigns, track donations, and stay connected with your community." };
+      return {
+        eyebrow: t("auth.art.welcomeBack.eyebrow", "Welcome Back"),
+        title: t("auth.art.welcomeBack.title", "Sign in to your account."),
+        sub: t("auth.art.welcomeBack.sub", "Manage your campaigns, track donations, and stay connected with your community."),
+      };
   }
 }
 
 function Auth({ defaultIntent } = {}) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const intent = params.get("intent") || defaultIntent || null;
@@ -355,7 +365,7 @@ function Auth({ defaultIntent } = {}) {
     }
   };
 
-  const art = getArtCopy(mode, intent);
+  const art = getArtCopy(mode, intent, t);
 
   return (
     <div className="auth-page">
@@ -369,13 +379,13 @@ function Auth({ defaultIntent } = {}) {
           </div>
           <ul className="auth-why">
             <li>
-              <CheckIcon /> Launch and manage fundraising campaigns
+              <CheckIcon /> {t("auth.why.launch", "Launch and manage fundraising campaigns")}
             </li>
             <li>
-              <CheckIcon /> Track donations and progress in real time
+              <CheckIcon /> {t("auth.why.track", "Track donations and progress in real time")}
             </li>
             <li>
-              <CheckIcon /> Join a trusted, verified global community
+              <CheckIcon /> {t("auth.why.join", "Join a trusted, verified global community")}
             </li>
           </ul>
         </div>
@@ -386,16 +396,16 @@ function Auth({ defaultIntent } = {}) {
               <div className="auth-form-wrap">
                 <div className="auth-tabs">
                   <button className="active" type="button">
-                    Login
+                    {t("auth.tabs.login", "Login")}
                   </button>
                   <button type="button" onClick={() => setMode("register")}>
-                    Create Account
+                    {t("auth.tabs.createAccount", "Create Account")}
                   </button>
                 </div>
 
                 <form onSubmit={submitLogin} noValidate>
                   <div className="auth-field">
-                    <label htmlFor="login-id">Email or Mobile Number</label>
+                    <label htmlFor="login-id">{t("auth.login.emailOrMobile", "Email or Mobile Number")}</label>
                     <input
                       id="login-id"
                       type="text"
@@ -404,13 +414,13 @@ function Auth({ defaultIntent } = {}) {
                         setLoginId(e.target.value);
                         setLoginErrors((er) => ({ ...er, identifier: null }));
                       }}
-                      placeholder="you@example.com or 10-digit mobile number"
+                      placeholder={t("auth.login.emailOrMobilePlaceholder", "you@example.com or 10-digit mobile number")}
                       autoComplete="username"
                     />
                     {loginErrors.identifier && <span className="auth-field-error">{loginErrors.identifier}</span>}
                   </div>
                   <div className="auth-field">
-                    <label htmlFor="login-password">Password</label>
+                    <label htmlFor="login-password">{t("auth.login.password", "Password")}</label>
                     <div className="auth-input-wrap">
                       <input
                         id="login-password"
@@ -420,7 +430,7 @@ function Auth({ defaultIntent } = {}) {
                           setLoginPassword(e.target.value);
                           setLoginErrors((er) => ({ ...er, password: null }));
                         }}
-                        placeholder="Enter your password"
+                        placeholder={t("auth.login.passwordPlaceholder", "Enter your password")}
                         autoComplete="current-password"
                       />
                       <button type="button" className="auth-pw-toggle" onClick={() => setShowLoginPw((s) => !s)} aria-label={showLoginPw ? "Hide password" : "Show password"}>
@@ -435,28 +445,28 @@ function Auth({ defaultIntent } = {}) {
                       <span className="auth-checkbox-box">
                         <CheckIcon />
                       </span>
-                      Remember me
+                      {t("auth.login.rememberMe", "Remember me")}
                     </label>
                     <button type="button" className="auth-link" onClick={() => setMode("forgot")}>
-                      Forgot password?
+                      {t("auth.login.forgotPassword", "Forgot password?")}
                     </button>
                   </div>
                   <button type="submit" className="btn btn-gold auth-submit" disabled={loginLoading}>
                     {loginLoading ? (
                       <>
-                        <Spinner /> Signing in…
+                        <Spinner /> {t("auth.login.signingIn", "Signing in…")}
                       </>
                     ) : (
                       <>
-                        Sign In <span className="btn-arrow">→</span>
+                        {t("auth.login.signIn", "Sign In")} <span className="btn-arrow">→</span>
                       </>
                     )}
                   </button>
                 </form>
                 <p className="auth-switch">
-                  New to Masjid My Community?{" "}
+                  {t("auth.login.newHere", "New to Masjid My Community?")}{" "}
                   <button type="button" className="auth-link" onClick={() => setMode("register")}>
-                    Create an account
+                    {t("auth.login.createAccount", "Create an account")}
                   </button>
                 </p>
               </div>
@@ -466,10 +476,10 @@ function Auth({ defaultIntent } = {}) {
               <div className="auth-form-wrap">
                 <div className="auth-tabs">
                   <button type="button" onClick={() => setMode("login")}>
-                    Login
+                    {t("auth.tabs.login", "Login")}
                   </button>
                   <button className="active" type="button">
-                    Create Account
+                    {t("auth.tabs.createAccount", "Create Account")}
                   </button>
                 </div>
 
@@ -480,31 +490,31 @@ function Auth({ defaultIntent } = {}) {
                     </div>
                   )}
                   <div className="auth-field">
-                    <label htmlFor="reg-name">Full Name</label>
-                    <input id="reg-name" type="text" value={reg.fullName} onChange={updateReg("fullName")} placeholder="Your full name" autoComplete="name" />
+                    <label htmlFor="reg-name">{t("auth.register.fullName", "Full Name")}</label>
+                    <input id="reg-name" type="text" value={reg.fullName} onChange={updateReg("fullName")} placeholder={t("auth.register.fullNamePlaceholder", "Your full name")} autoComplete="name" />
                     {regErrors.fullName && <span className="auth-field-error">{regErrors.fullName}</span>}
                   </div>
                   <div className="auth-field">
-                    <label htmlFor="reg-contact">Email Address or Mobile Number</label>
+                    <label htmlFor="reg-contact">{t("auth.register.contact", "Email Address or Mobile Number")}</label>
                     <input
                       id="reg-contact"
                       type="text"
                       value={reg.contact}
                       onChange={updateReg("contact")}
-                      placeholder="you@example.com or 10-digit mobile number"
+                      placeholder={t("auth.register.contactPlaceholder", "you@example.com or 10-digit mobile number")}
                       autoComplete="email"
                     />
                     {regErrors.contact && <span className="auth-field-error">{regErrors.contact}</span>}
                   </div>
                   <div className="auth-field">
-                    <label htmlFor="reg-password">Password</label>
+                    <label htmlFor="reg-password">{t("auth.register.password", "Password")}</label>
                     <div className="auth-input-wrap">
                       <input
                         id="reg-password"
                         type={showRegPw ? "text" : "password"}
                         value={reg.password}
                         onChange={updateReg("password")}
-                        placeholder="At least 8 characters"
+                        placeholder={t("auth.register.passwordPlaceholder", "At least 8 characters")}
                         autoComplete="new-password"
                       />
                       <button type="button" className="auth-pw-toggle" onClick={() => setShowRegPw((s) => !s)} aria-label={showRegPw ? "Hide password" : "Show password"}>
@@ -516,19 +526,19 @@ function Auth({ defaultIntent } = {}) {
                   <button type="submit" className="btn btn-gold auth-submit" disabled={regLoading}>
                     {regLoading ? (
                       <>
-                        <Spinner /> Creating account…
+                        <Spinner /> {t("auth.register.creatingAccount", "Creating account…")}
                       </>
                     ) : (
                       <>
-                        Create Account <span className="btn-arrow">→</span>
+                        {t("auth.register.createAccount", "Create Account")} <span className="btn-arrow">→</span>
                       </>
                     )}
                   </button>
                 </form>
                 <p className="auth-switch">
-                  Already have an account?{" "}
+                  {t("auth.register.alreadyHaveAccount", "Already have an account?")}{" "}
                   <button type="button" className="auth-link" onClick={() => setMode("login")}>
-                    Sign in
+                    {t("auth.register.signIn", "Sign in")}
                   </button>
                 </p>
               </div>

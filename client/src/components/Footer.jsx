@@ -1,13 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link, NavLink } from "react-router-dom";
-
-const languages = [
-  { code: "en", label: "EN — English" },
-  { code: "ar", label: "AR — العربية" },
-  { code: "ur", label: "UR — اردو" },
-  { code: "fr", label: "FR — Français" },
-  { code: "id", label: "ID — Bahasa Indonesia" },
-];
+import { useTranslation } from "../i18n/LanguageContext.jsx";
 
 function useClickOutside(ref, onOutside) {
   useEffect(() => {
@@ -27,15 +20,18 @@ function useClickOutside(ref, onOutside) {
 // there's rarely room below a footer control, and its position is CSS we
 // control directly instead of leaving to the browser/OS.
 function LanguageSelect({ triggerClassName }) {
+  const { languages, language, setLanguage } = useTranslation();
   const [open, setOpen] = useState(false);
-  const [selected, setSelected] = useState(languages[0]);
   const ref = useRef(null);
   useClickOutside(ref, () => setOpen(false));
+
+  const selected = languages.find((l) => l.code === language) || languages[0];
+  if (!selected) return null;
 
   return (
     <div className="footer-lang" ref={ref}>
       <button type="button" className={triggerClassName} onClick={() => setOpen((o) => !o)} aria-haspopup="listbox" aria-expanded={open}>
-        {selected.label}
+        {selected.nativeName}
         <svg className={`footer-lang-chev${open ? " open" : ""}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M6 9l6 6 6-6" />
         </svg>
@@ -50,11 +46,11 @@ function LanguageSelect({ triggerClassName }) {
                 role="option"
                 aria-selected={l.code === selected.code}
                 onClick={() => {
-                  setSelected(l);
+                  setLanguage(l.code);
                   setOpen(false);
                 }}
               >
-                {l.label}
+                {l.nativeName}
               </button>
             </li>
           ))}

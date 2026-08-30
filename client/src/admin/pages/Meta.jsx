@@ -9,6 +9,7 @@ import DeletionReasonPanel from "./meta/DeletionReasonPanel.jsx";
 import ReportReasonPanel from "./meta/ReportReasonPanel.jsx";
 import SkillPanel from "./meta/SkillPanel.jsx";
 import HobbyPanel from "./meta/HobbyPanel.jsx";
+import LanguagePanel from "./meta/LanguagePanel.jsx";
 import Icon from "../components/Icons.jsx";
 
 // Registry of master-data entities managed under the Meta module. Adding a
@@ -24,6 +25,7 @@ const META_ENTITIES = [
   { key: "report-reason", label: "Report Post Reasons", icon: "flag", Component: ReportReasonPanel },
   { key: "skill", label: "Skills", icon: "target", Component: SkillPanel },
   { key: "hobby", label: "Hobbies", icon: "layers", Component: HobbyPanel },
+  { key: "language", label: "Languages", icon: "globe", Component: LanguagePanel },
 ];
 
 function Meta() {

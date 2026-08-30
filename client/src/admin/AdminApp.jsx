@@ -23,6 +23,7 @@ import Notifications from "./pages/Notifications.jsx";
 import EmailTemplateEditor from "./pages/EmailTemplateEditor.jsx";
 import Settings from "./pages/Settings.jsx";
 import Meta from "./pages/Meta.jsx";
+import Translations from "./pages/Translations.jsx";
 import Concerns from "./pages/Concerns.jsx";
 import ConcernReview from "./pages/ConcernReview.jsx";
 import Moderation from "./pages/Moderation.jsx";
@@ -59,6 +60,7 @@ function AdminApp() {
         <Route path="notifications/templates/:key" element={<EmailTemplateEditor />} />
         <Route path="meta" element={<Navigate to="/admin/meta/masjid-category" replace />} />
         <Route path="meta/:entityKey" element={<Meta />} />
+        <Route path="translations" element={<Translations />} />
         <Route path="concerns" element={<Concerns />} />
         <Route path="concerns/:id" element={<ConcernReview />} />
         <Route path="moderation" element={<Moderation />} />

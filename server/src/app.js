@@ -28,6 +28,9 @@ import adminHobbyRoutes from "./routes/adminHobbyRoutes.js";
 import adminModerationRoutes from "./routes/adminModerationRoutes.js";
 import publicReportRoutes from "./routes/publicReportRoutes.js";
 import adminContentSettingsRoutes from "./routes/adminContentSettingsRoutes.js";
+import adminLanguageRoutes from "./routes/adminLanguageRoutes.js";
+import adminTranslationRoutes from "./routes/adminTranslationRoutes.js";
+import publicI18nRoutes from "./routes/publicI18nRoutes.js";
 
 const app = express();
 
@@ -82,5 +85,8 @@ app.use("/api/admin/hobbies", adminHobbyRoutes);
 app.use("/api/admin/moderation", adminModerationRoutes);
 app.use("/api/reports", publicReportRoutes);
 app.use("/api/admin/content-settings", adminContentSettingsRoutes);
+app.use("/api/admin/languages", adminLanguageRoutes);
+app.use("/api/admin/translations", adminTranslationRoutes);
+app.use("/api/i18n", publicI18nRoutes);
 
 export default app;
