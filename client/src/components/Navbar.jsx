@@ -154,7 +154,7 @@ function Navbar() {
       </div>
       <header className="nav" ref={navElRef}>
         <div className="nav-inner">
-          <Link to="/" className="logo">
+          <Link to={user ? "/my-community" : "/"} className="logo">
             <img src="/logo.svg" alt="Masjid My Community logo" />
             Masjid <em>My Community</em>
           </Link>

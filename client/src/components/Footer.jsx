@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 import { useTranslation } from "../i18n/LanguageContext.jsx";
+import { getStoredUser } from "../utils/userAuthStorage.js";
 
 // Native script alone reads fine once you know the language, but a visitor
 // who can't yet read Urdu/Arabic/Hindi script has no way to tell the options
@@ -224,6 +225,14 @@ function AppBadge({ store }) {
 }
 
 function Footer() {
+  const [user, setUser] = useState(() => getStoredUser());
+
+  useEffect(() => {
+    const onSessionUpdated = (e) => setUser(e.detail);
+    window.addEventListener("mmc-user-session-updated", onSessionUpdated);
+    return () => window.removeEventListener("mmc-user-session-updated", onSessionUpdated);
+  }, []);
+
   useEffect(() => {
     const els = document.querySelectorAll(".foot-reveal");
     const io = new IntersectionObserver(
@@ -266,7 +275,7 @@ function Footer() {
 
           <div className="footer-top">
             <div className="footer-brand foot-reveal">
-              <Link to="/" className="logo">
+              <Link to={user ? "/my-community" : "/"} className="logo">
                 <img src="/logo.svg" alt="Masjid My Community logo" />
                 Masjid <em>My Community</em>
               </Link>
