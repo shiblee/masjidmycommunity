@@ -239,7 +239,7 @@ function Auth({ defaultIntent } = {}) {
     } catch (err) {
       const resp = err.response?.data;
       if (resp?.code === "UNVERIFIED") {
-        startOtpFlow({ userId: resp.userId, otpTarget: resp.otpTarget, maskedTarget: resp.maskedTarget }, "register");
+        startOtpFlow(resp, "register");
       } else {
         setLoginErrors({ password: resp?.message || t("auth.errGeneric", "Something went wrong. Please try again.") });
       }
@@ -262,7 +262,7 @@ function Auth({ defaultIntent } = {}) {
     } catch (err) {
       const resp = err.response?.data;
       if (resp?.code === "UNVERIFIED") {
-        startOtpFlow({ userId: resp.userId, otpTarget: resp.otpTarget, maskedTarget: resp.maskedTarget }, "register");
+        startOtpFlow(resp, "register");
       } else {
         setLoginOtpError(resp?.message || t("auth.errGeneric", "Something went wrong. Please try again."));
       }

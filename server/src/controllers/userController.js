@@ -305,12 +305,16 @@ export const login = async (req, res) => {
 
     if (user.status === "pending_verification") {
       recordLoginFailure(user, req, "Account pending verification").catch(() => {});
+      const otpTarget = user.otpTarget || (user.email ? "email" : "mobile");
+      const { otp, emailResult } = await issueOtp(user, "register", otpTarget);
       return res.status(403).json({
         message: "Please verify your account to continue.",
         code: "UNVERIFIED",
         userId: user.id,
-        otpTarget: user.otpTarget,
-        maskedTarget: user.otpTarget ? maskTarget(user.otpTarget, user) : null,
+        otpTarget,
+        maskedTarget: maskTarget(otpTarget, user),
+        demoOtp: otp,
+        emailSent: emailResult.sent,
       });
     }
     if (user.status === "suspended") {
@@ -349,12 +353,16 @@ export const sendLoginOtp = async (req, res) => {
     if (!user) return res.status(404).json({ message: invalidMessage });
 
     if (user.status === "pending_verification") {
+      const pendingTarget = user.otpTarget || (user.email ? "email" : "mobile");
+      const { otp, emailResult } = await issueOtp(user, "register", pendingTarget);
       return res.status(403).json({
         message: "Please verify your account before signing in with a code.",
         code: "UNVERIFIED",
         userId: user.id,
-        otpTarget: user.otpTarget,
-        maskedTarget: user.otpTarget ? maskTarget(user.otpTarget, user) : null,
+        otpTarget: pendingTarget,
+        maskedTarget: maskTarget(pendingTarget, user),
+        demoOtp: otp,
+        emailSent: emailResult.sent,
       });
     }
     if (user.status === "suspended") {
