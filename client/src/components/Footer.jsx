@@ -2,6 +2,14 @@ import React, { useEffect, useRef, useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 import { useTranslation } from "../i18n/LanguageContext.jsx";
 
+// Native script alone reads fine once you know the language, but a visitor
+// who can't yet read Urdu/Arabic/Hindi script has no way to tell the options
+// apart — pairing it with the English name makes every option recognizable
+// regardless of which languages the visitor can currently read.
+function languageLabel(l) {
+  return l.name === l.nativeName ? l.name : `${l.nativeName} (${l.name})`;
+}
+
 function useClickOutside(ref, onOutside) {
   useEffect(() => {
     function handle(e) {
@@ -31,7 +39,7 @@ function LanguageSelect({ triggerClassName }) {
   return (
     <div className="footer-lang" ref={ref}>
       <button type="button" className={triggerClassName} onClick={() => setOpen((o) => !o)} aria-haspopup="listbox" aria-expanded={open}>
-        {selected.nativeName}
+        {languageLabel(selected)}
         <svg className={`footer-lang-chev${open ? " open" : ""}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M6 9l6 6 6-6" />
         </svg>
@@ -50,7 +58,7 @@ function LanguageSelect({ triggerClassName }) {
                   setOpen(false);
                 }}
               >
-                {l.nativeName}
+                {languageLabel(l)}
               </button>
             </li>
           ))}
