@@ -42,14 +42,14 @@ function Spinner() {
   return <span className="auth-spinner" aria-hidden="true" />;
 }
 
-function useCountdown(active, resetKey) {
-  const [remaining, setRemaining] = useState(RESEND_SECONDS);
+function useCountdown(active, resetKey, seconds) {
+  const [remaining, setRemaining] = useState(seconds);
   useEffect(() => {
     if (!active) return;
-    setRemaining(RESEND_SECONDS);
+    setRemaining(seconds);
     const id = setInterval(() => setRemaining((r) => Math.max(0, r - 1)), 1000);
     return () => clearInterval(id);
-  }, [active, resetKey]);
+  }, [active, resetKey, seconds]);
   return remaining;
 }
 
@@ -116,6 +116,12 @@ function getArtCopy(mode, intent, t) {
         title: t("auth.art.register.title", "Join the movement."),
         sub: t("auth.art.register.sub", "Register a masjid, launch a campaign, or support one that matters to you."),
       };
+    case "login-otp":
+      return {
+        eyebrow: t("auth.art.loginOtp.eyebrow", "Sign In"),
+        title: t("auth.art.loginOtp.title", "Sign in without a password."),
+        sub: t("auth.art.loginOtp.sub", "We'll send a one-time code to your email or mobile number."),
+      };
     case "otp":
       return { eyebrow: "Verify", title: "Almost there.", sub: "Verify your account to unlock the full Masjid My Community experience." };
     case "forgot":
@@ -154,7 +160,12 @@ function Auth({ defaultIntent } = {}) {
   const [regLoading, setRegLoading] = useState(false);
   const [regError, setRegError] = useState("");
 
-  // otp (shared between register-verify and reset-password flows)
+  // login via otp
+  const [loginOtpId, setLoginOtpId] = useState("");
+  const [loginOtpLoading, setLoginOtpLoading] = useState(false);
+  const [loginOtpError, setLoginOtpError] = useState("");
+
+  // otp (shared between register-verify, reset-password, and login-otp flows)
   const [otpCtx, setOtpCtx] = useState(null);
   const [otpValue, setOtpValue] = useState("");
   const [otpLoading, setOtpLoading] = useState(false);
@@ -163,7 +174,20 @@ function Auth({ defaultIntent } = {}) {
   const [resendKey, setResendKey] = useState(0);
   const [resending, setResending] = useState(false);
   const [demoOtp, setDemoOtp] = useState("");
-  const timer = useCountdown(mode === "otp", resendKey);
+  const [otpSettings, setOtpSettings] = useState({ expiryMinutes: 5, resendCooldownSeconds: RESEND_SECONDS });
+  const timer = useCountdown(mode === "otp", resendKey, otpSettings.resendCooldownSeconds);
+
+  useEffect(() => {
+    userApi
+      .get("/otp-settings")
+      .then(({ data }) => {
+        setOtpSettings({
+          expiryMinutes: data.expiryMinutes ?? 5,
+          resendCooldownSeconds: data.resendCooldownSeconds ?? RESEND_SECONDS,
+        });
+      })
+      .catch(() => {});
+  }, []);
 
   // forgot
   const [forgotId, setForgotId] = useState("");
@@ -214,6 +238,29 @@ function Auth({ defaultIntent } = {}) {
       }
     } finally {
       setLoginLoading(false);
+    }
+  };
+
+  const submitLoginOtp = async (e) => {
+    e.preventDefault();
+    setLoginOtpError("");
+    if (!loginOtpId.trim()) {
+      setLoginOtpError(t("auth.loginOtp.errEmailOrMobile", "Enter your email address or mobile number."));
+      return;
+    }
+    setLoginOtpLoading(true);
+    try {
+      const { data } = await userApi.post("/login/otp/send", { identifier: loginOtpId.trim() });
+      startOtpFlow(data, "login");
+    } catch (err) {
+      const resp = err.response?.data;
+      if (resp?.code === "UNVERIFIED") {
+        startOtpFlow({ userId: resp.userId, otpTarget: resp.otpTarget, maskedTarget: resp.maskedTarget }, "register");
+      } else {
+        setLoginOtpError(resp?.message || t("auth.errGeneric", "Something went wrong. Please try again."));
+      }
+    } finally {
+      setLoginOtpLoading(false);
     }
   };
 
@@ -270,13 +317,13 @@ function Auth({ defaultIntent } = {}) {
     setOtpError("");
     setOtpErrorCode("");
     if (otpValue.length !== OTP_LENGTH) {
-      setOtpError("Enter the 6-digit code.");
+      setOtpError(t("auth.otp.errIncomplete", "Enter the 6-digit code."));
       return;
     }
     setOtpLoading(true);
     try {
       const { data } = await userApi.post("/verify-otp", { userId: otpCtx.userId, otp: otpValue });
-      if (otpCtx.purpose === "register") {
+      if (otpCtx.purpose === "register" || otpCtx.purpose === "login") {
         setUserSession({ token: data.token, user: data.user, remember: true });
         setVerifySuccess(true);
         setTimeout(goToAccount, 1700);
@@ -285,7 +332,11 @@ function Auth({ defaultIntent } = {}) {
       }
     } catch (err) {
       const resp = err.response?.data;
-      setOtpError(resp?.message || "Invalid code. Please try again.");
+      if (resp?.code === "TOO_MANY_ATTEMPTS") {
+        setOtpError(resp.message || t("auth.otp.errTooManyAttempts", "Too many incorrect attempts. Please request a new code."));
+      } else {
+        setOtpError(resp?.message || t("auth.otp.errInvalid", "Invalid code. Please try again."));
+      }
       setOtpErrorCode(resp?.code || "");
     } finally {
       setOtpLoading(false);
@@ -303,7 +354,7 @@ function Auth({ defaultIntent } = {}) {
       setOtpValue("");
       setResendKey((k) => k + 1);
     } catch (err) {
-      setOtpError(err.response?.data?.message || "Couldn't resend the code.");
+      setOtpError(err.response?.data?.message || t("auth.otp.errResendFailed", "Couldn't resend the code."));
     } finally {
       setResending(false);
     }
@@ -463,12 +514,64 @@ function Auth({ defaultIntent } = {}) {
                     )}
                   </button>
                 </form>
+                <button
+                  type="button"
+                  className="auth-link auth-otp-toggle"
+                  onClick={() => {
+                    setLoginOtpId(loginId);
+                    setLoginOtpError("");
+                    setMode("login-otp");
+                  }}
+                >
+                  {t("auth.login.useOtp", "Login via OTP instead")}
+                </button>
+
                 <p className="auth-switch">
                   {t("auth.login.newHere", "New to Masjid My Community?")}{" "}
                   <button type="button" className="auth-link" onClick={() => setMode("register")}>
                     {t("auth.login.createAccount", "Create an account")}
                   </button>
                 </p>
+              </div>
+            )}
+
+            {mode === "login-otp" && (
+              <div className="auth-form-wrap">
+                <h2 className="auth-step-title">{t("auth.loginOtp.title", "Sign in with a one-time code")}</h2>
+                <p className="auth-step-sub">
+                  {t("auth.loginOtp.sub", "Enter your email address or mobile number and we'll send you a code to sign in.")}
+                </p>
+                <form onSubmit={submitLoginOtp} noValidate>
+                  <div className="auth-field">
+                    <label htmlFor="login-otp-id">{t("auth.login.emailOrMobile", "Email or Mobile Number")}</label>
+                    <input
+                      id="login-otp-id"
+                      type="text"
+                      value={loginOtpId}
+                      onChange={(e) => {
+                        setLoginOtpId(e.target.value);
+                        setLoginOtpError("");
+                      }}
+                      placeholder={t("auth.login.emailOrMobilePlaceholder", "you@example.com or 10-digit mobile number")}
+                      autoComplete="username"
+                    />
+                    {loginOtpError && <span className="auth-field-error">{loginOtpError}</span>}
+                  </div>
+                  <button type="submit" className="btn btn-gold auth-submit" disabled={loginOtpLoading}>
+                    {loginOtpLoading ? (
+                      <>
+                        <Spinner /> {t("auth.loginOtp.sending", "Sending code…")}
+                      </>
+                    ) : (
+                      <>
+                        {t("auth.loginOtp.sendCode", "Send Code")} <span className="btn-arrow">→</span>
+                      </>
+                    )}
+                  </button>
+                </form>
+                <button type="button" className="auth-link auth-back" onClick={() => setMode("login")}>
+                  {t("auth.loginOtp.back", "← Back to password sign in")}
+                </button>
               </div>
             )}
 
@@ -546,33 +649,35 @@ function Auth({ defaultIntent } = {}) {
 
             {mode === "otp" && !verifySuccess && (
               <div className="auth-form-wrap">
-                <h2 className="auth-step-title">Enter verification code</h2>
+                <h2 className="auth-step-title">{t("auth.otp.title", "Enter verification code")}</h2>
                 <p className="auth-step-sub">
-                  We've sent a 6-digit code to <strong>{otpCtx?.maskedTarget}</strong>
-                  {otpCtx?.otpTarget === "email" ? " via email." : " via SMS."}
+                  {t("auth.otp.sentTo", "We've sent a {length}-digit code to").replace("{length}", OTP_LENGTH)} <strong>{otpCtx?.maskedTarget}</strong>
+                  {otpCtx?.otpTarget === "email" ? ` ${t("auth.otp.viaEmail", "via email.")}` : ` ${t("auth.otp.viaSms", "via SMS.")}`}
+                  {" "}
+                  {t("auth.otp.expiresIn", "It expires in {minutes} minutes.").replace("{minutes}", otpSettings.expiryMinutes)}
                 </p>
 
                 {demoOtp && (
                   <div className="auth-demo-otp">
-                    <InfoIcon /> Demo mode — no live gateway connected yet. Your code is <strong>{demoOtp}</strong>.
+                    <InfoIcon /> {t("auth.otp.demoMode", "Demo mode — no live gateway connected yet. Your code is")} <strong>{demoOtp}</strong>.
                   </div>
                 )}
 
                 <form onSubmit={submitOtp} noValidate>
                   <OtpInputs value={otpValue} onChange={setOtpValue} disabled={otpLoading} autoFocus />
                   {otpError && (
-                    <div className={`auth-alert${otpErrorCode === "EXPIRED" ? " warn" : ""}`}>
+                    <div className={`auth-alert${otpErrorCode === "EXPIRED" || otpErrorCode === "TOO_MANY_ATTEMPTS" ? " warn" : ""}`}>
                       <InfoIcon /> {otpError}
                     </div>
                   )}
                   <button type="submit" className="btn btn-gold auth-submit" disabled={otpLoading}>
                     {otpLoading ? (
                       <>
-                        <Spinner /> Verifying…
+                        <Spinner /> {t("auth.otp.verifying", "Verifying…")}
                       </>
                     ) : (
                       <>
-                        Verify <span className="btn-arrow">→</span>
+                        {t("auth.otp.verify", "Verify")} <span className="btn-arrow">→</span>
                       </>
                     )}
                   </button>
@@ -581,11 +686,12 @@ function Auth({ defaultIntent } = {}) {
                 <div className="auth-resend">
                   {timer > 0 ? (
                     <span>
-                      Resend code in <strong className="mono">{String(Math.floor(timer / 60)).padStart(2, "0")}:{String(timer % 60).padStart(2, "0")}</strong>
+                      {t("auth.otp.resendIn", "Resend code in")}{" "}
+                      <strong className="mono">{String(Math.floor(timer / 60)).padStart(2, "0")}:{String(timer % 60).padStart(2, "0")}</strong>
                     </span>
                   ) : (
                     <button type="button" className="auth-link" onClick={resendOtp} disabled={resending}>
-                      {resending ? "Sending…" : "Resend code"}
+                      {resending ? t("auth.otp.sending", "Sending…") : t("auth.otp.resendCode", "Resend code")}
                     </button>
                   )}
                 </div>
@@ -593,9 +699,11 @@ function Auth({ defaultIntent } = {}) {
                 <button
                   type="button"
                   className="auth-link auth-back"
-                  onClick={() => setMode(otpCtx?.purpose === "reset_password" ? "forgot" : "register")}
+                  onClick={() =>
+                    setMode(otpCtx?.purpose === "reset_password" ? "forgot" : otpCtx?.purpose === "login" ? "login-otp" : "register")
+                  }
                 >
-                  ← Back
+                  {t("auth.otp.back", "← Back")}
                 </button>
               </div>
             )}
@@ -605,8 +713,17 @@ function Auth({ defaultIntent } = {}) {
                 <span className="auth-success-icon">
                   <CheckIcon />
                 </span>
-                <h2>Account verified!</h2>
-                <p>Welcome to Masjid My Community. Taking you to your account…</p>
+                {otpCtx?.purpose === "login" ? (
+                  <>
+                    <h2>{t("auth.otp.successLoginTitle", "Signed in!")}</h2>
+                    <p>{t("auth.otp.successLoginSub", "Welcome back. Taking you to your account…")}</p>
+                  </>
+                ) : (
+                  <>
+                    <h2>{t("auth.otp.successRegisterTitle", "Account verified!")}</h2>
+                    <p>{t("auth.otp.successRegisterSub", "Welcome to Masjid My Community. Taking you to your account…")}</p>
+                  </>
+                )}
               </div>
             )}
 

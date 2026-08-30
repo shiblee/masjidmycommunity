@@ -12,6 +12,7 @@ import { ensureDeletionReasonDefaults } from "./seed/deletionReasonDefaults.js";
 import { ensureReportReasonDefaults } from "./seed/reportReasonDefaults.js";
 import { ensureModerationSettings } from "./seed/moderationSettingsDefaults.js";
 import { ensureContentSettings } from "./seed/contentSettingsDefaults.js";
+import { ensureAuthSettings } from "./seed/authSettingsDefaults.js";
 import { ensureLanguageDefaults } from "./seed/languageDefaults.js";
 import { ensureTranslationDefaults } from "./seed/translationDefaults.js";
 
@@ -30,6 +31,7 @@ connectDB()
       ensureReportReasonDefaults(),
       ensureModerationSettings(),
       ensureContentSettings(),
+      ensureAuthSettings(),
       ensureLanguageDefaults(),
       ensureTranslationDefaults(),
     ])

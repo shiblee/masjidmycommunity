@@ -3,12 +3,12 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { Op } from "sequelize";
 import User from "../models/User.js";
+import AuthSettings from "../models/AuthSettings.js";
 import { sendWelcomeEmail, sendOtpEmail } from "../services/emailService.js";
 import { recordNewUserActivity } from "../services/communityActivityService.js";
 import { recordLoginSuccess, recordLoginFailure, recordLogout } from "../services/userActivityService.js";
 import { maskEmail, maskMobile } from "../utils/mask.js";
 
-const OTP_TTL_MS = 5 * 60 * 1000;
 const SESSION_EXPIRY = "12h";
 const REMEMBER_EXPIRY = "30d";
 
@@ -65,10 +65,20 @@ function signUserToken(user, remember, sessionId) {
   });
 }
 
+async function getAuthSettings() {
+  const settings = await AuthSettings.findByPk(1);
+  return {
+    otpExpiryMinutes: settings?.otpExpiryMinutes ?? 5,
+    otpResendCooldownSeconds: settings?.otpResendCooldownSeconds ?? 60,
+    otpMaxAttempts: settings?.otpMaxAttempts ?? 5,
+  };
+}
+
 async function issueOtp(user, purpose, otpTarget) {
+  const { otpExpiryMinutes } = await getAuthSettings();
   const otp = generateOtp();
   user.otpCode = otp;
-  user.otpExpiresAt = new Date(Date.now() + OTP_TTL_MS);
+  user.otpExpiresAt = new Date(Date.now() + otpExpiryMinutes * 60 * 1000);
   user.otpPurpose = purpose;
   user.otpTarget = otpTarget;
   user.otpAttempts = 0;
@@ -81,6 +91,15 @@ async function issueOtp(user, purpose, otpTarget) {
 
   return { otp, emailResult };
 }
+
+export const getOtpSettings = async (req, res) => {
+  try {
+    const { otpExpiryMinutes, otpResendCooldownSeconds } = await getAuthSettings();
+    res.json({ expiryMinutes: otpExpiryMinutes, resendCooldownSeconds: otpResendCooldownSeconds });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 
 export const register = async (req, res) => {
   try {
@@ -158,6 +177,15 @@ export const verifyOtp = async (req, res) => {
     if (!user.otpExpiresAt || new Date(user.otpExpiresAt) < new Date()) {
       return res.status(400).json({ message: "This code has expired. Please request a new one.", code: "EXPIRED" });
     }
+
+    const { otpMaxAttempts } = await getAuthSettings();
+    if (user.otpAttempts >= otpMaxAttempts) {
+      return res.status(429).json({
+        message: "Too many incorrect attempts. Please request a new code.",
+        code: "TOO_MANY_ATTEMPTS",
+      });
+    }
+
     if (String(otp).trim() !== user.otpCode) {
       user.otpAttempts += 1;
       await user.save();
@@ -184,6 +212,23 @@ export const verifyOtp = async (req, res) => {
       sendWelcomeEmail(user).catch(() => {});
       recordNewUserActivity(user).catch(() => {});
       const sessionId = await recordLoginSuccess(user, req, { loginMethod: "Registration + OTP" });
+      const token = signUserToken(user, false, sessionId);
+      return res.json({ token, user: toPublicUser(user), verified: true });
+    }
+
+    if (purpose === "login") {
+      // Account is already active/verified — this is a returning user, not a
+      // new one, so (unlike the register branch above) no welcome email and
+      // no "new user" community activity post.
+      user.otpCode = null;
+      user.otpExpiresAt = null;
+      user.otpPurpose = null;
+      user.otpTarget = null;
+      user.otpAttempts = 0;
+      user.lastLoginAt = new Date();
+      await user.save();
+
+      const sessionId = await recordLoginSuccess(user, req, { loginMethod: "otp" });
       const token = signUserToken(user, false, sessionId);
       return res.json({ token, user: toPublicUser(user), verified: true });
     }
@@ -283,6 +328,60 @@ export const login = async (req, res) => {
     const sessionId = await recordLoginSuccess(user, req, { loginMethod: "password" });
     const token = signUserToken(user, remember, sessionId);
     res.json({ token, user: toPublicUser(user) });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const sendLoginOtp = async (req, res) => {
+  try {
+    const { identifier } = req.body;
+    if (!identifier?.trim()) {
+      return res.status(400).json({ message: "Enter your email address or mobile number." });
+    }
+
+    const id = identifier.trim();
+    const user = await User.findOne({
+      where: { [Op.or]: [{ email: id.toLowerCase() }, { mobile: id }] },
+    });
+
+    const invalidMessage = "We couldn't find an account with those details.";
+    if (!user) return res.status(404).json({ message: invalidMessage });
+
+    if (user.status === "pending_verification") {
+      return res.status(403).json({
+        message: "Please verify your account before signing in with a code.",
+        code: "UNVERIFIED",
+        userId: user.id,
+        otpTarget: user.otpTarget,
+        maskedTarget: user.otpTarget ? maskTarget(user.otpTarget, user) : null,
+      });
+    }
+    if (user.status === "suspended") {
+      return res.status(403).json({ message: "This account has been suspended. Please contact support." });
+    }
+    if (user.status === "inactive") {
+      return res.status(403).json({ message: "This account is inactive. Please contact support." });
+    }
+
+    const otpTarget = user.email && id.toLowerCase() === user.email ? "email" : "mobile";
+    if (otpTarget === "mobile" && !user.mobile) {
+      return res.status(400).json({ message: "This account has no mobile number on file to send a code to." });
+    }
+    if (otpTarget === "email" && !user.email) {
+      return res.status(400).json({ message: "This account has no email address on file to send a code to." });
+    }
+
+    const { otp, emailResult } = await issueOtp(user, "login", otpTarget);
+
+    res.json({
+      userId: user.id,
+      otpTarget,
+      maskedTarget: maskTarget(otpTarget, user),
+      demoOtp: otp,
+      emailSent: emailResult.sent,
+      message: `A sign-in code has been sent to your ${otpTarget}.`,
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

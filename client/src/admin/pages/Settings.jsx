@@ -13,6 +13,7 @@ const SECTIONS = [
   { key: "platform", label: "Platform", icon: "settings" },
   { key: "reportPost", label: "Report Post", icon: "flag" },
   { key: "content", label: "Community / Content", icon: "content" },
+  { key: "authentication", label: "Authentication", icon: "lock" },
 ];
 
 function initialsOf(name) {
@@ -56,6 +57,11 @@ function Settings() {
   const [savingContentLimits, setSavingContentLimits] = useState(false);
   const [contentLimitsError, setContentLimitsError] = useState("");
 
+  const [authSettings, setAuthSettings] = useState({ otpExpiryMinutes: 5, otpResendCooldownSeconds: 60, otpMaxAttempts: 5 });
+  const [authSettingsInput, setAuthSettingsInput] = useState({ otpExpiryMinutes: "5", otpResendCooldownSeconds: "60", otpMaxAttempts: "5" });
+  const [savingAuthSettings, setSavingAuthSettings] = useState(false);
+  const [authSettingsError, setAuthSettingsError] = useState("");
+
   const showToast = (message) => {
     setToast(message);
     setTimeout(() => setToast(null), 2600);
@@ -97,6 +103,20 @@ function Settings() {
           maxPostLength: String(data.maxPostLength),
           maxCommentLength: String(data.maxCommentLength),
           maxReplyLength: String(data.maxReplyLength),
+        });
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    adminApi
+      .get("/auth-settings")
+      .then(({ data }) => {
+        setAuthSettings(data);
+        setAuthSettingsInput({
+          otpExpiryMinutes: String(data.otpExpiryMinutes),
+          otpResendCooldownSeconds: String(data.otpResendCooldownSeconds),
+          otpMaxAttempts: String(data.otpMaxAttempts),
         });
       })
       .catch(() => {});
@@ -276,6 +296,35 @@ function Settings() {
       setContentLimitsError(err.response?.data?.message || "Couldn't save these limits. Please try again.");
     } finally {
       setSavingContentLimits(false);
+    }
+  };
+
+  const saveAuthSettings = async (e) => {
+    e.preventDefault();
+    const parsed = {};
+    for (const field of ["otpExpiryMinutes", "otpResendCooldownSeconds", "otpMaxAttempts"]) {
+      const n = Number(authSettingsInput[field]);
+      if (!Number.isInteger(n) || n < 1) {
+        setAuthSettingsError("Each value must be a whole number of at least 1.");
+        return;
+      }
+      parsed[field] = n;
+    }
+    setAuthSettingsError("");
+    setSavingAuthSettings(true);
+    try {
+      const { data } = await adminApi.patch("/auth-settings", parsed);
+      setAuthSettings(data);
+      setAuthSettingsInput({
+        otpExpiryMinutes: String(data.otpExpiryMinutes),
+        otpResendCooldownSeconds: String(data.otpResendCooldownSeconds),
+        otpMaxAttempts: String(data.otpMaxAttempts),
+      });
+      showToast("Authentication settings saved.");
+    } catch (err) {
+      setAuthSettingsError(err.response?.data?.message || "Couldn't save these settings. Please try again.");
+    } finally {
+      setSavingAuthSettings(false);
     }
   };
 
@@ -697,6 +746,70 @@ function Settings() {
                 )}
                 <button type="submit" className="amx-btn amx-btn-primary" disabled={savingContentLimits} style={{ alignSelf: "end" }}>
                   {savingContentLimits ? "Saving…" : "Save Limits"}
+                </button>
+              </form>
+            </>
+          )}
+
+          {section === "authentication" && (
+            <>
+              <div className="amx-panel-head">
+                <div>
+                  <h3>Authentication Settings</h3>
+                  <div className="amx-panel-sub">Configure how one-time codes behave for Login via OTP, registration, and password reset</div>
+                </div>
+              </div>
+              <form onSubmit={saveAuthSettings} className="amx-form-grid">
+                <div className="amx-form-group">
+                  <label htmlFor="otp-expiry">OTP Expiry (minutes)</label>
+                  <input
+                    id="otp-expiry"
+                    type="number"
+                    min={1}
+                    step={1}
+                    value={authSettingsInput.otpExpiryMinutes}
+                    onChange={(e) => setAuthSettingsInput((s) => ({ ...s, otpExpiryMinutes: e.target.value }))}
+                  />
+                  <div className="amx-panel-sub" style={{ marginTop: 6 }}>
+                    How long a code stays valid after it's sent. Current: <strong>{authSettings.otpExpiryMinutes}</strong> minutes.
+                  </div>
+                </div>
+                <div className="amx-form-group">
+                  <label htmlFor="otp-resend-cooldown">Resend Cooldown (seconds)</label>
+                  <input
+                    id="otp-resend-cooldown"
+                    type="number"
+                    min={1}
+                    step={1}
+                    value={authSettingsInput.otpResendCooldownSeconds}
+                    onChange={(e) => setAuthSettingsInput((s) => ({ ...s, otpResendCooldownSeconds: e.target.value }))}
+                  />
+                  <div className="amx-panel-sub" style={{ marginTop: 6 }}>
+                    How long a user must wait before requesting another code. Current: <strong>{authSettings.otpResendCooldownSeconds}</strong> seconds.
+                  </div>
+                </div>
+                <div className="amx-form-group">
+                  <label htmlFor="otp-max-attempts">Max Incorrect Attempts</label>
+                  <input
+                    id="otp-max-attempts"
+                    type="number"
+                    min={1}
+                    step={1}
+                    value={authSettingsInput.otpMaxAttempts}
+                    onChange={(e) => setAuthSettingsInput((s) => ({ ...s, otpMaxAttempts: e.target.value }))}
+                  />
+                  <div className="amx-panel-sub" style={{ marginTop: 6 }}>
+                    How many wrong codes are allowed before a user must request a new one. Current: <strong>{authSettings.otpMaxAttempts}</strong>.
+                  </div>
+                </div>
+                {authSettingsError && (
+                  <div className="amx-field-error">
+                    <Icon name="info" size={14} />
+                    {authSettingsError}
+                  </div>
+                )}
+                <button type="submit" className="amx-btn amx-btn-primary" disabled={savingAuthSettings} style={{ alignSelf: "end" }}>
+                  {savingAuthSettings ? "Saving…" : "Save Settings"}
                 </button>
               </form>
             </>

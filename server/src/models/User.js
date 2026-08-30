@@ -53,7 +53,7 @@ const User = sequelize.define(
       allowNull: true,
     },
     otpPurpose: {
-      type: DataTypes.ENUM("register", "reset_password", "update_contact"),
+      type: DataTypes.ENUM("register", "reset_password", "update_contact", "login"),
       allowNull: true,
     },
     otpTarget: {
