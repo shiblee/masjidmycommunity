@@ -65,6 +65,10 @@ const User = sequelize.define(
       allowNull: false,
       defaultValue: 0,
     },
+    otpLastSentAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
     lastLoginAt: {
       type: DataTypes.DATE,
       allowNull: true,

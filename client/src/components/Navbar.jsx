@@ -238,7 +238,7 @@ function Navbar() {
             ) : (
               <>
                 <Link to="/auth" className="login-link">{t("nav.logIn", "Log in")}</Link>
-                <Link to="/auth?intent=campaign" className="nav-cta">{t("nav.startCampaign", "Start a Campaign")}</Link>
+                <Link to="/auth?intent=campaign" className="nav-cta">{t("nav.startCampaign", "Login & Registration")}</Link>
               </>
             )}
             <button className="burger" aria-label="Menu" onClick={() => setOpen((o) => !o)}>

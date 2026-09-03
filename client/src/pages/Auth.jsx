@@ -130,11 +130,23 @@ function getArtCopy(mode, intent, t, otpPurpose) {
           sub: t("auth.otp.loginArt.sub", "Enter the code we sent you to finish signing in."),
         };
       }
-      return { eyebrow: "Verify", title: "Almost there.", sub: "Verify your account to unlock the full Masjid My Community experience." };
+      return {
+        eyebrow: t("auth.art.verify.eyebrow", "Verify"),
+        title: t("auth.art.verify.title", "Almost there."),
+        sub: t("auth.art.verify.sub", "Verify your account to unlock the full Masjid My Community experience."),
+      };
     case "forgot":
-      return { eyebrow: "Account Recovery", title: "Forgot your password?", sub: "No problem — we'll send you a code to reset it." };
+      return {
+        eyebrow: t("auth.art.forgot.eyebrow", "Account Recovery"),
+        title: t("auth.art.forgot.title", "Forgot your password?"),
+        sub: t("auth.art.forgot.sub", "No problem — we'll send you a code to reset it."),
+      };
     case "reset":
-      return { eyebrow: "Account Recovery", title: "Set a new password.", sub: "Choose a strong password to keep your account secure." };
+      return {
+        eyebrow: t("auth.art.reset.eyebrow", "Account Recovery"),
+        title: t("auth.art.reset.title", "Set a new password."),
+        sub: t("auth.art.reset.sub", "Choose a strong password to keep your account secure."),
+      };
     default:
       return {
         eyebrow: t("auth.art.welcomeBack.eyebrow", "Welcome Back"),
@@ -260,6 +272,10 @@ function Auth({ defaultIntent } = {}) {
     setLoginOtpLoading(true);
     try {
       const { data } = await userApi.post("/login/otp/send", { identifier: loginOtpId.trim() });
+      if (!data.userId) {
+        setLoginOtpError(t("auth.loginOtp.errNotFound", "We couldn't find an account with those details."));
+        return;
+      }
       startOtpFlow(data, "login");
     } catch (err) {
       const resp = err.response?.data;
@@ -447,6 +463,9 @@ function Auth({ defaultIntent } = {}) {
             </li>
             <li>
               <CheckIcon /> {t("auth.why.join", "Join a trusted, verified global community")}
+            </li>
+            <li>
+              <CheckIcon /> {t("auth.why.secure", "Every donation is tracked with full transparency and security")}
             </li>
           </ul>
         </div>

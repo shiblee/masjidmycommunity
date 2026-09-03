@@ -2,6 +2,34 @@ import React, { useEffect, useMemo, useState } from "react";
 import Icon from "../components/Icons.jsx";
 import adminApi from "../services/adminApi.js";
 
+// Friendly display names for the raw `category` values stored on each
+// Translation row (and used to filter). New categories work with no code
+// change here — sectionLabel() falls back to auto-formatting the raw
+// camelCase category (e.g. "raiseConcern" -> "Raise Concern") so a new
+// page's content is still readable in the admin table immediately, even
+// before someone adds a nicer label for it below.
+const SECTION_LABELS = {
+  aboutUs: "About Us",
+  auth: "Login & Registration",
+  concern: "Raise a Concern",
+  concernType: "Concern Types",
+  contact: "Contact Us",
+  contactTopic: "Contact Topics",
+  footer: "Footer",
+  legalCommon: "Legal (Common)",
+  legalTerms: "Terms of Use",
+  legalPrivacy: "Privacy Policy",
+  legalCookies: "Cookie Policy",
+  cookiePrefs: "Cookie Preferences",
+  nav: "Navigation",
+};
+
+function sectionLabel(category) {
+  if (SECTION_LABELS[category]) return SECTION_LABELS[category];
+  const spaced = String(category || "").replace(/([a-z0-9])([A-Z])/g, "$1 $2");
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+}
+
 function TranslationRow({ row, languages, onSaved }) {
   const [values, setValues] = useState(row.values);
   const [saving, setSaving] = useState(false);
@@ -28,8 +56,10 @@ function TranslationRow({ row, languages, onSaved }) {
   return (
     <tr>
       <td>
+        <span className="amx-badge amx-badge-neutral">{sectionLabel(row.category)}</span>
+      </td>
+      <td>
         <code className="amx-mono-cell">{row.key}</code>
-        <div className="amx-cell-sub">{row.category}</div>
       </td>
       {languages.map((l) => (
         <td key={l.code}>
@@ -66,7 +96,15 @@ function Translations() {
 
   useEffect(() => {
     adminApi.get("/languages").then(({ data }) => setLanguages(data.languages.filter((l) => l.isActive))).catch(() => {});
-    adminApi.get("/translations/categories").then(({ data }) => setCategories(data.categories)).catch(() => {});
+    // legalTerms/legalPrivacy/legalCookies are full page content, owned by
+    // the Pages module now — kept out of this grid so editors aren't split
+    // across two places for the same content. legalCommon (Print, Copy
+    // link, ...) stays here since it's UI chrome, not page content.
+    const PAGE_CONTENT_CATEGORIES = ["legalTerms", "legalPrivacy", "legalCookies"];
+    adminApi
+      .get("/translations/categories")
+      .then(({ data }) => setCategories(data.categories.filter((c) => !PAGE_CONTENT_CATEGORIES.includes(c))))
+      .catch(() => {});
   }, []);
 
   const load = () => {
@@ -108,8 +146,8 @@ function Translations() {
             <input type="text" placeholder="Search by key or text…" value={query} onChange={(e) => setQuery(e.target.value)} />
           </div>
           <select className="amx-select" value={category} onChange={(e) => setCategory(e.target.value)}>
-            <option value="">All categories</option>
-            {categories.map((c) => <option key={c} value={c}>{c}</option>)}
+            <option value="">All sections</option>
+            {categories.map((c) => <option key={c} value={c}>{sectionLabel(c)}</option>)}
           </select>
         </div>
 
@@ -142,6 +180,7 @@ function Translations() {
             <table className="amx-table">
               <thead>
                 <tr>
+                  <th>Section</th>
                   <th>Key</th>
                   {languages.map((l) => <th key={l.code}>{l.name}</th>)}
                   <th></th>

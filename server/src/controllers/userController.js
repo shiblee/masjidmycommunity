@@ -74,14 +74,28 @@ async function getAuthSettings() {
   };
 }
 
+// Enforces the resend cooldown for every OTP-issuing path (register, login,
+// resend, forgot-password, contact-update) so a caller can't defeat the
+// max-attempts brute-force guard in verifyOtp by just requesting a fresh
+// code to reset the attempt counter.
 async function issueOtp(user, purpose, otpTarget) {
-  const { otpExpiryMinutes } = await getAuthSettings();
+  const { otpExpiryMinutes, otpResendCooldownSeconds } = await getAuthSettings();
+
+  if (user.otpLastSentAt) {
+    const elapsedMs = Date.now() - new Date(user.otpLastSentAt).getTime();
+    const remainingMs = otpResendCooldownSeconds * 1000 - elapsedMs;
+    if (remainingMs > 0) {
+      return { throttled: true, retryAfterSeconds: Math.ceil(remainingMs / 1000) };
+    }
+  }
+
   const otp = generateOtp();
   user.otpCode = otp;
   user.otpExpiresAt = new Date(Date.now() + otpExpiryMinutes * 60 * 1000);
   user.otpPurpose = purpose;
   user.otpTarget = otpTarget;
   user.otpAttempts = 0;
+  user.otpLastSentAt = new Date();
   await user.save();
 
   let emailResult = { sent: false, dev: true };
@@ -89,7 +103,15 @@ async function issueOtp(user, purpose, otpTarget) {
     emailResult = await sendOtpEmail(user, otp).catch(() => ({ sent: false, dev: true }));
   }
 
-  return { otp, emailResult };
+  return { throttled: false, otp, emailResult };
+}
+
+function otpThrottleResponse(res, result) {
+  return res.status(429).json({
+    message: `Please wait ${result.retryAfterSeconds}s before requesting another code.`,
+    code: "COOLDOWN",
+    retryAfterSeconds: result.retryAfterSeconds,
+  });
 }
 
 export const getOtpSettings = async (req, res) => {
@@ -149,7 +171,9 @@ export const register = async (req, res) => {
       status: "pending_verification",
     });
 
-    const { otp, emailResult } = await issueOtp(user, "register", otpTarget);
+    const result = await issueOtp(user, "register", otpTarget);
+    if (result.throttled) return otpThrottleResponse(res, result);
+    const { otp, emailResult } = result;
 
     res.status(201).json({
       userId: user.id,
@@ -267,7 +291,9 @@ export const resendOtp = async (req, res) => {
       return res.status(400).json({ message: "There is no pending verification for this account." });
     }
 
-    const { otp, emailResult } = await issueOtp(user, user.otpPurpose, user.otpTarget);
+    const result = await issueOtp(user, user.otpPurpose, user.otpTarget);
+    if (result.throttled) return otpThrottleResponse(res, result);
+    const { otp, emailResult } = result;
 
     res.json({
       userId: user.id,
@@ -306,7 +332,9 @@ export const login = async (req, res) => {
     if (user.status === "pending_verification") {
       recordLoginFailure(user, req, "Account pending verification").catch(() => {});
       const otpTarget = user.otpTarget || (user.email ? "email" : "mobile");
-      const { otp, emailResult } = await issueOtp(user, "register", otpTarget);
+      const result = await issueOtp(user, "register", otpTarget);
+      if (result.throttled) return otpThrottleResponse(res, result);
+      const { otp, emailResult } = result;
       return res.status(403).json({
         message: "Please verify your account to continue.",
         code: "UNVERIFIED",
@@ -349,12 +377,17 @@ export const sendLoginOtp = async (req, res) => {
       where: { [Op.or]: [{ email: id.toLowerCase() }, { mobile: id }] },
     });
 
-    const invalidMessage = "We couldn't find an account with those details.";
-    if (!user) return res.status(404).json({ message: invalidMessage });
+    // Respond success-shaped for an unknown identifier, matching forgotPassword,
+    // so this endpoint can't be used to enumerate which accounts exist.
+    if (!user) {
+      return res.json({ requested: true, message: "If an account matches those details, a sign-in code has been sent." });
+    }
 
     if (user.status === "pending_verification") {
       const pendingTarget = user.otpTarget || (user.email ? "email" : "mobile");
-      const { otp, emailResult } = await issueOtp(user, "register", pendingTarget);
+      const result = await issueOtp(user, "register", pendingTarget);
+      if (result.throttled) return otpThrottleResponse(res, result);
+      const { otp, emailResult } = result;
       return res.status(403).json({
         message: "Please verify your account before signing in with a code.",
         code: "UNVERIFIED",
@@ -380,7 +413,9 @@ export const sendLoginOtp = async (req, res) => {
       return res.status(400).json({ message: "This account has no email address on file to send a code to." });
     }
 
-    const { otp, emailResult } = await issueOtp(user, "login", otpTarget);
+    const result = await issueOtp(user, "login", otpTarget);
+    if (result.throttled) return otpThrottleResponse(res, result);
+    const { otp, emailResult } = result;
 
     res.json({
       userId: user.id,
@@ -528,7 +563,9 @@ export const sendContactUpdateOtp = async (req, res) => {
     if (target === "email" && !user.email) return res.status(400).json({ message: "Add an email address first." });
     if (target === "mobile" && !user.mobile) return res.status(400).json({ message: "Add a mobile number first." });
 
-    const { otp, emailResult } = await issueOtp(user, "update_contact", target);
+    const result = await issueOtp(user, "update_contact", target);
+    if (result.throttled) return otpThrottleResponse(res, result);
+    const { otp, emailResult } = result;
     res.json({
       otpTarget: target,
       maskedTarget: maskTarget(target, user),
@@ -584,7 +621,9 @@ export const forgotPassword = async (req, res) => {
     }
 
     const otpTarget = user.email ? "email" : "mobile";
-    const { otp, emailResult } = await issueOtp(user, "reset_password", otpTarget);
+    const result = await issueOtp(user, "reset_password", otpTarget);
+    if (result.throttled) return otpThrottleResponse(res, result);
+    const { otp, emailResult } = result;
 
     res.json({
       requested: true,
