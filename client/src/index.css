@@ -842,7 +842,14 @@ header.nav{
    wrong. One shared rule, so both usages are guaranteed identical. */
 .mic-btn-wrap{ position:absolute; inset-inline-end:0; top:0; bottom:0; display:flex; z-index:1; }
 .mic-btn{
-  position:relative; width:48px; height:100%; border:none; border-inline-start:1px solid var(--line);
+  /* A full border, not just border-inline-start — the tab overlays and
+     hides the input's own border along its curved outer edge, so without
+     its own matching border there, the tab's shape was only defined by
+     background-color contrast against whatever sits behind the page (crisp
+     against a dark hero, nearly invisible against a white card). A full
+     border the same weight/color as the input's own makes it read as one
+     continuous, consistently-outlined control everywhere. */
+  position:relative; width:48px; height:100%; border:1px solid var(--line);
   border-start-end-radius:100px; border-end-end-radius:100px; background:var(--paper-dim);
   display:flex; align-items:center; justify-content:center; color:var(--text-on-paper-dim); cursor:pointer;
   transition:background .2s, color .2s, border-color .2s;
