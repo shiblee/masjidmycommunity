@@ -696,7 +696,12 @@ header.nav{
 
 /* ===== FAQ ===== */
 .faq-search{ position:relative; max-width:480px; margin:24px 0 18px; border-radius:100px; overflow:hidden; }
-.faq-search svg{ position:absolute; inset-inline-start:14px; top:50%; transform:translateY(-50%); width:18px; height:18px; color:var(--text-on-paper-dim); pointer-events:none; z-index:1; }
+/* Direct-child selector, not a descendant one — the mic icon's own svg is
+   nested several levels deep inside .faq-search too (via .mic-btn-icon),
+   and a plain ".faq-search svg" rule was matching it as well, shrinking it
+   and fighting its own flex centering. Only the search glass icon itself
+   is a direct child of .faq-search. */
+.faq-search > svg{ position:absolute; inset-inline-start:14px; top:50%; transform:translateY(-50%); width:18px; height:18px; color:var(--text-on-paper-dim); pointer-events:none; z-index:1; }
 .faq-search input{
   width:100%; padding:13px 90px 13px 42px; padding-inline-end:90px; border:1px solid var(--line); border-radius:100px; font-size:15px;
   font-family:var(--sans); background:#fff; transition:border-color .25s, box-shadow .25s;
@@ -833,32 +838,28 @@ header.nav{
 
 /* ===== Mic button (shared by FAQ search + Ask AI input) =====
    Rather than floating a small circle at some offset from the pill's edge
-   (fragile — easy to end up sitting half on/off the curved end-cap), this
-   is a proper embedded tab: full height, flush against the right edge,
-   rounded only on its outer corners to continue the pill's own curve.
-   The parent (.faq-search / .ask-ai-input-wrap) clips to the same
-   border-radius via overflow:hidden, so the tab's outer edge always
-   matches the pill's shape exactly — no separate offset math to get
-   wrong. One shared rule, so both usages are guaranteed identical. */
+   (fragile — easy to end up sitting half on/off the curved end-cap), the
+   hit area is a full-height zone flush against the right edge (guaranteed
+   identical between both usages, since it's one shared rule) — but the
+   VISIBLE element is a circular badge (.mic-btn-icon) centered inside it,
+   not the zone itself. The parent (.faq-search / .ask-ai-input-wrap)
+   still clips to the same border-radius via overflow:hidden as a safety
+   net, but since the circle is well inside the flat middle of the pill,
+   it never comes near the curved corners in the first place. */
 .mic-btn-wrap{ position:absolute; inset-inline-end:0; top:0; bottom:0; display:flex; z-index:1; }
 .mic-btn{
-  /* A full border, not just border-inline-start — the tab overlays and
-     hides the input's own border along its curved outer edge, so without
-     its own matching border there, the tab's shape was only defined by
-     background-color contrast against whatever sits behind the page (crisp
-     against a dark hero, nearly invisible against a white card). A full
-     border the same weight/color as the input's own makes it read as one
-     continuous, consistently-outlined control everywhere. */
-  position:relative; width:48px; height:100%; border:1px solid var(--line);
-  border-start-end-radius:100px; border-end-end-radius:100px; background:var(--paper-dim);
+  position:relative; width:48px; height:100%; border:none; background:none;
   display:flex; align-items:center; justify-content:center; color:var(--text-on-paper-dim); cursor:pointer;
+}
+.mic-btn-processing{ cursor:default; }
+.mic-btn-icon{
+  position:relative; display:flex; align-items:center; justify-content:center; width:36px; height:36px;
+  border-radius:50%; border:1px solid var(--line); background:var(--paper-dim); color:inherit;
   transition:background .2s, color .2s, border-color .2s;
 }
-.mic-btn:hover{ background:var(--line); color:var(--teal-deep); }
-.mic-btn-listening{ background:var(--teal); border-color:var(--teal); color:#fff; }
-.mic-btn-processing{ cursor:default; }
-.mic-btn-error{ background:#fee2e2; border-color:#fca5a5; color:#dc2626; }
-.mic-btn-icon{ position:relative; display:flex; align-items:center; justify-content:center; width:24px; height:24px; }
+.mic-btn:hover .mic-btn-icon{ background:var(--line); color:var(--teal-deep); }
+.mic-btn-listening .mic-btn-icon{ background:var(--teal); border-color:var(--teal); color:#fff; }
+.mic-btn-error .mic-btn-icon{ background:#fee2e2; border-color:#fca5a5; color:#dc2626; }
 .mic-btn-pulse{
   position:absolute; inset:-5px; border-radius:50%; border:2px solid var(--teal); opacity:.6; pointer-events:none;
   animation:micPulse 1.4s ease-out infinite;
