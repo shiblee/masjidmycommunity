@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Icon from "../../components/Icons.jsx";
+import { Icon as PublicIcon } from "../../../components/Icons.jsx";
 import StatusBadge from "../../components/StatusBadge.jsx";
 import SortHeader from "../../components/SortHeader.jsx";
 import Pagination from "../../components/Pagination.jsx";
@@ -9,40 +10,51 @@ import { formatDate } from "../../../utils/formatDateTime.js";
 
 const PAGE_SIZE = 100;
 
+// The public Contact Us form renders topic chip icons from the public
+// Icons.jsx set (client/src/components/Icons.jsx) — this list is restricted
+// to exactly that set so whatever an admin picks here actually exists there.
+const ICON_OPTIONS = [
+  "compass", "mosque", "shieldCheck", "flag", "globe", "heart", "chartUp", "people", "book", "sun",
+  "drop", "monitor", "bulb", "link", "camera", "upload", "trash", "edit", "check", "star",
+  "chevronLeft", "chevronRight", "mapPin", "phone", "mail", "building", "wallet", "search", "x", "plus",
+  "imageIcon", "play",
+];
+
 const SORT_COLUMNS = {
-  name: { label: "Concern Type", get: (c) => c.name?.toLowerCase() || "" },
-  status: { label: "Status", get: (c) => (c.isActive ? 1 : 0) },
-  concernCount: { label: "Concerns Using This", get: (c) => c.concernCount || 0 },
-  createdAt: { label: "Created Date", get: (c) => new Date(c.createdAt).getTime() },
-  updatedAt: { label: "Updated Date", get: (c) => new Date(c.updatedAt).getTime() },
+  name: { label: "Topic", get: (t) => t.name?.toLowerCase() || "" },
+  status: { label: "Status", get: (t) => (t.isActive ? 1 : 0) },
+  contactCount: { label: "Messages Using This", get: (t) => t.contactCount || 0 },
+  createdAt: { label: "Created Date", get: (t) => new Date(t.createdAt).getTime() },
+  updatedAt: { label: "Updated Date", get: (t) => new Date(t.updatedAt).getTime() },
 };
 
 function Toggle({ on, onClick, disabled }) {
   return <button type="button" className={`amx-toggle${on ? " on" : ""}`} onClick={onClick} disabled={disabled} aria-pressed={on} />;
 }
 
-function TypeFormModal({ type, onCancel, onSaved }) {
-  const isEdit = !!type;
-  const [name, setName] = useState(type?.name || "");
-  const [isActive, setIsActive] = useState(type ? type.isActive : true);
+function TopicFormModal({ topic, onCancel, onSaved }) {
+  const isEdit = !!topic;
+  const [name, setName] = useState(topic?.name || "");
+  const [icon, setIcon] = useState(topic?.icon || "compass");
+  const [isActive, setIsActive] = useState(topic ? topic.isActive : true);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
   const submit = async (e) => {
     e.preventDefault();
     if (!name.trim()) {
-      setError("Concern type name is required.");
+      setError("Topic name is required.");
       return;
     }
     setSaving(true);
     setError("");
     try {
       const { data } = isEdit
-        ? await adminApi.patch(`/concern-types/${type.id}`, { name: name.trim(), isActive })
-        : await adminApi.post("/concern-types", { name: name.trim(), isActive });
-      onSaved(data.type, isEdit);
+        ? await adminApi.patch(`/contact-topics/${topic.id}`, { name: name.trim(), icon, isActive })
+        : await adminApi.post("/contact-topics", { name: name.trim(), icon, isActive });
+      onSaved(data.topic, isEdit);
     } catch (err) {
-      setError(err.response?.data?.message || "Couldn't save this concern type.");
+      setError(err.response?.data?.message || "Couldn't save this topic.");
     } finally {
       setSaving(false);
     }
@@ -52,18 +64,29 @@ function TypeFormModal({ type, onCancel, onSaved }) {
     <div className="amx-modal-overlay" onClick={onCancel}>
       <div className="amx-modal" onClick={(e) => e.stopPropagation()}>
         <button className="amx-modal-close" onClick={onCancel} aria-label="Close"><Icon name="x" size={16} /></button>
-        <h3>{isEdit ? "Edit Concern Type" : "Add Concern Type"}</h3>
+        <h3>{isEdit ? "Edit Topic" : "Add Topic"}</h3>
         <form onSubmit={submit} style={{ marginTop: 16 }}>
           <div className="amx-form-group">
-            <label htmlFor="concern-type-name">Concern Type Name</label>
-            <input id="concern-type-name" type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Payment Related" autoFocus maxLength={255} />
-            {error && (
-              <div className="amx-field-error">
-                <Icon name="info" size={14} />
-                {error}
-              </div>
-            )}
+            <label htmlFor="contact-topic-name">Topic Name</label>
+            <input id="contact-topic-name" type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Partnership" autoFocus maxLength={255} />
           </div>
+          <div className="amx-form-group">
+            <label htmlFor="contact-topic-icon">Icon</label>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ width: 36, height: 36, borderRadius: 8, background: "var(--a-bg)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <PublicIcon name={icon} size={18} />
+              </span>
+              <select id="contact-topic-icon" className="amx-select" style={{ flex: 1 }} value={icon} onChange={(e) => setIcon(e.target.value)}>
+                {ICON_OPTIONS.map((i) => <option key={i} value={i}>{i}</option>)}
+              </select>
+            </div>
+          </div>
+          {error && (
+            <div className="amx-field-error">
+              <Icon name="info" size={14} />
+              {error}
+            </div>
+          )}
           <div className="amx-form-group" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
             <label style={{ marginBottom: 0 }}>Status</label>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -72,7 +95,7 @@ function TypeFormModal({ type, onCancel, onSaved }) {
             </div>
           </div>
           <button type="submit" className="amx-btn amx-btn-primary" style={{ width: "100%", marginTop: 12 }} disabled={saving || !name.trim()}>
-            {saving ? "Saving…" : isEdit ? "Save Changes" : "Add Concern Type"}
+            {saving ? "Saving…" : isEdit ? "Save Changes" : "Add Topic"}
           </button>
         </form>
       </div>
@@ -80,18 +103,18 @@ function TypeFormModal({ type, onCancel, onSaved }) {
   );
 }
 
-function ConfirmDeactivateModal({ type, onCancel, onConfirm, busy }) {
-  const inUse = (type.concernCount || 0) > 0;
+function ConfirmDeactivateModal({ topic, onCancel, onConfirm, busy }) {
+  const inUse = (topic.contactCount || 0) > 0;
   return (
     <div className="amx-modal-overlay" onClick={onCancel}>
       <div className="amx-modal" onClick={(e) => e.stopPropagation()}>
         <button className="amx-modal-close" onClick={onCancel} aria-label="Close"><Icon name="x" size={16} /></button>
         <div className="amx-modal-neutral-icon"><Icon name="eyeOff" size={22} /></div>
-        <h3 style={{ textAlign: "center" }}>Deactivate "{type.name}"?</h3>
+        <h3 style={{ textAlign: "center" }}>Deactivate "{topic.name}"?</h3>
         <p className="amx-modal-sub" style={{ textAlign: "center" }}>
           {inUse
-            ? `${type.concernCount} concern${type.concernCount === 1 ? "" : "s"} already use this type and will keep it, but it will no longer be offered on the Raise a Concern form.`
-            : "This type will no longer be offered on the Raise a Concern form."}
+            ? `${topic.contactCount} message${topic.contactCount === 1 ? "" : "s"} already use this topic and will keep it, but it will no longer be offered on the Contact Us form.`
+            : "This topic will no longer be offered on the Contact Us form."}
         </p>
         <div style={{ display: "flex", gap: 10 }}>
           <button className="amx-btn amx-btn-outline" style={{ flex: 1 }} onClick={onCancel} disabled={busy}>Cancel</button>
@@ -102,14 +125,14 @@ function ConfirmDeactivateModal({ type, onCancel, onConfirm, busy }) {
   );
 }
 
-function ConfirmDeleteModal({ type, onCancel, onConfirm, busy }) {
+function ConfirmDeleteModal({ topic, onCancel, onConfirm, busy }) {
   return (
     <div className="amx-modal-overlay" onClick={onCancel}>
       <div className="amx-modal" onClick={(e) => e.stopPropagation()}>
         <button className="amx-modal-close" onClick={onCancel} aria-label="Close"><Icon name="x" size={16} /></button>
         <div className="amx-modal-danger-icon"><Icon name="trash" size={22} /></div>
-        <h3 style={{ textAlign: "center" }}>Delete "{type.name}"?</h3>
-        <p className="amx-modal-sub" style={{ textAlign: "center" }}>This can't be undone. Existing concerns already filed under this type keep their record either way.</p>
+        <h3 style={{ textAlign: "center" }}>Delete "{topic.name}"?</h3>
+        <p className="amx-modal-sub" style={{ textAlign: "center" }}>This can't be undone. Existing messages already filed under this topic keep their record either way.</p>
         <div style={{ display: "flex", gap: 10 }}>
           <button className="amx-btn amx-btn-outline" style={{ flex: 1 }} onClick={onCancel} disabled={busy}>Cancel</button>
           <button className="amx-btn amx-btn-danger" style={{ flex: 1 }} onClick={onConfirm} disabled={busy}>{busy ? "Please wait…" : "Delete"}</button>
@@ -119,8 +142,8 @@ function ConfirmDeleteModal({ type, onCancel, onConfirm, busy }) {
   );
 }
 
-function ConcernTypePanel() {
-  const [types, setTypes] = useState([]);
+function ContactTopicPanel() {
+  const [topics, setTopics] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
@@ -129,7 +152,7 @@ function ConcernTypePanel() {
   const [sortKey, setSortKey] = useState("name");
   const [sortDir, setSortDir] = useState("asc");
   const [toast, setToast] = useState(null);
-  const [formModal, setFormModal] = useState(null); // null | "new" | type object (edit)
+  const [formModal, setFormModal] = useState(null); // null | "new" | topic object (edit)
   const [deactivating, setDeactivating] = useState(null);
   const [deleting, setDeleting] = useState(null);
   const [translating, setTranslating] = useState(null);
@@ -141,9 +164,9 @@ function ConcernTypePanel() {
     setLoading(true);
     setError("");
     adminApi
-      .get("/concern-types")
-      .then(({ data }) => setTypes(data.types))
-      .catch((err) => setError(err.response?.data?.message || "Couldn't load concern types."))
+      .get("/contact-topics")
+      .then(({ data }) => setTopics(data.topics))
+      .catch((err) => setError(err.response?.data?.message || "Couldn't load topics."))
       .finally(() => setLoading(false));
   };
 
@@ -160,12 +183,12 @@ function ConcernTypePanel() {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return types.filter((t) => {
+    return topics.filter((t) => {
       const matchesQuery = !q || t.name.toLowerCase().includes(q);
       const matchesStatus = status === "all" || (status === "active" ? t.isActive : !t.isActive);
       return matchesQuery && matchesStatus;
     });
-  }, [types, query, status]);
+  }, [topics, query, status]);
 
   const sorted = useMemo(() => {
     const getValue = SORT_COLUMNS[sortKey].get;
@@ -183,36 +206,36 @@ function ConcernTypePanel() {
   const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
   const paged = sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  const upsertType = (type, isEdit) => {
-    setTypes((ts) => (isEdit ? ts.map((t) => (t.id === type.id ? type : t)) : [...ts, type]));
+  const upsertTopic = (topic, isEdit) => {
+    setTopics((ts) => (isEdit ? ts.map((t) => (t.id === topic.id ? topic : t)) : [...ts, topic]));
     setFormModal(null);
-    showToast(isEdit ? "Concern type updated." : "Concern type added.");
+    showToast(isEdit ? "Topic updated." : "Topic added.");
   };
 
-  const activate = async (type) => {
-    setBusyId(type.id);
-    const prev = type.isActive;
-    setTypes((ts) => ts.map((t) => (t.id === type.id ? { ...t, isActive: true } : t)));
+  const activate = async (topic) => {
+    setBusyId(topic.id);
+    const prev = topic.isActive;
+    setTopics((ts) => ts.map((t) => (t.id === topic.id ? { ...t, isActive: true } : t)));
     try {
-      await adminApi.patch(`/concern-types/${type.id}`, { isActive: true });
-      showToast("Concern type activated.");
+      await adminApi.patch(`/contact-topics/${topic.id}`, { isActive: true });
+      showToast("Topic activated.");
     } catch (err) {
-      setTypes((ts) => ts.map((t) => (t.id === type.id ? { ...t, isActive: prev } : t)));
-      showToast(err.response?.data?.message || "Couldn't activate this concern type.");
+      setTopics((ts) => ts.map((t) => (t.id === topic.id ? { ...t, isActive: prev } : t)));
+      showToast(err.response?.data?.message || "Couldn't activate this topic.");
     } finally {
       setBusyId(null);
     }
   };
 
   const confirmDeactivate = async () => {
-    const type = deactivating;
-    setBusyId(type.id);
+    const topic = deactivating;
+    setBusyId(topic.id);
     try {
-      await adminApi.patch(`/concern-types/${type.id}`, { isActive: false });
-      setTypes((ts) => ts.map((t) => (t.id === type.id ? { ...t, isActive: false } : t)));
-      showToast("Concern type deactivated.");
+      await adminApi.patch(`/contact-topics/${topic.id}`, { isActive: false });
+      setTopics((ts) => ts.map((t) => (t.id === topic.id ? { ...t, isActive: false } : t)));
+      showToast("Topic deactivated.");
     } catch (err) {
-      showToast(err.response?.data?.message || "Couldn't deactivate this concern type.");
+      showToast(err.response?.data?.message || "Couldn't deactivate this topic.");
     } finally {
       setBusyId(null);
       setDeactivating(null);
@@ -220,14 +243,14 @@ function ConcernTypePanel() {
   };
 
   const confirmDelete = async () => {
-    const type = deleting;
-    setBusyId(type.id);
+    const topic = deleting;
+    setBusyId(topic.id);
     try {
-      await adminApi.delete(`/concern-types/${type.id}`);
-      setTypes((ts) => ts.filter((t) => t.id !== type.id));
-      showToast("Concern type deleted.");
+      await adminApi.delete(`/contact-topics/${topic.id}`);
+      setTopics((ts) => ts.filter((t) => t.id !== topic.id));
+      showToast("Topic deleted.");
     } catch (err) {
-      showToast(err.response?.data?.message || "Couldn't delete this concern type.");
+      showToast(err.response?.data?.message || "Couldn't delete this topic.");
     } finally {
       setBusyId(null);
       setDeleting(null);
@@ -238,18 +261,18 @@ function ConcernTypePanel() {
     <>
       <div className="amx-panel-head">
         <div>
-          <h3>Type of Concern</h3>
-          <div className="amx-panel-sub">Master list of concern types offered on the Raise a Concern form</div>
+          <h3>Contact Topics</h3>
+          <div className="amx-panel-sub">Master list of "What's this about?" topics offered on the Contact Us form</div>
         </div>
         <button className="amx-btn amx-btn-primary" onClick={() => setFormModal("new")}>
-          <Icon name="plus" size={15} /> Add Concern Type
+          <Icon name="plus" size={15} /> Add Topic
         </button>
       </div>
 
       <div className="amx-filters">
         <div className="amx-search">
           <Icon name="search" />
-          <input type="text" placeholder="Search by concern type…" value={query} onChange={(e) => setQuery(e.target.value)} />
+          <input type="text" placeholder="Search by topic…" value={query} onChange={(e) => setQuery(e.target.value)} />
         </div>
         <select className="amx-select" value={status} onChange={(e) => setStatus(e.target.value)}>
           <option value="all">All statuses</option>
@@ -267,13 +290,13 @@ function ConcernTypePanel() {
 
       {loading ? (
         <div className="amx-empty">
-          <Icon name="shield" />
-          <strong>Loading concern types…</strong>
+          <Icon name="mail" />
+          <strong>Loading topics…</strong>
         </div>
       ) : filtered.length === 0 ? (
         <div className="amx-empty">
-          <Icon name="shield" />
-          <strong>No concern types match your filters</strong>
+          <Icon name="mail" />
+          <strong>No topics match your filters</strong>
           <span>Try a different search term or status filter.</span>
         </div>
       ) : (
@@ -281,9 +304,10 @@ function ConcernTypePanel() {
           <table className="amx-table">
             <thead>
               <tr>
-                <SortHeader label="Concern Type" sortKey="name" activeKey={sortKey} direction={sortDir} onSort={toggleSort} />
+                <th></th>
+                <SortHeader label="Topic" sortKey="name" activeKey={sortKey} direction={sortDir} onSort={toggleSort} />
                 <SortHeader label="Status" sortKey="status" activeKey={sortKey} direction={sortDir} onSort={toggleSort} />
-                <SortHeader label="Concerns Using This" sortKey="concernCount" activeKey={sortKey} direction={sortDir} onSort={toggleSort} />
+                <SortHeader label="Messages Using This" sortKey="contactCount" activeKey={sortKey} direction={sortDir} onSort={toggleSort} />
                 <SortHeader label="Created Date" sortKey="createdAt" activeKey={sortKey} direction={sortDir} onSort={toggleSort} />
                 <SortHeader label="Updated Date" sortKey="updatedAt" activeKey={sortKey} direction={sortDir} onSort={toggleSort} />
                 <th></th>
@@ -292,9 +316,14 @@ function ConcernTypePanel() {
             <tbody>
               {paged.map((t) => (
                 <tr key={t.id}>
+                  <td style={{ width: 40 }}>
+                    <span style={{ width: 30, height: 30, borderRadius: 7, background: "var(--a-bg)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <PublicIcon name={t.icon} size={15} />
+                    </span>
+                  </td>
                   <td><strong>{t.name}</strong></td>
                   <td><StatusBadge status={t.isActive ? "active" : "inactive"} /></td>
-                  <td>{t.concernCount || 0}</td>
+                  <td>{t.contactCount || 0}</td>
                   <td>{formatDate(t.createdAt)}</td>
                   <td>{formatDate(t.updatedAt)}</td>
                   <td>
@@ -314,7 +343,7 @@ function ConcernTypePanel() {
                           Activate
                         </button>
                       )}
-                      {!t.concernCount && (
+                      {!t.contactCount && (
                         <button className="amx-icon-action" aria-label="Delete" title="Delete" disabled={busyId === t.id} onClick={() => setDeleting(t)}>
                           <Icon name="trash" />
                         </button>
@@ -331,16 +360,16 @@ function ConcernTypePanel() {
       <Pagination page={page} totalPages={totalPages} totalItems={sorted.length} pageSize={PAGE_SIZE} onChange={setPage} />
 
       {formModal && (
-        <TypeFormModal
-          type={formModal === "new" ? null : formModal}
+        <TopicFormModal
+          topic={formModal === "new" ? null : formModal}
           onCancel={() => setFormModal(null)}
-          onSaved={upsertType}
+          onSaved={upsertTopic}
         />
       )}
 
       {deactivating && (
         <ConfirmDeactivateModal
-          type={deactivating}
+          topic={deactivating}
           busy={busyId === deactivating.id}
           onCancel={() => setDeactivating(null)}
           onConfirm={confirmDeactivate}
@@ -349,7 +378,7 @@ function ConcernTypePanel() {
 
       {deleting && (
         <ConfirmDeleteModal
-          type={deleting}
+          topic={deleting}
           busy={busyId === deleting.id}
           onCancel={() => setDeleting(null)}
           onConfirm={confirmDelete}
@@ -359,8 +388,8 @@ function ConcernTypePanel() {
       {translating && (
         <TranslateFieldsModal
           title={`Translate "${translating.name}"`}
-          category="concernType"
-          entityKey={`concernType.${translating.id}`}
+          category="contactTopic"
+          entityKey={`contactTopic.${translating.id}`}
           defaultLabel={translating.name}
           onCancel={() => setTranslating(null)}
           onSaved={() => {
@@ -375,4 +404,4 @@ function ConcernTypePanel() {
   );
 }
 
-export default ConcernTypePanel;
+export default ContactTopicPanel;

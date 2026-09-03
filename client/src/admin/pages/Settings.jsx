@@ -756,7 +756,7 @@ function Settings() {
               <div className="amx-panel-head">
                 <div>
                   <h3>Authentication Settings</h3>
-                  <div className="amx-panel-sub">Configure how one-time codes behave for Login via OTP, registration, and password reset</div>
+                  <div className="amx-panel-sub">Configure how one-time codes behave for Login via OTP, registration, password reset, and updating contact details</div>
                 </div>
               </div>
               <form onSubmit={saveAuthSettings} className="amx-form-grid">

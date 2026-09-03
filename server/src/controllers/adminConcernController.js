@@ -37,6 +37,19 @@ export const listAll = async (req, res) => {
   }
 };
 
+// Lightweight endpoint for the sidebar badge — polled independently of the
+// full concern list so refreshing the count doesn't pull every concern row.
+export const counts = async (req, res) => {
+  try {
+    const result = {};
+    for (const s of ["open", "resolved", "closed"]) result[s] = await Concern.count({ where: { status: s } });
+    result.unresolved = result.open + result.closed;
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 export const getOne = async (req, res) => {
   try {
     const concern = await Concern.findByPk(req.params.id);

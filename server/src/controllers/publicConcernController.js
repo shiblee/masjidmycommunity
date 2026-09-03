@@ -2,6 +2,7 @@ import ConcernType from "../models/ConcernType.js";
 import Concern from "../models/Concern.js";
 import ConcernHistory from "../models/ConcernHistory.js";
 import { sendConcernSubmittedAdminEmail, sendConcernSubmittedUserEmail } from "../services/emailService.js";
+import { notifyAdmins } from "../services/adminAlertService.js";
 
 export const listTypes = async (req, res) => {
   try {
@@ -46,6 +47,13 @@ export const submit = async (req, res) => {
 
     sendConcernSubmittedAdminEmail(concern).catch(() => {});
     sendConcernSubmittedUserEmail(concern).catch(() => {});
+    notifyAdmins({
+      type: "concern_submitted",
+      title: `New concern from ${concern.fullName}`,
+      body: `${concern.concernType} — ${concern.subject}`,
+      link: `/admin/concerns/${concern.id}`,
+      relatedConcernId: concern.id,
+    }).catch(() => {});
 
     res.status(201).json({ concern: { reference: concern.reference, status: concern.status } });
   } catch (error) {

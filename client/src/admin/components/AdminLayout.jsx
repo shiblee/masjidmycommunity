@@ -4,6 +4,17 @@ import Icon from "./Icons.jsx";
 import adminApi from "../services/adminApi.js";
 import { getUser, updateStoredUser, clearSession } from "../authStorage.js";
 
+function timeAgo(dateStr) {
+  const diffMs = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diffMs / 60000);
+  if (mins < 1) return "Just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  return `${days}d ago`;
+}
+
 function initialsOf(name) {
   if (!name) return "AD";
   const parts = name.trim().split(/\s+/);
@@ -23,20 +34,22 @@ const NAV_ITEMS = [
   { to: "/admin/reports", label: "Reports & Analytics", icon: "reports" },
   { to: "/admin/community-wall", label: "Community Wall", icon: "megaphone" },
   { to: "/admin/concerns", label: "Raise a Concern", icon: "shield" },
+  { to: "/admin/contact-inquiries", label: "Contact Us", icon: "mail" },
+  { to: "/admin/faq", label: "FAQ & AI Assistant", icon: "info" },
   { to: "/admin/moderation", label: "Reported Content", icon: "flag" },
   { to: "/admin/notifications", label: "Notifications", icon: "bell" },
   { to: "/admin/meta", label: "Meta", icon: "layers" },
+  { to: "/admin/pages", label: "Pages", icon: "fileText" },
   { to: "/admin/translations", label: "Translations", icon: "content" },
   { to: "/admin/settings", label: "Settings", icon: "settings" },
 ];
 
-const NOTIFICATIONS = [
-  { id: 1, text: "Green Valley Masjid submitted verification documents.", time: "8m ago", read: false },
-  { id: 2, text: "Winter Relief Drive crossed 90% of its funding goal.", time: "42m ago", read: false },
-  { id: 3, text: "New donor milestone: 12,000 total donors reached.", time: "2h ago", read: false },
-  { id: 4, text: "Monthly fund-utilization report is ready for review.", time: "5h ago", read: true },
-  { id: 5, text: "Al-Noor Community Center profile was updated.", time: "1d ago", read: true },
-];
+// Nav items whose badge count is polled alongside the bell notifications —
+// each endpoint is expected to return { unresolved: <number>, ... }.
+const BADGE_SOURCES = {
+  "/admin/concerns": "/concerns/counts",
+  "/admin/contact-inquiries": "/contact-inquiries/counts",
+};
 
 function useClickOutside(ref, onOutside) {
   useEffect(() => {
@@ -48,39 +61,56 @@ function useClickOutside(ref, onOutside) {
   }, [ref, onOutside]);
 }
 
-function NotificationsMenu() {
+function NotificationsMenu({ alerts, unreadCount, onOpenAlert, onMarkAllRead }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   useClickOutside(ref, () => setOpen(false));
-  const unread = NOTIFICATIONS.filter((n) => !n.read).length;
 
   return (
     <div style={{ position: "relative" }} ref={ref}>
       <button className="amx-icon-btn" onClick={() => setOpen((o) => !o)} aria-label="Notifications">
         <Icon name="bell" />
-        {unread > 0 && <span className="amx-icon-dot" />}
+        {unreadCount > 0 && <span className="amx-icon-dot" />}
       </button>
       {open && (
-        <div className="amx-dropdown" style={{ width: 320, minWidth: 320 }}>
+        <div className="amx-dropdown" style={{ width: 340, minWidth: 340 }}>
           <div className="amx-dropdown-head" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div>
               <strong>Notifications</strong>
-              <span>{unread} unread</span>
+              <span>{unreadCount} unread</span>
             </div>
+            {unreadCount > 0 && (
+              <button type="button" className="amx-mark-read-link" onClick={onMarkAllRead}>
+                Mark all read
+              </button>
+            )}
           </div>
           <div className="amx-notif-list">
-            {NOTIFICATIONS.map((n) => (
-              <div key={n.id} className={`amx-notif-item${n.read ? " read" : ""}`}>
-                <span className="amx-notif-dot" />
-                <div>
-                  <p>{n.text}</p>
-                  <span>{n.time}</span>
-                </div>
+            {alerts.length === 0 && (
+              <div className="amx-notif-empty">
+                <Icon name="bell" size={20} />
+                <span>You're all caught up — no notifications yet.</span>
               </div>
+            )}
+            {alerts.map((n) => (
+              <button
+                type="button"
+                key={n.id}
+                className={`amx-notif-item${n.isRead ? " read" : ""}`}
+                onClick={() => {
+                  setOpen(false);
+                  onOpenAlert(n);
+                }}
+              >
+                <span className="amx-notif-dot" />
+                <span className="amx-notif-item-body">
+                  <span className="amx-notif-item-title">{n.title}</span>
+                  {n.body && <span className="amx-notif-item-text">{n.body}</span>}
+                  <span className="amx-notif-item-time">{timeAgo(n.createdAt)}</span>
+                </span>
+              </button>
             ))}
           </div>
-          <div className="amx-dropdown-sep" />
-          <a href="#notifications">View all notifications</a>
         </div>
       )}
     </div>
@@ -176,6 +206,10 @@ function ProfileMenu({ user }) {
 
 function AdminLayout() {
   const [user, setUser] = useState(() => getUser());
+  const [alerts, setAlerts] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [badgeCounts, setBadgeCounts] = useState({});
+  const navigate = useNavigate();
 
   useEffect(() => {
     adminApi
@@ -190,6 +224,40 @@ function AdminLayout() {
     window.addEventListener("mmc-admin-user-updated", onUserUpdated);
     return () => window.removeEventListener("mmc-admin-user-updated", onUserUpdated);
   }, []);
+
+  useEffect(() => {
+    const load = () => {
+      adminApi
+        .get("/alerts")
+        .then(({ data }) => {
+          setAlerts(data.alerts);
+          setUnreadCount(data.unreadCount);
+        })
+        .catch(() => {});
+      Object.entries(BADGE_SOURCES).forEach(([to, endpoint]) => {
+        adminApi
+          .get(endpoint)
+          .then(({ data }) => setBadgeCounts((c) => ({ ...c, [to]: data.unresolved })))
+          .catch(() => {});
+      });
+    };
+    load();
+    const interval = setInterval(load, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const openAlert = (n) => {
+    if (!n.isRead) {
+      adminApi.patch(`/alerts/${n.id}/read`).then(({ data }) => setUnreadCount(data.unreadCount)).catch(() => {});
+      setAlerts((list) => list.map((x) => (x.id === n.id ? { ...x, isRead: true } : x)));
+    }
+    if (n.link) navigate(n.link);
+  };
+
+  const markAllAlertsRead = () => {
+    adminApi.patch("/alerts/read-all").then(() => setUnreadCount(0)).catch(() => {});
+    setAlerts((list) => list.map((x) => ({ ...x, isRead: true })));
+  };
 
   return (
     <div className="admin-root">
@@ -208,7 +276,7 @@ function AdminLayout() {
             </div>
 
             <div className="amx-topbar-actions">
-              <NotificationsMenu />
+              <NotificationsMenu alerts={alerts} unreadCount={unreadCount} onOpenAlert={openAlert} onMarkAllRead={markAllAlertsRead} />
               <ProfileMenu user={user} />
             </div>
           </div>
@@ -218,6 +286,9 @@ function AdminLayout() {
                 <NavLink key={item.to} to={item.to} className={({ isActive }) => (isActive ? "active" : "")}>
                   <Icon name={item.icon} size={16} />
                   {item.label}
+                  {badgeCounts[item.to] > 0 && (
+                    <span className="amx-nav-count-badge">{badgeCounts[item.to] > 99 ? "99+" : badgeCounts[item.to]}</span>
+                  )}
                 </NavLink>
               ))}
             </nav>

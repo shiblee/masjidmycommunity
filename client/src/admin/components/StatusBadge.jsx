@@ -15,6 +15,7 @@ const MAP = {
   pending_verification: { cls: "amx-badge-warn", label: "Pending Verification" },
   submitted: { cls: "amx-badge-warn", label: "Submitted" },
   under_review: { cls: "amx-badge-warn", label: "Under Review" },
+  in_progress: { cls: "amx-badge-warn", label: "In Progress" },
   changes_requested: { cls: "amx-badge-warn", label: "Changes Requested" },
   warn: { cls: "amx-badge-warn", label: "Pending" },
   ongoing: { cls: "amx-badge-warn", label: "Ongoing" },

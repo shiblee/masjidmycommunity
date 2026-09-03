@@ -443,7 +443,7 @@ export async function sendConcernResolvedEmail(concern) {
   });
 }
 
-export async function sendContactMessageEmail({ fullName, email, topic, message }) {
+export async function sendContactMessageEmail({ fullName, email, topic, message, reference }) {
   const settings = await EmailSettings.findOne();
   const to = settings?.adminNotificationEmail;
   return sendNotification("contact_message_admin", {
@@ -452,10 +452,55 @@ export async function sendContactMessageEmail({ fullName, email, topic, message 
       user_name: fullName,
       user_contact: email,
       topic,
+      reference: reference || "—",
       submission_date: new Date().toLocaleString("en-GB"),
       message_body: message,
     },
     userMeta: { userName: fullName, userEmail: to },
+  });
+}
+
+export async function sendContactAcknowledgementEmail(contactMessage, topicLabel) {
+  if (!contactMessage.email) return { sent: false, skipped: true };
+  return sendNotification("contact_message_user", {
+    to: contactMessage.email,
+    variables: {
+      user_name: contactMessage.fullName,
+      reference: contactMessage.reference,
+      topic: topicLabel || contactMessage.topic,
+      submission_date: new Date(contactMessage.createdAt).toLocaleString("en-GB"),
+      message_body: contactMessage.message,
+    },
+    userMeta: { userName: contactMessage.fullName, userEmail: contactMessage.email },
+  });
+}
+
+export async function sendContactReplyEmail(contactMessage, replyMessage) {
+  if (!contactMessage.email) return { sent: false, skipped: true };
+  return sendNotification("contact_message_reply", {
+    to: contactMessage.email,
+    variables: {
+      user_name: contactMessage.fullName,
+      reference: contactMessage.reference,
+      reply_message: replyMessage,
+    },
+    userMeta: { userName: contactMessage.fullName, userEmail: contactMessage.email },
+  });
+}
+
+export async function sendContactClosedEmail(contactMessage, topicLabel) {
+  if (!contactMessage.email) return { sent: false, skipped: true };
+  return sendNotification("contact_message_closed_user", {
+    to: contactMessage.email,
+    variables: {
+      user_name: contactMessage.fullName,
+      reference: contactMessage.reference,
+      topic: topicLabel || contactMessage.topic,
+      submission_date: new Date(contactMessage.createdAt).toLocaleString("en-GB"),
+      closed_date: new Date(contactMessage.closedAt || Date.now()).toLocaleString("en-GB"),
+      closing_remarks: contactMessage.closingRemarks || "—",
+    },
+    userMeta: { userName: contactMessage.fullName, userEmail: contactMessage.email },
   });
 }
 

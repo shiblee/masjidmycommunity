@@ -4,6 +4,7 @@ import MasjidCategoryPanel from "./meta/MasjidCategoryPanel.jsx";
 import CampaignCategoryPanel from "./meta/CampaignCategoryPanel.jsx";
 import CampaignClassificationPanel from "./meta/CampaignClassificationPanel.jsx";
 import ConcernTypePanel from "./meta/ConcernTypePanel.jsx";
+import ContactTopicPanel from "./meta/ContactTopicPanel.jsx";
 import BankPanel from "./meta/BankPanel.jsx";
 import DeletionReasonPanel from "./meta/DeletionReasonPanel.jsx";
 import ReportReasonPanel from "./meta/ReportReasonPanel.jsx";
@@ -20,6 +21,7 @@ const META_ENTITIES = [
   { key: "campaign-category", label: "Campaign Category", icon: "campaign", Component: CampaignCategoryPanel },
   { key: "campaign-classification", label: "Fundraising Classification", icon: "donation", Component: CampaignClassificationPanel },
   { key: "concern-type", label: "Type of Concern", icon: "shield", Component: ConcernTypePanel },
+  { key: "contact-topic", label: "Contact Topics", icon: "mail", Component: ContactTopicPanel },
   { key: "bank", label: "Banks", icon: "wallet", Component: BankPanel },
   { key: "deletion-reason", label: "Masjid Deletion Reasons", icon: "trash", Component: DeletionReasonPanel },
   { key: "report-reason", label: "Report Post Reasons", icon: "flag", Component: ReportReasonPanel },
