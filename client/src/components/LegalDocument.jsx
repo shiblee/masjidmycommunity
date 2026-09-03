@@ -1,5 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
+import { useTranslation } from "../i18n/LanguageContext.jsx";
 
 function ReadingProgress() {
   const [pct, setPct] = useState(0);
@@ -25,52 +27,65 @@ function ReadingProgress() {
   return <div className="scroll-progress" style={{ width: `${pct}%` }} aria-hidden="true" />;
 }
 
-function CopyLinkButton({ id }) {
-  const [copied, setCopied] = useState(false);
-  const copy = async () => {
-    const url = `${window.location.origin}${window.location.pathname}#${id}`;
-    try {
-      await navigator.clipboard.writeText(url);
-    } catch {
-      // clipboard API unavailable; the address bar still updates below
-    }
-    window.location.hash = id;
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1800);
-  };
+function slugify(text) {
   return (
-    <button className={`legal-copy${copied ? " copied" : ""}`} onClick={copy} aria-label="Copy link to this section">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M10 13a5 5 0 007.07 0l2.83-2.83a5 5 0 00-7.07-7.07L11.5 4.5" />
-        <path d="M14 11a5 5 0 00-7.07 0L4.1 13.83a5 5 0 007.07 7.07L12.5 19.5" />
-      </svg>
-      <span>{copied ? "Copied!" : "Copy link"}</span>
-    </button>
+    String(text || "")
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "section"
   );
 }
 
-function LegalDocument({ title, updated, intro, sections }) {
-  const [activeId, setActiveId] = useState(sections[0]?.id);
+// Renders one static page: fetched title + rich-text bodyHtml, a sticky
+// table of contents auto-built from the body's <h2> headings (so admins can
+// add/reorder/remove sections in the Pages editor with no frontend change),
+// and — for pages like Cookie Policy that need a live widget inside the
+// content — an extraMounts map of elementId -> React node, portaled into a
+// matching element the editor content contains (e.g. <div id="...">).
+// A leading <p> before any section heading reads as the document's intro —
+// pulled out so it can sit full-width under the title instead of being
+// squeezed into the narrower two-column section area.
+function splitIntro(bodyHtml) {
+  const scratch = document.createElement("div");
+  scratch.innerHTML = bodyHtml || "";
+  const first = scratch.firstElementChild;
+  if (first && first.tagName === "P") {
+    first.remove();
+    return { introHtml: first.innerHTML, restHtml: scratch.innerHTML };
+  }
+  return { introHtml: "", restHtml: bodyHtml || "" };
+}
+
+function LegalDocument({ title, bodyHtml, extraMounts }) {
+  const { t } = useTranslation();
+  const bodyRef = useRef(null);
+  const [toc, setToc] = useState([]);
+  const [activeId, setActiveId] = useState(null);
+  const [mountNodes, setMountNodes] = useState({});
+
+  const { introHtml, restHtml } = useMemo(() => splitIntro(bodyHtml), [bodyHtml]);
 
   useEffect(() => {
-    const els = document.querySelectorAll(".legal-reveal");
-    const io = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add("in");
-            io.unobserve(entry.target);
-          }
-        });
-      },
-      { threshold: 0, rootMargin: "0px 0px 60px 0px" }
-    );
-    els.forEach((el) => io.observe(el));
-    return () => io.disconnect();
-  }, []);
+    const container = bodyRef.current;
+    if (!container) return;
 
-  useEffect(() => {
-    const targets = sections.map((s) => document.getElementById(s.id)).filter(Boolean);
+    const headings = Array.from(container.querySelectorAll("h2"));
+    const seen = {};
+    const items = headings.map((h) => {
+      let id = slugify(h.textContent);
+      if (seen[id]) {
+        seen[id] += 1;
+        id = `${id}-${seen[id]}`;
+      } else {
+        seen[id] = 1;
+      }
+      h.id = id;
+      return { id, text: h.textContent };
+    });
+    setToc(items);
+    setActiveId(items[0]?.id || null);
+
     const io = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -79,59 +94,45 @@ function LegalDocument({ title, updated, intro, sections }) {
       },
       { rootMargin: "-15% 0px -70% 0px", threshold: 0 }
     );
-    targets.forEach((t) => io.observe(t));
+    headings.forEach((h) => io.observe(h));
+
+    const nodes = {};
+    Object.keys(extraMounts || {}).forEach((id) => {
+      const el = container.querySelector(`#${id}`);
+      if (el) nodes[id] = el;
+    });
+    setMountNodes(nodes);
+
     return () => io.disconnect();
-  }, [sections]);
+  }, [restHtml, extraMounts]);
 
   return (
     <main className="wrap legal-page">
       <ReadingProgress />
       <div className="legal-head">
-        <span className="eyebrow">Legal</span>
+        <span className="eyebrow">{t("legalCommon.eyebrow", "Legal")}</span>
         <h1>{title}</h1>
-        <div className="legal-meta">
-          <p className="legal-updated">Last updated: {updated}</p>
-          <button className="legal-print" onClick={() => window.print()}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M6 9V2h12v7" />
-              <path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2" />
-              <path d="M6 14h12v8H6z" />
-            </svg>
-            Print
-          </button>
-        </div>
-        <p className="legal-intro">{intro}</p>
+        {introHtml && <p className="legal-intro" dangerouslySetInnerHTML={{ __html: introHtml }} />}
       </div>
 
       <div className="legal-body">
-        <nav className="legal-toc" aria-label="Table of contents">
-          <span className="legal-toc-label">On this page</span>
-          {sections.map((s) => (
-            <a href={`#${s.id}`} className={activeId === s.id ? "active" : ""} key={s.id}>
-              {s.number}. {s.title}
-            </a>
-          ))}
-        </nav>
+        {toc.length > 0 && (
+          <nav className="legal-toc" aria-label="Table of contents">
+            <span className="legal-toc-label">{t("legalCommon.onThisPage", "On this page")}</span>
+            {toc.map((item, i) => (
+              <a href={`#${item.id}`} className={activeId === item.id ? "active" : ""} key={item.id}>
+                {String(i + 1).padStart(2, "0")}. {item.text}
+              </a>
+            ))}
+          </nav>
+        )}
 
-        <div className="legal-sections">
-          {sections.map((s) => (
-            <section className="legal-section legal-reveal" id={s.id} key={s.id}>
-              <div className="legal-section-head">
-                <span className="legal-num">{s.number}</span>
-                <h2>{s.title}</h2>
-                <CopyLinkButton id={s.id} />
-              </div>
-              {s.body.map((p, i) => (
-                <p key={i}>{p}</p>
-              ))}
-              {s.extra}
-            </section>
-          ))}
-        </div>
+        <div className="legal-sections" ref={bodyRef} dangerouslySetInnerHTML={{ __html: restHtml }} />
+        {Object.entries(extraMounts || {}).map(([id, node]) => mountNodes[id] && createPortal(node, mountNodes[id], id))}
       </div>
 
       <Link to="/" className="legal-back">
-        ← Back to home
+        {t("legalCommon.backToHome", "← Back to home")}
       </Link>
     </main>
   );
