@@ -695,26 +695,20 @@ header.nav{
 @media (max-width:560px){ .resource-grid{ grid-template-columns:1fr; } }
 
 /* ===== FAQ ===== */
-.faq-search{ position:relative; max-width:480px; margin:24px 0 18px; }
-.faq-search svg{ position:absolute; inset-inline-start:14px; top:50%; transform:translateY(-50%); width:18px; height:18px; color:var(--text-on-paper-dim); pointer-events:none; }
+.faq-search{ position:relative; max-width:480px; margin:24px 0 18px; border-radius:100px; overflow:hidden; }
+.faq-search svg{ position:absolute; inset-inline-start:14px; top:50%; transform:translateY(-50%); width:18px; height:18px; color:var(--text-on-paper-dim); pointer-events:none; z-index:1; }
 .faq-search input{
-  width:100%; padding:13px 100px 13px 42px; padding-inline-end:100px; border:1px solid var(--line); border-radius:100px; font-size:15px;
+  width:100%; padding:13px 90px 13px 42px; padding-inline-end:90px; border:1px solid var(--line); border-radius:100px; font-size:15px;
   font-family:var(--sans); background:#fff; transition:border-color .25s, box-shadow .25s;
 }
 .faq-search input:focus{ outline:none; border-color:var(--teal); box-shadow:0 0 0 3px rgba(141,198,63,.15); }
 .faq-search-clear{
-  /* The input is a full pill (border-radius:100px), so its right end is a
-     semicircle roughly (height/2) deep — anything placed closer to the edge
-     than that renders on top of the curved corner where the white
-     background has already fallen away, and looks like it's overflowing
-     the pill. 62px/28px below keep both icons comfortably inside the flat
-     middle, well past the ~23px curve start rather than right at its edge. */
-  position:absolute; inset-inline-end:62px; top:50%; transform:translateY(-50%); width:24px; height:24px; border-radius:50%;
+  /* Sits left of the 48px mic tab (see .mic-btn below) with an 8px gap. */
+  position:absolute; inset-inline-end:56px; top:50%; transform:translateY(-50%); width:24px; height:24px; border-radius:50%;
   background:var(--paper-dim); border:none; font-size:16px; line-height:1; color:var(--text-on-paper-dim);
-  display:flex; align-items:center; justify-content:center;
+  display:flex; align-items:center; justify-content:center; z-index:1;
 }
 .faq-search-clear:hover{ background:var(--line); color:var(--text-on-paper); }
-.faq-search-mic{ position:absolute; inset-inline-end:28px; top:50%; transform:translateY(-50%); }
 .faq-mark{ background:rgba(141,198,63,.3); color:inherit; padding:0 2px; border-radius:2px; }
 
 .faq-list{ margin-top:8px; border-top:1px solid var(--line); }
@@ -829,34 +823,42 @@ header.nav{
 @keyframes askAiTyping{ 0%,60%,100%{ transform:translateY(0); opacity:.4; } 30%{ transform:translateY(-4px); opacity:1; } }
 
 .ask-ai-input-row{ display:flex; gap:10px; }
-.ask-ai-input-wrap{ position:relative; flex:1; }
+.ask-ai-input-wrap{ position:relative; flex:1; border-radius:100px; overflow:hidden; }
 .ask-ai-input-row input{
-  width:100%; padding:14px 64px 14px 18px; padding-inline-end:64px; border:1px solid var(--line); border-radius:100px; font-size:14.5px; font-family:var(--sans);
+  width:100%; padding:14px 58px 14px 18px; padding-inline-end:58px; border:1px solid var(--line); border-radius:100px; font-size:14.5px; font-family:var(--sans);
   background:#fff; transition:border-color .25s, box-shadow .25s;
 }
 .ask-ai-input-row input:focus{ outline:none; border-color:var(--teal); box-shadow:0 0 0 3px rgba(141,198,63,.15); }
 .ask-ai-input-row .btn{ flex-shrink:0; }
-/* Same pill-corner clearance as .faq-search-mic — see the comment there. */
-.ask-ai-mic{ position:absolute; inset-inline-end:28px; top:50%; transform:translateY(-50%); }
 
-/* ===== Mic button (shared by FAQ search + Ask AI input) ===== */
-.mic-btn-wrap{ display:inline-flex; align-items:center; }
+/* ===== Mic button (shared by FAQ search + Ask AI input) =====
+   Rather than floating a small circle at some offset from the pill's edge
+   (fragile — easy to end up sitting half on/off the curved end-cap), this
+   is a proper embedded tab: full height, flush against the right edge,
+   rounded only on its outer corners to continue the pill's own curve.
+   The parent (.faq-search / .ask-ai-input-wrap) clips to the same
+   border-radius via overflow:hidden, so the tab's outer edge always
+   matches the pill's shape exactly — no separate offset math to get
+   wrong. One shared rule, so both usages are guaranteed identical. */
+.mic-btn-wrap{ position:absolute; inset-inline-end:0; top:0; bottom:0; display:flex; z-index:1; }
 .mic-btn{
-  position:relative; width:28px; height:28px; border-radius:50%; border:1px solid transparent; background:none;
-  display:flex; align-items:center; justify-content:center; color:var(--text-on-paper-dim); flex-shrink:0; cursor:pointer;
-  transition:border-color .2s, background .2s, color .2s;
+  position:relative; width:48px; height:100%; border:none; border-inline-start:1px solid var(--line);
+  border-start-end-radius:100px; border-end-end-radius:100px; background:var(--paper-dim);
+  display:flex; align-items:center; justify-content:center; color:var(--text-on-paper-dim); cursor:pointer;
+  transition:background .2s, color .2s, border-color .2s;
 }
-.mic-btn:hover{ background:var(--paper-dim); color:var(--teal-deep); }
+.mic-btn:hover{ background:var(--line); color:var(--teal-deep); }
 .mic-btn-listening{ background:var(--teal); border-color:var(--teal); color:#fff; }
-.mic-btn-processing{ cursor:default; color:var(--text-on-paper-dim); }
-.mic-btn-error{ border-color:#dc2626; color:#dc2626; }
+.mic-btn-processing{ cursor:default; }
+.mic-btn-error{ background:#fee2e2; border-color:#fca5a5; color:#dc2626; }
+.mic-btn-icon{ position:relative; display:flex; align-items:center; justify-content:center; width:24px; height:24px; }
 .mic-btn-pulse{
-  position:absolute; inset:-6px; border-radius:50%; border:2px solid var(--teal); opacity:.6; pointer-events:none;
+  position:absolute; inset:-5px; border-radius:50%; border:2px solid var(--teal); opacity:.6; pointer-events:none;
   animation:micPulse 1.4s ease-out infinite;
 }
-@keyframes micPulse{ 0%{ transform:scale(.8); opacity:.6; } 100%{ transform:scale(1.6); opacity:0; } }
+@keyframes micPulse{ 0%{ transform:scale(.8); opacity:.6; } 100%{ transform:scale(1.7); opacity:0; } }
 .mic-btn-spinner{
-  width:13px; height:13px; border-radius:50%; border:2px solid var(--line); border-top-color:var(--teal);
+  width:15px; height:15px; border-radius:50%; border:2px solid var(--line); border-top-color:var(--teal);
   animation:micSpin .7s linear infinite;
 }
 @keyframes micSpin{ to{ transform:rotate(360deg); } }

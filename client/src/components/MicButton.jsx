@@ -37,8 +37,10 @@ function MicButton({ onTranscript, className = "" }) {
         aria-pressed={state === "listening"}
         disabled={state === "processing"}
       >
-        {state === "processing" ? <span className="mic-btn-spinner" /> : <Icon name="mic" size={16} />}
-        {state === "listening" && <span className="mic-btn-pulse" aria-hidden="true" />}
+        <span className="mic-btn-icon">
+          {state === "processing" ? <span className="mic-btn-spinner" /> : <Icon name="mic" size={20} />}
+          {state === "listening" && <span className="mic-btn-pulse" aria-hidden="true" />}
+        </span>
       </button>
       {errorEntry && (
         <span className="mic-btn-tooltip" dir={direction} role="alert">
