@@ -698,17 +698,22 @@ header.nav{
 .faq-search{ position:relative; max-width:480px; margin:24px 0 18px; }
 .faq-search svg{ position:absolute; inset-inline-start:14px; top:50%; transform:translateY(-50%); width:18px; height:18px; color:var(--text-on-paper-dim); pointer-events:none; }
 .faq-search input{
-  width:100%; padding:13px 80px 13px 42px; padding-inline-end:80px; border:1px solid var(--line); border-radius:100px; font-size:15px;
+  width:100%; padding:13px 94px 13px 42px; padding-inline-end:94px; border:1px solid var(--line); border-radius:100px; font-size:15px;
   font-family:var(--sans); background:#fff; transition:border-color .25s, box-shadow .25s;
 }
 .faq-search input:focus{ outline:none; border-color:var(--teal); box-shadow:0 0 0 3px rgba(141,198,63,.15); }
 .faq-search-clear{
-  position:absolute; inset-inline-end:44px; top:50%; transform:translateY(-50%); width:24px; height:24px; border-radius:50%;
+  /* The input is a full pill (border-radius:100px), so its right end is a
+     semicircle roughly (height/2) deep — anything placed closer to the edge
+     than that renders on top of the curved corner where the white
+     background has already fallen away, and looks like it's overflowing
+     the pill. 58px/24px below keep both icons inside the flat middle. */
+  position:absolute; inset-inline-end:58px; top:50%; transform:translateY(-50%); width:24px; height:24px; border-radius:50%;
   background:var(--paper-dim); border:none; font-size:16px; line-height:1; color:var(--text-on-paper-dim);
   display:flex; align-items:center; justify-content:center;
 }
 .faq-search-clear:hover{ background:var(--line); color:var(--text-on-paper); }
-.faq-search-mic{ position:absolute; inset-inline-end:8px; top:50%; transform:translateY(-50%); }
+.faq-search-mic{ position:absolute; inset-inline-end:24px; top:50%; transform:translateY(-50%); }
 .faq-mark{ background:rgba(141,198,63,.3); color:inherit; padding:0 2px; border-radius:2px; }
 
 .faq-list{ margin-top:8px; border-top:1px solid var(--line); }
@@ -825,12 +830,13 @@ header.nav{
 .ask-ai-input-row{ display:flex; gap:10px; }
 .ask-ai-input-wrap{ position:relative; flex:1; }
 .ask-ai-input-row input{
-  width:100%; padding:14px 46px 14px 18px; padding-inline-end:46px; border:1px solid var(--line); border-radius:100px; font-size:14.5px; font-family:var(--sans);
+  width:100%; padding:14px 60px 14px 18px; padding-inline-end:60px; border:1px solid var(--line); border-radius:100px; font-size:14.5px; font-family:var(--sans);
   background:#fff; transition:border-color .25s, box-shadow .25s;
 }
 .ask-ai-input-row input:focus{ outline:none; border-color:var(--teal); box-shadow:0 0 0 3px rgba(141,198,63,.15); }
 .ask-ai-input-row .btn{ flex-shrink:0; }
-.ask-ai-mic{ position:absolute; inset-inline-end:8px; top:50%; transform:translateY(-50%); }
+/* Same pill-corner clearance as .faq-search-mic — see the comment there. */
+.ask-ai-mic{ position:absolute; inset-inline-end:24px; top:50%; transform:translateY(-50%); }
 
 /* ===== Mic button (shared by FAQ search + Ask AI input) ===== */
 .mic-btn-wrap{ display:inline-flex; align-items:center; }
