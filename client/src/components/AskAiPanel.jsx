@@ -1,6 +1,7 @@
 import React, { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Icon } from "./Icons.jsx";
+import MicButton from "./MicButton.jsx";
 import { useTranslation } from "../i18n/LanguageContext.jsx";
 import { askAi, sendAiFeedback, getFaqSessionId } from "../services/faqApi.js";
 
@@ -215,14 +216,17 @@ function AskAiPanel({ suggestedQuestions = [] }) {
           send();
         }}
       >
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder={t("askAi.inputPlaceholder", "Ask a question about Masjid My Community…")}
-          maxLength={500}
-          disabled={loading}
-        />
+        <div className="ask-ai-input-wrap">
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder={t("askAi.inputPlaceholder", "Ask a question about Masjid My Community…")}
+            maxLength={500}
+            disabled={loading}
+          />
+          <MicButton onTranscript={(text) => setInput(text)} className="ask-ai-mic" />
+        </div>
         <button type="submit" className="btn btn-gold" disabled={loading || !input.trim()}>
           {loading ? t("askAi.askingBtn", "Asking…") : t("askAi.askBtn", "Ask")}
         </button>

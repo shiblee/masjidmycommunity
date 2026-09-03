@@ -554,6 +554,14 @@ const DEFAULTS = [
   ["askAi", "askAi.hadithReminder", "Hadith Reminder", "हदीस स्मरण", "حدیث یاد دہانی", "تذكير بالحديث"],
   ["askAi", "askAi.quranicReflection", "Quranic Reflection", "क़ुरआनी चिंतन", "قرآنی غور و فکر", "تأمل قرآني"],
   ["askAi", "askAi.genericError", "Something went wrong. Please try again.", "कुछ गलत हो गया। कृपया पुनः प्रयास करें।", "کچھ غلط ہو گیا۔ براہ کرم دوبارہ کوشش کریں۔", "حدث خطأ ما. يُرجى المحاولة مرة أخرى."],
+
+  ["speech", "speech.start", "Use voice input", "आवाज़ से इनपुट दें", "آواز کے ذریعے ان پٹ دیں", "استخدم الإدخال الصوتي"],
+  ["speech", "speech.stop", "Stop listening", "सुनना बंद करें", "سننا بند کریں", "إيقاف الاستماع"],
+  ["speech", "speech.errNotAllowed", "Microphone access was denied. Enable it in your browser settings to use voice input.", "माइक्रोफ़ोन की अनुमति नहीं दी गई। आवाज़ से इनपुट देने के लिए इसे अपनी ब्राउज़र सेटिंग्स में सक्षम करें।", "مائیکروفون تک رسائی مسترد کر دی گئی۔ آواز کے ذریعے ان پٹ دینے کے لیے اسے اپنی براؤزر سیٹنگز میں فعال کریں۔", "تم رفض الوصول إلى الميكروفون. فعّله من إعدادات المتصفح لاستخدام الإدخال الصوتي."],
+  ["speech", "speech.errNoSpeech", "We didn't catch that. Please try again.", "हम इसे समझ नहीं पाए। कृपया पुनः प्रयास करें।", "ہم یہ سمجھ نہیں سکے۔ براہ کرم دوبارہ کوشش کریں۔", "لم نتمكن من سماع ذلك. يُرجى المحاولة مرة أخرى."],
+  ["speech", "speech.errNoMic", "No microphone was found on this device.", "इस डिवाइस पर कोई माइक्रोफ़ोन नहीं मिला।", "اس آلے پر کوئی مائیکروفون نہیں ملا۔", "لم يتم العثور على ميكروفون على هذا الجهاز."],
+  ["speech", "speech.errNetwork", "Voice input needs an internet connection.", "आवाज़ से इनपुट के लिए इंटरनेट कनेक्शन आवश्यक है।", "آواز کے ذریعے ان پٹ کے لیے انٹرنیٹ کنکشن درکار ہے۔", "يتطلب الإدخال الصوتي اتصالاً بالإنترنت."],
+  ["speech", "speech.errGeneric", "Voice input isn't working right now. Please try again.", "आवाज़ से इनपुट अभी काम नहीं कर रहा है। कृपया पुनः प्रयास करें।", "آواز کے ذریعے ان پٹ ابھی کام نہیں کر رہا۔ براہ کرم دوبارہ کوشش کریں۔", "الإدخال الصوتي لا يعمل حاليًا. يُرجى المحاولة مرة أخرى."],
 ];
 
 // Additive, not "seed once": every deploy that adds new keys to DEFAULTS

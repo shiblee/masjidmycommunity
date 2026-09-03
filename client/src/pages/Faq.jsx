@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Icon } from "../components/Icons.jsx";
 import FaqAccordion from "../components/FaqAccordion.jsx";
 import AskAiPanel from "../components/AskAiPanel.jsx";
+import MicButton from "../components/MicButton.jsx";
 import { useTranslation } from "../i18n/LanguageContext.jsx";
 import { getFaqs } from "../services/faqApi.js";
 
@@ -92,6 +93,7 @@ function Faq() {
                 ×
               </button>
             )}
+            <MicButton onTranscript={(text) => setQuery(text)} className="faq-search-mic" />
           </div>
         </div>
       </section>

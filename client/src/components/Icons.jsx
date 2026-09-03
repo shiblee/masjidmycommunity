@@ -33,6 +33,7 @@ const ICONS = {
   plus: { d: ["M12 5v14M5 12h14"] },
   imageIcon: { rect: { x: 3, y: 3, width: 18, height: 18, rx: 2 }, circle: { cx: 8.5, cy: 8.5, r: 1.5 }, d: ["M21 15l-5-5L5 21"] },
   play: { d: ["M6 4l14 8-14 8V4z"] },
+  mic: { rect: { x: 9, y: 2, width: 6, height: 12, rx: 3 }, d: ["M5 10a7 7 0 0014 0", "M12 19v3", "M8 22h8"] },
 };
 
 export function Icon({ name, size = 24 }) {

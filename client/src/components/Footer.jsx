@@ -319,7 +319,7 @@ function Footer() {
                 <h4>{t("footer.col.platform", "Platform")}</h4>
                 <Link to="/#campaigns">{t("footer.link.exploreCampaigns", "Explore Campaigns")}</Link>
                 <Link to="/#categories">{t("footer.link.categories", "Categories")}</Link>
-                <Link to="/how-it-works">{t("footer.link.howItWorks", "How It Works")}</Link>
+                <NavLink to="/how-it-works">{t("footer.link.howItWorks", "How It Works")}</NavLink>
                 <Link to="/#masjids">{t("footer.link.verifiedMasjids", "Verified Masjids")}</Link>
               </div>
               <div className="footer-col foot-reveal">
@@ -332,16 +332,16 @@ function Footer() {
               <div className="footer-col foot-reveal">
                 <h4>{t("footer.col.forDonors", "For Donors")}</h4>
                 <Link to="/#campaigns">{t("footer.link.donate", "Donate")}</Link>
-                <Link to="/our-impact">{t("footer.link.successStories", "Success Stories")}</Link>
+                <NavLink to="/our-impact">{t("footer.link.successStories", "Success Stories")}</NavLink>
                 <Link to="/#donate-why">{t("footer.link.whyDonate", "Why Donate")}</Link>
                 <Link to="/#testimonials">{t("footer.link.testimonials", "Testimonials")}</Link>
               </div>
               <div className="footer-col foot-reveal">
                 <h4>{t("footer.col.resources", "Resources")}</h4>
                 <Link to="/#resources">{t("footer.link.guidesLearning", "Guides & Learning")}</Link>
-                <Link to="/faq">{t("footer.link.faq", "FAQ")}</Link>
-                <Link to="/about">{t("footer.link.aboutUs", "About Masjid My Community")}</Link>
-                <Link to="/contact">{t("footer.link.contact", "Contact")}</Link>
+                <NavLink to="/faq">{t("footer.link.faq", "FAQ")}</NavLink>
+                <NavLink to="/about">{t("footer.link.aboutUs", "About Masjid My Community")}</NavLink>
+                <NavLink to="/contact">{t("footer.link.contact", "Contact")}</NavLink>
               </div>
               <div className="footer-col footer-app foot-reveal">
                 <h4>{t("footer.col.getTheApp", "Get the App")}</h4>
