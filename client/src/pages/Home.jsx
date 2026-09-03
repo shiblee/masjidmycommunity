@@ -176,17 +176,6 @@ function ResourceIcon({ type }) {
   );
 }
 
-const faqs = [
-  { q: "How does Masjid My Community work?", a: "Verified masjids create campaigns explaining a specific need. Donors browse, contribute and follow progress through photo updates and expense reports until the project is complete." },
-  { q: "Who can register a masjid?", a: "Any recognized masjid committee or administrator can apply. We ask for basic registration details and a point of contact before verification begins." },
-  { q: "How are masjids verified?", a: "Our team reviews registration documents, committee information and, where possible, community references before a masjid receives its verified badge." },
-  { q: "How can I donate?", a: "Choose a campaign, select an amount, tag your contribution as Zakat or Sadaqah if applicable, and pay securely in your preferred currency." },
-  { q: "How are funds managed?", a: "Funds are held until verified milestones are met, then released to the masjid with an itemized expense report published on the campaign page." },
-  { q: "Can I track my donation?", a: "Yes. Every donation links to the campaign's live progress page, where you'll see updates, photos and spending as the project moves forward." },
-  { q: "Can a masjid create multiple campaigns?", a: "Yes, once verified, a masjid can run multiple campaigns for different needs, each with its own goal and reporting." },
-  { q: "Which countries are supported?", a: "Masjid My Community currently supports masjids and donors across 45+ countries, with multi-currency donations in USD, GBP, EUR, INR and AED." },
-  { q: "Is my donation secure?", a: "All payments run through encrypted, PCI-compliant processors. Masjid My Community never stores your full card details." },
-];
 
 function Icon({ item, size = 18 }) {
   return (
@@ -411,19 +400,6 @@ const SAVED_KEY = "mmc-saved-campaigns";
 const FOLLOWED_KEY = "mmc-followed-masjids";
 const INTERESTED_KEY = "mmc-interested-programs";
 
-function highlightMatch(text, query) {
-  if (!query.trim()) return text;
-  const idx = text.toLowerCase().indexOf(query.toLowerCase());
-  if (idx === -1) return text;
-  return (
-    <>
-      {text.slice(0, idx)}
-      <mark className="faq-mark">{text.slice(idx, idx + query.length)}</mark>
-      {text.slice(idx + query.length)}
-    </>
-  );
-}
-
 function handleProgramTilt(e) {
   const el = e.currentTarget;
   const rect = el.getBoundingClientRect();
@@ -464,22 +440,13 @@ function Home() {
   const touchStartX = useRef(null);
   const nextTesti = () => setTestiIdx((i) => (i + 1) % testimonials.length);
   const prevTesti = () => setTestiIdx((i) => (i - 1 + testimonials.length) % testimonials.length);
-  const [openFaq, setOpenFaq] = useState(null);
-  const [faqSearch, setFaqSearch] = useState("");
-  const [faqFeedback, setFaqFeedback] = useState({});
-  const setFaqFeedbackFor = (q, val) =>
-    setFaqFeedback((prev) => ({ ...prev, [q]: prev[q] === val ? null : val }));
-  const filteredFaqs = faqSearch.trim()
-    ? faqs.filter(
-        (f) =>
-          f.q.toLowerCase().includes(faqSearch.toLowerCase()) ||
-          f.a.toLowerCase().includes(faqSearch.toLowerCase())
-      )
-    : faqs;
-
+  const [featuredFaqs, setFeaturedFaqs] = useState([]);
   useEffect(() => {
-    setOpenFaq(null);
-  }, [faqSearch]);
+    axios
+      .get(`${API_BASE}/faq`, { params: { featured: true } })
+      .then(({ data }) => setFeaturedFaqs(data.faqs.slice(0, 4)))
+      .catch(() => {});
+  }, []);
   const [campaignFilter, setCampaignFilter] = useState("All");
   const [resourceFilter, setResourceFilter] = useState("All");
   const [saved, setSaved] = useState(() => {
@@ -1146,81 +1113,31 @@ function Home() {
         </div>
       </section>
 
-      {/* FAQ */}
-      <section className="py" id="faq">
-        <div className="wrap">
-          <div className="section-head reveal">
-            <span className="eyebrow">Frequently asked</span>
-            <h2>Questions, answered</h2>
-          </div>
-
-          <div className="faq-search reveal">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.6" y2="16.6" /></svg>
-            <input
-              type="text"
-              placeholder="Search frequently asked questions..."
-              value={faqSearch}
-              onChange={(e) => setFaqSearch(e.target.value)}
-            />
-            {faqSearch && (
-              <button className="faq-search-clear" onClick={() => setFaqSearch("")} aria-label="Clear search">
-                ×
-              </button>
-            )}
-          </div>
-          {faqSearch.trim() && (
-            <div className="filter-count">
-              {filteredFaqs.length} result{filteredFaqs.length !== 1 ? "s" : ""} for &ldquo;{faqSearch}&rdquo;
+      {/* FAQ TEASER */}
+      {featuredFaqs.length > 0 && (
+        <section className="py" id="faq">
+          <div className="wrap">
+            <div className="section-head center reveal" style={{ margin: "0 auto" }}>
+              <span className="eyebrow">Frequently asked</span>
+              <h2>Popular questions</h2>
+              <p>A few common questions — or ask our AI assistant anything about Masjid My Community.</p>
             </div>
-          )}
-
-          {filteredFaqs.length === 0 ? (
-            <div className="campaign-empty">
-              <p>No questions match &ldquo;{faqSearch}&rdquo;. Try a different search.</p>
-              <button className="btn btn-outline-ink" style={{ marginTop: "16px" }} onClick={() => setFaqSearch("")}>
-                Clear Search
-              </button>
-            </div>
-          ) : (
-            <div className="faq-list">
-              {filteredFaqs.map((f, i) => (
-                <div className={`faq-item${openFaq === i ? " open" : ""}`} key={f.q}>
-                  <button className="faq-q" onClick={() => setOpenFaq(openFaq === i ? null : i)}>
-                    <span>{highlightMatch(f.q, faqSearch)}</span>
-                    <span className="plus">+</span>
-                  </button>
-                  <div className="faq-a" style={{ maxHeight: openFaq === i ? "340px" : "0" }}>
-                    <p>{highlightMatch(f.a, faqSearch)}</p>
-                    <div className="faq-feedback">
-                      <span>Was this helpful?</span>
-                      <button
-                        className={`faq-fb${faqFeedback[f.q] === "up" ? " active" : ""}`}
-                        onClick={() => setFaqFeedbackFor(f.q, "up")}
-                        aria-label="Yes, this was helpful"
-                      >
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M7 22V11M2 13v7a2 2 0 002 2h13.4a2 2 0 002-1.6l1.4-7A2 2 0 0018.8 11H14l1-5a2 2 0 00-2-2.3L11 9H7" />
-                        </svg>
-                      </button>
-                      <button
-                        className={`faq-fb${faqFeedback[f.q] === "down" ? " active" : ""}`}
-                        onClick={() => setFaqFeedbackFor(f.q, "down")}
-                        aria-label="Not helpful"
-                        style={{ transform: "rotate(180deg)" }}
-                      >
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M7 22V11M2 13v7a2 2 0 002 2h13.4a2 2 0 002-1.6l1.4-7A2 2 0 0018.8 11H14l1-5a2 2 0 00-2-2.3L11 9H7" />
-                        </svg>
-                      </button>
-                      {faqFeedback[f.q] && <span className="faq-fb-thanks">Thanks for your feedback!</span>}
-                    </div>
-                  </div>
-                </div>
+            <div className="faq-popular-grid reveal">
+              {featuredFaqs.map((f) => (
+                <Link to={`/faq#faq-${f.id}`} className="faq-popular-card" key={f.id}>
+                  <span>{f.question}</span>
+                  <span className="btn-arrow">→</span>
+                </Link>
               ))}
             </div>
-          )}
-        </div>
-      </section>
+            <div style={{ textAlign: "center", marginTop: "32px" }}>
+              <Link to="/faq" className="btn btn-gold">
+                Ask our AI Assistant <span className="btn-arrow">→</span>
+              </Link>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* FINAL CTA */}
       <section className="final-cta">

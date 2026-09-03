@@ -313,13 +313,33 @@
 .amx-dropdown .danger:hover{ background:var(--a-danger-bg); }
 .amx-dropdown-sep{ height:1px; background:var(--a-border); margin:6px 4px; }
 
+.amx-mark-read-link{ font-size:12px; font-weight:700; color:var(--a-green-deep); width:auto; padding:4px 8px; }
+.amx-mark-read-link:hover{ background:var(--a-bg); }
+
 .amx-notif-list{ max-height:360px; overflow-y:auto; }
 .amx-notif-item{ display:flex; gap:11px; padding:11px 12px; border-radius:9px; align-items:flex-start; }
 .amx-notif-item:hover{ background:var(--a-bg); }
 .amx-notif-dot{ width:8px; height:8px; border-radius:50%; background:var(--a-green); margin-top:6px; flex-shrink:0; }
 .amx-notif-item.read .amx-notif-dot{ background:var(--a-border-strong); }
-.amx-notif-item p{ margin:0; font-size:13px; color:var(--a-text); line-height:1.45; font-weight:600; }
-.amx-notif-item span{ font-size:11.5px; color:var(--a-text-faint); font-family:var(--mono); }
+.amx-notif-item-body{ display:flex; flex-direction:column; gap:2px; flex:1; min-width:0; }
+.amx-notif-item-title{ font-size:13px; color:var(--a-text); font-weight:700; line-height:1.4; white-space:normal; }
+.amx-notif-item.read .amx-notif-item-title{ font-weight:600; color:var(--a-text-dim); }
+.amx-notif-item-text{
+  font-size:12.5px; color:var(--a-text-dim); font-weight:500; line-height:1.4;
+  overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+}
+.amx-notif-item-time{ font-size:11px; color:var(--a-text-faint); font-family:var(--mono); font-weight:500; margin-top:2px; }
+.amx-notif-empty{
+  display:flex; flex-direction:column; align-items:center; gap:8px; padding:28px 16px; text-align:center;
+  color:var(--a-text-faint); font-size:12.5px; font-weight:600;
+}
+.amx-notif-empty svg{ opacity:.5; }
+
+.amx-nav-count-badge{
+  display:inline-flex; align-items:center; justify-content:center; min-width:18px; height:18px; padding:0 5px;
+  border-radius:100px; background:var(--a-danger); color:#fff; font-size:11px; font-weight:700; font-family:var(--mono);
+  line-height:1; margin-left:2px;
+}
 
 .amx-main{ flex:1; padding:28px 24px 60px; max-width:1400px; margin:0 auto; width:100%; }
 
@@ -594,3 +614,30 @@ table.amx-table{ width:100%; border-collapse:collapse; font-size:13.5px; }
   .amx-editor-layout{ grid-template-columns:1fr; }
   .amx-preview-panel{ position:static; }
 }
+
+/* ===== Pages module ===== */
+.amx-nav-badge{
+  margin-left:auto; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.04em;
+  padding:2px 7px; border-radius:100px; background:rgba(0,0,0,.12); color:inherit;
+}
+.amx-inline-title-input{
+  font-size:16px; font-weight:700; color:var(--a-text); border:1px solid transparent; border-radius:8px;
+  padding:4px 8px; margin:-4px 0 -4px -8px; background:transparent; width:100%; transition:border-color .15s, background .15s;
+}
+.amx-inline-title-input:hover{ border-color:var(--a-border); }
+.amx-inline-title-input:focus{ outline:none; border-color:var(--a-green); background:#fff; }
+
+.amx-lang-tabs{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:18px; border-bottom:1px solid var(--a-border); padding-bottom:14px; }
+.amx-lang-tab{
+  display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:600; color:var(--a-text-faint);
+  background:var(--a-bg); border:1px solid transparent; border-radius:100px; padding:7px 14px; transition:all .15s;
+}
+.amx-lang-tab:hover{ color:var(--a-text); }
+.amx-lang-tab.active{ background:var(--a-navy); color:#fff; }
+.amx-lang-tab-dot{ width:6px; height:6px; border-radius:50%; background:#e0973e; flex-shrink:0; }
+.amx-lang-tab.active .amx-lang-tab-dot{ background:#ffb35e; }
+
+.amx-richtext .ql-toolbar.ql-snow{ border-radius:10px 10px 0 0; border-color:var(--a-border); background:var(--a-bg); }
+.amx-richtext .ql-container.ql-snow{ border-radius:0 0 10px 10px; border-color:var(--a-border); font-family:var(--sans); font-size:15px; min-height:340px; }
+.amx-richtext .ql-editor{ min-height:340px; line-height:1.7; }
+.amx-richtext .ql-editor.ql-blank::before{ color:var(--a-text-faint); font-style:normal; }

@@ -7,11 +7,10 @@ import Community from "./pages/Community.jsx";
 import HowItWorks from "./pages/HowItWorks.jsx";
 import OurImpact from "./pages/OurImpact.jsx";
 import AboutUs from "./pages/AboutUs.jsx";
-import TermsOfUse from "./pages/TermsOfUse.jsx";
-import PrivacyPolicy from "./pages/PrivacyPolicy.jsx";
+import LegalPage from "./pages/LegalPage.jsx";
 import RaiseConcern from "./pages/RaiseConcern.jsx";
 import Contact from "./pages/Contact.jsx";
-import CookiePolicy from "./pages/CookiePolicy.jsx";
+import Faq from "./pages/Faq.jsx";
 import Auth from "./pages/Auth.jsx";
 import Account from "./pages/Account.jsx";
 import ExploreMasjids from "./pages/ExploreMasjids.jsx";
@@ -61,11 +60,13 @@ function App() {
           <Route path="/how-it-works" element={<HowItWorks />} />
           <Route path="/our-impact" element={<OurImpact />} />
           <Route path="/about" element={<AboutUs />} />
-          <Route path="/terms" element={<TermsOfUse />} />
-          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<LegalPage slug="terms-of-use" />} />
+          <Route path="/privacy" element={<LegalPage slug="privacy-policy" />} />
           <Route path="/raise-a-concern" element={<RaiseConcern />} />
           <Route path="/contact" element={<Contact />} />
-          <Route path="/cookie-policy" element={<CookiePolicy />} />
+          <Route path="/faq" element={<Faq />} />
+          <Route path="/cookie-policy" element={<LegalPage slug="cookie-policy" />} />
+          <Route path="/pages/:slug" element={<LegalPage />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/explore-masjids" element={<ExploreMasjids />} />
           <Route path="/masjid/:id" element={<MasjidProfile />} />

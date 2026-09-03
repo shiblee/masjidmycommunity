@@ -10,6 +10,7 @@
     "seed:admin": "node src/seed/seedAdmin.js"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.123.0",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
@@ -19,7 +20,8 @@
     "mysql2": "^3.11.0",
     "nodemailer": "^9.0.5",
     "sequelize": "^6.37.3",
-    "ua-parser-js": "^2.0.10"
+    "ua-parser-js": "^2.0.10",
+    "zod": "^4.5.4"
   },
   "devDependencies": {
     "nodemon": "^3.1.4"

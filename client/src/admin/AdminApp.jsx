@@ -24,8 +24,12 @@ import EmailTemplateEditor from "./pages/EmailTemplateEditor.jsx";
 import Settings from "./pages/Settings.jsx";
 import Meta from "./pages/Meta.jsx";
 import Translations from "./pages/Translations.jsx";
+import Pages from "./pages/Pages.jsx";
 import Concerns from "./pages/Concerns.jsx";
 import ConcernReview from "./pages/ConcernReview.jsx";
+import ContactInquiries from "./pages/ContactInquiries.jsx";
+import ContactInquiryReview from "./pages/ContactInquiryReview.jsx";
+import FaqManagement from "./pages/FaqManagement.jsx";
 import Moderation from "./pages/Moderation.jsx";
 import ModerationDetail from "./pages/ModerationDetail.jsx";
 
@@ -61,8 +65,13 @@ function AdminApp() {
         <Route path="meta" element={<Navigate to="/admin/meta/masjid-category" replace />} />
         <Route path="meta/:entityKey" element={<Meta />} />
         <Route path="translations" element={<Translations />} />
+        <Route path="pages" element={<Pages />} />
+        <Route path="pages/:pageId" element={<Pages />} />
         <Route path="concerns" element={<Concerns />} />
         <Route path="concerns/:id" element={<ConcernReview />} />
+        <Route path="contact-inquiries" element={<ContactInquiries />} />
+        <Route path="contact-inquiries/:id" element={<ContactInquiryReview />} />
+        <Route path="faq" element={<FaqManagement />} />
         <Route path="moderation" element={<Moderation />} />
         <Route path="moderation/:targetType/:targetId" element={<ModerationDetail />} />
         <Route path="settings" element={<Settings />} />

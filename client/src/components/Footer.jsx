@@ -157,6 +157,7 @@ function FootStat({ n, prefix = "", suffix = "" }) {
 }
 
 function BackToTop() {
+  const { t } = useTranslation();
   const [visible, setVisible] = useState(false);
   const [aboveBanner, setAboveBanner] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -184,7 +185,7 @@ function BackToTop() {
     <button
       className={`back-to-top${visible ? " visible" : ""}${aboveBanner ? " above-banner" : ""}`}
       onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-      aria-label="Back to top"
+      aria-label={t("footer.backToTopAria", "Back to top")}
     >
       <svg className="back-to-top-ring" viewBox="0 0 44 44">
         <circle cx="22" cy="22" r={r} fill="none" stroke="rgba(141,198,63,.22)" strokeWidth="2" />
@@ -209,22 +210,28 @@ function BackToTop() {
 }
 
 function AppBadge({ store }) {
+  const { t } = useTranslation();
   const isApple = store === "apple";
   return (
-    <a href="#" className="app-badge" aria-label={isApple ? "Download on the App Store" : "Get it on Google Play"}>
+    <a
+      href="#"
+      className="app-badge"
+      aria-label={isApple ? t("footer.appBadge.appleAria", "Download on the App Store") : t("footer.appBadge.googleAria", "Get it on Google Play")}
+    >
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
         <rect x="6" y="2" width="12" height="20" rx="2" />
         {isApple ? <path d="M9 17l3 3 3-3" /> : <path d="M9.5 8.5l5 3.5-5 3.5z" fill="currentColor" stroke="none" />}
       </svg>
       <span>
-        <small>{isApple ? "Download on the" : "GET IT ON"}</small>
-        <strong>{isApple ? "App Store" : "Google Play"}</strong>
+        <small>{isApple ? t("footer.appBadge.appleTop", "Download on the") : t("footer.appBadge.googleTop", "GET IT ON")}</small>
+        <strong>{isApple ? t("footer.appBadge.appleBottom", "App Store") : t("footer.appBadge.googleBottom", "Google Play")}</strong>
       </span>
     </a>
   );
 }
 
 function Footer() {
+  const { t } = useTranslation();
   const [user, setUser] = useState(() => getStoredUser());
 
   useEffect(() => {
@@ -257,19 +264,19 @@ function Footer() {
           <div className="foot-stats foot-reveal">
             <div>
               <VisitorCounter />
-              <span>Total Visitors</span>
+              <span>{t("footer.stats.totalVisitors", "Total Visitors")}</span>
             </div>
             <div>
               <FootStat n={1250} suffix="+" />
-              <span>Masjids Registered</span>
+              <span>{t("footer.stats.masjidsRegistered", "Masjids Registered")}</span>
             </div>
             <div>
               <FootStat n={2500000} prefix="₹" suffix="+" />
-              <span>Funds Raised</span>
+              <span>{t("footer.stats.fundsRaised", "Funds Raised")}</span>
             </div>
             <div>
               <FootStat n={84600} suffix="+" />
-              <span>App Downloads</span>
+              <span>{t("footer.stats.appDownloads", "App Downloads")}</span>
             </div>
           </div>
 
@@ -279,7 +286,12 @@ function Footer() {
                 <img src="/logo.svg" alt="Masjid My Community logo" />
                 Masjid <em>My Community</em>
               </Link>
-              <p>A global platform connecting verified masjids with people who want to fund, strengthen and empower them.</p>
+              <p>
+                {t(
+                  "footer.tagline",
+                  "A global platform connecting verified masjids with people who want to fund, strengthen and empower them."
+                )}
+              </p>
               <div className="social-row">
                 <a href="#" aria-label="Instagram">
                   <svg viewBox="0 0 24 24">
@@ -304,35 +316,35 @@ function Footer() {
 
             <div className="footer-links-grid">
               <div className="footer-col foot-reveal">
-                <h4>Platform</h4>
-                <Link to="/#campaigns">Explore Campaigns</Link>
-                <Link to="/#categories">Categories</Link>
-                <Link to="/how-it-works">How It Works</Link>
-                <Link to="/#masjids">Verified Masjids</Link>
+                <h4>{t("footer.col.platform", "Platform")}</h4>
+                <Link to="/#campaigns">{t("footer.link.exploreCampaigns", "Explore Campaigns")}</Link>
+                <Link to="/#categories">{t("footer.link.categories", "Categories")}</Link>
+                <Link to="/how-it-works">{t("footer.link.howItWorks", "How It Works")}</Link>
+                <Link to="/#masjids">{t("footer.link.verifiedMasjids", "Verified Masjids")}</Link>
               </div>
               <div className="footer-col foot-reveal">
-                <h4>For Masjids</h4>
-                <Link to="/#register">Register Your Masjid</Link>
-                <Link to="/#empower">Empowerment Programs</Link>
-                <Link to="/#programs">What's Next</Link>
-                <Link to="/#faq">Verification</Link>
+                <h4>{t("footer.col.forMasjids", "For Masjids")}</h4>
+                <Link to="/#register">{t("footer.link.registerMasjid", "Register Your Masjid")}</Link>
+                <Link to="/#empower">{t("footer.link.empowermentPrograms", "Empowerment Programs")}</Link>
+                <Link to="/#programs">{t("footer.link.whatsNext", "What's Next")}</Link>
+                <Link to="/#faq">{t("footer.link.verification", "Verification")}</Link>
               </div>
               <div className="footer-col foot-reveal">
-                <h4>For Donors</h4>
-                <Link to="/#campaigns">Donate</Link>
-                <Link to="/our-impact">Success Stories</Link>
-                <Link to="/#donate-why">Why Donate</Link>
-                <Link to="/#testimonials">Testimonials</Link>
+                <h4>{t("footer.col.forDonors", "For Donors")}</h4>
+                <Link to="/#campaigns">{t("footer.link.donate", "Donate")}</Link>
+                <Link to="/our-impact">{t("footer.link.successStories", "Success Stories")}</Link>
+                <Link to="/#donate-why">{t("footer.link.whyDonate", "Why Donate")}</Link>
+                <Link to="/#testimonials">{t("footer.link.testimonials", "Testimonials")}</Link>
               </div>
               <div className="footer-col foot-reveal">
-                <h4>Resources</h4>
-                <Link to="/#resources">Guides &amp; Learning</Link>
-                <Link to="/#faq">FAQ</Link>
-                <Link to="/about">About Masjid My Community</Link>
-                <Link to="/contact">Contact</Link>
+                <h4>{t("footer.col.resources", "Resources")}</h4>
+                <Link to="/#resources">{t("footer.link.guidesLearning", "Guides & Learning")}</Link>
+                <Link to="/faq">{t("footer.link.faq", "FAQ")}</Link>
+                <Link to="/about">{t("footer.link.aboutUs", "About Masjid My Community")}</Link>
+                <Link to="/contact">{t("footer.link.contact", "Contact")}</Link>
               </div>
               <div className="footer-col footer-app foot-reveal">
-                <h4>Get the App</h4>
+                <h4>{t("footer.col.getTheApp", "Get the App")}</h4>
                 <AppBadge store="apple" />
                 <AppBadge store="google" />
               </div>
@@ -340,15 +352,15 @@ function Footer() {
           </div>
 
           <div className="footer-bottom">
-            <span className="copy">© 2026 Masjid My Community.</span>
+            <span className="copy">{t("footer.copyright", "© 2026 Masjid My Community.")}</span>
             <nav className="foot-legal">
-              <NavLink to="/terms">Terms of Use</NavLink>
+              <NavLink to="/terms">{t("footer.legal.terms", "Terms of Use")}</NavLink>
               <span className="foot-legal-sep">—</span>
-              <NavLink to="/privacy">Privacy Policy</NavLink>
+              <NavLink to="/privacy">{t("footer.legal.privacy", "Privacy Policy")}</NavLink>
               <span className="foot-legal-sep">—</span>
-              <NavLink to="/raise-a-concern">Raise a Concern</NavLink>
+              <NavLink to="/raise-a-concern">{t("footer.legal.raiseConcern", "Raise a Concern")}</NavLink>
               <span className="foot-legal-sep">—</span>
-              <NavLink to="/cookie-policy">Cookie Policy</NavLink>
+              <NavLink to="/cookie-policy">{t("footer.legal.cookiePolicy", "Cookie Policy")}</NavLink>
             </nav>
             <div className="selectors">
               <LanguageSelect triggerClassName="foot-select" />
@@ -357,7 +369,7 @@ function Footer() {
         </div>
       </footer>
       <div className="footer-mobile">
-        <span className="footer-mobile-copy">© 2026 Masjid My Community.</span>
+        <span className="footer-mobile-copy">{t("footer.copyright", "© 2026 Masjid My Community.")}</span>
         <LanguageSelect triggerClassName="footer-mobile-select" />
       </div>
       <BackToTop />

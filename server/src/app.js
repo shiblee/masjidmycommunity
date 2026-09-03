@@ -32,6 +32,14 @@ import adminAuthSettingsRoutes from "./routes/adminAuthSettingsRoutes.js";
 import adminLanguageRoutes from "./routes/adminLanguageRoutes.js";
 import adminTranslationRoutes from "./routes/adminTranslationRoutes.js";
 import publicI18nRoutes from "./routes/publicI18nRoutes.js";
+import adminPageRoutes from "./routes/adminPageRoutes.js";
+import publicPageRoutes from "./routes/publicPageRoutes.js";
+import adminAlertRoutes from "./routes/adminAlertRoutes.js";
+import adminContactRoutes from "./routes/adminContactRoutes.js";
+import adminContactTopicRoutes from "./routes/adminContactTopicRoutes.js";
+import publicFaqRoutes from "./routes/publicFaqRoutes.js";
+import adminFaqRoutes from "./routes/adminFaqRoutes.js";
+import adminAiQueryLogRoutes from "./routes/adminAiQueryLogRoutes.js";
 
 const app = express();
 
@@ -90,5 +98,13 @@ app.use("/api/admin/auth-settings", adminAuthSettingsRoutes);
 app.use("/api/admin/languages", adminLanguageRoutes);
 app.use("/api/admin/translations", adminTranslationRoutes);
 app.use("/api/i18n", publicI18nRoutes);
+app.use("/api/admin/pages", adminPageRoutes);
+app.use("/api/pages", publicPageRoutes);
+app.use("/api/admin/alerts", adminAlertRoutes);
+app.use("/api/admin/contact-inquiries", adminContactRoutes);
+app.use("/api/admin/contact-topics", adminContactTopicRoutes);
+app.use("/api/faq", publicFaqRoutes);
+app.use("/api/admin/faqs", adminFaqRoutes);
+app.use("/api/admin/ai-query-logs", adminAiQueryLogRoutes);
 
 export default app;

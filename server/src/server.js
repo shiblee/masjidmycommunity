@@ -7,6 +7,8 @@ import { ensureMasjidCategoryDefaults } from "./seed/masjidCategoryDefaults.js";
 import { ensureCampaignCategoryDefaults } from "./seed/campaignCategoryDefaults.js";
 import { ensureCampaignClassificationDefaults } from "./seed/campaignClassificationDefaults.js";
 import { ensureConcernTypeDefaults } from "./seed/concernTypeDefaults.js";
+import { ensureContactTopicDefaults } from "./seed/contactTopicDefaults.js";
+import { ensureFaqDefaults } from "./seed/faqDefaults.js";
 import { ensureBankDefaults } from "./seed/bankDefaults.js";
 import { ensureDeletionReasonDefaults } from "./seed/deletionReasonDefaults.js";
 import { ensureReportReasonDefaults } from "./seed/reportReasonDefaults.js";
@@ -15,6 +17,8 @@ import { ensureContentSettings } from "./seed/contentSettingsDefaults.js";
 import { ensureAuthSettings } from "./seed/authSettingsDefaults.js";
 import { ensureLanguageDefaults } from "./seed/languageDefaults.js";
 import { ensureTranslationDefaults } from "./seed/translationDefaults.js";
+import { ensurePageDefaults } from "./seed/pageDefaults.js";
+import { ensureMetaEntityTranslationDefaults } from "./seed/metaEntityTranslationDefaults.js";
 
 const PORT = process.env.PORT || 5000;
 
@@ -26,6 +30,8 @@ connectDB()
       ensureCampaignCategoryDefaults(),
       ensureCampaignClassificationDefaults(),
       ensureConcernTypeDefaults(),
+      ensureContactTopicDefaults(),
+      ensureFaqDefaults(),
       ensureBankDefaults(),
       ensureDeletionReasonDefaults(),
       ensureReportReasonDefaults(),
@@ -36,6 +42,8 @@ connectDB()
       ensureTranslationDefaults(),
     ])
   )
+  .then(() => ensurePageDefaults())
+  .then(() => ensureMetaEntityTranslationDefaults())
   .catch((error) => console.error("Failed to seed defaults:", error.message))
   .finally(() => {
     app.listen(PORT, () => {
