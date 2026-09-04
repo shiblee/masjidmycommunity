@@ -19,12 +19,12 @@ const globalStats = [
 ];
 
 const regions = [
-  { flag: "🇬🇧", name: "United Kingdom", masjids: 96, raised: "₹1.1M+", raisedNum: 1100000 },
-  { flag: "🇺🇸", name: "United States", masjids: 87, raised: "₹890K+", raisedNum: 890000 },
-  { flag: "🇧🇩", name: "Bangladesh", masjids: 142, raised: "₹612K+", raisedNum: 612000 },
-  { flag: "🇮🇩", name: "Indonesia", masjids: 134, raised: "₹480K+", raisedNum: 480000 },
-  { flag: "🇳🇬", name: "Nigeria", masjids: 118, raised: "₹340K+", raisedNum: 340000 },
-  { flag: "🇿🇦", name: "South Africa", masjids: 64, raised: "₹210K+", raisedNum: 210000 },
+  { flag: "🇮🇳", name: "Uttar Pradesh", masjids: 172, raised: "₹6.8L+", raisedNum: 680000 },
+  { flag: "🇮🇳", name: "Kerala", masjids: 154, raised: "₹5.9L+", raisedNum: 590000 },
+  { flag: "🇮🇳", name: "West Bengal", masjids: 138, raised: "₹5.1L+", raisedNum: 510000 },
+  { flag: "🇮🇳", name: "Maharashtra", masjids: 121, raised: "₹4.3L+", raisedNum: 430000 },
+  { flag: "🇮🇳", name: "Bihar", masjids: 108, raised: "₹3.6L+", raisedNum: 360000 },
+  { flag: "🇮🇳", name: "Tamil Nadu", masjids: 89, raised: "₹2.4L+", raisedNum: 240000 },
 ];
 const maxRegionRaised = Math.max(...regions.map((r) => r.raisedNum));
 
@@ -168,8 +168,8 @@ function OurImpact() {
       <section className="py">
         <div className="wrap">
           <div className="section-head reveal">
-            <span className="eyebrow">Global reach</span>
-            <h2>Impact that spans continents</h2>
+            <span className="eyebrow">Reach across India</span>
+            <h2>Impact that spans states</h2>
             <p>A snapshot of where Masjid My Community is active today — growing every week.</p>
           </div>
           <div className="oi-stat-grid reveal">
@@ -178,26 +178,26 @@ function OurImpact() {
             ))}
           </div>
 
-          <div className="oi-board reveal">
-            <div className="oi-board-head">
-              <span>Top regions</span>
-              <span className="oi-board-head-raised">Funds raised</span>
-            </div>
+          <div className="oi-regions-label reveal">
+            <span>Top regions</span>
+            <span className="oi-regions-label-raised">Funds raised</span>
+          </div>
+          <div className="oi-region-grid">
             {regions.map((r, i) => {
               const pct = Math.round((r.raisedNum / maxRegionRaised) * 100);
               return (
-                <div className="oi-board-row" style={{ transitionDelay: `${i * 0.07}s` }} key={r.name}>
-                  <span className="oi-board-rank mono">{String(i + 1).padStart(2, "0")}</span>
-                  <span className="oi-board-flag">{r.flag}</span>
-                  <div className="oi-board-main">
-                    <div className="oi-board-top">
-                      <span className="oi-board-name">{r.name}</span>
-                      <span className="oi-board-raised mono">{r.raised}</span>
-                    </div>
-                    <div className="oi-board-bar-track">
-                      <div className="oi-board-bar" style={{ width: `${pct}%` }} />
-                    </div>
-                    <span className="oi-board-sub">{r.masjids} masjids registered</span>
+                <div className="oi-region-card reveal" style={{ transitionDelay: `${i * 0.07}s` }} key={r.name}>
+                  <div className="oi-region-top">
+                    <span className="oi-region-rank mono">{String(i + 1).padStart(2, "0")}</span>
+                    <span className="oi-region-flag">{r.flag}</span>
+                    <span className="oi-region-name">{r.name}</span>
+                  </div>
+                  <div className="oi-region-bar-track">
+                    <div className="oi-region-bar" style={{ width: `${pct}%` }} />
+                  </div>
+                  <div className="oi-region-bottom">
+                    <span className="oi-region-raised mono">{r.raised}</span>
+                    <span className="oi-region-sub">{r.masjids} masjids</span>
                   </div>
                 </div>
               );
@@ -285,7 +285,7 @@ function OurImpact() {
           <span className="eyebrow">Be part of it</span>
           <h2>Empowering Masjids. Creating Impact Beyond Boundaries.</h2>
           <div className="ctas">
-            <a href="/#campaigns" className="btn btn-gold">
+            <a href="/explore-campaigns" className="btn btn-gold">
               Explore Campaigns <span className="btn-arrow">→</span>
             </a>
             <a href="/my-community" className="btn btn-outline-paper">

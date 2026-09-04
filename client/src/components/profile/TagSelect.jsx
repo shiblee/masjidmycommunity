@@ -9,7 +9,7 @@ import { Icon } from "../Icons.jsx";
  * `onAddCustom`. The caller owns persistence — this component only surfaces
  * the intent.
  */
-function TagSelect({ options, selected, onSelect, onRemove, onAddCustom, placeholder, busy, renderChipExtra }) {
+function TagSelect({ options, selected, onSelect, onRemove, onAddCustom, allowCustom = true, placeholder, busy, renderChipExtra }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const wrapRef = useRef(null);
@@ -23,7 +23,8 @@ function TagSelect({ options, selected, onSelect, onRemove, onAddCustom, placeho
   }, [options, query, selectedNames]);
 
   const exactMatch = matches.some((m) => m.name.toLowerCase() === query.trim().toLowerCase());
-  const canAddCustom = query.trim().length > 1 && !exactMatch && !selectedNames.has(query.trim().toLowerCase());
+  const canAddCustom = allowCustom && query.trim().length > 1 && !exactMatch && !selectedNames.has(query.trim().toLowerCase());
+  const noMatches = !allowCustom && query.trim().length > 1 && matches.length === 0;
 
   const pick = (option) => {
     onSelect(option);
@@ -71,7 +72,7 @@ function TagSelect({ options, selected, onSelect, onRemove, onAddCustom, placeho
           onFocus={() => setOpen(true)}
           disabled={busy}
         />
-        {open && (matches.length > 0 || canAddCustom) && (
+        {open && (matches.length > 0 || canAddCustom || noMatches) && (
           <ul className="profile-tagselect-list">
             {matches.map((m) => (
               <li key={m.id}>
@@ -85,6 +86,7 @@ function TagSelect({ options, selected, onSelect, onRemove, onAddCustom, placeho
                 </button>
               </li>
             )}
+            {noMatches && <li className="profile-tagselect-empty">No matches</li>}
           </ul>
         )}
       </div>

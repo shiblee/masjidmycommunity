@@ -30,6 +30,7 @@ import ConcernReview from "./pages/ConcernReview.jsx";
 import ContactInquiries from "./pages/ContactInquiries.jsx";
 import ContactInquiryReview from "./pages/ContactInquiryReview.jsx";
 import FaqManagement from "./pages/FaqManagement.jsx";
+import TestimonialsAndStories from "./pages/TestimonialsAndStories.jsx";
 import Moderation from "./pages/Moderation.jsx";
 import ModerationDetail from "./pages/ModerationDetail.jsx";
 
@@ -60,6 +61,7 @@ function AdminApp() {
         <Route path="registered-users" element={<RegisteredUsers />} />
         <Route path="registered-users/:id" element={<RegisteredUserDetail />} />
         <Route path="registered-users/:id/activity" element={<UserActivityHistory />} />
+        <Route path="registered-users/:id/:tab" element={<RegisteredUserDetail />} />
         <Route path="notifications" element={<Notifications />} />
         <Route path="notifications/templates/:key" element={<EmailTemplateEditor />} />
         <Route path="meta" element={<Navigate to="/admin/meta/masjid-category" replace />} />
@@ -72,6 +74,8 @@ function AdminApp() {
         <Route path="contact-inquiries" element={<ContactInquiries />} />
         <Route path="contact-inquiries/:id" element={<ContactInquiryReview />} />
         <Route path="faq" element={<FaqManagement />} />
+        <Route path="testimonials" element={<TestimonialsAndStories />} />
+        <Route path="success-stories" element={<TestimonialsAndStories />} />
         <Route path="moderation" element={<Moderation />} />
         <Route path="moderation/:targetType/:targetId" element={<ModerationDetail />} />
         <Route path="settings" element={<Settings />} />

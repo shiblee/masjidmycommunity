@@ -16,7 +16,6 @@ export async function recordLoginSuccess(user, req, { loginMethod = "password" }
       status: "success",
       sessionId,
       loginMethod,
-      platform: "web",
       ...getRequestContext(req),
     });
   } catch {
@@ -34,7 +33,6 @@ export async function recordLoginFailure(user, req, failureReason) {
       activityType: "login",
       status: "failure",
       failureReason,
-      platform: "web",
       ...getRequestContext(req),
     });
   } catch {
@@ -52,7 +50,6 @@ export async function recordLogout(user, sessionId, req, logoutReason = "user_in
       status: "success",
       sessionId: sessionId || null,
       logoutReason,
-      platform: "web",
       ...getRequestContext(req),
     });
 

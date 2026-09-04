@@ -4,6 +4,15 @@ import app from "./app.js";
 import connectDB from "./config/db.js";
 import { ensureEmailDefaults } from "./seed/emailDefaults.js";
 import { ensureMasjidCategoryDefaults } from "./seed/masjidCategoryDefaults.js";
+import { ensureMaritalStatusDefaults } from "./seed/maritalStatusDefaults.js";
+import { ensureEducationLevelDefaults } from "./seed/educationLevelDefaults.js";
+import { ensureDegreeDefaults } from "./seed/degreeDefaults.js";
+import { ensureInstitutionDefaults } from "./seed/institutionDefaults.js";
+import { ensureFieldOfStudyDefaults } from "./seed/fieldOfStudyDefaults.js";
+import { ensureCompanyDefaults } from "./seed/companyDefaults.js";
+import { ensureEmploymentTypeDefaults } from "./seed/employmentTypeDefaults.js";
+import { ensureHobbyDefaults } from "./seed/hobbyDefaults.js";
+import { ensureSkillDefaults } from "./seed/skillDefaults.js";
 import { ensureCampaignCategoryDefaults } from "./seed/campaignCategoryDefaults.js";
 import { ensureCampaignClassificationDefaults } from "./seed/campaignClassificationDefaults.js";
 import { ensureConcernTypeDefaults } from "./seed/concernTypeDefaults.js";
@@ -27,6 +36,15 @@ connectDB()
     Promise.all([
       ensureEmailDefaults(),
       ensureMasjidCategoryDefaults(),
+      ensureMaritalStatusDefaults(),
+      ensureEducationLevelDefaults(),
+      ensureDegreeDefaults(),
+      ensureInstitutionDefaults(),
+      ensureFieldOfStudyDefaults(),
+      ensureCompanyDefaults(),
+      ensureEmploymentTypeDefaults(),
+      ensureHobbyDefaults(),
+      ensureSkillDefaults(),
       ensureCampaignCategoryDefaults(),
       ensureCampaignClassificationDefaults(),
       ensureConcernTypeDefaults(),

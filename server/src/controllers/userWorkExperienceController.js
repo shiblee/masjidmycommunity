@@ -1,6 +1,23 @@
 import WorkExperience from "../models/WorkExperience.js";
+import { recordProfileChange } from "../utils/profileChangeLog.js";
+import { generateWorkExperienceEnhancement } from "../services/aiProviderService.js";
 
-const EMPLOYMENT_TYPES = new Set(["full_time", "part_time", "internship", "contract", "freelance", "self_employed", "volunteer"]);
+const SUPPORTED_LANGUAGES = new Set(["en", "hi", "ur", "ar"]);
+const TRACKED_FIELDS = ["company", "title", "employmentType", "startDate", "endDate", "isCurrent", "location", "description", "achievements", "skillsUsed", "isActive"];
+const MAX_ACHIEVEMENTS = 8;
+const MAX_SKILLS = 12;
+
+function sanitizeStringList(value, max) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((v) => (typeof v === "string" ? v.trim() : ""))
+    .filter(Boolean)
+    .slice(0, max);
+}
+
+function diffValue(a, b) {
+  return JSON.stringify(a ?? null) !== JSON.stringify(b ?? null);
+}
 
 async function findOwned(req, res) {
   const entry = await WorkExperience.findOne({ where: { id: req.params.id, userId: req.user.id } });
@@ -22,11 +39,14 @@ export const list = async (req, res) => {
 
 export const create = async (req, res) => {
   try {
-    const { company, title, employmentType, startDate, endDate, isCurrent, location, description } = req.body;
+    const { company, title, employmentType, startDate, endDate, isCurrent, location, description, achievements, skillsUsed } = req.body;
     if (!company?.trim()) return res.status(400).json({ message: "Company or organization name is required." });
     if (!title?.trim()) return res.status(400).json({ message: "Job title is required." });
     if (!startDate) return res.status(400).json({ message: "Start date is required." });
-    if (employmentType && !EMPLOYMENT_TYPES.has(employmentType)) return res.status(400).json({ message: "Enter a valid employment type." });
+    const nextEndDate = isCurrent ? null : endDate || null;
+    if (nextEndDate && new Date(nextEndDate) < new Date(startDate)) {
+      return res.status(400).json({ message: "End date can't be before the start date." });
+    }
 
     const entry = await WorkExperience.create({
       userId: req.user.id,
@@ -34,11 +54,23 @@ export const create = async (req, res) => {
       title: title.trim(),
       employmentType: employmentType || null,
       startDate,
-      endDate: isCurrent ? null : endDate || null,
+      endDate: nextEndDate,
       isCurrent: !!isCurrent,
       location: location?.trim() || null,
       description: description?.trim() || null,
+      achievements: sanitizeStringList(achievements, MAX_ACHIEVEMENTS),
+      skillsUsed: sanitizeStringList(skillsUsed, MAX_SKILLS),
     });
+
+    recordProfileChange({
+      userId: req.user.id,
+      section: "work_experience",
+      action: "create",
+      entityId: entry.id,
+      actor: { type: "user", id: req.user.id, name: null },
+      snapshot: entry.toJSON(),
+    }).catch(() => {});
+
     res.status(201).json({ workExperience: entry });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -49,6 +81,7 @@ export const update = async (req, res) => {
   try {
     const entry = await findOwned(req, res);
     if (!entry) return;
+    const before = Object.fromEntries(TRACKED_FIELDS.map((f) => [f, entry[f]]));
 
     if (req.body.company !== undefined) {
       if (!req.body.company.trim()) return res.status(400).json({ message: "Company or organization name is required." });
@@ -59,16 +92,38 @@ export const update = async (req, res) => {
       entry.title = req.body.title.trim();
     }
     if (req.body.employmentType !== undefined) {
-      if (req.body.employmentType && !EMPLOYMENT_TYPES.has(req.body.employmentType)) return res.status(400).json({ message: "Enter a valid employment type." });
       entry.employmentType = req.body.employmentType || null;
     }
     if (req.body.startDate !== undefined) entry.startDate = req.body.startDate;
     if (req.body.isCurrent !== undefined) entry.isCurrent = !!req.body.isCurrent;
     entry.endDate = entry.isCurrent ? null : req.body.endDate !== undefined ? req.body.endDate || null : entry.endDate;
+    if (entry.endDate && new Date(entry.endDate) < new Date(entry.startDate)) {
+      return res.status(400).json({ message: "End date can't be before the start date." });
+    }
     if (req.body.location !== undefined) entry.location = req.body.location?.trim() || null;
     if (req.body.description !== undefined) entry.description = req.body.description?.trim() || null;
+    if (req.body.achievements !== undefined) entry.achievements = sanitizeStringList(req.body.achievements, MAX_ACHIEVEMENTS);
+    if (req.body.skillsUsed !== undefined) entry.skillsUsed = sanitizeStringList(req.body.skillsUsed, MAX_SKILLS);
+    if (req.body.isActive !== undefined) entry.isActive = !!req.body.isActive;
 
     await entry.save();
+
+    const fields = TRACKED_FIELDS.filter((f) => diffValue(before[f], entry[f])).map((f) => ({
+      field: f,
+      oldValue: before[f],
+      newValue: entry[f],
+    }));
+    if (fields.length) {
+      recordProfileChange({
+        userId: req.user.id,
+        section: "work_experience",
+        action: "update",
+        entityId: entry.id,
+        actor: { type: "user", id: req.user.id, name: null },
+        fields,
+      }).catch(() => {});
+    }
+
     res.json({ workExperience: entry });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -79,8 +134,37 @@ export const remove = async (req, res) => {
   try {
     const entry = await findOwned(req, res);
     if (!entry) return;
+    const snapshot = entry.toJSON();
     await entry.destroy();
+
+    recordProfileChange({
+      userId: req.user.id,
+      section: "work_experience",
+      action: "delete",
+      entityId: entry.id,
+      actor: { type: "user", id: req.user.id, name: null },
+      snapshot,
+    }).catch(() => {});
+
     res.json({ deleted: true });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Works on the currently-typed draft (title/company/notes) — no saved entry
+// is required, so this is used identically while adding a brand new entry
+// or editing an existing one.
+export const enhance = async (req, res) => {
+  try {
+    const { title, company, notes, languageCode } = req.body;
+    if (!title?.trim() && !company?.trim()) {
+      return res.status(400).json({ message: "Add a job title or company first, so the AI has something to work with." });
+    }
+    const lang = SUPPORTED_LANGUAGES.has(languageCode) ? languageCode : "en";
+    const result = await generateWorkExperienceEnhancement({ title, company, notes, languageCode: lang });
+    if (!result) return res.status(503).json({ message: "AI enhancement isn't available right now. Please try again later." });
+    res.json(result);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

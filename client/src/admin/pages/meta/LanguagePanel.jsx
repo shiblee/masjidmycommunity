@@ -20,7 +20,7 @@ function Toggle({ on, onClick, disabled }) {
   return <button type="button" className={`amx-toggle${on ? " on" : ""}`} onClick={onClick} disabled={disabled} aria-pressed={on} />;
 }
 
-function LanguageFormModal({ language, onCancel, onSaved }) {
+function LanguageForm({ language, onCancel, onSaved }) {
   const isEdit = !!language;
   const [code, setCode] = useState(language?.code || "");
   const [name, setName] = useState(language?.name || "");
@@ -50,51 +50,54 @@ function LanguageFormModal({ language, onCancel, onSaved }) {
   };
 
   return (
-    <div className="amx-modal-overlay" onClick={onCancel}>
-      <div className="amx-modal" onClick={(e) => e.stopPropagation()}>
-        <button className="amx-modal-close" onClick={onCancel} aria-label="Close"><Icon name="x" size={16} /></button>
-        <h3>{isEdit ? "Edit Language" : "Add Language"}</h3>
-        <form onSubmit={submit} style={{ marginTop: 16 }}>
-          {!isEdit && (
-            <div className="amx-form-group">
-              <label htmlFor="lang-code">Language Code</label>
-              <input id="lang-code" type="text" value={code} onChange={(e) => setCode(e.target.value)} placeholder="e.g. en, en-US" autoFocus maxLength={10} />
-            </div>
-          )}
+    <>
+      <button className="amx-back-link" onClick={onCancel}>
+        <Icon name="arrowRight" size={14} style={{ transform: "rotate(180deg)" }} /> Back to Languages
+      </button>
+      <h3 style={{ marginBottom: 20 }}>{isEdit ? "Edit Language" : "Add Language"}</h3>
+      <form onSubmit={submit} style={{ maxWidth: 480 }}>
+        {!isEdit && (
           <div className="amx-form-group">
-            <label htmlFor="lang-name">Name</label>
-            <input id="lang-name" type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. English" maxLength={100} />
+            <label htmlFor="lang-code">Language Code</label>
+            <input id="lang-code" type="text" value={code} onChange={(e) => setCode(e.target.value)} placeholder="e.g. en, en-US" autoFocus maxLength={10} />
           </div>
-          <div className="amx-form-group">
-            <label htmlFor="lang-native-name">Native Name</label>
-            <input id="lang-native-name" type="text" value={nativeName} onChange={(e) => setNativeName(e.target.value)} placeholder="e.g. English, हिन्दी, اردو" maxLength={100} />
+        )}
+        <div className="amx-form-group">
+          <label htmlFor="lang-name">Name</label>
+          <input id="lang-name" type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. English" maxLength={100} />
+        </div>
+        <div className="amx-form-group">
+          <label htmlFor="lang-native-name">Native Name</label>
+          <input id="lang-native-name" type="text" value={nativeName} onChange={(e) => setNativeName(e.target.value)} placeholder="e.g. English, हिन्दी, اردو" maxLength={100} />
+        </div>
+        <div className="amx-form-group">
+          <label htmlFor="lang-direction">Direction</label>
+          <select id="lang-direction" className="amx-select" value={direction} onChange={(e) => setDirection(e.target.value)}>
+            <option value="ltr">Left-to-Right (LTR)</option>
+            <option value="rtl">Right-to-Left (RTL)</option>
+          </select>
+        </div>
+        <div className="amx-form-group" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+          <label style={{ marginBottom: 0 }}>Status</label>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span className="amx-panel-sub">{isActive ? "Active" : "Inactive"}</span>
+            <Toggle on={isActive} onClick={() => setIsActive((a) => !a)} disabled={saving || language?.isDefault} />
           </div>
-          <div className="amx-form-group">
-            <label htmlFor="lang-direction">Direction</label>
-            <select id="lang-direction" className="amx-select" value={direction} onChange={(e) => setDirection(e.target.value)}>
-              <option value="ltr">Left-to-Right (LTR)</option>
-              <option value="rtl">Right-to-Left (RTL)</option>
-            </select>
+        </div>
+        {error && (
+          <div className="amx-field-error">
+            <Icon name="info" size={14} />
+            {error}
           </div>
-          <div className="amx-form-group" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-            <label style={{ marginBottom: 0 }}>Status</label>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <span className="amx-panel-sub">{isActive ? "Active" : "Inactive"}</span>
-              <Toggle on={isActive} onClick={() => setIsActive((a) => !a)} disabled={saving || language?.isDefault} />
-            </div>
-          </div>
-          {error && (
-            <div className="amx-field-error">
-              <Icon name="info" size={14} />
-              {error}
-            </div>
-          )}
-          <button type="submit" className="amx-btn amx-btn-primary" style={{ width: "100%", marginTop: 12 }} disabled={saving}>
+        )}
+        <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+          <button type="submit" className="amx-btn amx-btn-primary" disabled={saving}>
             {saving ? "Saving…" : isEdit ? "Save Changes" : "Add Language"}
           </button>
-        </form>
-      </div>
-    </div>
+          <button type="button" className="amx-btn amx-btn-outline" onClick={onCancel} disabled={saving}>Cancel</button>
+        </div>
+      </form>
+    </>
   );
 }
 
@@ -211,6 +214,10 @@ function LanguagePanel() {
     }
   };
 
+  if (formModal) {
+    return <LanguageForm language={formModal === "new" ? null : formModal} onCancel={() => setFormModal(null)} onSaved={upsertLanguage} />;
+  }
+
   return (
     <>
       <div className="amx-panel-head">
@@ -300,14 +307,6 @@ function LanguagePanel() {
       )}
 
       <Pagination page={page} totalPages={totalPages} totalItems={sorted.length} pageSize={PAGE_SIZE} onChange={setPage} />
-
-      {formModal && (
-        <LanguageFormModal
-          language={formModal === "new" ? null : formModal}
-          onCancel={() => setFormModal(null)}
-          onSaved={upsertLanguage}
-        />
-      )}
 
       {deleting && (
         <ConfirmDeleteModal

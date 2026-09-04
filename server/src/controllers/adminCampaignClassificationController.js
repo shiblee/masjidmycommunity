@@ -1,6 +1,9 @@
 import { fn, col } from "sequelize";
 import CampaignClassification from "../models/CampaignClassification.js";
 import Campaign from "../models/Campaign.js";
+import { recordMetaChange, metaActorFrom } from "../utils/metaChangeLog.js";
+
+const ENTITY_TYPE = "campaign-classification";
 
 async function classificationCountsByName() {
   const rows = await Campaign.findAll({
@@ -31,6 +34,14 @@ export const create = async (req, res) => {
       sortOrder: maxOrder + 1,
       ...(isActive !== undefined ? { isActive } : {}),
     });
+    recordMetaChange({
+      entityType: ENTITY_TYPE,
+      entityId: classification.id,
+      entityName: classification.name,
+      action: "create",
+      actor: await metaActorFrom(req),
+      snapshot: classification.toJSON(),
+    }).catch(() => {});
     res.status(201).json({ classification: { ...classification.toJSON(), campaignCount: 0 } });
   } catch (error) {
     if (error.name === "SequelizeUniqueConstraintError") return res.status(409).json({ message: "That classification already exists." });
@@ -42,10 +53,23 @@ export const update = async (req, res) => {
   try {
     const classification = await CampaignClassification.findByPk(req.params.id);
     if (!classification) return res.status(404).json({ message: "Classification not found." });
+    const before = { name: classification.name, isActive: classification.isActive, sortOrder: classification.sortOrder };
     if (req.body.name !== undefined) classification.name = req.body.name.trim();
     if (req.body.isActive !== undefined) classification.isActive = req.body.isActive;
     if (req.body.sortOrder !== undefined) classification.sortOrder = req.body.sortOrder;
     await classification.save();
+    recordMetaChange({
+      entityType: ENTITY_TYPE,
+      entityId: classification.id,
+      entityName: classification.name,
+      action: "update",
+      actor: await metaActorFrom(req),
+      fields: [
+        { field: "name", oldValue: before.name, newValue: classification.name },
+        { field: "isActive", oldValue: before.isActive, newValue: classification.isActive },
+        { field: "sortOrder", oldValue: before.sortOrder, newValue: classification.sortOrder },
+      ],
+    }).catch(() => {});
     const counts = await classificationCountsByName();
     res.json({ classification: { ...classification.toJSON(), campaignCount: counts[classification.name] || 0 } });
   } catch (error) {
@@ -58,7 +82,16 @@ export const remove = async (req, res) => {
   try {
     const classification = await CampaignClassification.findByPk(req.params.id);
     if (!classification) return res.status(404).json({ message: "Classification not found." });
+    const snapshot = classification.toJSON();
     await classification.destroy();
+    recordMetaChange({
+      entityType: ENTITY_TYPE,
+      entityId: classification.id,
+      entityName: snapshot.name,
+      action: "delete",
+      actor: await metaActorFrom(req),
+      snapshot,
+    }).catch(() => {});
     res.json({ deleted: true });
   } catch (error) {
     res.status(500).json({ message: error.message });

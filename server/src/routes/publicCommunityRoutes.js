@@ -14,6 +14,7 @@ import {
   updatePost,
   deletePost,
   getContentSettings,
+  getCommunityStats,
   mentionSearch,
   castImageVote,
   listImageComments,
@@ -25,6 +26,7 @@ import {
 const router = Router();
 
 router.get("/content-settings", getContentSettings);
+router.get("/stats", getCommunityStats);
 router.get("/mention-search", mentionSearch);
 router.get("/activities", optionalAuth, listPublished);
 router.post("/activities/:id/vote", auth, requireUser, castVote);

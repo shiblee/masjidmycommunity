@@ -84,6 +84,15 @@
 }
 .amx-avatar img{ width:100%; height:100%; object-fit:cover; }
 
+.amx-avatar-wrap{ position:relative; display:inline-flex; flex-shrink:0; }
+.amx-presence-dot{
+  position:absolute; right:-1px; bottom:-1px; width:11px; height:11px; border-radius:50%;
+  /* Solid, not translucent — a semi-transparent fill this small reads as
+     "no dot at all" against the white avatar/row background. */
+  background:#9AA6A1; border:2px solid #fff; box-shadow:0 0 0 1px rgba(23,38,44,.12);
+}
+.amx-presence-dot.online{ background:#5E9A2C; }
+
 /* =========================================================
    LOGIN PAGE
    ========================================================= */
@@ -295,6 +304,32 @@
   content:""; position:absolute; left:14px; right:14px; bottom:0; height:2px; background:var(--a-green); border-radius:2px 2px 0 0;
 }
 
+.amx-nav-dropdown{ position:relative; }
+.amx-nav-dropdown-trigger{
+  display:flex; align-items:center; gap:7px; padding:13px 14px; font-size:13.5px; font-weight:600; color:rgba(255,255,255,.62);
+  white-space:nowrap; position:relative; transition:color .2s; background:none; border:none;
+}
+.amx-nav-dropdown-trigger svg{ width:16px; height:16px; opacity:.85; }
+.amx-nav-dropdown-trigger:hover{ color:#fff; }
+.amx-nav-dropdown-trigger.active{ color:#fff; }
+.amx-nav-dropdown-trigger.active::after{
+  content:""; position:absolute; left:14px; right:14px; bottom:0; height:2px; background:var(--a-green); border-radius:2px 2px 0 0;
+}
+.amx-nav-dropdown-chev{ transition:transform .2s; opacity:.7 !important; }
+.amx-nav-dropdown-trigger.open .amx-nav-dropdown-chev{ transform:rotate(180deg); }
+.amx-nav-submenu{
+  position:fixed; background:#fff; color:var(--a-text); border-radius:12px; border:1px solid var(--a-border);
+  box-shadow:var(--a-shadow-lg); min-width:210px; padding:8px; z-index:200; animation:amxPop .18s var(--a-ease);
+}
+.amx-nav-submenu a{
+  display:flex; align-items:center; gap:10px; width:100%; padding:10px 12px; border-radius:8px; font-size:13.5px;
+  font-weight:600; color:var(--a-text-dim);
+}
+.amx-nav-submenu a svg{ width:16px; height:16px; flex-shrink:0; opacity:1; }
+.amx-nav-submenu a:hover{ background:var(--a-bg); color:var(--a-text); }
+.amx-nav-submenu a.active{ background:rgba(141,198,63,.1); color:var(--a-text); }
+.amx-nav-submenu a .amx-nav-count-badge{ margin-left:auto; }
+
 .amx-dropdown{
   position:absolute; top:calc(100% + 10px); right:0; background:#fff; color:var(--a-text); border-radius:12px; border:1px solid var(--a-border);
   box-shadow:var(--a-shadow-lg); min-width:230px; padding:8px; z-index:90; animation:amxPop .18s var(--a-ease);
@@ -355,6 +390,7 @@
 .amx-kpi-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:18px; margin-bottom:28px; }
 .amx-kpi{ padding:20px 22px; display:flex; flex-direction:column; gap:14px; transition:transform .25s var(--a-ease), box-shadow .25s; }
 .amx-kpi:hover{ transform:translateY(-3px); box-shadow:var(--a-shadow-lg); }
+.amx-kpi-clickable{ text-decoration:none; color:inherit; cursor:pointer; }
 .amx-kpi-top{ display:flex; align-items:flex-start; justify-content:space-between; }
 .amx-kpi-icon{ width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; }
 .amx-kpi-icon svg{ width:20px; height:20px; }
@@ -525,7 +561,13 @@ table.amx-table{ width:100%; border-collapse:collapse; font-size:13.5px; }
 }
 .amx-settings-nav button:hover, .amx-settings-nav a:hover{ background:var(--a-bg); color:var(--a-text); }
 .amx-settings-nav button.active, .amx-settings-nav a.active{ background:var(--a-navy); color:#fff; }
-.amx-settings-nav button svg, .amx-settings-nav a svg{ width:16px; height:16px; }
+.amx-settings-nav button svg, .amx-settings-nav a svg{ width:16px; height:16px; flex-shrink:0; }
+.amx-nav-label{ flex:1; }
+.amx-nav-count{
+  flex-shrink:0; min-width:20px; text-align:center; padding:1px 7px; border-radius:20px; font-size:11.5px; font-weight:700;
+  background:var(--a-bg); color:var(--a-text-dim);
+}
+.amx-settings-nav a.active .amx-nav-count{ background:rgba(255,255,255,.2); color:#fff; }
 .amx-form-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
 .amx-form-group{ margin-bottom:16px; }
 .amx-form-group label{ display:block; font-size:13px; font-weight:700; color:var(--a-text); margin-bottom:7px; }
@@ -546,6 +588,16 @@ table.amx-table{ width:100%; border-collapse:collapse; font-size:13.5px; }
 .amx-toggle::after{ content:""; position:absolute; top:3px; left:3px; width:18px; height:18px; border-radius:50%; background:#fff; transition:transform .2s var(--a-ease); box-shadow:0 1px 3px rgba(0,0,0,.2); }
 .amx-toggle.on{ background:var(--a-green); }
 .amx-toggle.on::after{ transform:translateX(18px); }
+
+.amx-completion-cell{ display:flex; align-items:center; gap:8px; min-width:90px; }
+.amx-completion-bar{ width:56px; height:6px; border-radius:100px; background:var(--a-border-strong); overflow:hidden; flex-shrink:0; }
+.amx-completion-fill{ height:100%; border-radius:100px; background:var(--a-green); transition:width .3s var(--a-ease); }
+.amx-completion-cell span{ font-size:12.5px; font-weight:700; color:var(--a-text-dim); flex-shrink:0; }
+
+.amx-star-picker{ display:flex; align-items:center; gap:4px; }
+.amx-star-picker button{ background:none; border:none; padding:2px; color:var(--a-gold); display:flex; }
+.amx-star-picker-clear{ font-size:12px; font-weight:600; color:var(--a-text-dim); margin-left:6px; cursor:pointer; }
+.amx-star-picker-clear:hover{ color:var(--a-text); }
 
 .amx-textarea{
   width:100%; min-width:180px; border:1.5px solid var(--a-border-strong); border-radius:8px; padding:8px 10px; font-size:13px;

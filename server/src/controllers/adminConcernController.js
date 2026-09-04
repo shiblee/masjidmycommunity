@@ -43,7 +43,7 @@ export const counts = async (req, res) => {
   try {
     const result = {};
     for (const s of ["open", "resolved", "closed"]) result[s] = await Concern.count({ where: { status: s } });
-    result.unresolved = result.open + result.closed;
+    result.unresolved = result.open;
     res.json(result);
   } catch (error) {
     res.status(500).json({ message: error.message });

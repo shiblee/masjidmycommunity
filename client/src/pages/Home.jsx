@@ -574,7 +574,7 @@ function Home() {
               education, clean water, solar power — with full visibility into where every contribution goes.
             </p>
             <div className="hero-ctas">
-              <a href="#campaigns" className="btn btn-gold">
+              <a href="/explore-campaigns" className="btn btn-gold">
                 Explore Campaigns <span className="btn-arrow">→</span>
               </a>
               <a href="#register" className="btn btn-outline-paper">
@@ -1171,7 +1171,7 @@ function Home() {
               Register Your Masjid <span className="btn-arrow">→</span>
             </a>
             <a
-              href="#campaigns"
+              href="/explore-campaigns"
               className={`btn btn-outline-paper${ctaAudience === "donor" ? " cta-emphasized" : ""}${ctaAudience === "masjid" ? " cta-dimmed" : ""}`}
             >
               Explore Campaigns <span className="btn-arrow">→</span>

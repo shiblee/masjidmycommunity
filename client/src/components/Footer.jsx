@@ -317,28 +317,22 @@ function Footer() {
             <div className="footer-links-grid">
               <div className="footer-col foot-reveal">
                 <h4>{t("footer.col.platform", "Platform")}</h4>
-                <Link to="/#campaigns">{t("footer.link.exploreCampaigns", "Explore Campaigns")}</Link>
-                <Link to="/#categories">{t("footer.link.categories", "Categories")}</Link>
+                <NavLink to="/explore-campaigns">{t("footer.link.exploreCampaigns", "Explore Campaigns")}</NavLink>
                 <NavLink to="/how-it-works">{t("footer.link.howItWorks", "How It Works")}</NavLink>
-                <Link to="/#masjids">{t("footer.link.verifiedMasjids", "Verified Masjids")}</Link>
+                <NavLink to="/verified-masjid">{t("footer.link.verifiedMasjids", "Verified Masjids")}</NavLink>
+                <NavLink to="/our-impact">{t("footer.link.ourImpact", "Our Impact")}</NavLink>
               </div>
               <div className="footer-col foot-reveal">
                 <h4>{t("footer.col.forMasjids", "For Masjids")}</h4>
                 <Link to="/#register">{t("footer.link.registerMasjid", "Register Your Masjid")}</Link>
-                <Link to="/#empower">{t("footer.link.empowermentPrograms", "Empowerment Programs")}</Link>
-                <Link to="/#programs">{t("footer.link.whatsNext", "What's Next")}</Link>
-                <Link to="/#faq">{t("footer.link.verification", "Verification")}</Link>
               </div>
               <div className="footer-col foot-reveal">
                 <h4>{t("footer.col.forDonors", "For Donors")}</h4>
-                <Link to="/#campaigns">{t("footer.link.donate", "Donate")}</Link>
-                <NavLink to="/our-impact">{t("footer.link.successStories", "Success Stories")}</NavLink>
-                <Link to="/#donate-why">{t("footer.link.whyDonate", "Why Donate")}</Link>
-                <Link to="/#testimonials">{t("footer.link.testimonials", "Testimonials")}</Link>
+                <NavLink to="/success-stories">{t("footer.link.successStories", "Success Stories")}</NavLink>
+                <NavLink to="/testimonials">{t("footer.link.testimonials", "Testimonials")}</NavLink>
               </div>
               <div className="footer-col foot-reveal">
                 <h4>{t("footer.col.resources", "Resources")}</h4>
-                <Link to="/#resources">{t("footer.link.guidesLearning", "Guides & Learning")}</Link>
                 <NavLink to="/faq">{t("footer.link.faq", "FAQ")}</NavLink>
                 <NavLink to="/about">{t("footer.link.aboutUs", "About Masjid My Community")}</NavLink>
                 <NavLink to="/contact">{t("footer.link.contact", "Contact")}</NavLink>
@@ -361,6 +355,8 @@ function Footer() {
               <NavLink to="/raise-a-concern">{t("footer.legal.raiseConcern", "Raise a Concern")}</NavLink>
               <span className="foot-legal-sep">—</span>
               <NavLink to="/cookie-policy">{t("footer.legal.cookiePolicy", "Cookie Policy")}</NavLink>
+              <span className="foot-legal-sep">—</span>
+              <NavLink to="/sitemap">{t("footer.legal.sitemap", "Sitemap")}</NavLink>
             </nav>
             <div className="selectors">
               <LanguageSelect triggerClassName="foot-select" />

@@ -248,7 +248,7 @@ function Auth({ defaultIntent } = {}) {
     setLoginLoading(true);
     try {
       const { data } = await userApi.post("/login", { identifier: loginId.trim(), password: loginPassword, remember });
-      setUserSession({ token: data.token, user: data.user, remember });
+      setUserSession({ token: data.token, refreshToken: data.refreshToken, user: data.user, remember });
       goToAccount();
     } catch (err) {
       const resp = err.response?.data;
@@ -347,9 +347,9 @@ function Auth({ defaultIntent } = {}) {
     }
     setOtpLoading(true);
     try {
-      const { data } = await userApi.post("/verify-otp", { userId: otpCtx.userId, otp: otpValue });
+      const { data } = await userApi.post("/verify-otp", { userId: otpCtx.userId, otp: otpValue, remember });
       if (otpCtx.purpose === "register" || otpCtx.purpose === "login") {
-        setUserSession({ token: data.token, user: data.user, remember: true });
+        setUserSession({ token: data.token, refreshToken: data.refreshToken, user: data.user, remember });
         setVerifySuccess(true);
         setTimeout(goToAccount, 1700);
       } else {
@@ -829,17 +829,22 @@ function Auth({ defaultIntent } = {}) {
                   </div>
                   <div className="auth-field">
                     <label htmlFor="reset-confirm">Confirm New Password</label>
-                    <input
-                      id="reset-confirm"
-                      type={showResetPw ? "text" : "password"}
-                      value={confirmNewPassword}
-                      onChange={(e) => {
-                        setConfirmNewPassword(e.target.value);
-                        setResetErrors((er) => ({ ...er, confirm: null }));
-                      }}
-                      placeholder="Re-enter your password"
-                      autoComplete="new-password"
-                    />
+                    <div className="auth-input-wrap">
+                      <input
+                        id="reset-confirm"
+                        type={showResetPw ? "text" : "password"}
+                        value={confirmNewPassword}
+                        onChange={(e) => {
+                          setConfirmNewPassword(e.target.value);
+                          setResetErrors((er) => ({ ...er, confirm: null }));
+                        }}
+                        placeholder="Re-enter your password"
+                        autoComplete="new-password"
+                      />
+                      <button type="button" className="auth-pw-toggle" onClick={() => setShowResetPw((s) => !s)} aria-label={showResetPw ? "Hide password" : "Show password"}>
+                        <EyeIcon off={showResetPw} />
+                      </button>
+                    </div>
                     {resetErrors.confirm && <span className="auth-field-error">{resetErrors.confirm}</span>}
                   </div>
                   <button type="submit" className="btn btn-gold auth-submit" disabled={resetLoading}>

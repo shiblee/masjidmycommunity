@@ -20,7 +20,7 @@ function Toggle({ on, onClick, disabled }) {
   return <button type="button" className={`amx-toggle${on ? " on" : ""}`} onClick={onClick} disabled={disabled} aria-pressed={on} />;
 }
 
-function SkillFormModal({ skill, onCancel, onSaved }) {
+function SkillForm({ skill, onCancel, onSaved }) {
   const isEdit = !!skill;
   const [name, setName] = useState(skill?.name || "");
   const [isActive, setIsActive] = useState(skill ? skill.isActive : true);
@@ -48,34 +48,37 @@ function SkillFormModal({ skill, onCancel, onSaved }) {
   };
 
   return (
-    <div className="amx-modal-overlay" onClick={onCancel}>
-      <div className="amx-modal" onClick={(e) => e.stopPropagation()}>
-        <button className="amx-modal-close" onClick={onCancel} aria-label="Close"><Icon name="x" size={16} /></button>
-        <h3>{isEdit ? "Edit Skill" : "Add Skill"}</h3>
-        <form onSubmit={submit} style={{ marginTop: 16 }}>
-          <div className="amx-form-group">
-            <label htmlFor="skill-name">Skill Name</label>
-            <input id="skill-name" type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Project Management" autoFocus maxLength={255} />
-            {error && (
-              <div className="amx-field-error">
-                <Icon name="info" size={14} />
-                {error}
-              </div>
-            )}
-          </div>
-          <div className="amx-form-group" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-            <label style={{ marginBottom: 0 }}>Status</label>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <span className="amx-panel-sub">{isActive ? "Active" : "Inactive"}</span>
-              <Toggle on={isActive} onClick={() => setIsActive((a) => !a)} disabled={saving} />
+    <>
+      <button className="amx-back-link" onClick={onCancel}>
+        <Icon name="arrowRight" size={14} style={{ transform: "rotate(180deg)" }} /> Back to Skills
+      </button>
+      <h3 style={{ marginBottom: 20 }}>{isEdit ? "Edit Skill" : "Add Skill"}</h3>
+      <form onSubmit={submit} style={{ maxWidth: 480 }}>
+        <div className="amx-form-group">
+          <label htmlFor="skill-name">Skill Name</label>
+          <input id="skill-name" type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Project Management" autoFocus maxLength={255} />
+          {error && (
+            <div className="amx-field-error">
+              <Icon name="info" size={14} />
+              {error}
             </div>
+          )}
+        </div>
+        <div className="amx-form-group" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+          <label style={{ marginBottom: 0 }}>Status</label>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span className="amx-panel-sub">{isActive ? "Active" : "Inactive"}</span>
+            <Toggle on={isActive} onClick={() => setIsActive((a) => !a)} disabled={saving} />
           </div>
-          <button type="submit" className="amx-btn amx-btn-primary" style={{ width: "100%", marginTop: 12 }} disabled={saving || !name.trim()}>
+        </div>
+        <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+          <button type="submit" className="amx-btn amx-btn-primary" disabled={saving || !name.trim()}>
             {saving ? "Saving…" : isEdit ? "Save Changes" : "Add Skill"}
           </button>
-        </form>
-      </div>
-    </div>
+          <button type="button" className="amx-btn amx-btn-outline" onClick={onCancel} disabled={saving}>Cancel</button>
+        </div>
+      </form>
+    </>
   );
 }
 
@@ -232,6 +235,10 @@ function SkillPanel() {
     }
   };
 
+  if (formModal) {
+    return <SkillForm skill={formModal === "new" ? null : formModal} onCancel={() => setFormModal(null)} onSaved={upsertSkill} />;
+  }
+
   return (
     <>
       <div className="amx-panel-head">
@@ -324,14 +331,6 @@ function SkillPanel() {
       )}
 
       <Pagination page={page} totalPages={totalPages} totalItems={sorted.length} pageSize={PAGE_SIZE} onChange={setPage} />
-
-      {formModal && (
-        <SkillFormModal
-          skill={formModal === "new" ? null : formModal}
-          onCancel={() => setFormModal(null)}
-          onSaved={upsertSkill}
-        />
-      )}
 
       {deactivating && (
         <ConfirmDeactivateModal

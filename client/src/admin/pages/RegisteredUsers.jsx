@@ -6,6 +6,7 @@ import Pagination from "../components/Pagination.jsx";
 import SortHeader from "../components/SortHeader.jsx";
 import adminApi from "../services/adminApi.js";
 import { formatDate, formatDateTime } from "../../utils/formatDateTime.js";
+import { API_ORIGIN } from "../../config.js";
 
 const PAGE_SIZE = 100;
 
@@ -26,6 +27,7 @@ const SORT_COLUMNS = {
   method: { label: "Method", get: (u) => (METHOD_LABEL[u.registrationMethod] || u.registrationMethod || "").toLowerCase() },
   verification: { label: "Verification", get: (u) => (u.emailVerified || u.mobileVerified ? 1 : 0) },
   status: { label: "Status", get: (u) => u.status || "" },
+  profileCompletion: { label: "Profile Completion", get: (u) => u.profileCompletion || 0 },
   createdAt: { label: "Registered", get: (u) => new Date(u.createdAt).getTime() },
   lastLoginAt: { label: "Last Login", get: (u) => (u.lastLoginAt ? new Date(u.lastLoginAt).getTime() : -1) },
 };
@@ -209,6 +211,7 @@ function RegisteredUsers() {
                   <SortHeader label="Method" sortKey="method" activeKey={sortKey} direction={sortDir} onSort={toggleSort} />
                   <SortHeader label="Verification" sortKey="verification" activeKey={sortKey} direction={sortDir} onSort={toggleSort} />
                   <SortHeader label="Status" sortKey="status" activeKey={sortKey} direction={sortDir} onSort={toggleSort} />
+                  <SortHeader label="Profile Completion" sortKey="profileCompletion" activeKey={sortKey} direction={sortDir} onSort={toggleSort} />
                   <SortHeader label="Registered" sortKey="createdAt" activeKey={sortKey} direction={sortDir} onSort={toggleSort} />
                   <SortHeader label="Last Login" sortKey="lastLoginAt" activeKey={sortKey} direction={sortDir} onSort={toggleSort} />
                   <th></th>
@@ -219,8 +222,19 @@ function RegisteredUsers() {
                   <tr key={u.id}>
                     <td>
                       <div className="amx-cell-main">
-                        <span className="amx-avatar" style={{ width: 32, height: 32, fontSize: 12 }}>
-                          {initialsOf(u.fullName)}
+                        <span className="amx-avatar-wrap">
+                          {u.profilePhoto ? (
+                            <img className="amx-avatar" style={{ width: 32, height: 32, objectFit: "cover" }} src={`${API_ORIGIN}${u.profilePhoto}`} alt={u.fullName} />
+                          ) : (
+                            <span className="amx-avatar" style={{ width: 32, height: 32, fontSize: 12 }}>
+                              {initialsOf(u.fullName)}
+                            </span>
+                          )}
+                          <span
+                            className={`amx-presence-dot${u.isOnline ? " online" : ""}`}
+                            title={u.isOnline ? "Currently logged in" : "Logged out"}
+                            aria-label={u.isOnline ? "Currently logged in" : "Logged out"}
+                          />
                         </span>
                         <div>
                           <div>{u.fullName}</div>
@@ -242,6 +256,12 @@ function RegisteredUsers() {
                     </td>
                     <td>
                       <StatusBadge status={u.status} />
+                    </td>
+                    <td>
+                      <div className="amx-completion-cell">
+                        <div className="amx-completion-bar"><div className="amx-completion-fill" style={{ width: `${u.profileCompletion || 0}%` }} /></div>
+                        <span>{u.profileCompletion || 0}%</span>
+                      </div>
                     </td>
                     <td>{formatDate(u.createdAt)}</td>
                     <td>

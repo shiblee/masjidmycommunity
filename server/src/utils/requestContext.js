@@ -1,9 +1,13 @@
 import { UAParser } from "ua-parser-js";
 
 // Normalizes the IPv4-mapped IPv6 form Node reports for local/IPv4 clients
-// (e.g. "::ffff:127.0.0.1") into the plain, readable form.
+// (e.g. "::ffff:127.0.0.1") into the plain, readable form, and maps the
+// IPv6 loopback address to its familiar IPv4 equivalent — both forms show
+// up constantly in local development since the server and browser share
+// the same machine.
 function normalizeIp(ip) {
   if (!ip) return null;
+  if (ip === "::1") return "127.0.0.1";
   return ip.startsWith("::ffff:") ? ip.slice(7) : ip;
 }
 
@@ -23,9 +27,18 @@ export function getRequestContext(req) {
 
   const parsed = new UAParser(userAgent || "").getResult();
 
+  // Set by the client (see client/src/utils/clientPlatform.js) based on
+  // document.referrer — Trusted Web Activity / Custom Tabs launches from the
+  // installed Android app set referrer to "android-app://<package>", which
+  // is the standard way to detect that launch context without any native
+  // code (the Android app itself is a TWA wrapper with no auth code of its
+  // own — it just opens this same site in real Chrome).
+  const platform = req.headers["x-client-platform"] === "android-twa" ? "android-twa" : "web";
+
   return {
     ipAddress,
     userAgent,
+    platform,
     browser: parsed.browser.name || null,
     browserVersion: parsed.browser.version || null,
     os: [parsed.os.name, parsed.os.version].filter(Boolean).join(" ") || null,

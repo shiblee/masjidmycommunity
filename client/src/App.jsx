@@ -11,8 +11,15 @@ import LegalPage from "./pages/LegalPage.jsx";
 import RaiseConcern from "./pages/RaiseConcern.jsx";
 import Contact from "./pages/Contact.jsx";
 import Faq from "./pages/Faq.jsx";
+import Testimonials from "./pages/Testimonials.jsx";
+import SuccessStories from "./pages/SuccessStories.jsx";
+import SuccessStoryDetail from "./pages/SuccessStoryDetail.jsx";
+import ExploreCampaigns from "./pages/ExploreCampaigns.jsx";
+import VerifiedMasjid from "./pages/VerifiedMasjid.jsx";
+import Sitemap from "./pages/Sitemap.jsx";
 import Auth from "./pages/Auth.jsx";
-import Account from "./pages/Account.jsx";
+import Profile from "./pages/Profile.jsx";
+import AccountRedirect from "./components/AccountRedirect.jsx";
 import ExploreMasjids from "./pages/ExploreMasjids.jsx";
 import MasjidProfile from "./pages/MasjidProfile.jsx";
 import MyMasjids from "./pages/masjid/MyMasjids.jsx";
@@ -65,17 +72,25 @@ function App() {
           <Route path="/raise-a-concern" element={<RaiseConcern />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/faq" element={<Faq />} />
+          <Route path="/testimonials" element={<Testimonials />} />
+          <Route path="/success-stories" element={<SuccessStories />} />
+          <Route path="/success-stories/:slug" element={<SuccessStoryDetail />} />
+          <Route path="/explore-campaigns" element={<ExploreCampaigns />} />
+          <Route path="/verified-masjid" element={<VerifiedMasjid />} />
+          <Route path="/sitemap" element={<Sitemap />} />
           <Route path="/cookie-policy" element={<LegalPage slug="cookie-policy" />} />
           <Route path="/pages/:slug" element={<LegalPage />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/explore-masjids" element={<ExploreMasjids />} />
           <Route path="/masjid/:id" element={<MasjidProfile />} />
           <Route path="/campaign/:slug" element={<CampaignProfile />} />
+          <Route path="/profile/:username" element={<Profile />} />
+          <Route path="/profile/:username/:section" element={<Profile />} />
           <Route
             path="/account"
             element={
               <RequireUserAuth>
-                <Account />
+                <AccountRedirect />
               </RequireUserAuth>
             }
           />

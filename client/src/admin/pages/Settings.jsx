@@ -658,7 +658,7 @@ function Settings() {
                   <div className="amx-panel-sub">Configure when reported content is automatically hidden pending your review</div>
                 </div>
               </div>
-              <form onSubmit={saveThreshold} className="amx-form-grid">
+              <form onSubmit={saveThreshold} className="amx-form-grid" noValidate>
                 <div className="amx-form-group">
                   <label htmlFor="report-threshold">Automatic Moderation Threshold</label>
                   <input
@@ -695,7 +695,7 @@ function Settings() {
                   <div className="amx-panel-sub">Configure the maximum character length allowed for Wall posts, comments, and replies</div>
                 </div>
               </div>
-              <form onSubmit={saveContentLimits} className="amx-form-grid">
+              <form onSubmit={saveContentLimits} className="amx-form-grid" noValidate>
                 <div className="amx-form-group">
                   <label htmlFor="max-post-length">Maximum Post Length</label>
                   <input
@@ -759,7 +759,7 @@ function Settings() {
                   <div className="amx-panel-sub">Configure how one-time codes behave for Login via OTP, registration, password reset, and updating contact details</div>
                 </div>
               </div>
-              <form onSubmit={saveAuthSettings} className="amx-form-grid">
+              <form onSubmit={saveAuthSettings} className="amx-form-grid" noValidate>
                 <div className="amx-form-group">
                   <label htmlFor="otp-expiry">OTP Expiry (minutes)</label>
                   <input

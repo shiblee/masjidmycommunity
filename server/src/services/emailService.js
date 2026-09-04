@@ -222,6 +222,31 @@ export async function sendAccountStatusEmail(user, status) {
   });
 }
 
+function formatChangedAt() {
+  return new Date().toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" });
+}
+
+export async function sendPasswordChangedEmail(user, { ipAddress } = {}) {
+  if (!user.email) return { sent: false, skipped: true };
+  return sendNotification("password_changed", {
+    to: user.email,
+    variables: { user_name: user.fullName, changed_at: formatChangedAt(), ip_address: ipAddress || "unknown" },
+    userMeta: { userId: user.id, userName: user.fullName, userEmail: user.email },
+  });
+}
+
+// Sent to the OLD address (not the new one) — standard security practice, so
+// whoever controlled the account before the change can catch an
+// unauthorized one even though they can no longer sign in with it.
+export async function sendEmailChangedEmail(user, { oldEmail, newEmail, ipAddress } = {}) {
+  if (!oldEmail) return { sent: false, skipped: true };
+  return sendNotification("email_changed", {
+    to: oldEmail,
+    variables: { user_name: user.fullName, old_email: oldEmail, new_email: newEmail, changed_at: formatChangedAt(), ip_address: ipAddress || "unknown" },
+    userMeta: { userId: user.id, userName: user.fullName, userEmail: oldEmail },
+  });
+}
+
 export async function sendMasjidSubmittedAdminEmail(masjid, submitter) {
   const settings = await EmailSettings.findOne();
   const to = settings?.adminNotificationEmail;

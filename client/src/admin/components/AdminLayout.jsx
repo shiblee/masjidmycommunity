@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { createPortal } from "react-dom";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import Icon from "./Icons.jsx";
 import adminApi from "../services/adminApi.js";
 import { getUser, updateStoredUser, clearSession } from "../authStorage.js";
@@ -26,6 +27,28 @@ const NAV_ITEMS = [
   { to: "/admin/registered-users", label: "Users", icon: "globe" },
   { to: "/admin/masjids", label: "Masjids", icon: "mosque" },
   { to: "/admin/campaigns", label: "Campaigns", icon: "campaign" },
+  {
+    label: "Support & Help",
+    icon: "shield",
+    children: [
+      { to: "/admin/concerns", label: "Raise a Concern", icon: "shield" },
+      { to: "/admin/contact-inquiries", label: "Contact Us", icon: "mail" },
+      { to: "/admin/faq", label: "FAQ & AI Assistant", icon: "info" },
+    ],
+  },
+  {
+    label: "Testimonials & Stories",
+    icon: "quote",
+    children: [
+      { to: "/admin/testimonials", label: "Testimonials", icon: "quote" },
+      { to: "/admin/success-stories", label: "Success Stories", icon: "book" },
+    ],
+  },
+  { to: "/admin/meta", label: "Meta", icon: "layers" },
+  { to: "/admin/pages", label: "Pages", icon: "fileText" },
+  { to: "/admin/translations", label: "Translations", icon: "content" },
+  { to: "/admin/notifications", label: "Notifications", icon: "bell" },
+  { to: "/admin/settings", label: "Settings", icon: "settings" },
   { to: "/admin/donations", label: "Donations", icon: "donation" },
   { to: "/admin/donors", label: "Donors", icon: "donors" },
   { to: "/admin/projects", label: "Projects", icon: "projects" },
@@ -33,15 +56,7 @@ const NAV_ITEMS = [
   { to: "/admin/verification", label: "Verification", icon: "verify" },
   { to: "/admin/reports", label: "Reports & Analytics", icon: "reports" },
   { to: "/admin/community-wall", label: "Community Wall", icon: "megaphone" },
-  { to: "/admin/concerns", label: "Raise a Concern", icon: "shield" },
-  { to: "/admin/contact-inquiries", label: "Contact Us", icon: "mail" },
-  { to: "/admin/faq", label: "FAQ & AI Assistant", icon: "info" },
   { to: "/admin/moderation", label: "Reported Content", icon: "flag" },
-  { to: "/admin/notifications", label: "Notifications", icon: "bell" },
-  { to: "/admin/meta", label: "Meta", icon: "layers" },
-  { to: "/admin/pages", label: "Pages", icon: "fileText" },
-  { to: "/admin/translations", label: "Translations", icon: "content" },
-  { to: "/admin/settings", label: "Settings", icon: "settings" },
 ];
 
 // Nav items whose badge count is polled alongside the bell notifications —
@@ -204,12 +219,99 @@ function ProfileMenu({ user }) {
   );
 }
 
+// A top-nav item with children (currently only "Support & Help") — renders as
+// a toggle button that pops open a small menu of its child links, mirroring
+// the existing .amx-dropdown pattern used for notifications/profile so it
+// feels native to the rest of the top bar rather than a bolted-on widget.
+//
+// The submenu is portaled to .admin-root rather than nested in
+// .amx-nav-dropdown: .amx-nav scrolls horizontally on narrow screens
+// (overflow-x:auto), which forces overflow-y to clip too, so an
+// absolutely-positioned child would be invisible — a fixed-position portal
+// sidesteps that clipping. Portaling to .admin-root (rather than all the way
+// to <body>) keeps the --a-* CSS variables in scope, since they're defined
+// on .admin-root, not :root.
+function NavDropdown({ item, badgeCounts, pathname }) {
+  const [open, setOpen] = useState(false);
+  const [coords, setCoords] = useState(null);
+  const wrapRef = useRef(null);
+  const menuRef = useRef(null);
+
+  const updateCoords = () => {
+    if (!wrapRef.current) return;
+    const r = wrapRef.current.getBoundingClientRect();
+    setCoords({ top: r.bottom + 10, left: r.left });
+  };
+
+  useEffect(() => {
+    if (!open) return;
+    updateCoords();
+    window.addEventListener("resize", updateCoords);
+    window.addEventListener("scroll", updateCoords, true);
+    return () => {
+      window.removeEventListener("resize", updateCoords);
+      window.removeEventListener("scroll", updateCoords, true);
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    function handle(e) {
+      if (wrapRef.current?.contains(e.target) || menuRef.current?.contains(e.target)) return;
+      setOpen(false);
+    }
+    document.addEventListener("mousedown", handle);
+    return () => document.removeEventListener("mousedown", handle);
+  }, [open]);
+
+  const isChildActive = item.children.some((c) => pathname === c.to || pathname.startsWith(`${c.to}/`));
+  const totalBadge = item.children.reduce((sum, c) => sum + (badgeCounts[c.to] || 0), 0);
+
+  return (
+    <div className="amx-nav-dropdown" ref={wrapRef}>
+      <button
+        type="button"
+        className={`amx-nav-dropdown-trigger${isChildActive ? " active" : ""}${open ? " open" : ""}`}
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+      >
+        <Icon name={item.icon} size={16} />
+        {item.label}
+        {totalBadge > 0 && <span className="amx-nav-count-badge">{totalBadge > 99 ? "99+" : totalBadge}</span>}
+        <Icon name="chevronDown" size={13} className="amx-nav-dropdown-chev" />
+      </button>
+      {open &&
+        coords &&
+        createPortal(
+          <div className="amx-nav-submenu" ref={menuRef} style={{ top: coords.top, left: coords.left }}>
+            {item.children.map((child) => (
+              <NavLink
+                key={child.to}
+                to={child.to}
+                className={({ isActive }) => (isActive ? "active" : "")}
+                onClick={() => setOpen(false)}
+              >
+                <Icon name={child.icon} size={16} />
+                {child.label}
+                {badgeCounts[child.to] > 0 && (
+                  <span className="amx-nav-count-badge">{badgeCounts[child.to] > 99 ? "99+" : badgeCounts[child.to]}</span>
+                )}
+              </NavLink>
+            ))}
+          </div>,
+          document.querySelector(".admin-root") || document.body
+        )}
+    </div>
+  );
+}
+
 function AdminLayout() {
   const [user, setUser] = useState(() => getUser());
   const [alerts, setAlerts] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [badgeCounts, setBadgeCounts] = useState({});
   const navigate = useNavigate();
+  const { pathname } = useLocation();
 
   useEffect(() => {
     adminApi
@@ -282,15 +384,19 @@ function AdminLayout() {
           </div>
           <div className="amx-topbar-row2">
             <nav className="amx-nav">
-              {NAV_ITEMS.map((item) => (
-                <NavLink key={item.to} to={item.to} className={({ isActive }) => (isActive ? "active" : "")}>
-                  <Icon name={item.icon} size={16} />
-                  {item.label}
-                  {badgeCounts[item.to] > 0 && (
-                    <span className="amx-nav-count-badge">{badgeCounts[item.to] > 99 ? "99+" : badgeCounts[item.to]}</span>
-                  )}
-                </NavLink>
-              ))}
+              {NAV_ITEMS.map((item) =>
+                item.children ? (
+                  <NavDropdown key={item.label} item={item} badgeCounts={badgeCounts} pathname={pathname} />
+                ) : (
+                  <NavLink key={item.to} to={item.to} className={({ isActive }) => (isActive ? "active" : "")}>
+                    <Icon name={item.icon} size={16} />
+                    {item.label}
+                    {badgeCounts[item.to] > 0 && (
+                      <span className="amx-nav-count-badge">{badgeCounts[item.to] > 99 ? "99+" : badgeCounts[item.to]}</span>
+                    )}
+                  </NavLink>
+                )
+              )}
             </nav>
           </div>
         </header>

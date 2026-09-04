@@ -21,6 +21,10 @@ const VARIABLE_HINTS = {
   submitted_by: "The full name of the person who submitted the masjid",
   submission_date: "Date and time the masjid was submitted",
   status: "The masjid's current review status",
+  changed_at: "Date and time the change was made",
+  ip_address: "The IP address the change was made from",
+  old_email: "The account's previous email address",
+  new_email: "The account's new email address",
 };
 
 function EmailTemplateEditor() {

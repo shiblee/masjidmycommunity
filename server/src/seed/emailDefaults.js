@@ -400,6 +400,44 @@ const DEFAULT_TEMPLATES = [
     status: "active",
     availableVariables: ["content_type", "content_name", "report_count", "threshold", "hidden_date", "platform_name", "current_year"],
   },
+  {
+    key: "password_changed",
+    name: "Password Changed",
+    purpose: "Sent to a user whenever their account password is changed — either self-service or via a forgot-password reset.",
+    subject: "Your {{platform_name}} password was changed",
+    heading: "Password Changed",
+    message:
+      "Your {{platform_name}} account password was changed on {{changed_at}} from IP address {{ip_address}}.\n\nIf you made this change, no further action is needed. If you did not request this change, please reset your password immediately and contact our support team.",
+    ctaText: "Go to My Account",
+    ctaLink: "http://localhost:5173/account",
+    footerText:
+      "{{platform_name}} — Empowering Masjids. Strengthening Communities.\nNeed help? Contact us at hello@masjidmycommunity.org\n© {{current_year}} {{platform_name}}. All rights reserved.",
+    quoteEnabled: false,
+    quoteTransliteration: null,
+    quoteTranslation: null,
+    quoteSource: null,
+    status: "active",
+    availableVariables: ["user_name", "changed_at", "ip_address", "platform_name", "current_year"],
+  },
+  {
+    key: "email_changed",
+    name: "Email Address Changed",
+    purpose: "Sent to a user's PREVIOUS email address whenever the email on their account is changed, so they can catch an unauthorized change.",
+    subject: "Your {{platform_name}} email address was changed",
+    heading: "Email Address Changed",
+    message:
+      "The email address on your {{platform_name}} account was changed from {{old_email}} to {{new_email}} on {{changed_at}} from IP address {{ip_address}}.\n\nIf you made this change, no further action is needed. If you did not request this change, please contact our support team immediately.",
+    ctaText: "Go to My Account",
+    ctaLink: "http://localhost:5173/account",
+    footerText:
+      "{{platform_name}} — Empowering Masjids. Strengthening Communities.\nNeed help? Contact us at hello@masjidmycommunity.org\n© {{current_year}} {{platform_name}}. All rights reserved.",
+    quoteEnabled: false,
+    quoteTransliteration: null,
+    quoteTranslation: null,
+    quoteSource: null,
+    status: "active",
+    availableVariables: ["user_name", "old_email", "new_email", "changed_at", "ip_address", "platform_name", "current_year"],
+  },
 ];
 
 export async function ensureEmailDefaults() {

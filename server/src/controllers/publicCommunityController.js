@@ -10,6 +10,7 @@ import ContentReport from "../models/ContentReport.js";
 import User from "../models/User.js";
 import Masjid from "../models/Masjid.js";
 import Campaign from "../models/Campaign.js";
+import Donation from "../models/Donation.js";
 import { maskEmail, maskMobile } from "../utils/mask.js";
 import { mediaTypeOf, IMAGE_MAX_BYTES } from "../middleware/upload.js";
 import ContentSettings from "../models/ContentSettings.js";
@@ -90,6 +91,32 @@ export const getContentSettings = async (req, res) => {
   }
 };
 
+const PUBLIC_CAMPAIGN_STATUSES = ["active", "paused", "goal_reached", "completed"];
+
+// Powers the Wall's left-sidebar stats tiles — a snapshot of community-wide
+// numbers, scoped the same way the public masjid/campaign listings are (only
+// approved/moderation-active records) so a viewer never sees counts that
+// include drafts or hidden content.
+export const getCommunityStats = async (req, res) => {
+  try {
+    const [masjidCount, publicCampaigns, memberCount] = await Promise.all([
+      Masjid.count({ where: { status: "approved", moderationStatus: "active" } }),
+      Campaign.findAll({
+        where: { status: { [Op.in]: PUBLIC_CAMPAIGN_STATUSES }, moderationStatus: "active" },
+        attributes: ["id"],
+      }),
+      User.count({ where: { status: "active" } }),
+    ]);
+    const campaignIds = publicCampaigns.map((c) => c.id);
+    const totalRaised = campaignIds.length
+      ? Number(await Donation.sum("amount", { where: { campaignId: { [Op.in]: campaignIds }, status: "recorded" } })) || 0
+      : 0;
+    res.json({ masjidCount, campaignCount: campaignIds.length, memberCount, totalRaised });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // Powers the "@" mention autocomplete in the post/comment/reply composers —
 // a lightweight combined lookup so the dropdown can populate from a single
 // request as the user types, rather than round-tripping to the full public
@@ -125,6 +152,7 @@ export const mentionSearch = async (req, res) => {
 export const listPublished = async (req, res) => {
   try {
     const limit = Math.min(Number(req.query.limit) || 30, 60);
+    const offset = Math.max(Number(req.query.offset) || 0, 0);
     const [hiddenMasjidIds, hiddenCampaignIds] = await Promise.all([
       Masjid.findAll({ where: { moderationStatus: "under_review" }, attributes: ["id"] }).then((rows) => rows.map((r) => r.id)),
       Campaign.findAll({ where: { moderationStatus: "under_review" }, attributes: ["id"] }).then((rows) => rows.map((r) => r.id)),
@@ -144,6 +172,13 @@ export const listPublished = async (req, res) => {
     }
     if (exclusions.length) where[Op.and] = exclusions;
 
+    // A profile's post feed — public data (published posts are visible to
+    // anyone) filtered down to one author.
+    if (req.query.userId) {
+      where.type = "community_post";
+      where.relatedUserId = req.query.userId;
+    }
+
     // Hashtag filtering is a plain substring prefilter here (cheap, no extra
     // table) — the exact word-boundary match happens once more in JS below
     // so "#Community" doesn't also match "#CommunityXYZ".
@@ -156,12 +191,19 @@ export const listPublished = async (req, res) => {
         ["isPinned", "DESC"],
         ["publishedAt", "DESC"],
       ],
-      limit: hashtag ? undefined : limit,
+      limit: hashtag ? undefined : limit + 1,
+      offset: hashtag ? undefined : offset,
     });
 
+    let hasMore = false;
     if (hashtag) {
       const tagRe = new RegExp(`(^|[^\\w#])#${hashtag.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?![\\w])`, "i");
-      activities = activities.filter((a) => tagRe.test(a.body || "")).slice(0, limit);
+      activities = activities.filter((a) => tagRe.test(a.body || ""));
+      hasMore = activities.length > offset + limit;
+      activities = activities.slice(offset, offset + limit);
+    } else {
+      hasMore = activities.length > limit;
+      activities = activities.slice(0, limit);
     }
 
     const userIds = [
@@ -286,7 +328,7 @@ export const listPublished = async (req, res) => {
       return json;
     });
 
-    res.json({ activities: withUser });
+    res.json({ activities: withUser, hasMore });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

@@ -32,7 +32,7 @@ function CampaignProfile() {
           <Icon name="flag" size={30} />
           <h3>This campaign isn't available</h3>
           <p>It may not be live yet, or the link may be incorrect.</p>
-          <Link to="/" className="btn btn-gold">Explore Campaigns</Link>
+          <Link to="/explore-campaigns" className="btn btn-gold">Explore Campaigns</Link>
         </div>
       </main>
     );

@@ -29,6 +29,8 @@ const TYPE_LABEL = {
   concern_submitted_user: "Concern Submission Acknowledgement",
   concern_resolved_user: "Concern Resolved",
   contact_message_admin: "New Contact Message – Admin Notification",
+  password_changed: "Password Changed",
+  email_changed: "Email Address Changed",
 };
 
 function Toggle({ on, onClick, disabled }) {

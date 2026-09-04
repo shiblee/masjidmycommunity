@@ -1,6 +1,9 @@
 import { Op, fn, col } from "sequelize";
 import Hobby from "../models/Hobby.js";
 import UserHobby from "../models/UserHobby.js";
+import { recordMetaChange, metaActorFrom } from "../utils/metaChangeLog.js";
+
+const ENTITY_TYPE = "hobby";
 
 async function usageCounts() {
   const rows = await UserHobby.findAll({
@@ -32,6 +35,14 @@ export const create = async (req, res) => {
       sortOrder: maxOrder + 1,
       ...(isActive !== undefined ? { isActive } : {}),
     });
+    recordMetaChange({
+      entityType: ENTITY_TYPE,
+      entityId: hobby.id,
+      entityName: hobby.name,
+      action: "create",
+      actor: await metaActorFrom(req),
+      snapshot: hobby.toJSON(),
+    }).catch(() => {});
     res.status(201).json({ hobby: { ...hobby.toJSON(), usageCount: 0 } });
   } catch (error) {
     if (error.name === "SequelizeUniqueConstraintError") return res.status(409).json({ message: "That hobby already exists." });
@@ -43,10 +54,23 @@ export const update = async (req, res) => {
   try {
     const hobby = await Hobby.findByPk(req.params.id);
     if (!hobby) return res.status(404).json({ message: "Hobby not found." });
+    const before = { name: hobby.name, isActive: hobby.isActive, sortOrder: hobby.sortOrder };
     if (req.body.name !== undefined) hobby.name = req.body.name.trim();
     if (req.body.isActive !== undefined) hobby.isActive = req.body.isActive;
     if (req.body.sortOrder !== undefined) hobby.sortOrder = req.body.sortOrder;
     await hobby.save();
+    recordMetaChange({
+      entityType: ENTITY_TYPE,
+      entityId: hobby.id,
+      entityName: hobby.name,
+      action: "update",
+      actor: await metaActorFrom(req),
+      fields: [
+        { field: "name", oldValue: before.name, newValue: hobby.name },
+        { field: "isActive", oldValue: before.isActive, newValue: hobby.isActive },
+        { field: "sortOrder", oldValue: before.sortOrder, newValue: hobby.sortOrder },
+      ],
+    }).catch(() => {});
     const counts = await usageCounts();
     res.json({ hobby: { ...hobby.toJSON(), usageCount: counts[hobby.id] || 0 } });
   } catch (error) {
@@ -59,7 +83,16 @@ export const remove = async (req, res) => {
   try {
     const hobby = await Hobby.findByPk(req.params.id);
     if (!hobby) return res.status(404).json({ message: "Hobby not found." });
+    const snapshot = hobby.toJSON();
     await hobby.destroy();
+    recordMetaChange({
+      entityType: ENTITY_TYPE,
+      entityId: hobby.id,
+      entityName: snapshot.name,
+      action: "delete",
+      actor: await metaActorFrom(req),
+      snapshot,
+    }).catch(() => {});
     res.json({ deleted: true });
   } catch (error) {
     res.status(500).json({ message: error.message });

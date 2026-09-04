@@ -355,7 +355,7 @@ const posts = [
     actor: { name: "Masjid My Community", verified: true, location: "Platform Achievement" },
     time: "2w ago",
     text: "🎉 We just crossed 12,000 total donors on the platform! Every single one of them has helped a masjid somewhere in the world move closer to its goal. Thank you for being part of this.",
-    cta: { label: "Explore Campaigns", href: "/#campaigns" },
+    cta: { label: "Explore Campaigns", href: "/explore-campaigns" },
   },
   {
     id: "p22",
@@ -1069,6 +1069,14 @@ function Community() {
     communityApi.get("/content-settings").then(({ data }) => setContentLimits(data)).catch(() => {});
   }, []);
 
+  // Community-wide snapshot for the Wall's left sidebar (verified masjids,
+  // active campaigns, members, total raised) — fetched once since it's a
+  // slow-moving aggregate, not something that needs to track live activity.
+  const [communityStats, setCommunityStats] = useState(null);
+  useEffect(() => {
+    communityApi.get("/stats").then(({ data }) => setCommunityStats(data)).catch(() => {});
+  }, []);
+
   // postModal: null | { type: "report", post }
   const [postModal, setPostModal] = useState(null);
   const [postBusy, setPostBusy] = useState(false);
@@ -1214,6 +1222,30 @@ function Community() {
       <section className="py-sm">
         <div className="wrap">
           <div className="cw-layout">
+            <aside className="cw-side">
+              <div className="cw-side-card">
+                <h4>Community Impact</h4>
+                <div className="cw-side-stats">
+                  <div>
+                    <strong>{communityStats ? communityStats.masjidCount.toLocaleString("en-IN") : "—"}</strong>
+                    <span>Verified Masjids</span>
+                  </div>
+                  <div>
+                    <strong>{communityStats ? communityStats.campaignCount.toLocaleString("en-IN") : "—"}</strong>
+                    <span>Active Campaigns</span>
+                  </div>
+                  <div>
+                    <strong>{communityStats ? communityStats.memberCount.toLocaleString("en-IN") : "—"}</strong>
+                    <span>Community Members</span>
+                  </div>
+                  <div>
+                    <strong>{communityStats ? `₹${communityStats.totalRaised.toLocaleString("en-IN")}` : "—"}</strong>
+                    <span>Total Raised</span>
+                  </div>
+                </div>
+              </div>
+            </aside>
+
             <div className="cw-main">
               {showMasjidWizard ? (
                 <RequireUserAuth>

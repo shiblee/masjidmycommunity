@@ -6,7 +6,7 @@ const Education = sequelize.define(
   {
     userId: { type: DataTypes.INTEGER, allowNull: false },
     level: {
-      type: DataTypes.ENUM("secondary", "senior_secondary", "diploma", "bachelors", "masters", "doctorate", "certificate", "other"),
+      type: DataTypes.STRING,
       allowNull: true,
     },
     degree: { type: DataTypes.STRING, allowNull: false },
@@ -14,8 +14,10 @@ const Education = sequelize.define(
     fieldOfStudy: { type: DataTypes.STRING, allowNull: true },
     startYear: { type: DataTypes.INTEGER, allowNull: true },
     endYear: { type: DataTypes.INTEGER, allowNull: true },
+    isCurrentlyStudying: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
     location: { type: DataTypes.STRING, allowNull: true },
     description: { type: DataTypes.TEXT, allowNull: true },
+    isActive: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true },
     sortOrder: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
   },
   {

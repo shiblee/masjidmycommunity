@@ -60,6 +60,15 @@ const User = sequelize.define(
       type: DataTypes.ENUM("email", "mobile"),
       allowNull: true,
     },
+    // The not-yet-saved email/mobile value an "update_contact" OTP was sent
+    // for — e.g. a mobile number typed into the profile form but not yet
+    // persisted via Save Changes. Applied to the real email/mobile column
+    // only once the OTP is confirmed, so verifying doesn't require saving
+    // the rest of the form first.
+    otpPendingValue: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
     otpAttempts: {
       type: DataTypes.INTEGER,
       allowNull: false,
@@ -85,12 +94,16 @@ const User = sequelize.define(
       type: DataTypes.STRING,
       allowNull: true,
     },
+    bio: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
     gender: {
       type: DataTypes.ENUM("male", "female", "other", "prefer_not_to_say"),
       allowNull: true,
     },
     maritalStatus: {
-      type: DataTypes.ENUM("single", "married", "other"),
+      type: DataTypes.STRING,
       allowNull: true,
     },
     dateOfBirth: {

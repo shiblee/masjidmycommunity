@@ -9,15 +9,22 @@ import { useTranslation } from "../i18n/LanguageContext.jsx";
 const DETAILS_MAX = 1000;
 
 const STEP_DEFAULTS = [
-  { num: "01", key: "step1", title: "You submit", body: "Your report reaches our trust & safety team, along with a reference number for your records." },
-  { num: "02", key: "step2", title: "We review", body: "We look into the concern, and may reach out to you or the masjid committee for more information." },
-  { num: "03", key: "step3", title: "We follow up", body: "You'll hear back at the email you provide, typically within 48 hours, with the outcome or next steps." },
+  { num: "01", icon: "edit", key: "step1", title: "You submit", body: "Your report reaches our trust & safety team, along with a reference number for your records." },
+  { num: "02", icon: "search", key: "step2", title: "We review", body: "We look into the concern, and may reach out to you or the masjid committee for more information." },
+  { num: "03", icon: "check", key: "step3", title: "We follow up", body: "You'll hear back at the email you provide, typically within 48 hours, with the outcome or next steps." },
+];
+
+const GO_DEEPER_LINKS = [
+  { to: "/contact", icon: "compass", titleKey: "concern.link.contact.title", title: "Have a general question instead?", bodyKey: "concern.link.contact.body", body: "Not every message needs a formal report — reach out directly.", ctaKey: "concern.link.contact.cta", cta: "Contact Us" },
+  { to: "/how-it-works", icon: "shieldCheck", titleKey: "concern.link.howItWorks.title", title: "How the review process works", bodyKey: "concern.link.howItWorks.body", body: "See the full platform journey, from registration to fund settlement.", ctaKey: "concern.link.howItWorks.cta", cta: "How It Works" },
+  { to: "/verified-masjid", icon: "star", titleKey: "concern.link.verified.title", title: "What the green tick actually means", bodyKey: "concern.link.verified.body", body: "Understand exactly what's checked before a masjid is verified.", ctaKey: "concern.link.verified.cta", cta: "Verified Masjid" },
 ];
 
 function RaiseConcern() {
   const { t } = useTranslation();
   const steps = STEP_DEFAULTS.map((s) => ({
     num: s.num,
+    icon: s.icon,
     title: t(`concern.${s.key}.title`, s.title),
     body: t(`concern.${s.key}.body`, s.body),
   }));
@@ -40,6 +47,23 @@ function RaiseConcern() {
       .get(`${API_BASE}/concerns/public/types`)
       .then(({ data }) => setTypes([...data.types].sort((a, b) => a.name.localeCompare(b.name))))
       .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const els = document.querySelectorAll(".reveal");
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("in");
+            io.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0, rootMargin: "0px 0px 100px 0px" }
+    );
+    els.forEach((el) => io.observe(el));
+    return () => io.disconnect();
   }, []);
 
   const update = (field) => (e) => {
@@ -76,28 +100,38 @@ function RaiseConcern() {
   };
 
   return (
-    <main className="wrap legal-page">
-      <div className="legal-head">
-        <span className="eyebrow">{t("concern.eyebrow", "Support")}</span>
-        <h1>{t("concern.title", "Raise a Concern")}</h1>
-        <p className="legal-intro">
-          {t(
-            "concern.intro",
-            "If something about a campaign, a committee, or how funds are being used doesn't seem right, tell us. Every report is reviewed by a person, not just logged."
-          )}
-        </p>
-      </div>
+    <main className="au-page">
+      <section className="au-hero on-ink">
+        <div className="hero-glow" aria-hidden="true" />
+        <div className="wrap">
+          <span className="eyebrow">{t("concern.eyebrow", "Support")}</span>
+          <h1>{t("concern.title", "Raise a Concern")}</h1>
+          <p>
+            {t(
+              "concern.intro",
+              "If something about a campaign, a committee, or how funds are being used doesn't seem right, tell us. Every report is reviewed by a person, not just logged."
+            )}
+          </p>
+        </div>
+      </section>
 
-      <div className="concern-steps">
-        {steps.map((s) => (
-          <div className="concern-step" key={s.num}>
-            <span className="num mono">{s.num}</span>
-            <h4>{s.title}</h4>
-            <p>{s.body}</p>
+      <section className="py py-tight-b">
+        <div className="wrap">
+          <div className="concern-steps reveal">
+            {steps.map((s) => (
+              <div className="concern-step" key={s.num}>
+                <span className="concern-step-icon"><Icon name={s.icon} size={18} /></span>
+                <span className="num mono">{s.num}</span>
+                <h4>{s.title}</h4>
+                <p>{s.body}</p>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </div>
+      </section>
 
+      <section className="py py-tight-t">
+        <div className="wrap">
       <div className="contact-split concern-split">
         <div className="contact-form-panel card">
           {submitted ? (
@@ -254,10 +288,42 @@ function RaiseConcern() {
           </div>
         </div>
       </div>
+        </div>
+      </section>
 
-      <Link to="/" className="legal-back">
-        {t("legalCommon.backToHome", "← Back to home")}
-      </Link>
+      <section className="py py-tight-t">
+        <div className="wrap">
+          <div className="section-head center reveal" style={{ margin: "0 auto 44px" }}>
+            <span className="eyebrow">{t("concern.more.eyebrow", "Go deeper")}</span>
+            <h2>{t("concern.more.title", "A few other places worth a look")}</h2>
+          </div>
+          <div className="pagelink-row pagelink-row-3 reveal">
+            {GO_DEEPER_LINKS.map((l) => (
+              <Link to={l.to} className="pagelink-card" key={l.to}>
+                <span className="pagelink-card-icon"><Icon name={l.icon} size={20} /></span>
+                <h4>{t(l.titleKey, l.title)}</h4>
+                <p>{t(l.bodyKey, l.body)}</p>
+                <span className="pagelink-cta">{t(l.ctaKey, l.cta)} <span className="btn-arrow">→</span></span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="final-cta">
+        <div className="wrap">
+          <span className="eyebrow">{t("concern.cta.eyebrow", "Built on trust")}</span>
+          <h2>{t("concern.cta.title", "Every report is reviewed by a real person.")}</h2>
+          <div className="ctas">
+            <Link to="/verified-masjid" className="btn btn-gold">
+              {t("concern.cta.verified", "Learn About Verification")} <span className="btn-arrow">→</span>
+            </Link>
+            <Link to="/explore-campaigns" className="btn btn-outline-paper">
+              {t("concern.cta.explore", "Explore Campaigns")} <span className="btn-arrow">→</span>
+            </Link>
+          </div>
+        </div>
+      </section>
     </main>
   );
 }

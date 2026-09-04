@@ -20,7 +20,7 @@ function Toggle({ on, onClick, disabled }) {
   return <button type="button" className={`amx-toggle${on ? " on" : ""}`} onClick={onClick} disabled={disabled} aria-pressed={on} />;
 }
 
-function ClassificationFormModal({ classification, onCancel, onSaved }) {
+function ClassificationForm({ classification, onCancel, onSaved }) {
   const isEdit = !!classification;
   const [name, setName] = useState(classification?.name || "");
   const [isActive, setIsActive] = useState(classification ? classification.isActive : true);
@@ -48,34 +48,37 @@ function ClassificationFormModal({ classification, onCancel, onSaved }) {
   };
 
   return (
-    <div className="amx-modal-overlay" onClick={onCancel}>
-      <div className="amx-modal" onClick={(e) => e.stopPropagation()}>
-        <button className="amx-modal-close" onClick={onCancel} aria-label="Close"><Icon name="x" size={16} /></button>
-        <h3>{isEdit ? "Edit Fundraising Classification" : "Add Fundraising Classification"}</h3>
-        <form onSubmit={submit} style={{ marginTop: 16 }}>
-          <div className="amx-form-group">
-            <label htmlFor="camp-class-name">Classification Name</label>
-            <input id="camp-class-name" type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Zakat" autoFocus maxLength={255} />
-            {error && (
-              <div className="amx-field-error">
-                <Icon name="info" size={14} />
-                {error}
-              </div>
-            )}
-          </div>
-          <div className="amx-form-group" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-            <label style={{ marginBottom: 0 }}>Status</label>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <span className="amx-panel-sub">{isActive ? "Active" : "Inactive"}</span>
-              <Toggle on={isActive} onClick={() => setIsActive((a) => !a)} disabled={saving} />
+    <>
+      <button className="amx-back-link" onClick={onCancel}>
+        <Icon name="arrowRight" size={14} style={{ transform: "rotate(180deg)" }} /> Back to Fundraising Classification
+      </button>
+      <h3 style={{ marginBottom: 20 }}>{isEdit ? "Edit Fundraising Classification" : "Add Fundraising Classification"}</h3>
+      <form onSubmit={submit} style={{ maxWidth: 480 }}>
+        <div className="amx-form-group">
+          <label htmlFor="camp-class-name">Classification Name</label>
+          <input id="camp-class-name" type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Zakat" autoFocus maxLength={255} />
+          {error && (
+            <div className="amx-field-error">
+              <Icon name="info" size={14} />
+              {error}
             </div>
+          )}
+        </div>
+        <div className="amx-form-group" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+          <label style={{ marginBottom: 0 }}>Status</label>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span className="amx-panel-sub">{isActive ? "Active" : "Inactive"}</span>
+            <Toggle on={isActive} onClick={() => setIsActive((a) => !a)} disabled={saving} />
           </div>
-          <button type="submit" className="amx-btn amx-btn-primary" style={{ width: "100%", marginTop: 12 }} disabled={saving || !name.trim()}>
+        </div>
+        <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+          <button type="submit" className="amx-btn amx-btn-primary" disabled={saving || !name.trim()}>
             {saving ? "Saving…" : isEdit ? "Save Changes" : "Add Classification"}
           </button>
-        </form>
-      </div>
-    </div>
+          <button type="button" className="amx-btn amx-btn-outline" onClick={onCancel} disabled={saving}>Cancel</button>
+        </div>
+      </form>
+    </>
   );
 }
 
@@ -199,6 +202,10 @@ function CampaignClassificationPanel() {
     }
   };
 
+  if (formModal) {
+    return <ClassificationForm classification={formModal === "new" ? null : formModal} onCancel={() => setFormModal(null)} onSaved={upsertClassification} />;
+  }
+
   return (
     <>
       <div className="amx-panel-head">
@@ -286,14 +293,6 @@ function CampaignClassificationPanel() {
       )}
 
       <Pagination page={page} totalPages={totalPages} totalItems={sorted.length} pageSize={PAGE_SIZE} onChange={setPage} />
-
-      {formModal && (
-        <ClassificationFormModal
-          classification={formModal === "new" ? null : formModal}
-          onCancel={() => setFormModal(null)}
-          onSaved={upsertClassification}
-        />
-      )}
 
       {deactivating && (
         <ConfirmDeactivateModal

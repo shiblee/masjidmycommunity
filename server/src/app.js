@@ -25,6 +25,14 @@ import adminDeletionReasonRoutes from "./routes/adminDeletionReasonRoutes.js";
 import adminReportReasonRoutes from "./routes/adminReportReasonRoutes.js";
 import adminSkillRoutes from "./routes/adminSkillRoutes.js";
 import adminHobbyRoutes from "./routes/adminHobbyRoutes.js";
+import adminMaritalStatusRoutes from "./routes/adminMaritalStatusRoutes.js";
+import adminEducationLevelRoutes from "./routes/adminEducationLevelRoutes.js";
+import adminDegreeRoutes from "./routes/adminDegreeRoutes.js";
+import adminInstitutionRoutes from "./routes/adminInstitutionRoutes.js";
+import adminFieldOfStudyRoutes from "./routes/adminFieldOfStudyRoutes.js";
+import adminCompanyRoutes from "./routes/adminCompanyRoutes.js";
+import adminEmploymentTypeRoutes from "./routes/adminEmploymentTypeRoutes.js";
+import adminMetaChangeLogRoutes from "./routes/adminMetaChangeLogRoutes.js";
 import adminModerationRoutes from "./routes/adminModerationRoutes.js";
 import publicReportRoutes from "./routes/publicReportRoutes.js";
 import adminContentSettingsRoutes from "./routes/adminContentSettingsRoutes.js";
@@ -40,6 +48,12 @@ import adminContactTopicRoutes from "./routes/adminContactTopicRoutes.js";
 import publicFaqRoutes from "./routes/publicFaqRoutes.js";
 import adminFaqRoutes from "./routes/adminFaqRoutes.js";
 import adminAiQueryLogRoutes from "./routes/adminAiQueryLogRoutes.js";
+import publicTestimonialRoutes from "./routes/publicTestimonialRoutes.js";
+import adminTestimonialRoutes from "./routes/adminTestimonialRoutes.js";
+import publicSuccessStoryRoutes from "./routes/publicSuccessStoryRoutes.js";
+import adminSuccessStoryRoutes from "./routes/adminSuccessStoryRoutes.js";
+import publicSitemapRoutes from "./routes/publicSitemapRoutes.js";
+import publicUserRoutes from "./routes/publicUserRoutes.js";
 
 const app = express();
 
@@ -67,6 +81,15 @@ app.get("/", (req, res) => {
   res.json({ message: "Coming soon" });
 });
 
+// Mounted at the domain root (not under /api) because the sitemap protocol
+// only allows a sitemap to list URLs within its own path — a sitemap served
+// from /api/sitemap.xml could never list "/how-it-works" etc. In production,
+// where Nginx serves the built SPA and only proxies /api and /uploads to
+// this server, add one more proxy rule for /sitemap.xml so it reaches here
+// instead of falling through to the SPA.
+app.use("/sitemap.xml", publicSitemapRoutes);
+
+app.use("/api/users/public", publicUserRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/admin/auth", adminAuthRoutes);
 app.use("/api/admin/users", adminUserRoutes);
@@ -91,6 +114,14 @@ app.use("/api/admin/deletion-reasons", adminDeletionReasonRoutes);
 app.use("/api/admin/report-reasons", adminReportReasonRoutes);
 app.use("/api/admin/skills", adminSkillRoutes);
 app.use("/api/admin/hobbies", adminHobbyRoutes);
+app.use("/api/admin/marital-statuses", adminMaritalStatusRoutes);
+app.use("/api/admin/education-levels", adminEducationLevelRoutes);
+app.use("/api/admin/degrees", adminDegreeRoutes);
+app.use("/api/admin/institutions", adminInstitutionRoutes);
+app.use("/api/admin/fields-of-study", adminFieldOfStudyRoutes);
+app.use("/api/admin/companies", adminCompanyRoutes);
+app.use("/api/admin/employment-types", adminEmploymentTypeRoutes);
+app.use("/api/admin/meta-change-log", adminMetaChangeLogRoutes);
 app.use("/api/admin/moderation", adminModerationRoutes);
 app.use("/api/reports", publicReportRoutes);
 app.use("/api/admin/content-settings", adminContentSettingsRoutes);
@@ -106,5 +137,9 @@ app.use("/api/admin/contact-topics", adminContactTopicRoutes);
 app.use("/api/faq", publicFaqRoutes);
 app.use("/api/admin/faqs", adminFaqRoutes);
 app.use("/api/admin/ai-query-logs", adminAiQueryLogRoutes);
+app.use("/api/testimonials", publicTestimonialRoutes);
+app.use("/api/admin/testimonials", adminTestimonialRoutes);
+app.use("/api/success-stories", publicSuccessStoryRoutes);
+app.use("/api/admin/success-stories", adminSuccessStoryRoutes);
 
 export default app;

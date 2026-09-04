@@ -20,6 +20,12 @@ fs.mkdirSync(WALL_POST_UPLOAD_ROOT, { recursive: true });
 const PROFILE_PHOTO_UPLOAD_ROOT = path.resolve("uploads", "profile-photos");
 fs.mkdirSync(PROFILE_PHOTO_UPLOAD_ROOT, { recursive: true });
 
+const TESTIMONIAL_PHOTO_UPLOAD_ROOT = path.resolve("uploads", "testimonial-photos");
+fs.mkdirSync(TESTIMONIAL_PHOTO_UPLOAD_ROOT, { recursive: true });
+
+const SUCCESS_STORY_UPLOAD_ROOT = path.resolve("uploads", "success-story-photos");
+fs.mkdirSync(SUCCESS_STORY_UPLOAD_ROOT, { recursive: true });
+
 function diskStorageFor(root) {
   return multer.diskStorage({
     destination: (req, file, cb) => cb(null, root),
@@ -146,6 +152,48 @@ const profilePhotoUpload = multer({
 
 export function uploadProfilePhoto(req, res, next) {
   profilePhotoUpload.single("photo")(req, res, (err) => {
+    if (!err) return next();
+    if (err.code === "LIMIT_FILE_SIZE") {
+      return res.status(400).json({ message: `Photos must be under ${IMAGE_MAX_BYTES / (1024 * 1024)}MB.` });
+    }
+    res.status(400).json({ message: err.message || "Couldn't upload that photo." });
+  });
+}
+
+const testimonialPhotoUpload = multer({
+  storage: diskStorageFor(TESTIMONIAL_PHOTO_UPLOAD_ROOT),
+  limits: { fileSize: IMAGE_MAX_BYTES, files: 1 },
+  fileFilter: (req, file, cb) => {
+    if (!IMAGE_TYPES.has(file.mimetype)) return cb(new Error("Only JPG, PNG, or WEBP photos are allowed."));
+    cb(null, true);
+  },
+});
+
+// The photo is optional (a testimonial can show initials instead), so unlike
+// the other upload wrappers this one must tolerate a request with no file at
+// all rather than treating that as an error — the controller checks
+// req.file itself before deciding whether to update photoUrl.
+export function uploadTestimonialPhoto(req, res, next) {
+  testimonialPhotoUpload.single("photo")(req, res, (err) => {
+    if (!err) return next();
+    if (err.code === "LIMIT_FILE_SIZE") {
+      return res.status(400).json({ message: `Photos must be under ${IMAGE_MAX_BYTES / (1024 * 1024)}MB.` });
+    }
+    res.status(400).json({ message: err.message || "Couldn't upload that photo." });
+  });
+}
+
+const successStoryImageUpload = multer({
+  storage: diskStorageFor(SUCCESS_STORY_UPLOAD_ROOT),
+  limits: { fileSize: IMAGE_MAX_BYTES, files: 1 },
+  fileFilter: (req, file, cb) => {
+    if (!IMAGE_TYPES.has(file.mimetype)) return cb(new Error("Only JPG, PNG, or WEBP photos are allowed."));
+    cb(null, true);
+  },
+});
+
+export function uploadSuccessStoryImage(req, res, next) {
+  successStoryImageUpload.single("image")(req, res, (err) => {
     if (!err) return next();
     if (err.code === "LIMIT_FILE_SIZE") {
       return res.status(400).json({ message: `Photos must be under ${IMAGE_MAX_BYTES / (1024 * 1024)}MB.` });

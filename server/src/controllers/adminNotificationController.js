@@ -112,6 +112,8 @@ const SAMPLE_VARIABLES = {
     submission_date: "27 Aug 2026, 3:00 PM",
     message_body: "Hi, I represent a nonprofit that supports masjid renovations across East Africa and would love to explore a partnership with your platform.",
   },
+  password_changed: { user_name: "Aisha Karim", changed_at: "28 Aug 2026, 11:00 AM", ip_address: "203.0.113.42" },
+  email_changed: { user_name: "Aisha Karim", old_email: "aisha.old@example.com", new_email: "aisha.new@example.com", changed_at: "28 Aug 2026, 11:00 AM", ip_address: "203.0.113.42" },
 };
 
 export const listTemplates = async (req, res) => {

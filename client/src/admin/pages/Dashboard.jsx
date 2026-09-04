@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import Icon from "../components/Icons.jsx";
 import TrendChart from "../components/TrendChart.jsx";
 import adminApi from "../services/adminApi.js";
+import { API_ORIGIN } from "../../config.js";
 
 function initialsOf(name = "") {
   const parts = name.trim().split(/\s+/);
@@ -33,16 +34,31 @@ function Spark({ data, color }) {
   );
 }
 
+// Weekly-bucketed cumulative growth curve, computed from live registered-user
+// data — matches the visual shape of the other (mock) KPI sparklines, but
+// this one is real: each point is "how many accounts existed by this point,"
+// 7 days apart, over the last 8 weeks.
+function computeUserRegistrationTrend(users) {
+  const BUCKETS = 8;
+  const BUCKET_DAYS = 7;
+  const now = Date.now();
+  const spark = [];
+  for (let i = BUCKETS - 1; i >= 0; i--) {
+    const cutoff = now - i * BUCKET_DAYS * 24 * 60 * 60 * 1000;
+    spark.push(users.filter((u) => new Date(u.createdAt).getTime() <= cutoff).length);
+  }
+  const first = spark[0];
+  const last = spark[spark.length - 1];
+  const deltaPct = first > 0 ? ((last - first) / first) * 100 : last > 0 ? 100 : 0;
+  return {
+    value: last.toLocaleString("en-IN"),
+    delta: `${deltaPct >= 0 ? "+" : ""}${deltaPct.toFixed(1)}%`,
+    up: deltaPct >= 0,
+    spark,
+  };
+}
+
 const KPIS = [
-  {
-    label: "Total Registered Masjids",
-    value: "1,284",
-    delta: "+6.2%",
-    up: true,
-    icon: "mosque",
-    color: "#5E9A2C",
-    spark: [980, 1020, 1060, 1090, 1140, 1180, 1220, 1284],
-  },
   {
     label: "Verified Masjids",
     value: "968",
@@ -179,6 +195,21 @@ function Dashboard() {
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
     .slice(0, 5);
 
+  const userTrend = computeUserRegistrationTrend(registeredUsers);
+  const kpis = [
+    {
+      label: "Total Registered Users",
+      value: usersLoading ? "—" : userTrend.value,
+      delta: usersLoading ? "—" : userTrend.delta,
+      up: userTrend.up,
+      icon: "donors",
+      color: "#5E9A2C",
+      spark: userTrend.spark.some((v) => v > 0) ? userTrend.spark : [0, 0, 0, 0, 0, 0, 0, 1],
+      to: "/admin/registered-users",
+    },
+    ...KPIS,
+  ];
+
   return (
     <>
       <div className="amx-page-head">
@@ -200,24 +231,28 @@ function Dashboard() {
       </div>
 
       <div className="amx-kpi-grid">
-        {KPIS.map((k) => (
-          <div className="amx-card amx-kpi" key={k.label}>
-            <div className="amx-kpi-top">
-              <div className="amx-kpi-icon" style={{ background: `${k.color}1a`, color: k.color }}>
-                <Icon name={k.icon} />
+        {kpis.map((k) => {
+          const Wrapper = k.to ? Link : "div";
+          const wrapperProps = k.to ? { to: k.to } : {};
+          return (
+            <Wrapper className={`amx-card amx-kpi${k.to ? " amx-kpi-clickable" : ""}`} key={k.label} {...wrapperProps}>
+              <div className="amx-kpi-top">
+                <div className="amx-kpi-icon" style={{ background: `${k.color}1a`, color: k.color }}>
+                  <Icon name={k.icon} />
+                </div>
+                <span className={`amx-kpi-delta ${k.up ? "up" : "down"}`}>
+                  <Icon name={k.up ? "trendUp" : "trendDown"} />
+                  {k.delta}
+                </span>
               </div>
-              <span className={`amx-kpi-delta ${k.up ? "up" : "down"}`}>
-                <Icon name={k.up ? "trendUp" : "trendDown"} />
-                {k.delta}
-              </span>
-            </div>
-            <div>
-              <div className="amx-kpi-value">{k.value}</div>
-              <div className="amx-kpi-label">{k.sub ? `${k.label} · ${k.sub}` : k.label}</div>
-            </div>
-            <Spark data={k.spark} color={k.color} />
-          </div>
-        ))}
+              <div>
+                <div className="amx-kpi-value">{k.value}</div>
+                <div className="amx-kpi-label">{k.sub ? `${k.label} · ${k.sub}` : k.label}</div>
+              </div>
+              <Spark data={k.spark} color={k.color} />
+            </Wrapper>
+          );
+        })}
       </div>
 
       <div className="amx-grid-2" style={{ marginBottom: 18 }}>
@@ -260,9 +295,13 @@ function Dashboard() {
                       <tr key={u.id}>
                         <td>
                           <div className="amx-cell-main">
-                            <span className="amx-avatar" style={{ width: 30, height: 30, fontSize: 11 }}>
-                              {initialsOf(u.fullName)}
-                            </span>
+                            {u.profilePhoto ? (
+                              <img className="amx-avatar" style={{ width: 30, height: 30, objectFit: "cover" }} src={`${API_ORIGIN}${u.profilePhoto}`} alt={u.fullName} />
+                            ) : (
+                              <span className="amx-avatar" style={{ width: 30, height: 30, fontSize: 11 }}>
+                                {initialsOf(u.fullName)}
+                              </span>
+                            )}
                             {u.fullName}
                           </div>
                         </td>

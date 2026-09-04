@@ -137,20 +137,27 @@ function Navbar() {
   };
 
   const logout = () => {
-    // Fire-and-forget: the server call records the logout event, but the
-    // user's session must clear locally even if the request fails.
-    userApi.post("/logout").catch(() => {});
-    clearUserSession();
-    setMenuOpen(false);
-    setOpen(false);
-    navigate("/");
+    // Must clear the session only after the request settles, not before —
+    // axios interceptors run on the microtask queue, so clearing the token
+    // synchronously here would wipe it before the request interceptor ever
+    // reads it, sending the logout call with no Authorization header (it
+    // was silently 401ing and never actually recording the logout event).
+    userApi
+      .post("/logout")
+      .catch(() => {})
+      .finally(() => {
+        clearUserSession();
+        setMenuOpen(false);
+        setOpen(false);
+        navigate("/");
+      });
   };
 
   return (
     <>
       <div className="announce" ref={announceRef}>
         🕌 {t("nav.announce", "Empowering masjids. Strengthening communities. Join the global movement.")}
-        <Link to="/explore-masjids">{t("nav.exploreCampaigns", "Explore campaigns →")}</Link>
+        <Link to="/explore-campaigns">{t("nav.exploreCampaigns", "Explore campaigns →")}</Link>
       </div>
       <header className="nav" ref={navElRef}>
         <div className="nav-inner">
@@ -227,8 +234,8 @@ function Navbar() {
                     <Link to="/account/my-campaigns" onClick={() => setMenuOpen(false)}>
                       {t("nav.myCampaigns", "My Campaigns")}
                     </Link>
-                    <Link to="/account?edit=profile" onClick={() => setMenuOpen(false)}>
-                      {t("nav.editProfile", "Edit Profile")}
+                    <Link to={`/profile/${user.username}`} onClick={() => setMenuOpen(false)}>
+                      {t("nav.myProfile", "My Profile")}
                     </Link>
                     <div className="nav-user-dropdown-sep" />
                     <button onClick={logout}>{t("nav.logOut", "Log Out")}</button>
@@ -280,8 +287,8 @@ function Navbar() {
           </Link>
         )}
         {user && (
-          <Link to="/account?edit=profile" onClick={() => setOpen(false)}>
-            {t("nav.editProfile", "Edit Profile")}
+          <Link to={`/profile/${user.username}`} onClick={() => setOpen(false)}>
+            {t("nav.myProfile", "My Profile")}
           </Link>
         )}
         <Link to="/#register" className="btn btn-gold" onClick={() => setOpen(false)}>

@@ -6,6 +6,12 @@ import { Icon } from "../components/Icons.jsx";
 import { getStoredUser } from "../utils/userAuthStorage.js";
 import { useTranslation } from "../i18n/LanguageContext.jsx";
 
+const GO_DEEPER_LINKS = [
+  { to: "/how-it-works", icon: "compass", titleKey: "contact.link.howItWorks.title", title: "See the full platform journey", bodyKey: "contact.link.howItWorks.body", body: "From registration to fund settlement — the complete ecosystem.", ctaKey: "contact.link.howItWorks.cta", cta: "How It Works" },
+  { to: "/raise-a-concern", icon: "shieldCheck", titleKey: "contact.link.raiseConcern.title", title: "Something doesn't seem right?", bodyKey: "contact.link.raiseConcern.body", body: "Raise a formal concern and our trust & safety team will look into it.", ctaKey: "contact.link.raiseConcern.cta", cta: "Raise a Concern" },
+  { to: "/faq", icon: "bulb", titleKey: "contact.link.faq.title", title: "Have a quick question?", bodyKey: "contact.link.faq.body", body: "Check the FAQ — it's often faster than waiting for a reply.", ctaKey: "contact.link.faq.cta", cta: "Browse FAQ" },
+];
+
 const INFO_CARD_DEFAULTS = [
   {
     key: "email",
@@ -119,41 +125,50 @@ function Contact() {
   };
 
   return (
-    <main className="wrap legal-page">
-      <div className="legal-head">
-        <span className="eyebrow">{t("contact.eyebrow", "Get in Touch")}</span>
-        <h1>{t("contact.title", "Let's build something meaningful, together.")}</h1>
-        <p className="legal-intro">
-          {t(
-            "contact.intro",
-            "Whether you're registering a masjid, launching a campaign, exploring a partnership, or just have a question — we'd genuinely like to hear from you."
-          )}
-        </p>
-      </div>
-
-      <div className="contact-info-grid reveal">
-        {infoCards.map((c) => (
-          <div className="contact-info-card" key={c.key}>
-            <div className="contact-info-icon">
-              <Icon name={c.icon} size={22} />
-            </div>
-            <h4>{c.title}</h4>
-            <p>{c.desc}</p>
-            {c.action.static ? (
-              <span className="contact-info-action static">{c.action.label}</span>
-            ) : c.action.to ? (
-              <Link to={c.action.to} className="contact-info-action">
-                {c.action.label} <span className="btn-arrow">→</span>
-              </Link>
-            ) : (
-              <a href={c.action.href} className="contact-info-action">
-                {c.action.label} <span className="btn-arrow">→</span>
-              </a>
+    <main className="au-page">
+      <section className="au-hero on-ink">
+        <div className="hero-glow" aria-hidden="true" />
+        <div className="wrap">
+          <span className="eyebrow">{t("contact.eyebrow", "Get in Touch")}</span>
+          <h1>{t("contact.title", "Let's build something meaningful, together.")}</h1>
+          <p>
+            {t(
+              "contact.intro",
+              "Whether you're registering a masjid, launching a campaign, exploring a partnership, or just have a question — we'd genuinely like to hear from you."
             )}
-          </div>
-        ))}
-      </div>
+          </p>
+        </div>
+      </section>
 
+      <section className="py py-tight-b">
+        <div className="wrap">
+          <div className="contact-info-grid reveal">
+            {infoCards.map((c) => (
+              <div className="contact-info-card" key={c.key}>
+                <div className="contact-info-icon">
+                  <Icon name={c.icon} size={22} />
+                </div>
+                <h4>{c.title}</h4>
+                <p>{c.desc}</p>
+                {c.action.static ? (
+                  <span className="contact-info-action static">{c.action.label}</span>
+                ) : c.action.to ? (
+                  <Link to={c.action.to} className="contact-info-action">
+                    {c.action.label} <span className="btn-arrow">→</span>
+                  </Link>
+                ) : (
+                  <a href={c.action.href} className="contact-info-action">
+                    {c.action.label} <span className="btn-arrow">→</span>
+                  </a>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="py py-tight-t">
+        <div className="wrap">
       <div className="contact-split reveal">
         <div className="contact-form-panel card">
           {submitted ? (
@@ -291,10 +306,42 @@ function Contact() {
           </div>
         </div>
       </div>
+        </div>
+      </section>
 
-      <Link to="/" className="legal-back">
-        {t("legalCommon.backToHome", "← Back to home")}
-      </Link>
+      <section className="py py-tight-t">
+        <div className="wrap">
+          <div className="section-head center reveal" style={{ margin: "0 auto 44px" }}>
+            <span className="eyebrow">{t("contact.more.eyebrow", "Go deeper")}</span>
+            <h2>{t("contact.more.title", "A few other places worth a look")}</h2>
+          </div>
+          <div className="pagelink-row pagelink-row-3 reveal">
+            {GO_DEEPER_LINKS.map((l) => (
+              <Link to={l.to} className="pagelink-card" key={l.to}>
+                <span className="pagelink-card-icon"><Icon name={l.icon} size={20} /></span>
+                <h4>{t(l.titleKey, l.title)}</h4>
+                <p>{t(l.bodyKey, l.body)}</p>
+                <span className="pagelink-cta">{t(l.ctaKey, l.cta)} <span className="btn-arrow">→</span></span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="final-cta">
+        <div className="wrap">
+          <span className="eyebrow">{t("contact.cta.eyebrow", "Ready to get started?")}</span>
+          <h2>{t("contact.cta.title", "Register your masjid, or explore what's already live.")}</h2>
+          <div className="ctas">
+            <a href="/#register" className="btn btn-gold">
+              {t("contact.cta.register", "Register Your Masjid")} <span className="btn-arrow">→</span>
+            </a>
+            <Link to="/explore-campaigns" className="btn btn-outline-paper">
+              {t("contact.cta.explore", "Explore Campaigns")} <span className="btn-arrow">→</span>
+            </Link>
+          </div>
+        </div>
+      </section>
     </main>
   );
 }
