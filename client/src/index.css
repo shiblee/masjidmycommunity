@@ -3043,6 +3043,66 @@ footer{
 .msj-explore-body{ padding:18px 20px 22px; }
 .msj-explore-body h3{ font-size:16.5px; color:var(--text-on-paper); }
 .msj-explore-tagline{ font-size:13.5px; color:var(--text-on-paper-dim); margin-top:6px; line-height:1.5; }
+.msj-verified-badge.inline{ position:static; background:rgba(141,198,63,.15); color:var(--teal-deep); }
+.msj-explore-body .msj-category-badge{ margin-top:8px; }
+.msj-active-campaign-badge{
+  display:inline-flex; align-items:center; gap:5px; font-size:11.5px; font-weight:600; color:#C24B3F;
+  background:rgba(194,75,63,.1); padding:3px 10px; border-radius:100px; margin-top:8px;
+}
+
+/* ===== EXPLORE MASJIDS: stats, nearby, load more, list & map views ===== */
+.msj-stat-nearby{ justify-content:center; }
+.msj-stat-nearby-btn{
+  display:flex; align-items:center; gap:6px; background:none; border:none; color:var(--teal-deep); font-weight:700;
+  font-size:13px; cursor:pointer; font-family:var(--sans); padding:0;
+}
+.msj-stat-nearby-hint{ font-size:12.5px; color:var(--text-on-paper-dim); }
+
+.msj-load-more{ display:flex; justify-content:center; margin-top:28px; }
+
+.msj-explore-row-list{ display:flex; flex-direction:column; gap:16px; margin-top:8px; }
+.msj-explore-row{
+  display:flex; gap:20px; background:#fff; border:1px solid var(--line); border-radius:14px; padding:16px; align-items:flex-start;
+}
+.msj-explore-row-thumb{ position:relative; width:220px; height:150px; border-radius:10px; overflow:hidden; flex-shrink:0; background:var(--paper-dim); }
+.msj-explore-row-thumb img{ width:100%; height:100%; object-fit:cover; }
+.msj-explore-row-body{ flex:1; min-width:0; }
+.msj-explore-row-top{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.msj-explore-row-top h3{ font-size:17px; color:var(--text-on-paper); }
+.msj-explore-row-top .msj-category-badge{ margin:0; }
+.msj-explore-row-imam{ font-size:13px; color:var(--text-on-paper-dim); margin-top:8px; }
+.msj-explore-row-about{ font-size:13.5px; color:var(--text-on-paper-dim); line-height:1.6; margin-top:8px; }
+.msj-explore-row-meta{ display:flex; align-items:center; gap:10px; margin-top:10px; }
+.msj-explore-row-actions{ flex-direction:column; align-items:flex-end; gap:10px; flex-shrink:0; margin-top:0; }
+
+.msj-explore-map-layout{ display:grid; grid-template-columns:360px 1fr; gap:20px; margin-top:8px; }
+.msj-explore-map-panel{
+  height:600px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; padding-right:4px;
+}
+.msj-explore-map-empty{ color:var(--text-on-paper-dim); font-size:14px; padding:20px; text-align:center; }
+.msj-explore-map-item{
+  display:flex; align-items:center; gap:12px; background:#fff; border:1px solid var(--line); border-radius:10px; padding:10px;
+  text-align:left; cursor:pointer; font-family:var(--sans); position:relative;
+}
+.msj-explore-map-item.active{ border-color:var(--teal-deep); background:rgba(141,198,63,.08); }
+.msj-explore-map-item-thumb{ width:56px; height:56px; border-radius:8px; overflow:hidden; flex-shrink:0; background:var(--paper-dim); }
+.msj-explore-map-item-thumb img{ width:100%; height:100%; object-fit:cover; }
+.msj-explore-map-item-body{ flex:1; min-width:0; }
+.msj-explore-map-item-body h4{ font-size:13.5px; color:var(--text-on-paper); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.msj-explore-map-item-body p{ display:flex; align-items:center; gap:4px; font-size:12px; color:var(--text-on-paper-dim); margin-top:3px; }
+.msj-explore-map-item-flag{ display:inline-block; font-size:10.5px; color:#8a6d1a; background:rgba(163,140,20,.12); padding:2px 7px; border-radius:100px; margin-top:4px; }
+.msj-explore-map-item-link{ font-size:12px; font-weight:700; color:var(--teal-deep); flex-shrink:0; }
+.msj-explore-map-canvas-wrap{ height:600px; }
+.msj-explore-map-canvas{ height:600px; }
+.msj-explore-map-loading{ text-align:center; color:var(--text-on-paper-dim); padding:60px 0; }
+
+@media (max-width: 860px){
+  .msj-explore-map-layout{ grid-template-columns:1fr; }
+  .msj-explore-map-panel{ height:280px; }
+  .msj-explore-row{ flex-direction:column; }
+  .msj-explore-row-thumb{ width:100%; height:180px; }
+  .msj-explore-row-actions{ flex-direction:row; align-items:center; }
+}
 
 .msj-profile-hero{ position:relative; height:340px; display:flex; align-items:flex-end; overflow:hidden; }
 .msj-profile-hero-img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }

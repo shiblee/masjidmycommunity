@@ -1,6 +1,8 @@
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Icon } from "../../components/Icons.jsx";
+import MediaCountBadge from "../../components/MediaCountBadge.jsx";
+
+export { default as MediaCountBadge } from "../../components/MediaCountBadge.jsx";
 
 export const STATUS_LABEL = {
   draft: "Draft", submitted: "Submitted", under_review: "Under Review",
@@ -33,17 +35,6 @@ export function MasjidActions({ m, onDelete }) {
       {m.status === "approved" && <Link to={`/account/my-campaigns?masjidId=${m.id}`}>Manage Campaigns</Link>}
       <button type="button" className="danger" onClick={() => onDelete(m)}>Delete</button>
     </div>
-  );
-}
-
-/** Small "5 photos · 1 video" badge shown on Grid thumbs, List rows, and Map popups. */
-export function MediaCountBadge({ photoCount, videoCount }) {
-  if (!photoCount && !videoCount) return null;
-  return (
-    <span className="msj-media-badge">
-      {photoCount > 0 && <span><Icon name="imageIcon" size={12} /> {photoCount}</span>}
-      {videoCount > 0 && <span><Icon name="play" size={12} /> {videoCount}</span>}
-    </span>
   );
 }
 
