@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
 import { Icon } from "../../components/Icons.jsx";
@@ -109,6 +109,7 @@ function ReviewForm({ masjidId, existing, settings, onSaved, onCancel }) {
   const [existingMedia, setExistingMedia] = useState(existing?.media || []);
   const [newFiles, setNewFiles] = useState([]); // [{ file, previewUrl, mediaType }]
   const [dragOver, setDragOver] = useState(false);
+  const fileInputRef = useRef(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -217,10 +218,12 @@ function ReviewForm({ masjidId, existing, settings, onSaved, onCancel }) {
             onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
             onDragLeave={() => setDragOver(false)}
             onDrop={onDrop}
+            onClick={() => fileInputRef.current?.click()}
           >
             <Icon name="upload" size={18} />
             <span>Drag photos/video here, or click to add</span>
             <input
+              ref={fileInputRef}
               type="file"
               accept="image/png,image/jpeg,image/webp,video/mp4,video/webm,video/quicktime"
               multiple
