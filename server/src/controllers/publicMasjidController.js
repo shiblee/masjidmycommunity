@@ -146,8 +146,17 @@ export const listStats = async (req, res) => {
 
 export const listCategories = async (req, res) => {
   try {
-    const categories = await MasjidCategory.findAll({ where: { isActive: true }, order: [["sortOrder", "ASC"]], attributes: ["id", "name"] });
-    res.json({ categories });
+    const [categories, counts] = await Promise.all([
+      MasjidCategory.findAll({ where: { isActive: true }, order: [["sortOrder", "ASC"]], attributes: ["id", "name"] }),
+      Masjid.findAll({
+        where: { status: PUBLIC_STATUS, moderationStatus: "active" },
+        attributes: ["category", [fn("COUNT", col("id")), "count"]],
+        group: ["category"],
+        raw: true,
+      }),
+    ]);
+    const countByCategory = new Map(counts.map((r) => [r.category, Number(r.count)]));
+    res.json({ categories: categories.map((c) => ({ ...c.toJSON(), count: countByCategory.get(c.name) || 0 })) });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -184,12 +193,20 @@ export const listDeletionReasons = async (req, res) => {
   }
 };
 
+function countBy(rows, field) {
+  const counts = new Map();
+  for (const row of rows) {
+    const value = row[field];
+    if (!value) continue;
+    counts.set(value, (counts.get(value) || 0) + 1);
+  }
+  return [...counts.entries()].map(([name, count]) => ({ name, count })).sort((a, b) => a.name.localeCompare(b.name));
+}
+
 export const listFilters = async (req, res) => {
   try {
-    const rows = await Masjid.findAll({ where: { status: PUBLIC_STATUS }, attributes: ["city", "country"] });
-    const cities = [...new Set(rows.map((r) => r.city).filter(Boolean))].sort();
-    const countries = [...new Set(rows.map((r) => r.country).filter(Boolean))].sort();
-    res.json({ cities, countries });
+    const rows = await Masjid.findAll({ where: { status: PUBLIC_STATUS, moderationStatus: "active" }, attributes: ["city", "country"], raw: true });
+    res.json({ cities: countBy(rows, "city"), countries: countBy(rows, "country") });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

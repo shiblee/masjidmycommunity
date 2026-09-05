@@ -180,15 +180,15 @@ function ExploreMasjids() {
             </div>
             <select value={category} onChange={(e) => setParam({ category: e.target.value })}>
               <option value="">All Categories</option>
-              {categories.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
+              {categories.map((c) => <option key={c.id} value={c.name}>{c.name} ({c.count})</option>)}
             </select>
             <select value={city} onChange={(e) => setParam({ city: e.target.value })}>
               <option value="">All Cities</option>
-              {filters.cities.map((c) => <option key={c} value={c}>{c}</option>)}
+              {filters.cities.map((c) => <option key={c.name} value={c.name}>{c.name} ({c.count})</option>)}
             </select>
             <select value={country} onChange={(e) => setParam({ country: e.target.value })}>
               <option value="">All Countries</option>
-              {filters.countries.map((c) => <option key={c} value={c}>{c}</option>)}
+              {filters.countries.map((c) => <option key={c.name} value={c.name}>{c.name} ({c.count})</option>)}
             </select>
             <div className="msj-view-switch">
               {VIEWS.map((v) => (
