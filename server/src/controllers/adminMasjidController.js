@@ -1,13 +1,16 @@
+import fs from "fs";
 import { Op } from "sequelize";
 import Masjid from "../models/Masjid.js";
 import MasjidPhoto from "../models/MasjidPhoto.js";
 import MasjidDonationAccount from "../models/MasjidDonationAccount.js";
 import MasjidHistory from "../models/MasjidHistory.js";
+import MasjidContactDesignation from "../models/MasjidContactDesignation.js";
 import MasjidContactPerson from "../models/MasjidContactPerson.js";
 import User from "../models/User.js";
 import { recordMasjidApprovedActivity } from "../services/communityActivityService.js";
 import { sendMasjidChangesRequestedEmail } from "../services/emailService.js";
 import { notifyUser } from "../services/notificationService.js";
+import { mediaTypeOf, IMAGE_MAX_BYTES } from "../middleware/upload.js";
 
 async function logHistory(masjidId, action, note, actorName) {
   await MasjidHistory.create({ masjidId, action, actorType: "admin", actorName: actorName || "Admin", note: note || null });
@@ -16,6 +19,35 @@ async function logHistory(masjidId, action, note, actorName) {
 function maskAccountNumber(digits) {
   if (!digits) return digits;
   return digits.length <= 4 ? digits : `${"*".repeat(digits.length - 4)}${digits.slice(-4)}`;
+}
+
+// Matches the VARCHAR(255) columns these fields map to — mirrors
+// masjidController.js's owner-side UPDATABLE_FIELDS/STRING_FIELD_LABELS
+// (duplicated rather than shared, matching this codebase's existing
+// per-controller-constant convention).
+const UPDATABLE_FIELDS = [
+  "name", "tagline", "about", "yearEstablished", "category",
+  "address", "area", "city", "district", "state", "country", "postalCode", "mapLink", "formattedAddress",
+  "latitude", "longitude",
+];
+const STRING_FIELD_MAX = 255;
+const STRING_FIELD_LABELS = {
+  name: "Masjid Name", tagline: "Tagline / Short Description", category: "Masjid Category",
+  address: "Address", area: "Area / Locality", city: "City", district: "District",
+  state: "State / Province", country: "Country", postalCode: "Postal / ZIP Code",
+  mapLink: "Map Link", formattedAddress: "Formatted Address",
+};
+const REQUIRED_MASJID_FIELDS = ["name", "about", "address", "city", "country"];
+
+// Mirrors the exact three checks masjidController.js's submit() enforces, so
+// this badge can never drift from what "ready to submit" actually means.
+async function computeMasjidCompletion(masjid, contacts, photoCount) {
+  const requiredDesignations = await MasjidContactDesignation.findAll({ where: { isRequired: true } });
+  const basicInfoDone = REQUIRED_MASJID_FIELDS.every((f) => masjid[f]?.toString().trim());
+  const contactsDone = requiredDesignations.every((d) => contacts.some((c) => c.designation === d.name && c.verified));
+  const photosDone = photoCount > 0;
+  const done = [basicInfoDone, contactsDone, photosDone].filter(Boolean).length;
+  return Math.round((done / 3) * 100);
 }
 
 const DB_SORT_COLUMNS = {
@@ -147,13 +179,155 @@ export const getOne = async (req, res) => {
       MasjidContactPerson.findAll({ where: { masjidId: masjid.id }, order: [["sortOrder", "ASC"]] }),
     ]);
 
+    let donationAccountJson = null;
+    if (donationAccount) {
+      donationAccountJson = donationAccount.toJSON();
+      donationAccountJson.accountNumberMasked = maskAccountNumber(donationAccountJson.accountNumber);
+      delete donationAccountJson.accountNumber;
+    }
+
     res.json({
-      masjid: masjid.toJSON(),
+      masjid: { ...masjid.toJSON(), completion: await computeMasjidCompletion(masjid, contacts, photos.length) },
       photos,
-      donationAccount: donationAccount?.toJSON() || null,
+      donationAccount: donationAccountJson,
       history,
       contacts: contacts.map((c) => ({ ...c.toJSON(), otpCode: undefined })),
     });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Admin editing is never gated by EDITABLE_STATUSES or ownership — admin
+// can update an approved/live masjid's basic info directly (full management
+// rights), unlike the owner-facing update() in masjidController.js.
+export const updateBasicInfo = async (req, res) => {
+  try {
+    const masjid = await Masjid.findByPk(req.params.id);
+    if (!masjid) return res.status(404).json({ message: "Masjid not found." });
+
+    if (req.body.name !== undefined && !req.body.name?.trim()) {
+      return res.status(400).json({ field: "name", message: "Masjid name can't be empty." });
+    }
+
+    const changedLabels = [];
+    for (const field of UPDATABLE_FIELDS) {
+      if (req.body[field] === undefined) continue;
+      const next = typeof req.body[field] === "string" ? req.body[field].trim() : req.body[field];
+      if (next !== masjid[field]) changedLabels.push(STRING_FIELD_LABELS[field] || field);
+      masjid[field] = next;
+    }
+    for (const [field, label] of Object.entries(STRING_FIELD_LABELS)) {
+      if (masjid[field] && masjid[field].length > STRING_FIELD_MAX) {
+        return res.status(400).json({ field, message: `${label} must be ${STRING_FIELD_MAX} characters or fewer.` });
+      }
+    }
+    if (masjid.about && masjid.about.length > 5000) return res.status(400).json({ field: "about", message: "About the Masjid must be 5000 characters or fewer." });
+    if (masjid.yearEstablished) {
+      const year = Number(masjid.yearEstablished);
+      const currentYear = new Date().getFullYear();
+      if (!/^\d{4}$/.test(masjid.yearEstablished) || year < 1300 || year > currentYear) {
+        return res.status(400).json({ field: "yearEstablished", message: `Enter a valid year between 1300 and ${currentYear}.` });
+      }
+    }
+
+    await masjid.save();
+    if (changedLabels.length) await logHistory(masjid.id, "admin_updated_basic_info", `Updated: ${changedLabels.join(", ")}`, req.user.email);
+
+    const [photos, contacts] = await Promise.all([
+      MasjidPhoto.count({ where: { masjidId: masjid.id } }),
+      MasjidContactPerson.findAll({ where: { masjidId: masjid.id } }),
+    ]);
+    res.json({ masjid: { ...masjid.toJSON(), completion: await computeMasjidCompletion(masjid, contacts, photos) } });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const uploadPhotos = async (req, res) => {
+  try {
+    const masjid = await Masjid.findByPk(req.params.id);
+    if (!masjid) return res.status(404).json({ message: "Masjid not found." });
+    if (!req.files?.length) return res.status(400).json({ message: "No photos or videos were uploaded." });
+
+    const oversizedImage = req.files.find((file) => mediaTypeOf(file.mimetype) === "photo" && file.size > IMAGE_MAX_BYTES);
+    if (oversizedImage) {
+      req.files.forEach((file) => fs.unlink(file.path, () => {}));
+      return res.status(400).json({ message: `Photos must be under ${IMAGE_MAX_BYTES / (1024 * 1024)}MB. "${oversizedImage.originalname}" is too large.` });
+    }
+
+    const existingCount = await MasjidPhoto.count({ where: { masjidId: masjid.id } });
+    const hasCover = existingCount > 0 || (await MasjidPhoto.count({ where: { masjidId: masjid.id, isCover: true } })) > 0;
+    let coverAssigned = hasCover;
+
+    const created = await Promise.all(
+      req.files.map((file, i) => {
+        const mediaType = mediaTypeOf(file.mimetype);
+        const isCover = !coverAssigned && mediaType === "photo";
+        if (isCover) coverAssigned = true;
+        return MasjidPhoto.create({
+          masjidId: masjid.id,
+          url: `/uploads/masjid-photos/${file.filename}`,
+          mediaType,
+          category: req.body.category || "other",
+          isCover,
+          sortOrder: existingCount + i,
+        });
+      })
+    );
+    await logHistory(masjid.id, "admin_added_photos", `Added ${created.length} photo(s)/video(s)`, req.user.email);
+    res.status(201).json({ photos: created });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const updatePhoto = async (req, res) => {
+  try {
+    const masjid = await Masjid.findByPk(req.params.id);
+    if (!masjid) return res.status(404).json({ message: "Masjid not found." });
+    const photo = await MasjidPhoto.findOne({ where: { id: req.params.photoId, masjidId: masjid.id } });
+    if (!photo) return res.status(404).json({ message: "Photo not found." });
+
+    if (req.body.caption !== undefined) photo.caption = req.body.caption;
+    if (req.body.category !== undefined) photo.category = req.body.category;
+    if (req.body.sortOrder !== undefined) photo.sortOrder = req.body.sortOrder;
+    if (req.body.isCover) {
+      if (photo.mediaType === "video") return res.status(400).json({ message: "A video can't be set as the cover — it shows as a still image across the site." });
+      await MasjidPhoto.update({ isCover: false }, { where: { masjidId: masjid.id } });
+      photo.isCover = true;
+    }
+    await photo.save();
+    res.json({ photo });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const deletePhoto = async (req, res) => {
+  try {
+    const masjid = await Masjid.findByPk(req.params.id);
+    if (!masjid) return res.status(404).json({ message: "Masjid not found." });
+    const photo = await MasjidPhoto.findOne({ where: { id: req.params.photoId, masjidId: masjid.id } });
+    if (!photo) return res.status(404).json({ message: "Photo not found." });
+
+    const wasCover = photo.isCover;
+    const localPath = `.${photo.url}`;
+    await photo.destroy();
+    fs.unlink(localPath, () => {});
+
+    // The owner-side deletePhoto doesn't reassign a cover when the cover
+    // itself is removed — fixed here so the admin path doesn't leave a
+    // masjid with photos but no cover image.
+    if (wasCover) {
+      const next = await MasjidPhoto.findOne({ where: { masjidId: masjid.id, mediaType: { [Op.ne]: "video" } }, order: [["sortOrder", "ASC"]] });
+      if (next) {
+        next.isCover = true;
+        await next.save();
+      }
+    }
+    await logHistory(masjid.id, "admin_removed_photo", null, req.user.email);
+    res.json({ deleted: true });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -279,11 +453,13 @@ export const verifyDonationAccount = async (req, res) => {
   try {
     const account = await MasjidDonationAccount.findOne({ where: { masjidId: req.params.id } });
     if (!account) return res.status(404).json({ message: "No donation account on file for this masjid." });
-    account.verified = true;
+    const verified = req.body.verified !== undefined ? !!req.body.verified : true;
+    account.verified = verified;
     await account.save();
-    await logHistory(req.params.id, "donation_account_verified", null, req.user.email);
+    await logHistory(req.params.id, verified ? "donation_account_verified" : "donation_account_unverified", null, req.user.email);
     const json = account.toJSON();
     json.accountNumberMasked = maskAccountNumber(json.accountNumber);
+    delete json.accountNumber;
     res.json({ donationAccount: json });
   } catch (error) {
     res.status(500).json({ message: error.message });

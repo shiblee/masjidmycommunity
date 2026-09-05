@@ -49,6 +49,7 @@ function AdminApp() {
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="masjids" element={<Masjids />} />
         <Route path="masjids/:id" element={<MasjidReview />} />
+        <Route path="masjids/:id/:tab" element={<MasjidReview />} />
         <Route path="community-wall" element={<CommunityWall />} />
         <Route path="campaigns" element={<Campaigns />} />
         <Route path="campaigns/:id" element={<CampaignReview />} />
