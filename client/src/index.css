@@ -1409,6 +1409,26 @@ footer{
 .cw-hero-stats strong{ display:block; font-family:var(--mono); font-size:24px; color:var(--gold-bright); }
 .cw-hero-stats span{ display:block; font-size:13px; color:var(--text-on-ink-dim); margin-top:4px; }
 
+/* Explore Masjids' hero is shorter than the default .cw-hero and adds a soft
+   accent glow — scoped here rather than changing .cw-hero itself, which
+   OurImpact.jsx also relies on at its current size. */
+.msj-explore-hero{ position:relative; overflow:hidden; padding:40px 0; }
+.msj-explore-hero::before{
+  content:""; position:absolute; top:-70px; right:-70px; width:300px; height:300px; border-radius:50%;
+  background:radial-gradient(circle, rgba(141,198,63,.28), transparent 70%); pointer-events:none;
+}
+.msj-explore-hero::after{
+  content:""; position:absolute; bottom:-90px; left:10%; width:220px; height:220px; border-radius:50%;
+  background:radial-gradient(circle, rgba(212,175,55,.14), transparent 70%); pointer-events:none;
+}
+.msj-explore-hero .wrap{ position:relative; z-index:1; }
+.msj-explore-hero h1{ font-size:clamp(24px,3.2vw,36px); margin-top:10px; max-width:600px; }
+.msj-explore-hero p{ margin-top:10px; font-size:15px; max-width:540px; }
+/* .py-md's default 76px top padding (shared with CampaignProfile/MasjidProfile)
+   left a large gap under the now-shorter hero — tightened here only. Combined
+   selector for specificity, since .py-md is declared later in this file. */
+.py-md.msj-explore-content{ padding-top:32px; }
+
 .cw-layout{ display:grid; grid-template-columns:280px 1fr 320px; gap:44px; align-items:start; }
 .cw-main{ min-width:0; }
 .cw-filters{ margin:0 0 24px; }

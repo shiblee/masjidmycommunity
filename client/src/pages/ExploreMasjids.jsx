@@ -141,17 +141,15 @@ function ExploreMasjids() {
 
   return (
     <main className="msj-page">
-      <section className="cw-hero on-ink">
+      <section className="cw-hero msj-explore-hero on-ink">
         <div className="wrap">
           <span className="eyebrow">Explore Masjids</span>
-          <h1 style={{ fontSize: "clamp(30px,4vw,48px)", marginTop: 12 }}>Verified masjids across the community</h1>
-          <p style={{ maxWidth: 560, marginTop: 14, color: "var(--text-on-ink-dim)" }}>
-            Every masjid listed here has been reviewed and approved by our team — trusted, transparent, and part of the Masjid My Community network.
-          </p>
+          <h1>Verified masjids across the community</h1>
+          <p>Every masjid listed here has been reviewed and approved by our team — trusted, transparent, and part of the Masjid My Community network.</p>
         </div>
       </section>
 
-      <section className="py-md">
+      <section className="py-md msj-explore-content">
         <div className="wrap">
           {stats && (
             <div className="msj-stats-strip">
