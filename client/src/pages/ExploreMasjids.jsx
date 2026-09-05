@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import axios from "axios";
 import { Icon } from "../components/Icons.jsx";
@@ -8,7 +8,6 @@ import ExploreMasjidsGrid from "./exploreMasjids/ExploreMasjidsGrid.jsx";
 import ExploreMasjidsList from "./exploreMasjids/ExploreMasjidsList.jsx";
 import ExploreMasjidsMap from "./exploreMasjids/ExploreMasjidsMap.jsx";
 import MasjidReviewModal from "./exploreMasjids/MasjidReviewModal.jsx";
-import { distanceKm, NEARBY_RADIUS_KM } from "./exploreMasjids/exploreMasjidsShared.jsx";
 
 const API = `${API_BASE}/masjids/public`;
 const VIEWS = [
@@ -25,18 +24,13 @@ function ExploreMasjids() {
   const category = searchParams.get("category") || "";
   const city = searchParams.get("city") || "";
   const country = searchParams.get("country") || "";
-  const activeOnly = searchParams.get("activeOnly") === "1";
-  const nearbyOnly = searchParams.get("nearbyOnly") === "1";
 
   const [rawQ, setRawQ] = useState(q);
   const debounceRef = useRef(null);
 
   const [filters, setFilters] = useState({ cities: [], countries: [] });
   const [categories, setCategories] = useState([]);
-  const [stats, setStats] = useState(null);
   const [coords, setCoords] = useState(null);
-  const [geoDenied, setGeoDenied] = useState(false);
-  const [nearbyCount, setNearbyCount] = useState(null);
 
   const [masjids, setMasjids] = useState(null);
   const [total, setTotal] = useState(0);
@@ -46,7 +40,6 @@ function ExploreMasjids() {
   const [mapMasjids, setMapMasjids] = useState(null);
   const [selectedId, setSelectedId] = useState(null);
   const [reviewModal, setReviewModal] = useState(null);
-  const cityRef = useRef(null);
 
   const openReviews = (m, initialTab = "overview") => setReviewModal({ masjid: m, initialTab });
 
@@ -71,28 +64,23 @@ function ExploreMasjids() {
   useEffect(() => {
     axios.get(`${API}/filters`).then(({ data }) => setFilters(data)).catch(() => {});
     axios.get(`${API}/categories`).then(({ data }) => setCategories(data.categories)).catch(() => {});
-    axios.get(`${API}/stats`).then(({ data }) => setStats(data)).catch(() => {});
   }, []);
-
-  // nearbyOnly needs a known location to mean anything server-side — until then it's ignored.
-  const nearbyParams = nearbyOnly && coords ? { lat: coords.lat, lng: coords.lng } : {};
 
   // Grid/List: paginated fetch, reset to page 1 whenever the filters change.
   useEffect(() => {
     setPage(1);
     setMasjids(null);
     axios
-      .get(API, { params: { q, city, country, category, activeOnly: activeOnly ? 1 : undefined, ...nearbyParams, page: 1, pageSize: PAGE_SIZE } })
+      .get(API, { params: { q, city, country, category, page: 1, pageSize: PAGE_SIZE } })
       .then(({ data }) => { setMasjids(data.masjids); setTotal(data.total); })
       .catch(() => setMasjids([]));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q, city, country, category, activeOnly, nearbyOnly, coords]);
+  }, [q, city, country, category]);
 
   const loadMore = () => {
     const nextPage = page + 1;
     setLoadingMore(true);
     axios
-      .get(API, { params: { q, city, country, category, activeOnly: activeOnly ? 1 : undefined, ...nearbyParams, page: nextPage, pageSize: PAGE_SIZE } })
+      .get(API, { params: { q, city, country, category, page: nextPage, pageSize: PAGE_SIZE } })
       .then(({ data }) => { setMasjids((prev) => [...(prev || []), ...data.masjids]); setPage(nextPage); })
       .finally(() => setLoadingMore(false));
   };
@@ -102,28 +90,16 @@ function ExploreMasjids() {
     if (view !== "map") return;
     setMapMasjids(null);
     axios
-      .get(`${API}/map`, { params: { q, city, country, category, activeOnly: activeOnly ? 1 : undefined, ...nearbyParams } })
+      .get(`${API}/map`, { params: { q, city, country, category } })
       .then(({ data }) => setMapMasjids(data.masjids))
       .catch(() => setMapMasjids([]));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [view, q, city, country, category, activeOnly, nearbyOnly, coords]);
-
-  // Nearby count reflects the whole directory (like Total/Cities/Active), not the active filters.
-  useEffect(() => {
-    if (!coords) return;
-    axios.get(`${API}/map`).then(({ data }) => {
-      const nearby = (data.masjids || []).filter(
-        (m) => m.latitude != null && m.longitude != null && distanceKm(coords.lat, coords.lng, Number(m.latitude), Number(m.longitude)) <= NEARBY_RADIUS_KM
-      );
-      setNearbyCount(nearby.length);
-    });
-  }, [coords]);
+  }, [view, q, city, country, category]);
 
   const requestLocation = () => {
-    if (!navigator.geolocation) { setGeoDenied(true); return; }
+    if (!navigator.geolocation) return;
     navigator.geolocation.getCurrentPosition(
       (pos) => setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-      () => setGeoDenied(true)
+      () => {}
     );
   };
 
@@ -139,19 +115,9 @@ function ExploreMasjids() {
     category && { key: "category", label: `Category: ${category}` },
     city && { key: "city", label: `City: ${city}` },
     country && { key: "country", label: `Country: ${country}` },
-    activeOnly && { key: "activeOnly", label: "Has an active campaign" },
-    nearbyOnly && coords && { key: "nearbyOnly", label: `Within ${NEARBY_RADIUS_KM}km of you` },
   ].filter(Boolean);
 
   const clearAll = () => { setRawQ(""); setSearchParams({}, { replace: true }); };
-
-  const handleTotalClick = () => clearAll();
-  const handleCitiesClick = () => cityRef.current?.focus();
-  const handleActiveCampaignsClick = () => setParam({ activeOnly: activeOnly ? "" : "1" });
-  const handleNearbyClick = () => {
-    if (!coords) { requestLocation(); return; }
-    setParam({ nearbyOnly: nearbyOnly ? "" : "1" });
-  };
 
   const handleViewOnMap = (m) => {
     setSelectedId(m.id);
@@ -173,38 +139,6 @@ function ExploreMasjids() {
 
       <section className="py-md msj-explore-content">
         <div className="wrap">
-          {stats && (
-            <div className="msj-stats-strip">
-              <button type="button" className="msj-stat-box msj-stat-clickable" onClick={handleTotalClick} title="Clear all filters">
-                <strong>{stats.totalMasjids}</strong><span>Total Masjids</span>
-              </button>
-              <button type="button" className="msj-stat-box msj-stat-clickable" onClick={handleCitiesClick} title="Choose a city">
-                <strong>{stats.citiesCovered}</strong><span>Cities Covered</span>
-              </button>
-              <button
-                type="button"
-                className={`msj-stat-box msj-stat-clickable ${activeOnly ? "active" : ""}`}
-                onClick={handleActiveCampaignsClick}
-                title={activeOnly ? "Showing masjids with an active campaign — click to clear" : "Show only masjids with an active campaign"}
-              >
-                <strong>{stats.activeCampaigns}</strong><span>Active Campaigns</span>
-              </button>
-              <div className={`msj-stat-box msj-stat-nearby ${nearbyOnly && coords ? "active" : ""}`}>
-                {nearbyCount != null ? (
-                  <button type="button" className="msj-stat-clickable" onClick={handleNearbyClick} title={nearbyOnly ? "Showing only nearby masjids — click to clear" : "Show only masjids near you"}>
-                    <strong>{nearbyCount}</strong><span>Nearby You ({NEARBY_RADIUS_KM}km)</span>
-                  </button>
-                ) : geoDenied ? (
-                  <span className="msj-stat-nearby-hint">Location unavailable</span>
-                ) : (
-                  <button type="button" className="msj-stat-nearby-btn" onClick={requestLocation}>
-                    <Icon name="mapPin" size={14} /> Find Nearby
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
-
           <div className="msj-explore-filters">
             <div className="msj-search">
               <Icon name="search" size={16} />
@@ -215,7 +149,7 @@ function ExploreMasjids() {
               <option value="">All Categories</option>
               {categories.map((c) => <option key={c.id} value={c.name}>{c.name} ({c.count})</option>)}
             </select>
-            <select ref={cityRef} value={city} onChange={(e) => setParam({ city: e.target.value })}>
+            <select value={city} onChange={(e) => setParam({ city: e.target.value })}>
               <option value="">All Cities</option>
               {filters.cities.map((c) => <option key={c.name} value={c.name}>{c.name} ({c.count})</option>)}
             </select>

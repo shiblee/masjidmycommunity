@@ -262,6 +262,7 @@ function MasjidReviewModal({ masjid, initialTab = "overview", onClose }) {
         <div className="msj-review-tabs">
           <button type="button" className={tab === "overview" ? "active" : ""} onClick={() => setTab("overview")}>Overview</button>
           <button type="button" className={tab === "reviews" ? "active" : ""} onClick={() => setTab("reviews")}>Reviews</button>
+          <button type="button" className={tab === "about" ? "active" : ""} onClick={() => setTab("about")}>About</button>
         </div>
 
         {tab === "overview" && (
@@ -343,6 +344,21 @@ function MasjidReviewModal({ masjid, initialTab = "overview", onClose }) {
               {data?.reviews.length === 0 && <p className="msj-review-empty">No reviews yet — be the first to share your experience.</p>}
               {data?.reviews.map((r) => <ReviewRow review={r} key={r.id} />)}
             </div>
+          </div>
+        )}
+
+        {tab === "about" && (
+          <div className="msj-review-about-panel">
+            {masjid.tagline && <p className="msj-review-tagline">{masjid.tagline}</p>}
+            {masjid.category && <span className="msj-category-badge">{masjid.category}</span>}
+            {masjid.about ? (
+              <>
+                <h4 className="msj-review-about-heading">About the Masjid</h4>
+                <p className="msj-review-about">{masjid.about}</p>
+              </>
+            ) : (
+              <p className="msj-review-empty">No description added yet.</p>
+            )}
           </div>
         )}
       </div>
