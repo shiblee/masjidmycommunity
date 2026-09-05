@@ -146,8 +146,8 @@ function MasjidReviewModal({ masjid, initialTab = "overview", onClose }) {
 
         <div className="msj-review-tabs">
           <button type="button" className={tab === "overview" ? "active" : ""} onClick={() => setTab("overview")}>Overview</button>
-          <button type="button" className={tab === "about" ? "active" : ""} onClick={() => setTab("about")}>About</button>
           <button type="button" className={tab === "reviews" ? "active" : ""} onClick={() => setTab("reviews")}>Reviews</button>
+          <button type="button" className={tab === "about" ? "active" : ""} onClick={() => setTab("about")}>About</button>
         </div>
 
         {tab === "overview" && (
