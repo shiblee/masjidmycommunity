@@ -600,7 +600,7 @@ function MasjidReviewModal({ masjid, initialTab = "overview", onClose }) {
               )}
               <button type="button" className={`msj-review-action-btn ${favorited ? "active" : ""}`} onClick={toggleFavorite} disabled={favBusy}>
                 <span className="msj-review-action-icon"><HeartIcon filled={favorited} /></span>
-                {favorited ? "Saved" : "Save"}
+                {favorited ? "Liked" : "Like"}
               </button>
               <button type="button" className="msj-review-action-btn" onClick={handleShare}>
                 <span className="msj-review-action-icon"><ShareIcon /></span>
