@@ -22,13 +22,10 @@ function ExploreMasjids() {
   const view = VIEWS.some((v) => v.key === searchParams.get("view")) ? searchParams.get("view") : "grid";
   const q = searchParams.get("q") || "";
   const category = searchParams.get("category") || "";
-  const city = searchParams.get("city") || "";
-  const country = searchParams.get("country") || "";
 
   const [rawQ, setRawQ] = useState(q);
   const debounceRef = useRef(null);
 
-  const [filters, setFilters] = useState({ cities: [], countries: [] });
   const [categories, setCategories] = useState([]);
   const [coords, setCoords] = useState(null);
 
@@ -62,7 +59,6 @@ function ExploreMasjids() {
   }, [rawQ]);
 
   useEffect(() => {
-    axios.get(`${API}/filters`).then(({ data }) => setFilters(data)).catch(() => {});
     axios.get(`${API}/categories`).then(({ data }) => setCategories(data.categories)).catch(() => {});
   }, []);
 
@@ -71,16 +67,16 @@ function ExploreMasjids() {
     setPage(1);
     setMasjids(null);
     axios
-      .get(API, { params: { q, city, country, category, page: 1, pageSize: PAGE_SIZE } })
+      .get(API, { params: { q, category, page: 1, pageSize: PAGE_SIZE } })
       .then(({ data }) => { setMasjids(data.masjids); setTotal(data.total); })
       .catch(() => setMasjids([]));
-  }, [q, city, country, category]);
+  }, [q, category]);
 
   const loadMore = () => {
     const nextPage = page + 1;
     setLoadingMore(true);
     axios
-      .get(API, { params: { q, city, country, category, page: nextPage, pageSize: PAGE_SIZE } })
+      .get(API, { params: { q, category, page: nextPage, pageSize: PAGE_SIZE } })
       .then(({ data }) => { setMasjids((prev) => [...(prev || []), ...data.masjids]); setPage(nextPage); })
       .finally(() => setLoadingMore(false));
   };
@@ -90,10 +86,10 @@ function ExploreMasjids() {
     if (view !== "map") return;
     setMapMasjids(null);
     axios
-      .get(`${API}/map`, { params: { q, city, country, category } })
+      .get(`${API}/map`, { params: { q, category } })
       .then(({ data }) => setMapMasjids(data.masjids))
       .catch(() => setMapMasjids([]));
-  }, [view, q, city, country, category]);
+  }, [view, q, category]);
 
   const requestLocation = () => {
     if (!navigator.geolocation) return;
@@ -113,8 +109,6 @@ function ExploreMasjids() {
   const activeFilters = [
     q && { key: "q", label: `Search: "${q}"` },
     category && { key: "category", label: `Category: ${category}` },
-    city && { key: "city", label: `City: ${city}` },
-    country && { key: "country", label: `Country: ${country}` },
   ].filter(Boolean);
 
   const clearAll = () => { setRawQ(""); setSearchParams({}, { replace: true }); };
@@ -148,14 +142,6 @@ function ExploreMasjids() {
             <select value={category} onChange={(e) => setParam({ category: e.target.value })}>
               <option value="">All Categories</option>
               {categories.map((c) => <option key={c.id} value={c.name}>{c.name} ({c.count})</option>)}
-            </select>
-            <select value={city} onChange={(e) => setParam({ city: e.target.value })}>
-              <option value="">All Cities</option>
-              {filters.cities.map((c) => <option key={c.name} value={c.name}>{c.name} ({c.count})</option>)}
-            </select>
-            <select value={country} onChange={(e) => setParam({ country: e.target.value })}>
-              <option value="">All Countries</option>
-              {filters.countries.map((c) => <option key={c.name} value={c.name}>{c.name} ({c.count})</option>)}
             </select>
             <div className="msj-view-switch">
               {VIEWS.map((v) => (
