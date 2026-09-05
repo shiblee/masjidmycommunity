@@ -18,6 +18,11 @@ export function distanceKm(lat1, lon1, lat2, lon2) {
 
 export const NEARBY_RADIUS_KM = 25;
 
+// This app has no server-side image processing for review/correction
+// attachments, so the client enforces a sane size ceiling itself — shared
+// by ReviewForm and SuggestEditForm/CorrectionCard.
+export const IMAGE_SIZE_MAX_BYTES = 5 * 1024 * 1024;
+
 /** "850 m away" below 1km, else "3.2 km away". */
 export function formatDistance(km) {
   if (km < 1) return `${Math.round(km * 1000)} m away`;

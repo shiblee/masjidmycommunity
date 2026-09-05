@@ -1,37 +1,132 @@
 import React, { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
-import { Icon } from "../components/Icons.jsx";
-import StaticLocationMap from "../components/StaticLocationMap.jsx";
-import MediaThumb from "../components/MediaThumb.jsx";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import axios from "axios";
+import { Icon } from "../components/Icons.jsx";
+import MediaThumb from "../components/MediaThumb.jsx";
 import { API_BASE, API_ORIGIN } from "../config.js";
+import { getUserToken } from "../utils/userAuthStorage.js";
+import { StarRating, directionsUrl } from "./exploreMasjids/exploreMasjidsShared.jsx";
+import SuggestEditForm from "./exploreMasjids/SuggestEditForm.jsx";
 
 const API = `${API_BASE}/masjids/public`;
-const CAMPAIGN_API = `${API_BASE}/campaigns/public`;
+
+const TABS = [
+  { key: "about", label: "About" },
+  { key: "wall", label: "Community Wall" },
+  { key: "people", label: "People" },
+  { key: "campaigns", label: "Campaigns" },
+  { key: "media", label: "Media" },
+  { key: "reviews", label: "Reviews & Ratings" },
+  { key: "location", label: "Location" },
+  { key: "more", label: "More" },
+];
+
+function LikeAvatarStack({ topLikers, likeCount, onClick }) {
+  if (!likeCount) return null;
+  const extra = likeCount - topLikers.length;
+  return (
+    <button type="button" className="msj-hub-liker-stack" onClick={onClick}>
+      {topLikers.map((u, i) => (
+        <MediaThumb key={u.id} src={u.profilePhoto ? `${API_ORIGIN}${u.profilePhoto}` : null} className="msj-hub-liker-avatar" style={{ zIndex: topLikers.length - i }} />
+      ))}
+      {extra > 0 && <span className="msj-hub-liker-more">+{extra.toLocaleString()}</span>}
+    </button>
+  );
+}
+
+function ComingSoonPanel({ label }) {
+  return (
+    <div className="msj-hub-coming-soon">
+      <Icon name="sparkle" size={26} />
+      <strong>{label}</strong>
+      <span>This section is being built out and will appear here soon.</span>
+    </div>
+  );
+}
+
+function InfoCard({ icon, label, children }) {
+  if (!children) return null;
+  return (
+    <div className="msj-hub-info-card">
+      <span className="msj-hub-info-card-icon"><Icon name={icon} size={18} /></span>
+      <div>
+        <span className="msj-hub-info-card-label">{label}</span>
+        <div className="msj-hub-info-card-value">{children}</div>
+      </div>
+    </div>
+  );
+}
 
 function MasjidProfile() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [masjid, setMasjid] = useState(null);
   const [photos, setPhotos] = useState([]);
-  const [campaigns, setCampaigns] = useState([]);
   const [notFound, setNotFound] = useState(false);
-  const [active, setActive] = useState(0);
+  const [tab, setTab] = useState("about");
+  const [favorited, setFavorited] = useState(false);
+  const [favBusy, setFavBusy] = useState(false);
+  const [shareLabel, setShareLabel] = useState("Share");
+  const [showSuggest, setShowSuggest] = useState(false);
+  const [suggestSent, setSuggestSent] = useState(false);
+  const loggedIn = !!getUserToken();
 
-  useEffect(() => {
+  const load = () => {
     axios
       .get(`${API}/${id}`)
       .then(({ data }) => {
         setMasjid(data.masjid);
         setPhotos(data.photos);
-        // Open on the actual cover, not just whatever sorts first — the
-        // first-uploaded item can be a video, which shouldn't be the default
-        // hero view.
-        const coverIndex = data.photos.findIndex((p) => p.isCover);
-        setActive(coverIndex >= 0 ? coverIndex : 0);
       })
       .catch(() => setNotFound(true));
-    axios.get(`${CAMPAIGN_API}/by-masjid/${id}`).then(({ data }) => setCampaigns(data.campaigns)).catch(() => {});
-  }, [id]);
+  };
+
+  useEffect(() => { load(); }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!loggedIn) return;
+    const token = getUserToken();
+    axios.get(`${API}/${id}/favorite`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(({ data }) => setFavorited(data.favorited))
+      .catch(() => {});
+  }, [id, loggedIn]);
+
+  const toggleFavorite = async () => {
+    if (!loggedIn) { navigate("/auth"); return; }
+    setFavBusy(true);
+    const token = getUserToken();
+    try {
+      if (favorited) {
+        await axios.delete(`${API}/${id}/favorite`, { headers: { Authorization: `Bearer ${token}` } });
+        setFavorited(false);
+        setMasjid((m) => ({ ...m, likeCount: Math.max(0, m.likeCount - 1) }));
+      } else {
+        await axios.post(`${API}/${id}/favorite`, {}, { headers: { Authorization: `Bearer ${token}` } });
+        setFavorited(true);
+        setMasjid((m) => ({ ...m, likeCount: m.likeCount + 1 }));
+      }
+    } catch {
+      // no-op — button state simply won't change, safe to retry
+    } finally {
+      setFavBusy(false);
+    }
+  };
+
+  const handleShare = async () => {
+    const url = `${window.location.origin}/masjid/${id}`;
+    if (navigator.share) {
+      navigator.share({ title: masjid.name, url }).catch(() => {});
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      setShareLabel("Link Copied!");
+      setTimeout(() => setShareLabel("Share"), 2000);
+    } catch {
+      setShareLabel("Couldn't copy");
+      setTimeout(() => setShareLabel("Share"), 2000);
+    }
+  };
 
   if (notFound) {
     return (
@@ -48,102 +143,139 @@ function MasjidProfile() {
 
   if (!masjid) return <main className="msj-page"><div className="wrap py-lg"><p>Loading…</p></div></main>;
 
-  const cover = photos[active] || photos[0];
+  const cover = photos.find((p) => p.isCover) || photos[0];
+  const address = masjid.formattedAddress || [masjid.address, masjid.city, masjid.country].filter(Boolean).join(", ");
+  const dirUrl = directionsUrl(masjid);
 
   return (
-    <main className="msj-page">
-      <section className="msj-profile-hero on-ink">
-        {cover && (
-          <MediaThumb src={`${API_ORIGIN}${cover.url}`} mediaType={cover.mediaType} className="msj-profile-hero-img" videoProps={{ controls: true }} />
-        )}
-        <div className="msj-profile-hero-overlay" />
-        <div className="wrap msj-profile-hero-content">
-          <span className="msj-verified-badge"><Icon name="shieldCheck" size={13} /> Verified Masjid</span>
-          <h1>{masjid.name}</h1>
-          {masjid.tagline && <p className="msj-profile-tagline">{masjid.tagline}</p>}
-          <p className="msj-list-loc"><Icon name="mapPin" size={15} /> {[masjid.address, masjid.city, masjid.country].filter(Boolean).join(", ")}</p>
+    <main className="msj-page msj-hub">
+      <section className="msj-hub-header on-ink">
+        <MediaThumb src={cover ? `${API_ORIGIN}${cover.url}` : null} mediaType={cover?.mediaType} className="msj-hub-cover" />
+        <div className="msj-hub-header-overlay" />
+        <div className="wrap msj-hub-header-content">
+          <div className="msj-hub-header-top">
+            {cover && <MediaThumb src={`${API_ORIGIN}${cover.url}`} className="msj-hub-logo" />}
+            <div>
+              <span className="msj-verified-badge"><Icon name="shieldCheck" size={13} /> Verified Masjid</span>
+              <h1>{masjid.name}</h1>
+              <p className="msj-hub-header-meta">
+                {[masjid.category, [masjid.city, masjid.country].filter(Boolean).join(", ")].filter(Boolean).join(" • ")}
+              </p>
+              {masjid.tagline && <p className="msj-profile-tagline">{masjid.tagline}</p>}
+            </div>
+          </div>
+
+          {masjid.likeCount > 0 && (
+            <div className="msj-hub-likes-row">
+              <span className="msj-hub-likes-count"><Icon name="heart" size={15} /> {masjid.likeCount.toLocaleString()} people like this</span>
+              <LikeAvatarStack topLikers={masjid.topLikers} likeCount={masjid.likeCount} onClick={() => setTab("people")} />
+            </div>
+          )}
+
+          <div className="msj-hub-actions-row">
+            <button type="button" className={`msj-hub-action-btn ${favorited ? "active" : ""}`} onClick={toggleFavorite} disabled={favBusy}>
+              <Icon name="heart" size={16} /> {favorited ? "Liked" : "Like"}
+            </button>
+            <button type="button" className="msj-hub-action-btn" onClick={handleShare}>
+              <Icon name="link" size={16} /> {shareLabel}
+            </button>
+            {dirUrl ? (
+              <a href={dirUrl} target="_blank" rel="noopener noreferrer" className="msj-hub-action-btn">
+                <Icon name="compass" size={16} /> Get Directions
+              </a>
+            ) : (
+              <span className="msj-hub-action-btn disabled"><Icon name="compass" size={16} /> Get Directions</span>
+            )}
+            {loggedIn ? (
+              <button type="button" className="msj-hub-action-btn" onClick={() => setShowSuggest(true)}>
+                <Icon name="edit" size={16} /> Suggest a Correction
+              </button>
+            ) : (
+              <Link to="/auth" className="msj-hub-action-btn"><Icon name="edit" size={16} /> Suggest a Correction</Link>
+            )}
+            <button type="button" className="msj-hub-action-btn msj-hub-more-btn" title="More">⋯</button>
+          </div>
         </div>
       </section>
 
+      <div className="msj-hub-tabs-bar">
+        <div className="wrap msj-hub-tabs">
+          {TABS.map((t) => (
+            <button key={t.key} type="button" className={tab === t.key ? "active" : ""} onClick={() => setTab(t.key)}>{t.label}</button>
+          ))}
+        </div>
+      </div>
+
       <section className="py-md">
-        <div className="wrap msj-profile-grid">
-          <div>
-            {photos.length > 1 && (
-              <div className="msj-profile-thumbs">
-                {photos.map((p, i) => (
-                  <button key={p.id} type="button" className={i === active ? "active" : ""} onClick={() => setActive(i)}>
-                    {p.mediaType === "video" ? (
-                      <span className="msj-thumb-video">
-                        <MediaThumb src={`${API_ORIGIN}${p.url}`} mediaType="video" />
-                        <Icon name="play" size={14} />
-                      </span>
-                    ) : (
-                      <MediaThumb src={`${API_ORIGIN}${p.url}`} />
-                    )}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            <div className="section-head" style={{ marginTop: 32 }}>
-              <span className="eyebrow">About</span>
-              <h2>{masjid.name}</h2>
-            </div>
-            <p className="msj-profile-about">{masjid.about}</p>
-
-            <div className="msj-profile-facts">
-              {masjid.yearEstablished && <div><span>Established</span><strong>{masjid.yearEstablished}</strong></div>}
-              {masjid.category && <div><span>Category</span><strong>{masjid.category}</strong></div>}
-              {masjid.imamName && <div><span>Imam</span><strong>{masjid.imamName}</strong></div>}
-            </div>
-
-            {masjid.latitude != null && (
+        <div className="wrap msj-hub-layout">
+          <div className="msj-hub-main">
+            {tab === "about" && (
               <>
-                <div className="section-head" style={{ marginTop: 40, marginBottom: 0 }}>
-                  <span className="eyebrow">Location</span>
+                {masjid.about && (
+                  <div className="msj-hub-about-text">
+                    <h3>About</h3>
+                    <p>{masjid.about}</p>
+                  </div>
+                )}
+                <div className="msj-hub-info-grid">
+                  <InfoCard icon="mosque" label="Category">{masjid.category}</InfoCard>
+                  <InfoCard icon="mapPin" label="Address">{address}</InfoCard>
+                  <InfoCard icon="sun" label="Established">{masjid.yearEstablished}</InfoCard>
+                  <InfoCard icon="people" label="Imam">{masjid.imamName}</InfoCard>
+                  <InfoCard icon="shieldCheck" label="Verification">Verified &amp; Approved</InfoCard>
                 </div>
-                <StaticLocationMap latitude={masjid.latitude} longitude={masjid.longitude} height={300} />
               </>
             )}
-
-            {masjid.mapLink && (
-              <a href={masjid.mapLink} target="_blank" rel="noreferrer" className="btn btn-outline-ink" style={{ marginTop: 20 }}>
-                <Icon name="mapPin" size={16} /> Get Directions
-              </a>
-            )}
+            {tab === "wall" && <ComingSoonPanel label="Community Wall" />}
+            {tab === "people" && <ComingSoonPanel label="People" />}
+            {tab === "campaigns" && <ComingSoonPanel label="Campaigns" />}
+            {tab === "media" && <ComingSoonPanel label="Media" />}
+            {tab === "reviews" && <ComingSoonPanel label="Reviews & Ratings" />}
+            {tab === "location" && <ComingSoonPanel label="Location" />}
+            {tab === "more" && <ComingSoonPanel label="More" />}
           </div>
 
-          <aside className="msj-profile-side">
-            <div className="card msj-profile-card">
-              <h3>Support {masjid.name}</h3>
-              {campaigns.length === 0 ? (
-                <>
-                  <p>Campaigns from this masjid will appear here once launched.</p>
-                  <button className="btn btn-gold" style={{ width: "100%" }} type="button" disabled title="No active campaigns from this masjid right now.">
-                    No Active Campaigns
-                  </button>
-                </>
-              ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-                  {campaigns.map((c) => {
-                    const pct = c.progressPercent ?? 0;
-                    return (
-                      <Link to={`/campaign/${c.slug}`} key={c.id} className="camp-side-card">
-                        <strong>{c.title}</strong>
-                        <div className="progress-track" style={{ marginTop: 8 }}><div className="progress-fill" style={{ width: `${pct}%` }} /></div>
-                        <div className="camp-card-meta" style={{ marginTop: 6 }}>
-                          <span>₹{Number(c.amountRaised).toLocaleString("en-IN")} raised</span>
-                          {c.goalAmount && <span>of ₹{Number(c.goalAmount).toLocaleString("en-IN")}</span>}
-                        </div>
-                      </Link>
-                    );
-                  })}
-                </div>
-              )}
+          <aside className="msj-hub-side">
+            <div className="card msj-hub-snapshot">
+              <h3>Masjid Snapshot</h3>
+              <div className="msj-hub-snapshot-row"><span>Verification</span><strong>Verified</strong></div>
+              {masjid.category && <div className="msj-hub-snapshot-row"><span>Category</span><strong>{masjid.category}</strong></div>}
+              <div className="msj-hub-snapshot-row"><span>Location</span><strong>{[masjid.city, masjid.country].filter(Boolean).join(", ") || "—"}</strong></div>
+              <div className="msj-hub-snapshot-row"><span>Likes</span><strong>{masjid.likeCount.toLocaleString()}</strong></div>
+              <div className="msj-hub-snapshot-row">
+                <span>Rating</span>
+                <strong className="msj-hub-snapshot-rating"><StarRating value={masjid.avgRating} size={13} /> {masjid.reviewCount > 0 ? masjid.avgRating.toFixed(1) : "—"}</strong>
+              </div>
+              <div className="msj-hub-snapshot-row"><span>Campaigns</span><strong>{masjid.campaignCount}</strong></div>
+              <div className="msj-hub-snapshot-row"><span>Photos/Videos</span><strong>{masjid.photoCount} / {masjid.videoCount}</strong></div>
+            </div>
+
+            <div className="card msj-hub-snapshot">
+              <h3>Quick Actions</h3>
+              <div className="msj-hub-quick-actions">
+                <button type="button" onClick={toggleFavorite} disabled={favBusy}><Icon name="heart" size={15} /> {favorited ? "Unlike" : "Like"}</button>
+                {dirUrl && <a href={dirUrl} target="_blank" rel="noopener noreferrer"><Icon name="compass" size={15} /> Get Directions</a>}
+                <button type="button" onClick={handleShare}><Icon name="link" size={15} /> {shareLabel}</button>
+                {loggedIn && <button type="button" onClick={() => setShowSuggest(true)}><Icon name="edit" size={15} /> Suggest a Correction</button>}
+              </div>
             </div>
           </aside>
         </div>
       </section>
+
+      {showSuggest && (
+        <div className="msj-modal-overlay" onClick={() => setShowSuggest(false)}>
+          <div className="msj-modal" onClick={(e) => e.stopPropagation()}>
+            <button className="msj-modal-close" onClick={() => setShowSuggest(false)} aria-label="Close"><Icon name="x" size={16} /></button>
+            <h3 style={{ marginBottom: 16 }}>Suggest a Correction</h3>
+            {suggestSent ? (
+              <p className="msj-suggest-edit-sent"><Icon name="check" size={15} /> Thanks! Your correction request has been sent for review.</p>
+            ) : (
+              <SuggestEditForm masjid={masjid} onDone={() => { setSuggestSent(true); }} onCancel={() => setShowSuggest(false)} />
+            )}
+          </div>
+        </div>
+      )}
     </main>
   );
 }

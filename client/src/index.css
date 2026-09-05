@@ -3215,6 +3215,76 @@ footer{
 .msj-profile-card h3{ font-size:17px; color:var(--text-on-paper); margin-bottom:8px; }
 .msj-profile-card p{ font-size:13.5px; color:var(--text-on-paper-dim); margin-bottom:20px; line-height:1.55; }
 
+/* Masjid Community Hub (full masjid detail page) */
+.msj-hub-header{ position:relative; padding-top:48px; padding-bottom:28px; overflow:hidden; }
+.msj-hub-cover{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+.msj-hub-header-overlay{ position:absolute; inset:0; background:linear-gradient(180deg, rgba(11,31,30,.55), rgba(11,31,30,.92)); }
+.msj-hub-header-content{ position:relative; z-index:1; }
+.msj-hub-header-top{ display:flex; gap:20px; align-items:flex-end; }
+.msj-hub-logo{ width:84px; height:84px; border-radius:16px; object-fit:cover; border:3px solid rgba(255,255,255,.85); flex-shrink:0; box-shadow:0 10px 24px -10px rgba(0,0,0,.5); }
+.msj-hub-header-top h1{ font-size:clamp(24px,3.4vw,36px); color:var(--text-on-ink); margin-top:6px; }
+.msj-hub-header-meta{ font-size:13.5px; color:var(--text-on-ink-dim); margin-top:4px; }
+.msj-hub-likes-row{ display:flex; align-items:center; gap:14px; margin-top:20px; flex-wrap:wrap; }
+.msj-hub-likes-count{ display:flex; align-items:center; gap:6px; font-size:14px; font-weight:600; color:var(--text-on-ink); }
+.msj-hub-likes-count svg{ color:#C24B3F; fill:#C24B3F; }
+.msj-hub-liker-stack{ display:flex; align-items:center; background:none; border:none; cursor:pointer; padding:0; }
+.msj-hub-liker-avatar{ width:28px; height:28px; border-radius:50%; object-fit:cover; border:2px solid var(--ink); margin-left:-8px; background:var(--paper-dim); }
+.msj-hub-liker-avatar:first-child{ margin-left:0; }
+.msj-hub-liker-more{ margin-left:6px; font-size:12.5px; font-weight:700; color:var(--text-on-ink-dim); }
+.msj-hub-actions-row{ display:flex; gap:10px; flex-wrap:wrap; margin-top:22px; }
+.msj-hub-action-btn{
+  display:flex; align-items:center; gap:7px; padding:9px 16px; border-radius:100px; background:rgba(255,255,255,.1);
+  border:1px solid rgba(255,255,255,.25); color:var(--text-on-ink); font-size:13.5px; font-weight:600; cursor:pointer; font-family:var(--sans);
+  transition:background .2s;
+}
+.msj-hub-action-btn:hover{ background:rgba(255,255,255,.18); }
+.msj-hub-action-btn.active{ background:rgba(194,75,63,.85); border-color:transparent; }
+.msj-hub-action-btn.disabled{ opacity:.5; cursor:not-allowed; }
+.msj-hub-more-btn{ padding:9px 14px; font-size:18px; line-height:1; }
+
+.msj-hub-tabs-bar{ position:sticky; top:0; z-index:15; background:#fff; border-bottom:1px solid var(--line); }
+.msj-hub-tabs{ display:flex; gap:26px; overflow-x:auto; }
+.msj-hub-tabs button{
+  padding:16px 2px; background:none; border:none; border-bottom:2px solid transparent; font-size:14px; font-weight:600;
+  color:var(--text-on-paper-dim); cursor:pointer; white-space:nowrap; font-family:var(--sans);
+}
+.msj-hub-tabs button.active{ color:var(--teal-deep); border-bottom-color:var(--teal-deep); }
+
+.msj-hub-layout{ display:grid; grid-template-columns:2fr 1fr; gap:40px; align-items:start; }
+.msj-hub-main{ min-width:0; }
+.msj-hub-about-text h3{ font-size:17px; color:var(--text-on-paper); margin-bottom:10px; }
+.msj-hub-about-text p{ font-size:14.5px; line-height:1.75; color:var(--text-on-paper-dim); white-space:pre-wrap; }
+.msj-hub-info-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:14px; margin-top:24px; }
+.msj-hub-info-card{ display:flex; gap:12px; background:#fff; border:1px solid var(--line); border-radius:12px; padding:14px 16px; }
+.msj-hub-info-card-icon{ width:36px; height:36px; border-radius:10px; background:rgba(141,198,63,.12); color:var(--teal-deep); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.msj-hub-info-card-label{ display:block; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--text-on-paper-dim); margin-bottom:3px; }
+.msj-hub-info-card-value{ font-size:14px; color:var(--text-on-paper); font-weight:600; }
+
+.msj-hub-coming-soon{
+  display:flex; flex-direction:column; align-items:center; text-align:center; gap:8px; padding:60px 20px; color:var(--text-on-paper-dim);
+}
+.msj-hub-coming-soon strong{ font-size:16px; color:var(--text-on-paper); }
+.msj-hub-coming-soon span{ font-size:13.5px; max-width:320px; }
+
+.msj-hub-side{ position:sticky; top:76px; display:flex; flex-direction:column; gap:18px; }
+.msj-hub-snapshot h3{ font-size:15px; color:var(--text-on-paper); margin-bottom:12px; }
+.msj-hub-snapshot-row{ display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--line); font-size:13px; color:var(--text-on-paper-dim); }
+.msj-hub-snapshot-row:last-child{ border-bottom:none; }
+.msj-hub-snapshot-row strong{ color:var(--text-on-paper); font-weight:700; }
+.msj-hub-snapshot-rating{ display:flex; align-items:center; gap:6px; }
+.msj-hub-quick-actions{ display:flex; flex-direction:column; gap:8px; }
+.msj-hub-quick-actions button, .msj-hub-quick-actions a{
+  display:flex; align-items:center; gap:8px; padding:9px 12px; border-radius:8px; background:var(--paper-dim); border:none;
+  font-size:13.5px; font-weight:600; color:var(--text-on-paper); cursor:pointer; font-family:var(--sans); text-decoration:none;
+}
+.msj-hub-quick-actions button:hover, .msj-hub-quick-actions a:hover{ background:rgba(141,198,63,.16); }
+
+@media (max-width: 860px){
+  .msj-hub-layout{ grid-template-columns:1fr; }
+  .msj-hub-side{ position:static; }
+  .msj-hub-header-top{ flex-direction:column; align-items:flex-start; }
+}
+
 .msj-modal-overlay{
   position:fixed; inset:0; background:rgba(11,31,30,.6); backdrop-filter:blur(3px); display:flex; align-items:center; justify-content:center;
   padding:20px; z-index:1000;

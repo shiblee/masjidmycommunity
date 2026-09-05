@@ -9,6 +9,8 @@ import Bank from "../models/Bank.js";
 import DeletionReason from "../models/DeletionReason.js";
 import Campaign from "../models/Campaign.js";
 import MasjidReview from "../models/MasjidReview.js";
+import MasjidFavorite from "../models/MasjidFavorite.js";
+import User from "../models/User.js";
 
 const PUBLIC_STATUS = "approved";
 const MAP_POINTS_CAP = 500;
@@ -159,11 +161,68 @@ export const getPublicOne = async (req, res) => {
     const masjid = await Masjid.findOne({ where: { id: req.params.id, status: PUBLIC_STATUS, moderationStatus: "active" } });
     if (!masjid) return res.status(404).json({ message: "Masjid not found." });
 
-    const photos = await MasjidPhoto.findAll({ where: { masjidId: masjid.id }, order: [["sortOrder", "ASC"]] });
-    // The public profile still shows an "Imam" line — sourced from the
-    // office-bearers list now rather than a single column on Masjid.
-    const imam = await MasjidContactPerson.findOne({ where: { masjidId: masjid.id, designation: "Imam" } });
-    res.json({ masjid: { ...masjid.toJSON(), imamName: imam?.name || null }, photos });
+    const [photos, imam, likeCount, topLikerFavorites, rating, campaignCount] = await Promise.all([
+      MasjidPhoto.findAll({ where: { masjidId: masjid.id }, order: [["sortOrder", "ASC"]] }),
+      // The public profile still shows an "Imam" line — sourced from the
+      // office-bearers list now rather than a single column on Masjid.
+      MasjidContactPerson.findOne({ where: { masjidId: masjid.id, designation: "Imam" } }),
+      MasjidFavorite.count({ where: { masjidId: masjid.id } }),
+      MasjidFavorite.findAll({ where: { masjidId: masjid.id }, order: [["createdAt", "DESC"]], limit: 6 }),
+      ratingSummary(masjid.id),
+      Campaign.count({ where: { masjidId: masjid.id, status: "active" } }),
+    ]);
+    const topLikerUsers = await User.findAll({
+      where: { id: topLikerFavorites.map((f) => f.userId) },
+      attributes: ["id", "fullName", "profilePhoto"],
+    });
+    const userById = new Map(topLikerUsers.map((u) => [u.id, u]));
+    const topLikers = topLikerFavorites.map((f) => userById.get(f.userId)).filter(Boolean);
+    const photoCount = photos.filter((p) => p.mediaType === "photo").length;
+    const videoCount = photos.filter((p) => p.mediaType === "video").length;
+
+    res.json({
+      masjid: {
+        ...masjid.toJSON(),
+        imamName: imam?.name || null,
+        likeCount,
+        topLikers,
+        ...rating,
+        campaignCount,
+        photoCount,
+        videoCount,
+      },
+      photos,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+/** Paginated list of users who liked a masjid — for the People tab. Only
+ * plain public fields are exposed (no email/mobile); this app has no
+ * privacy-settings system, so this is the same visibility level review
+ * author names already get elsewhere. */
+export const listLikers = async (req, res) => {
+  try {
+    const masjid = await Masjid.findOne({ where: { id: req.params.id, status: PUBLIC_STATUS, moderationStatus: "active" } });
+    if (!masjid) return res.status(404).json({ message: "Masjid not found." });
+
+    const page = Math.max(Number(req.query.page) || 1, 1);
+    const pageSize = 24;
+    const { rows, count } = await MasjidFavorite.findAndCountAll({
+      where: { masjidId: masjid.id },
+      order: [["createdAt", "DESC"]],
+      limit: pageSize,
+      offset: (page - 1) * pageSize,
+    });
+    const users = await User.findAll({ where: { id: rows.map((f) => f.userId) }, attributes: ["id", "fullName", "username", "profilePhoto"] });
+    const userById = new Map(users.map((u) => [u.id, u]));
+    res.json({
+      likers: rows.map((f) => userById.get(f.userId)).filter(Boolean),
+      total: count,
+      page,
+      pageSize,
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
