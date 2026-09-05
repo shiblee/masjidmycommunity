@@ -4,6 +4,7 @@ import app from "./app.js";
 import connectDB from "./config/db.js";
 import { ensureEmailDefaults } from "./seed/emailDefaults.js";
 import { ensureMasjidCategoryDefaults } from "./seed/masjidCategoryDefaults.js";
+import { ensureReviewRestrictedWordDefaults } from "./seed/reviewRestrictedWordDefaults.js";
 import { ensureMasjidContactDesignationDefaults } from "./seed/masjidContactDesignationDefaults.js";
 import { ensureMaritalStatusDefaults } from "./seed/maritalStatusDefaults.js";
 import { ensureEducationLevelDefaults } from "./seed/educationLevelDefaults.js";
@@ -37,6 +38,7 @@ connectDB()
     Promise.all([
       ensureEmailDefaults(),
       ensureMasjidCategoryDefaults(),
+      ensureReviewRestrictedWordDefaults(),
       ensureMasjidContactDesignationDefaults(),
       ensureMaritalStatusDefaults(),
       ensureEducationLevelDefaults(),

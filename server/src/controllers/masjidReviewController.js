@@ -3,6 +3,11 @@ import Masjid from "../models/Masjid.js";
 import MasjidReview from "../models/MasjidReview.js";
 import ReviewSettings from "../models/ReviewSettings.js";
 import User from "../models/User.js";
+import { checkRestrictedWords } from "../utils/reviewModeration.js";
+
+// Never expose which term matched or "invalid" jargon — a clear, generic
+// message that can't be used to probe the restricted-word library.
+const MODERATION_MESSAGE = "Your review contains language that is not permitted. Please remove the inappropriate content and try again.";
 
 const PAGE_SIZE = 20;
 
@@ -99,6 +104,13 @@ export const upsertMyReview = async (req, res) => {
     const body = req.body.body?.trim() || null;
     if (body && body.length > maxLength) {
       return res.status(400).json({ message: `Your review must be ${maxLength} characters or fewer.` });
+    }
+
+    if (body) {
+      const moderation = await checkRestrictedWords(body);
+      if (moderation.flagged) {
+        return res.status(400).json({ message: MODERATION_MESSAGE });
+      }
     }
 
     const [review] = await MasjidReview.findOrCreate({
