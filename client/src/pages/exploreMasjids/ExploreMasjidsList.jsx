@@ -4,9 +4,9 @@ import { Icon } from "../../components/Icons.jsx";
 import MediaThumb from "../../components/MediaThumb.jsx";
 import MediaCountBadge from "../../components/MediaCountBadge.jsx";
 import { API_ORIGIN } from "../../config.js";
-import { locationOf, VerifiedTick, ActiveCampaignBadge, excerpt } from "./exploreMasjidsShared.jsx";
+import { locationOf, VerifiedTick, ActiveCampaignBadge, DistanceBadge, excerpt } from "./exploreMasjidsShared.jsx";
 
-function ExploreMasjidsList({ masjids, onViewOnMap }) {
+function ExploreMasjidsList({ masjids, onViewOnMap, userLocation }) {
   return (
     <div className="msj-explore-row-list">
       {masjids.map((m) => (
@@ -26,6 +26,7 @@ function ExploreMasjidsList({ masjids, onViewOnMap }) {
             {excerpt(m.about) && <p className="msj-explore-row-about">{excerpt(m.about)}</p>}
             <div className="msj-explore-row-meta">
               <ActiveCampaignBadge m={m} />
+              <DistanceBadge userLocation={userLocation} m={m} />
             </div>
           </div>
           <div className="msj-list-actions msj-explore-row-actions">

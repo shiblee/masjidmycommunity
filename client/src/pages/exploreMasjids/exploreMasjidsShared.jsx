@@ -47,6 +47,12 @@ export function ActiveCampaignBadge({ m }) {
   );
 }
 
+export function DistanceBadge({ userLocation, m }) {
+  const d = distanceToMasjid(userLocation, m);
+  if (d == null) return null;
+  return <span className="msj-distance-badge"><Icon name="mapPin" size={11} /> {formatDistance(d)}</span>;
+}
+
 export function excerpt(text, max = 140) {
   if (!text) return null;
   const trimmed = text.trim();

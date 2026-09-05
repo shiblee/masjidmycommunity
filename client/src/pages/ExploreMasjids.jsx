@@ -115,12 +115,12 @@ function ExploreMasjids() {
     );
   };
 
-  // Map view benefits from knowing "you are here" right away — ask once, silently,
-  // the first time Map is opened (a denial is remembered so it won't nag again).
+  // Distance-to-masjid shows up in Grid/List/Map alike, so location is asked for
+  // once on load rather than per-view — a denial is remembered so it won't nag again.
   useEffect(() => {
-    if (view === "map" && !coords && !geoDenied) requestLocation();
+    requestLocation();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [view]);
+  }, []);
 
   const activeFilters = [
     q && { key: "q", label: `Search: "${q}"` },
@@ -222,7 +222,7 @@ function ExploreMasjids() {
 
           {view === "grid" && hasResults && (
             <>
-              <ExploreMasjidsGrid masjids={masjids} />
+              <ExploreMasjidsGrid masjids={masjids} userLocation={coords} />
               {masjids.length < total && (
                 <div className="msj-load-more"><button type="button" className="btn btn-outline-ink" onClick={loadMore} disabled={loadingMore}>{loadingMore ? "Loading…" : "Load More"}</button></div>
               )}
@@ -231,7 +231,7 @@ function ExploreMasjids() {
 
           {view === "list" && hasResults && (
             <>
-              <ExploreMasjidsList masjids={masjids} onViewOnMap={handleViewOnMap} />
+              <ExploreMasjidsList masjids={masjids} onViewOnMap={handleViewOnMap} userLocation={coords} />
               {masjids.length < total && (
                 <div className="msj-load-more"><button type="button" className="btn btn-outline-ink" onClick={loadMore} disabled={loadingMore}>{loadingMore ? "Loading…" : "Load More"}</button></div>
               )}
