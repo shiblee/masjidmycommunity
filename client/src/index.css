@@ -1411,10 +1411,6 @@ footer{
 
 .cw-layout{ display:grid; grid-template-columns:280px 1fr 320px; gap:44px; align-items:start; }
 .cw-main{ min-width:0; }
-/* The masjid/campaign wizard is a focused task, not wall browsing — give it
-   the full width instead of squeezing a multi-step form between two sidebars. */
-.cw-layout-focused{ grid-template-columns:1fr; }
-.cw-layout-focused > .cw-side{ display:none; }
 .cw-filters{ margin:0 0 24px; }
 
 .cw-feed{ display:flex; flex-direction:column; gap:20px; }
@@ -2728,8 +2724,8 @@ footer{
 .msj-step-header h3{ font-size:19px; color:var(--text-on-paper); margin:0; }
 .msj-step-header p{ font-size:13.5px; color:var(--text-on-paper-dim); margin-top:4px; line-height:1.5; }
 
-/* Single focused column, centered in the available width (the community wall's
-   side columns are hidden while a wizard is open — see .cw-layout-focused). */
+/* Centers the wizard's step card within cw-main, which sits between the
+   wall's two sidebars exactly as it does for the normal wall content. */
 .msj-wizard-center{ max-width:1120px; margin:0 auto; }
 .msj-wizard-center .msj-step-card{ margin:0 auto; }
 

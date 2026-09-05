@@ -1221,7 +1221,7 @@ function Community() {
     <main className="cw-page">
       <section className="py-sm">
         <div className="wrap">
-          <div className={`cw-layout${showMasjidWizard || showCampaignWizard ? " cw-layout-focused" : ""}`}>
+          <div className="cw-layout">
             <aside className="cw-side">
               <div className="cw-side-card">
                 <h4>Community Impact</h4>
