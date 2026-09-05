@@ -115,6 +115,13 @@ function ExploreMasjids() {
     );
   };
 
+  // Map view benefits from knowing "you are here" right away — ask once, silently,
+  // the first time Map is opened (a denial is remembered so it won't nag again).
+  useEffect(() => {
+    if (view === "map" && !coords && !geoDenied) requestLocation();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view]);
+
   const activeFilters = [
     q && { key: "q", label: `Search: "${q}"` },
     category && { key: "category", label: `Category: ${category}` },
@@ -234,7 +241,7 @@ function ExploreMasjids() {
           {view === "map" && (
             mapMasjids == null
               ? <p className="msj-explore-map-loading">Loading map…</p>
-              : <ExploreMasjidsMap masjids={mapMasjids} selectedId={selectedId} onSelect={setSelectedId} />
+              : <ExploreMasjidsMap masjids={mapMasjids} selectedId={selectedId} onSelect={setSelectedId} userLocation={coords} onLocateMe={requestLocation} />
           )}
         </div>
       </section>

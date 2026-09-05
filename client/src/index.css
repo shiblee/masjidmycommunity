@@ -2781,6 +2781,16 @@ footer{
   background:rgba(141,198,63,.3); animation:msj-pin-pulse 2s ease-out infinite; pointer-events:none;
 }
 @keyframes msj-pin-pulse{ 0%{ transform:scale(.5); opacity:.9; } 100%{ transform:scale(1.5); opacity:0; } }
+.msj-map-user-pin{ background:none; border:none; }
+.msj-map-user-dot{
+  position:absolute; inset:0; margin:auto; width:14px; height:14px; border-radius:50%;
+  background:#2E86DE; border:3px solid #fff; box-shadow:0 2px 8px rgba(11,31,30,.45);
+}
+.msj-map-user-pulse{
+  position:absolute; inset:0; margin:auto; width:30px; height:30px; border-radius:50%;
+  background:rgba(46,134,222,.3); animation:msj-pin-pulse 2s ease-out infinite; pointer-events:none;
+}
+.msj-map-popup-distance{ font-size:12px; font-weight:600; color:#2E86DE; margin-bottom:8px; }
 .msj-media-fallback{
   position:relative; display:flex; align-items:center; justify-content:center; width:100%; height:100%;
   background:linear-gradient(135deg, var(--ink) 0%, var(--ink-soft) 100%); color:var(--gold-bright);
@@ -3023,10 +3033,13 @@ footer{
 
 .msj-explore-filters{ display:flex; gap:12px; flex-wrap:wrap; margin-bottom:28px; }
 .msj-search{
-  flex:1; min-width:220px; display:flex; align-items:center; gap:8px; background:#fff; border:1px solid var(--line);
-  border-radius:100px; padding:10px 16px; color:var(--text-on-paper-dim);
+  position:relative; flex:1; min-width:220px; display:flex; align-items:center; gap:8px; background:#fff; border:1px solid var(--line);
+  border-radius:100px; padding:10px 16px; color:var(--text-on-paper-dim); overflow:hidden;
 }
-.msj-search input{ border:none; outline:none; flex:1; font-size:14px; background:transparent; color:var(--text-on-paper); }
+/* .mic-btn-wrap (shared across the app — see its own rule) is position:absolute
+   and needs this container to be position:relative, same as .faq-search/.msj-about-wrap;
+   the extra end-padding keeps typed text from running under the mic zone. */
+.msj-search input{ border:none; outline:none; flex:1; font-size:14px; background:transparent; color:var(--text-on-paper); padding-inline-end:44px; min-width:0; }
 .msj-explore-filters select{ border:1px solid var(--line); border-radius:100px; padding:10px 16px; font-size:14px; background:#fff; }
 
 .msj-explore-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:24px; }
@@ -3096,10 +3109,17 @@ footer{
 .msj-explore-map-item-body h4{ font-size:13.5px; color:var(--text-on-paper); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .msj-explore-map-item-body p{ display:flex; align-items:center; gap:4px; font-size:12px; color:var(--text-on-paper-dim); margin-top:3px; }
 .msj-explore-map-item-flag{ display:inline-block; font-size:10.5px; color:#8a6d1a; background:rgba(163,140,20,.12); padding:2px 7px; border-radius:100px; margin-top:4px; }
+.msj-explore-map-item-distance{ display:inline-block; font-size:10.5px; font-weight:600; color:#2E86DE; background:rgba(46,134,222,.1); padding:2px 7px; border-radius:100px; margin-top:4px; }
 .msj-explore-map-item-link{ font-size:12px; font-weight:700; color:var(--teal-deep); flex-shrink:0; }
-.msj-explore-map-canvas-wrap{ height:600px; }
+.msj-explore-map-canvas-wrap{ height:600px; position:relative; }
 .msj-explore-map-canvas{ height:600px; }
 .msj-explore-map-loading{ text-align:center; color:var(--text-on-paper-dim); padding:60px 0; }
+.msj-locate-me-btn{
+  position:absolute; bottom:20px; right:12px; z-index:500; width:38px; height:38px; border-radius:50%;
+  background:#fff; border:1px solid var(--line); box-shadow:0 6px 16px -6px rgba(11,31,30,.35);
+  display:flex; align-items:center; justify-content:center; color:#2E86DE; cursor:pointer;
+}
+.msj-locate-me-btn:hover{ background:var(--paper-dim); }
 
 @media (max-width: 860px){
   .msj-explore-map-layout{ grid-template-columns:1fr; }

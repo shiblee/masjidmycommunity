@@ -8,7 +8,7 @@ import { Icon } from "../../components/Icons.jsx";
 import MediaThumb from "../../components/MediaThumb.jsx";
 import { API_ORIGIN } from "../../config.js";
 import { loadClusterPlugin } from "../../utils/loadMarkerCluster.js";
-import { locationOf } from "./exploreMasjidsShared.jsx";
+import { locationOf, distanceToMasjid, formatDistance } from "./exploreMasjidsShared.jsx";
 
 const DEFAULT_CENTER = [20.5937, 78.9629];
 const DEFAULT_ZOOM = 4;
@@ -20,7 +20,14 @@ const pinIcon = L.divIcon({
   iconAnchor: [11, 25],
 });
 
-function popupHtml(m) {
+const userIcon = L.divIcon({
+  className: "msj-map-user-pin",
+  html: '<span class="msj-map-user-dot"></span><span class="msj-map-user-pulse"></span>',
+  iconSize: [18, 18],
+  iconAnchor: [9, 9],
+});
+
+function popupHtml(m, distanceLabel) {
   const cover = m.coverPhotoUrl ? `${API_ORIGIN}${m.coverPhotoUrl}` : null;
   return `
     <div class="msj-map-popup">
@@ -31,20 +38,24 @@ function popupHtml(m) {
           ${m.category ? `<span class="msj-category-badge">${m.category}</span>` : ""}
         </div>
         <p>${locationOf(m)}</p>
+        ${distanceLabel ? `<p class="msj-map-popup-distance">📍 ${distanceLabel} from you</p>` : ""}
         <a href="/masjid/${m.id}">View Details →</a>
       </div>
     </div>
   `;
 }
 
-function ExploreMasjidsMap({ masjids, selectedId, onSelect }) {
+function ExploreMasjidsMap({ masjids, selectedId, onSelect, userLocation, onLocateMe }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const clusterRef = useRef(null);
+  const userMarkerRef = useRef(null);
   const markersById = useRef(new Map());
   const itemRefs = useRef(new Map());
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
+  const userLocationRef = useRef(userLocation);
+  userLocationRef.current = userLocation;
 
   const [pluginReady, setPluginReady] = useState(false);
 
@@ -79,7 +90,8 @@ function ExploreMasjidsMap({ masjids, selectedId, onSelect }) {
 
     mapped.forEach((m) => {
       const marker = L.marker([Number(m.latitude), Number(m.longitude)], { icon: pinIcon });
-      marker.bindPopup(popupHtml(m));
+      const distance = distanceToMasjid(userLocationRef.current, m);
+      marker.bindPopup(popupHtml(m, distance != null ? formatDistance(distance) : null));
       marker.on("click", () => onSelectRef.current?.(m.id));
       cluster.addLayer(marker);
       markersById.current.set(m.id, marker);
@@ -88,15 +100,31 @@ function ExploreMasjidsMap({ masjids, selectedId, onSelect }) {
     cluster.addTo(map);
     clusterRef.current = cluster;
 
-    if (mapped.length > 1) {
-      map.fitBounds(L.latLngBounds(mapped.map((m) => [Number(m.latitude), Number(m.longitude)])), { padding: [40, 40], maxZoom: 15 });
-    } else if (mapped.length === 1) {
-      map.setView([Number(mapped[0].latitude), Number(mapped[0].longitude)], 15);
+    const boundPoints = mapped.map((m) => [Number(m.latitude), Number(m.longitude)]);
+    if (userLocationRef.current) boundPoints.push([userLocationRef.current.lat, userLocationRef.current.lng]);
+
+    if (boundPoints.length > 1) {
+      map.fitBounds(L.latLngBounds(boundPoints), { padding: [40, 40], maxZoom: 15 });
+    } else if (boundPoints.length === 1) {
+      map.setView(boundPoints[0], 15);
     } else {
       map.setView(DEFAULT_CENTER, DEFAULT_ZOOM);
     }
     setTimeout(() => map.invalidateSize(), 60);
   }, [masjids, pluginReady]);
+
+  // "You are here" marker — kept separate from the cluster group (a user's own
+  // location shouldn't cluster with masjid pins) and re-added whenever it moves.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    if (userMarkerRef.current) { userMarkerRef.current.remove(); userMarkerRef.current = null; }
+    if (!userLocation) return;
+    const marker = L.marker([userLocation.lat, userLocation.lng], { icon: userIcon, zIndexOffset: 1000 });
+    marker.bindPopup('<div class="msj-map-popup"><div class="msj-map-popup-body"><h4>You are here</h4></div></div>');
+    marker.addTo(map);
+    userMarkerRef.current = marker;
+  }, [userLocation]);
 
   // Left-panel item selected (or a marker clicked, which also sets selectedId) —
   // fly the map to it, open its popup, and scroll the matching panel item into view.
@@ -133,6 +161,10 @@ function ExploreMasjidsMap({ masjids, selectedId, onSelect }) {
               <h4>{m.name}</h4>
               <p><Icon name="mapPin" size={12} /> {locationOf(m)}</p>
               {(m.latitude == null || m.longitude == null) && <span className="msj-explore-map-item-flag">Not mapped yet</span>}
+              {(() => {
+                const d = distanceToMasjid(userLocation, m);
+                return d != null && <span className="msj-explore-map-item-distance">{formatDistance(d)}</span>;
+              })()}
             </div>
             <Link to={`/masjid/${m.id}`} onClick={(e) => e.stopPropagation()} className="msj-explore-map-item-link">View Details</Link>
           </button>
@@ -140,6 +172,9 @@ function ExploreMasjidsMap({ masjids, selectedId, onSelect }) {
       </div>
       <div className="msj-map-canvas-wrap msj-explore-map-canvas-wrap">
         <div ref={containerRef} className="msj-map-canvas msj-explore-map-canvas" />
+        <button type="button" className="msj-locate-me-btn" onClick={onLocateMe} title="Show my location">
+          <Icon name="mapPin" size={16} />
+        </button>
       </div>
     </div>
   );

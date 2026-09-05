@@ -18,6 +18,18 @@ export function distanceKm(lat1, lon1, lat2, lon2) {
 
 export const NEARBY_RADIUS_KM = 25;
 
+/** "850 m away" below 1km, else "3.2 km away". */
+export function formatDistance(km) {
+  if (km < 1) return `${Math.round(km * 1000)} m away`;
+  return `${km.toFixed(1)} km away`;
+}
+
+/** Distance from `coords` ({lat,lng}) to a masjid with lat/lng fields, or null if either is missing. */
+export function distanceToMasjid(coords, m) {
+  if (!coords || m.latitude == null || m.longitude == null) return null;
+  return distanceKm(coords.lat, coords.lng, Number(m.latitude), Number(m.longitude));
+}
+
 export function VerifiedTick({ inline = false }) {
   return (
     <span className={`msj-verified-badge ${inline ? "inline" : ""}`}>
