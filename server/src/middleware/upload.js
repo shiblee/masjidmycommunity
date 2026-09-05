@@ -26,6 +26,9 @@ fs.mkdirSync(TESTIMONIAL_PHOTO_UPLOAD_ROOT, { recursive: true });
 const SUCCESS_STORY_UPLOAD_ROOT = path.resolve("uploads", "success-story-photos");
 fs.mkdirSync(SUCCESS_STORY_UPLOAD_ROOT, { recursive: true });
 
+const REVIEW_MEDIA_UPLOAD_ROOT = path.resolve("uploads", "review-media");
+fs.mkdirSync(REVIEW_MEDIA_UPLOAD_ROOT, { recursive: true });
+
 function diskStorageFor(root) {
   return multer.diskStorage({
     destination: (req, file, cb) => cb(null, root),
@@ -199,5 +202,31 @@ export function uploadSuccessStoryImage(req, res, next) {
       return res.status(400).json({ message: `Photos must be under ${IMAGE_MAX_BYTES / (1024 * 1024)}MB.` });
     }
     res.status(400).json({ message: err.message || "Couldn't upload that photo." });
+  });
+}
+
+// Review media size/count are admin-configurable (ReviewSettings), so
+// multer's own hard ceiling here is a generous absolute safety cap rather
+// than the actual business rule — the controller enforces the admin's
+// configured maxImages/maxVideoSizeMB precisely once files are on disk,
+// the same "reject post-hoc" pattern uploadMasjidPhotos already uses.
+const REVIEW_MEDIA_ABSOLUTE_MAX_BYTES = 200 * 1024 * 1024;
+
+const reviewMediaUpload = multer({
+  storage: diskStorageFor(REVIEW_MEDIA_UPLOAD_ROOT),
+  limits: { fileSize: REVIEW_MEDIA_ABSOLUTE_MAX_BYTES, files: 10 },
+  fileFilter: (req, file, cb) => {
+    if (!ALLOWED.has(file.mimetype)) return cb(new Error("Only JPG, PNG, WEBP photos or MP4, WEBM, MOV videos are allowed."));
+    cb(null, true);
+  },
+});
+
+export function uploadReviewMedia(req, res, next) {
+  reviewMediaUpload.array("media", 10)(req, res, (err) => {
+    if (!err) return next();
+    if (err.code === "LIMIT_FILE_SIZE") {
+      return res.status(400).json({ message: `Each file must be under ${REVIEW_MEDIA_ABSOLUTE_MAX_BYTES / (1024 * 1024)}MB.` });
+    }
+    res.status(400).json({ message: err.message || "Couldn't upload that file." });
   });
 }
