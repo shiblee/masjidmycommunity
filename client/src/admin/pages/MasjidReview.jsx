@@ -91,11 +91,12 @@ function MasjidReview() {
     <>
       <div className="amx-page-head">
         <div>
-          <button className="amx-back-link" onClick={() => navigate("/admin/masjids")}>
+          <span className="amx-crumb">Trust &amp; Safety</span>
+          <button className="amx-back-link" style={{ display: "block", marginTop: 8 }} onClick={() => navigate("/admin/masjids")}>
             <Icon name="arrowRight" size={14} style={{ transform: "rotate(180deg)" }} /> Back to Masjid Management
           </button>
           <h1 style={{ marginTop: 10 }}>{masjid.name}</h1>
-          <p>{[masjid.city, masjid.country].filter(Boolean).join(", ")}</p>
+          <p>ID {masjid.id} · {[masjid.city, masjid.country].filter(Boolean).join(", ")}</p>
         </div>
         <div className="amx-page-actions" style={{ alignItems: "center" }}>
           <StatusBadge status={masjid.status} />
@@ -154,12 +155,12 @@ function MasjidReview() {
                   <tbody>
                     {contacts.map((c) => (
                       <tr key={c.id}>
-                        <td><strong>{c.designation}</strong></td>
+                        <td style={{ whiteSpace: "nowrap" }}><strong>{c.designation}</strong></td>
                         <td>{c.name}</td>
-                        <td>{c.mobile}</td>
-                        <td><StatusBadge status={c.verified ? "verified" : "pending"} label={c.verified ? "Verified" : "Not Verified"} /></td>
-                        <td>{formatDateTime(c.createdAt)}</td>
-                        <td>{formatDateTime(c.updatedAt)}</td>
+                        <td style={{ whiteSpace: "nowrap" }}>{c.mobile}</td>
+                        <td style={{ whiteSpace: "nowrap" }}><StatusBadge status={c.verified ? "verified" : "pending"} label={c.verified ? "Verified" : "Not Verified"} /></td>
+                        <td style={{ whiteSpace: "nowrap" }}>{formatDateTime(c.createdAt)}</td>
+                        <td style={{ whiteSpace: "nowrap" }}>{formatDateTime(c.updatedAt)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -192,7 +193,7 @@ function MasjidReview() {
           </Section>
         </div>
 
-        <div className="amx-card amx-panel">
+        <div className="amx-card amx-panel amx-review-actions">
           <div className="amx-panel-head"><h3>Actions</h3></div>
           {reviewable ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>

@@ -669,10 +669,16 @@ table.amx-table{ width:100%; border-collapse:collapse; font-size:13.5px; }
 .amx-preview-panel{ position:sticky; top:130px; }
 .amx-preview-frame-wrap{ background:var(--a-bg); border-radius:12px; padding:18px; display:flex; justify-content:center; overflow-x:auto; }
 .amx-preview-frame{ height:640px; max-width:100%; border:1px solid var(--a-border); border-radius:8px; background:#fff; transition:width .25s var(--a-ease); }
+/* Keeps Approve/Reject/Request Changes reachable while the review content
+   below (basic info, location, contacts, photos, history) is scrolled —
+   without this the actions panel is short and scrolls out of view almost
+   immediately, forcing the admin to scroll back up to act. */
+.amx-review-actions{ position:sticky; top:130px; }
 
 @media (max-width:1180px){
   .amx-editor-layout{ grid-template-columns:1fr; }
   .amx-preview-panel{ position:static; }
+  .amx-review-actions{ position:static; }
 }
 
 /* ===== Pages module ===== */
