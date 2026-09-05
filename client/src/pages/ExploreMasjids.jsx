@@ -110,7 +110,7 @@ function ExploreMasjids() {
 
   const activeFilters = [
     q && { key: "q", label: `Search: "${q}"` },
-    ...selectedCategories.map((c) => ({ key: `category:${c}`, label: `Category: ${c}`, category: c })),
+    ...selectedCategories.map((c) => ({ key: `category:${c}`, label: c, category: c })),
   ].filter(Boolean);
 
   const removeFilter = (f) => {

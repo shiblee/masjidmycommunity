@@ -3084,10 +3084,10 @@ footer{
   display:flex; align-items:center; justify-content:space-between; padding:4px 8px 8px; margin-bottom:4px;
   border-bottom:1px solid var(--line); font-size:12.5px; font-weight:700; color:var(--text-on-paper-dim); text-transform:uppercase; letter-spacing:.03em;
 }
-.msj-category-filter-list{ display:flex; flex-direction:column; list-style:none; }
+.msj-category-filter-list{ display:flex; flex-direction:column; list-style:none; gap:1px; }
 .msj-category-filter-list li{ list-style:none; }
 .msj-category-filter-list li label{
-  display:flex; align-items:center; gap:10px; padding:8px; border-radius:8px; font-size:14px; color:var(--text-on-paper); cursor:pointer;
+  display:flex; align-items:center; gap:10px; padding:5px 8px; border-radius:8px; font-size:14px; color:var(--text-on-paper); cursor:pointer; line-height:1.3;
 }
 .msj-category-filter-list li label:hover{ background:var(--paper-dim); }
 .msj-category-filter-list li input{ accent-color:var(--teal-deep); width:16px; height:16px; flex-shrink:0; }
