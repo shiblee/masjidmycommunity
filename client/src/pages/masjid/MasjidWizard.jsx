@@ -8,10 +8,10 @@ import AddressAutocomplete from "../../components/AddressAutocomplete.jsx";
 import MediaThumb from "../../components/MediaThumb.jsx";
 
 const STEPS = [
-  { key: "basic", label: "Basic Info", icon: "mosque", subtitle: "Tell donors and admins who you are — name, story, and location." },
-  { key: "contact", label: "Contact & Verification", icon: "shieldCheck", subtitle: "Add a verified contact so donors and our team can reach you." },
-  { key: "photos", label: "Photos & Media", icon: "camera", subtitle: "Photos build trust — showcase your masjid's spaces and community." },
-  { key: "review", label: "Review & Submit", icon: "sparkle", subtitle: "Double-check everything, then send it off for verification." },
+  { key: "basic", label: "Basic Info", icon: "mosque" },
+  { key: "contact", label: "Contact & Verification", icon: "shieldCheck" },
+  { key: "photos", label: "Photos & Media", icon: "camera" },
+  { key: "review", label: "Review & Submit", icon: "sparkle" },
 ];
 
 const ABOUT_MAX = 5000;
@@ -75,18 +75,6 @@ function WizardStepper({ steps, current }) {
           </div>
         );
       })}
-    </div>
-  );
-}
-
-function StepHeader({ icon, title, subtitle }) {
-  return (
-    <div className="msj-step-header">
-      <span className="msj-step-header-icon"><Icon name={icon} size={20} /></span>
-      <div>
-        <h3>{title}</h3>
-        {subtitle && <p>{subtitle}</p>}
-      </div>
     </div>
   );
 }
@@ -407,13 +395,8 @@ function MasjidWizard({ embedded = false }) {
       <Link to={backTo} className="msj-back-link"><Icon name="chevronLeft" size={16} /> {backLabel}</Link>
 
       <div className="msj-wizard-center">
-        <div className="section-head msj-wizard-title-head" style={{ marginTop: 16, marginBottom: 32 }}>
-          <span className="eyebrow">Register Your Masjid</span>
-          <h2 className="msj-wizard-title">{form.name || "New Masjid Registration"}</h2>
-        </div>
-
         {adminFeedback && status === "changes_requested" && (
-          <div className="msj-feedback-banner">
+          <div className="msj-feedback-banner" style={{ marginTop: 20 }}>
             <strong>Changes requested by the admin</strong>
             <p>{adminFeedback}</p>
           </div>
@@ -427,7 +410,6 @@ function MasjidWizard({ embedded = false }) {
         <div className={`card msj-step-card${step === 3 || step === STEPS.length ? " msj-step-card-wide" : ""}`}>
           {step === 1 && (
             <>
-              <StepHeader icon={STEPS[0].icon} title={STEPS[0].label} subtitle={STEPS[0].subtitle} />
               <Field label="Masjid Name" required error={errors.name}><input value={form.name} onChange={setField("name")} placeholder="e.g. Al-Noor Masjid" maxLength={255} /></Field>
               <div className="msj-field-row">
                 <Field label="Tagline / Short Description" error={errors.tagline}>
@@ -456,7 +438,6 @@ function MasjidWizard({ embedded = false }) {
 
           {step === 2 && (
             <>
-              <StepHeader icon={STEPS[1].icon} title={STEPS[1].label} subtitle={STEPS[1].subtitle} />
               <Field label="Imam Name" required error={errors.imamName}><input value={form.imamName} onChange={setField("imamName")} maxLength={255} /></Field>
 
               <VerifiableField
@@ -486,7 +467,6 @@ function MasjidWizard({ embedded = false }) {
 
           {step === 3 && (
             <>
-              <StepHeader icon={STEPS[2].icon} title={STEPS[2].label} subtitle={STEPS[2].subtitle} />
               <div
                 className={`msj-dropzone${dragOver ? " drag-over" : ""}`}
                 onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
@@ -528,7 +508,6 @@ function MasjidWizard({ embedded = false }) {
 
           {step === STEPS.length && (
             <>
-              <StepHeader icon={STEPS[3].icon} title={STEPS[3].label} subtitle={STEPS[3].subtitle} />
               <MasjidSummary
                 form={form} photos={photos} emailVerified={emailVerified} mobileVerified={mobileVerified}
                 onEdit={setStep}

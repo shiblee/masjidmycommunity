@@ -2696,7 +2696,7 @@ footer{
 .msj-step-dot.done span{ background:rgba(141,198,63,.18); color:var(--teal-deep); }
 
 /* ===== Masjid Wizard: connected stepper, step headers, two-column layout, live preview ===== */
-.msj-stepper{ display:flex; align-items:flex-start; margin-bottom:8px; }
+.msj-stepper{ display:flex; align-items:flex-start; margin-top:22px; margin-bottom:28px; }
 .msj-stepper-item{ flex:1; display:flex; flex-direction:column; align-items:center; position:relative; text-align:center; }
 .msj-stepper-item:not(:first-child)::before{
   content:""; position:absolute; top:18px; left:-50%; width:100%; height:2px; background:var(--line); z-index:0;
@@ -2715,14 +2715,6 @@ footer{
   .msj-stepper-label{ display:none; }
   .msj-stepper-current{ display:block; text-align:center; }
 }
-
-.msj-step-header{ display:flex; gap:14px; align-items:flex-start; margin-bottom:24px; padding-bottom:20px; border-bottom:1px solid var(--line); }
-.msj-step-header-icon{
-  width:42px; height:42px; border-radius:12px; background:var(--paper-dim); color:var(--teal-deep);
-  display:flex; align-items:center; justify-content:center; flex-shrink:0;
-}
-.msj-step-header h3{ font-size:19px; color:var(--text-on-paper); margin:0; }
-.msj-step-header p{ font-size:13.5px; color:var(--text-on-paper-dim); margin-top:4px; line-height:1.5; }
 
 /* Fills cw-main edge-to-edge, same as any other wall content — no extra
    max-width/centering, so it doesn't sit narrower than the column around it. */
