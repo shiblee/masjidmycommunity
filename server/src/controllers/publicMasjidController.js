@@ -72,11 +72,12 @@ async function ratingSummary(masjidId) {
 }
 
 async function withCover(masjid) {
-  const [cover, rating] = await Promise.all([
+  const [cover, photoCount, rating] = await Promise.all([
     MasjidPhoto.findOne({ where: { masjidId: masjid.id, isCover: true } }),
+    MasjidPhoto.count({ where: { masjidId: masjid.id, mediaType: "photo" } }),
     ratingSummary(masjid.id),
   ]);
-  return { ...masjid.toJSON(), coverPhotoUrl: cover?.url || null, ...rating };
+  return { ...masjid.toJSON(), coverPhotoUrl: cover?.url || null, photoCount, ...rating };
 }
 
 async function withCoverAndCampaigns(masjid) {

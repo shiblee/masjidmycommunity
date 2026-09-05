@@ -110,9 +110,31 @@ function MasjidReviewModal({ masjid, initialTab = "overview", onClose }) {
       <div className="msj-modal msj-modal-wide msj-review-modal" onClick={(e) => e.stopPropagation()}>
         <button className="msj-modal-close" onClick={onClose} aria-label="Close"><Icon name="x" size={16} /></button>
 
-        <div className="msj-review-modal-header">
-          <MediaThumb src={masjid.coverPhotoUrl ? `${API_ORIGIN}${masjid.coverPhotoUrl}` : null} className="msj-review-modal-cover" />
-          <div>
+        {tab === "overview" ? (
+          <div className="msj-review-photo-wrap">
+            <MediaThumb src={masjid.coverPhotoUrl ? `${API_ORIGIN}${masjid.coverPhotoUrl}` : null} className="msj-review-modal-photo" />
+            {masjid.photoCount > 0 && (
+              <Link to={`/masjid/${masjid.id}`} className="msj-review-see-photos">
+                <Icon name="imageIcon" size={14} /> See Photos
+              </Link>
+            )}
+          </div>
+        ) : (
+          <div className="msj-review-modal-header">
+            <MediaThumb src={masjid.coverPhotoUrl ? `${API_ORIGIN}${masjid.coverPhotoUrl}` : null} className="msj-review-modal-cover" />
+            <div>
+              <h3>{masjid.name}</h3>
+              <div className="msj-review-modal-rating">
+                <StarRating value={data?.average || 0} size={16} />
+                {data && <span>{data.average.toFixed(1)} ({data.count} review{data.count === 1 ? "" : "s"})</span>}
+              </div>
+              <p className="msj-list-loc"><Icon name="mapPin" size={13} /> {locationOf(masjid)}</p>
+            </div>
+          </div>
+        )}
+
+        {tab === "overview" && (
+          <div className="msj-review-modal-titleblock">
             <h3>{masjid.name}</h3>
             <div className="msj-review-modal-rating">
               <StarRating value={data?.average || 0} size={16} />
@@ -120,7 +142,7 @@ function MasjidReviewModal({ masjid, initialTab = "overview", onClose }) {
             </div>
             <p className="msj-list-loc"><Icon name="mapPin" size={13} /> {locationOf(masjid)}</p>
           </div>
-        </div>
+        )}
 
         <div className="msj-review-tabs">
           <button type="button" className={tab === "overview" ? "active" : ""} onClick={() => setTab("overview")}>Overview</button>

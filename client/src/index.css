@@ -3241,6 +3241,25 @@ footer{
 .msj-rating-chip-count{ font-weight:500; color:var(--text-on-paper-dim); }
 
 .msj-review-modal{ max-width:640px; max-height:85vh; overflow-y:auto; }
+.msj-review-modal .msj-modal-close{
+  background:#fff; box-shadow:0 4px 14px -4px rgba(11,31,30,.4); z-index:2;
+}
+.msj-review-modal .msj-modal-close:hover{ background:#fff; transform:scale(1.05); }
+
+/* Overview tab: a full-bleed hero photo (Google Maps-style place card) —
+   the negative margin cancels .msj-modal's own padding on this one element. */
+.msj-review-photo-wrap{ position:relative; margin:-32px -32px 0; }
+.msj-review-modal-photo{ width:100%; height:280px; object-fit:cover; display:block; border-radius:16px 16px 0 0; background:var(--paper-dim); }
+.msj-review-see-photos{
+  position:absolute; bottom:16px; left:16px; display:flex; align-items:center; gap:8px; padding:9px 16px;
+  background:rgba(11,31,30,.75); color:#fff; border-radius:100px; font-size:13.5px; font-weight:600;
+}
+.msj-review-see-photos:hover{ background:rgba(11,31,30,.9); }
+.msj-review-modal-titleblock{ padding-top:20px; }
+.msj-review-modal-titleblock h3{ font-size:22px; color:var(--text-on-paper); margin-bottom:8px; }
+.msj-review-modal-titleblock .msj-review-modal-rating{ margin-bottom:8px; }
+
+/* Reviews tab keeps the original compact header. */
 .msj-review-modal-header{ display:flex; gap:16px; align-items:flex-start; margin-bottom:4px; }
 .msj-review-modal-cover{ width:96px; height:96px; border-radius:12px; object-fit:cover; flex-shrink:0; background:var(--paper-dim); }
 .msj-review-modal-header h3{ font-size:19px; color:var(--text-on-paper); margin-bottom:6px; padding-right:30px; }
