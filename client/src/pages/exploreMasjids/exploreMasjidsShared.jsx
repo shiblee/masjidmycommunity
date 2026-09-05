@@ -53,6 +53,38 @@ export function DistanceBadge({ userLocation, m }) {
   return <span className="msj-distance-badge"><Icon name="mapPin" size={11} /> {formatDistance(d)}</span>;
 }
 
+/** Opens the platform's own maps app/site for directions — it handles the
+ * user's current-location permission and fallback UI natively (exactly the
+ * "Your location" flow shown in Google Maps), so no in-app geolocation
+ * dance is needed here — just hand off to it with the destination set. */
+export function directionsUrl(m) {
+  if (m.latitude == null || m.longitude == null) return null;
+  return `https://www.google.com/maps/dir/?api=1&destination=${m.latitude},${m.longitude}`;
+}
+
+export function GetDirectionsButton({ m, className = "" }) {
+  const url = directionsUrl(m);
+  if (!url) {
+    return (
+      <span className={`msj-directions-btn disabled ${className}`} title="Location not set for this masjid">
+        <Icon name="compass" size={16} />
+      </span>
+    );
+  }
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={`msj-directions-btn ${className}`}
+      title="Get Directions"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <Icon name="compass" size={16} />
+    </a>
+  );
+}
+
 export function excerpt(text, max = 140) {
   if (!text) return null;
   const trimmed = text.trim();

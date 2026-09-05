@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet.markercluster/dist/MarkerCluster.css";
@@ -8,7 +7,12 @@ import { Icon } from "../../components/Icons.jsx";
 import MediaThumb from "../../components/MediaThumb.jsx";
 import { API_ORIGIN } from "../../config.js";
 import { loadClusterPlugin } from "../../utils/loadMarkerCluster.js";
-import { locationOf, distanceToMasjid, formatDistance } from "./exploreMasjidsShared.jsx";
+import { locationOf, distanceToMasjid, formatDistance, directionsUrl, GetDirectionsButton } from "./exploreMasjidsShared.jsx";
+
+// Same path data as Icons.jsx's "compass" — hand-embedded because this
+// popup is raw HTML (a Leaflet popup, outside the React tree).
+const COMPASS_SVG =
+  '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M15.5 8.5l-2 5-5 2 2-5z"></path></svg>';
 
 const DEFAULT_CENTER = [20.5937, 78.9629];
 const DEFAULT_ZOOM = 4;
@@ -29,18 +33,24 @@ const userIcon = L.divIcon({
 
 function popupHtml(m, distanceLabel) {
   const cover = m.coverPhotoUrl ? `${API_ORIGIN}${m.coverPhotoUrl}` : null;
+  const url = directionsUrl(m);
+  // Two sibling <a> tags, not nested — an <a> can't validly contain another <a>,
+  // and since this is raw HTML (a Leaflet popup, outside React) the browser would
+  // silently mangle the nesting rather than React catching it.
   return `
     <div class="msj-map-popup">
-      ${cover ? `<img src="${cover}" alt="" class="msj-map-popup-thumb" />` : ""}
-      <div class="msj-map-popup-body">
-        <h4>${m.name}</h4>
-        <div class="msj-map-popup-meta">
-          ${m.category ? `<span class="msj-category-badge">${m.category}</span>` : ""}
+      <a href="/masjid/${m.id}" class="msj-map-popup-linkarea">
+        ${cover ? `<img src="${cover}" alt="" class="msj-map-popup-thumb" />` : ""}
+        <div class="msj-map-popup-body">
+          <h4>${m.name}</h4>
+          <div class="msj-map-popup-meta">
+            ${m.category ? `<span class="msj-category-badge">${m.category}</span>` : ""}
+          </div>
+          <p>${locationOf(m)}</p>
+          ${distanceLabel ? `<p class="msj-map-popup-distance">📍 ${distanceLabel} from you</p>` : ""}
         </div>
-        <p>${locationOf(m)}</p>
-        ${distanceLabel ? `<p class="msj-map-popup-distance">📍 ${distanceLabel} from you</p>` : ""}
-        <a href="/masjid/${m.id}">View Details →</a>
-      </div>
+      </a>
+      ${url ? `<a href="${url}" target="_blank" rel="noopener noreferrer" class="msj-directions-btn msj-map-popup-directions">${COMPASS_SVG} Get Directions</a>` : ""}
     </div>
   `;
 }
@@ -166,7 +176,7 @@ function ExploreMasjidsMap({ masjids, selectedId, onSelect, userLocation, onLoca
                 return d != null && <span className="msj-explore-map-item-distance">{formatDistance(d)}</span>;
               })()}
             </div>
-            <Link to={`/masjid/${m.id}`} onClick={(e) => e.stopPropagation()} className="msj-explore-map-item-link">View Details</Link>
+            <GetDirectionsButton m={m} className="msj-explore-map-item-link" />
           </button>
         ))}
       </div>
