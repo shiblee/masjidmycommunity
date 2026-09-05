@@ -2677,6 +2677,11 @@ footer{
 .msj-subhead{ font-size:14px; font-weight:700; color:var(--text-on-paper); margin:20px 0 4px; text-transform:uppercase; letter-spacing:.04em; }
 .msj-field-hint{ display:block; font-size:12px; color:var(--text-on-paper-dim); margin-top:6px; }
 .msj-required{ color:#C24B3F; margin-left:4px; font-weight:700; }
+
+.msj-about-wrap{ position:relative; }
+.msj-about-wrap textarea{ padding-inline-end:46px; }
+.msj-about-wrap .msj-about-mic.mic-btn-wrap{ position:absolute; inset-inline-end:6px; top:6px; bottom:auto; height:auto; }
+.msj-about-wrap .msj-about-mic .mic-btn{ width:40px; height:40px; padding:0; border-radius:50%; }
 .msj-field-row{ display:grid; grid-template-columns:1fr 1fr; gap:0 20px; }
 
 .msj-feedback-banner{

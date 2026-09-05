@@ -6,6 +6,7 @@ import { Icon } from "../../components/Icons.jsx";
 import masjidApi from "../../services/masjidApi.js";
 import AddressAutocomplete from "../../components/AddressAutocomplete.jsx";
 import MediaThumb from "../../components/MediaThumb.jsx";
+import MicButton from "../../components/MicButton.jsx";
 
 const STEPS = [
   { key: "basic", label: "Basic Info", icon: "mosque" },
@@ -39,10 +40,17 @@ const STATUS_LABEL = {
   changes_requested: "Changes Requested", approved: "Approved", rejected: "Rejected", inactive: "Inactive", deleted: "Deleted",
 };
 
-function Field({ label, children, hint, error, required }) {
+function Field({ label, children, hint, error, required, labelExtra }) {
   return (
     <div className={`auth-field${error ? " has-error" : ""}`}>
-      <label>{label}{required && <span className="msj-required">*</span>}</label>
+      {labelExtra ? (
+        <div className="pf-field-label-row">
+          <label>{label}{required && <span className="msj-required">*</span>}</label>
+          {labelExtra}
+        </div>
+      ) : (
+        <label>{label}{required && <span className="msj-required">*</span>}</label>
+      )}
       {children}
       {error ? <span className="auth-field-error">{error}</span> : hint ? <span className="msj-field-hint">{hint}</span> : null}
     </div>
@@ -422,8 +430,22 @@ function MasjidWizard({ embedded = false }) {
                   </select>
                 </Field>
               </div>
-              <Field label="About the Masjid" required error={errors.about}>
-                <textarea rows={5} maxLength={ABOUT_MAX} value={form.about} onChange={setField("about")} placeholder="Share the masjid's history, community, and mission" />
+              <Field
+                label="About the Masjid"
+                required
+                error={errors.about}
+                labelExtra={<span className="pf-char-counter">{form.about.length}/{ABOUT_MAX}</span>}
+              >
+                <div className="msj-about-wrap">
+                  <textarea rows={5} maxLength={ABOUT_MAX} value={form.about} onChange={setField("about")} placeholder="Share the masjid's history, community, and mission" />
+                  <MicButton
+                    onTranscript={(text) => {
+                      setForm((f) => ({ ...f, about: text.slice(0, ABOUT_MAX) }));
+                      setErrors((er) => ({ ...er, about: null }));
+                    }}
+                    className="msj-about-mic"
+                  />
+                </div>
               </Field>
               <Field label="Address" required error={errors.address} hint={!errors.address ? "Search for the masjid by name or address — the rest of the location details fill in automatically." : undefined}>
                 <AddressAutocomplete
