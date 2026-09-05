@@ -50,6 +50,7 @@ function MasjidReview() {
   const [masjid, setMasjid] = useState(null);
   const [photos, setPhotos] = useState([]);
   const [history, setHistory] = useState([]);
+  const [contacts, setContacts] = useState([]);
   const [modal, setModal] = useState(null);
   const [toast, setToast] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -59,6 +60,7 @@ function MasjidReview() {
       setMasjid(data.masjid);
       setPhotos(data.photos);
       setHistory(data.history);
+      setContacts(data.contacts || []);
     });
   };
 
@@ -134,9 +136,36 @@ function MasjidReview() {
           </Section>
 
           <Section title="Contact &amp; Verification">
-            <Row label="Imam" value={masjid.imamName} />
-            <Row label="Email" value={`${masjid.contactEmail || "—"} ${masjid.emailVerified ? "(verified)" : ""}`} />
-            <Row label="Mobile" value={`${masjid.contactMobile || "—"} ${masjid.mobileVerified ? "(verified)" : ""}`} />
+            {contacts.length === 0 ? (
+              <p>No contact people added yet.</p>
+            ) : (
+              <div className="amx-table-wrap">
+                <table className="amx-table">
+                  <thead>
+                    <tr>
+                      <th>Designation</th>
+                      <th>Name</th>
+                      <th>Mobile</th>
+                      <th>Status</th>
+                      <th>Added</th>
+                      <th>Updated</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {contacts.map((c) => (
+                      <tr key={c.id}>
+                        <td><strong>{c.designation}</strong></td>
+                        <td>{c.name}</td>
+                        <td>{c.mobile}</td>
+                        <td><StatusBadge status={c.verified ? "verified" : "pending"} label={c.verified ? "Verified" : "Not Verified"} /></td>
+                        <td>{formatDateTime(c.createdAt)}</td>
+                        <td>{formatDateTime(c.updatedAt)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </Section>
 
           <Section title="Photos & Videos">

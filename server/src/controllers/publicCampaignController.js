@@ -66,7 +66,7 @@ export const getPublicOne = async (req, res) => {
       CampaignPhoto.findAll({ where: { campaignId: campaign.id }, order: [["sortOrder", "ASC"]] }),
       CampaignBudgetItem.findAll({ where: { campaignId: campaign.id }, order: [["sortOrder", "ASC"]] }),
       CampaignUpdate.findAll({ where: { campaignId: campaign.id }, order: [["createdAt", "DESC"]] }),
-      Masjid.findByPk(campaign.masjidId, { attributes: ["id", "name", "city", "country", "tagline", "imamName"] }),
+      Masjid.findByPk(campaign.masjidId, { attributes: ["id", "name", "city", "country", "tagline"] }),
       amountRaised(campaign.id),
       campaign.categoryId ? CampaignCategory.findByPk(campaign.categoryId, { attributes: ["id", "name"] }) : null,
     ]);

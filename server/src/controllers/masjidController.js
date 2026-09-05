@@ -4,16 +4,14 @@ import Masjid from "../models/Masjid.js";
 import MasjidPhoto from "../models/MasjidPhoto.js";
 import MasjidDonationAccount from "../models/MasjidDonationAccount.js";
 import MasjidHistory from "../models/MasjidHistory.js";
+import MasjidContactDesignation from "../models/MasjidContactDesignation.js";
+import MasjidContactPerson from "../models/MasjidContactPerson.js";
 import Campaign from "../models/Campaign.js";
 import DeletionReason from "../models/DeletionReason.js";
 import User from "../models/User.js";
-import { sendNotification, sendMasjidSubmittedAdminEmail, sendMasjidSubmittedUserEmail } from "../services/emailService.js";
+import { sendMasjidSubmittedAdminEmail, sendMasjidSubmittedUserEmail } from "../services/emailService.js";
 import { mediaTypeOf, IMAGE_MAX_BYTES } from "../middleware/upload.js";
 
-const OTP_TTL_MS = 5 * 60 * 1000;
-const EMAIL_RE = /^\S+@\S+\.\S+$/;
-// Indian mobile numbers: 10 digits, first digit 6-9 per the national numbering plan.
-const MOBILE_RE = /^[6-9]\d{9}$/;
 // UPI addressing per NPCI: identifier "@" provider handle.
 const UPI_RE = /^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z][a-zA-Z0-9.\-_]{1,63}$/;
 // RBI format: 4-letter bank code, reserved "0", 6-character branch code.
@@ -22,11 +20,7 @@ const ACCOUNT_RE = /^\d{9,18}$/;
 // A bank-registered holder name: letters, spaces, and the punctuation banks
 // commonly allow (apostrophes, hyphens, periods) — not digits or symbols.
 const NAME_RE = /^[A-Za-z][A-Za-z.'\- ]{1,99}$/;
-const EDITABLE_STATUSES = new Set(["draft", "changes_requested"]);
-
-function generateOtp() {
-  return String(Math.floor(100000 + Math.random() * 900000));
-}
+export const EDITABLE_STATUSES = new Set(["draft", "changes_requested"]);
 
 async function logHistory(masjidId, action, note, actorName) {
   await MasjidHistory.create({ masjidId, action, actorType: "user", actorName: actorName || "Owner", note: note || null });
@@ -42,15 +36,16 @@ async function findOwnedMasjid(req, res) {
 }
 
 async function serializeMasjid(masjid) {
-  const [photos, donationAccount] = await Promise.all([
+  const [photos, donationAccount, contacts] = await Promise.all([
     MasjidPhoto.findAll({ where: { masjidId: masjid.id }, order: [["sortOrder", "ASC"]] }),
     MasjidDonationAccount.findOne({ where: { masjidId: masjid.id } }),
+    MasjidContactPerson.findAll({ where: { masjidId: masjid.id }, order: [["sortOrder", "ASC"]] }),
   ]);
   return {
     ...masjid.toJSON(),
-    otpCode: undefined,
     photos,
     donationAccount: donationAccount ? maskDonationAccount(donationAccount) : null,
+    contacts: contacts.map((c) => ({ ...c.toJSON(), otpCode: undefined })),
   };
 }
 
@@ -125,9 +120,6 @@ const UPDATABLE_FIELDS = [
   "formattedAddress",
   "latitude",
   "longitude",
-  "imamName",
-  "contactMobile",
-  "contactEmail",
 ];
 
 // Matches the VARCHAR(255) columns these fields map to in the masjids table —
@@ -147,7 +139,6 @@ const STRING_FIELD_LABELS = {
   postalCode: "Postal / ZIP Code",
   mapLink: "Map Link",
   formattedAddress: "Formatted Address",
-  imamName: "Imam Name",
 };
 
 export const update = async (req, res) => {
@@ -157,11 +148,6 @@ export const update = async (req, res) => {
     if (!EDITABLE_STATUSES.has(masjid.status)) {
       return res.status(400).json({ message: "This masjid can't be edited while it's under review." });
     }
-
-    const nextContactEmail = req.body.contactEmail?.trim().toLowerCase();
-    const nextContactMobile = req.body.contactMobile?.trim();
-    if (nextContactEmail && nextContactEmail !== masjid.contactEmail) masjid.emailVerified = false;
-    if (nextContactMobile && nextContactMobile !== masjid.contactMobile) masjid.mobileVerified = false;
 
     // Name identifies the record and is required, so an empty value is a bug in
     // the caller rather than an intentional edit — reject it instead of wiping.
@@ -177,8 +163,6 @@ export const update = async (req, res) => {
         return res.status(400).json({ field, message: `${label} must be ${STRING_FIELD_MAX} characters or fewer.` });
       }
     }
-    if (masjid.contactEmail && !EMAIL_RE.test(masjid.contactEmail)) return res.status(400).json({ field: "contactEmail", message: "Enter a valid contact email." });
-    if (masjid.contactMobile && !MOBILE_RE.test(masjid.contactMobile)) return res.status(400).json({ field: "contactMobile", message: "Enter a valid 10-digit Indian mobile number." });
     if (masjid.about && masjid.about.length > 5000) return res.status(400).json({ field: "about", message: "About the Masjid must be 5000 characters or fewer." });
     if (masjid.yearEstablished) {
       const year = Number(masjid.yearEstablished);
@@ -362,74 +346,6 @@ export const deletePhoto = async (req, res) => {
   }
 };
 
-export const sendMasjidOtp = async (req, res) => {
-  try {
-    const masjid = await findOwnedMasjid(req, res);
-    if (!masjid) return;
-    const target = req.body.target === "mobile" ? "mobile" : "email";
-    if (target === "email" && !masjid.contactEmail) return res.status(400).json({ message: "Add a contact email first." });
-    if (target === "mobile" && !masjid.contactMobile) return res.status(400).json({ message: "Add a contact mobile number first." });
-
-    const otp = generateOtp();
-    masjid.otpCode = otp;
-    masjid.otpExpiresAt = new Date(Date.now() + OTP_TTL_MS);
-    masjid.otpTarget = target;
-    masjid.otpAttempts = 0;
-    await masjid.save();
-
-    let emailSent = false;
-    if (target === "email") {
-      const owner = await User.findByPk(req.user.id);
-      const result = await sendNotification("otp_verification", {
-        to: masjid.contactEmail,
-        variables: { user_name: masjid.imamName || owner?.fullName || "there", otp_code: otp },
-        userMeta: { userId: req.user.id, userEmail: masjid.contactEmail },
-      }).catch(() => ({ sent: false }));
-      emailSent = result.sent;
-    }
-
-    res.json({
-      otpTarget: target,
-      demoOtp: otp,
-      emailSent,
-      message: `A verification code has been sent to the masjid's ${target === "email" ? "email address" : "mobile number"}.`,
-    });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-export const confirmMasjidOtp = async (req, res) => {
-  try {
-    const masjid = await findOwnedMasjid(req, res);
-    if (!masjid) return;
-    const { otp } = req.body;
-    if (!masjid.otpTarget) return res.status(400).json({ message: "There is no pending verification for this masjid." });
-    if (!masjid.otpExpiresAt || new Date(masjid.otpExpiresAt) < new Date()) {
-      return res.status(400).json({ message: "This code has expired. Please request a new one.", code: "EXPIRED" });
-    }
-    if (String(otp).trim() !== masjid.otpCode) {
-      masjid.otpAttempts += 1;
-      await masjid.save();
-      return res.status(400).json({ message: "Incorrect code. Please try again.", code: "INVALID" });
-    }
-
-    if (masjid.otpTarget === "email") masjid.emailVerified = true;
-    else masjid.mobileVerified = true;
-    const verifiedTarget = masjid.otpTarget;
-
-    masjid.otpCode = null;
-    masjid.otpExpiresAt = null;
-    masjid.otpTarget = null;
-    masjid.otpAttempts = 0;
-    await masjid.save();
-
-    res.json({ verified: true, target: verifiedTarget });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
 export const submit = async (req, res) => {
   try {
     const masjid = await findOwnedMasjid(req, res);
@@ -438,21 +354,28 @@ export const submit = async (req, res) => {
       return res.status(400).json({ message: "This masjid has already been submitted." });
     }
 
-    const required = ["name", "about", "address", "city", "country", "imamName"];
+    const required = ["name", "about", "address", "city", "country"];
     const missing = required.filter((f) => !masjid[f]?.toString().trim());
     if (missing.length) {
       const labels = missing.map((f) => STRING_FIELD_LABELS[f] || f);
       return res.status(400).json({ message: `Please complete: ${labels.join(", ")}.` });
     }
 
-    if (!masjid.contactMobile) return res.status(400).json({ message: "A contact mobile number is required." });
-    if (!masjid.mobileVerified) {
-      return res.status(400).json({ message: "Please verify the masjid's contact mobile number before submitting." });
+    // The mandatory-office-bearers gate: every isRequired designation (seeded
+    // with Imam/Mutawalli/Secretary, but admin-configurable) must have a
+    // verified person before a masjid can be submitted. Enforced here (not
+    // just in the wizard's UI) so it can't be bypassed by a direct API call.
+    const requiredDesignations = await MasjidContactDesignation.findAll({ where: { isRequired: true } });
+    const contacts = await MasjidContactPerson.findAll({ where: { masjidId: masjid.id } });
+    const missingDesignations = requiredDesignations.filter(
+      (d) => !contacts.some((c) => c.designation === d.name && c.verified)
+    );
+    if (missingDesignations.length) {
+      return res.status(400).json({
+        message: `Masjid verification cannot continue. Please add and verify the mobile number${missingDesignations.length > 1 ? "s" : ""} of the ${missingDesignations.map((d) => d.name).join(", ")}.`,
+      });
     }
-    // Email is optional, but once supplied it has to be verified like the mobile.
-    if (masjid.contactEmail && !masjid.emailVerified) {
-      return res.status(400).json({ message: "Please verify the masjid's email address, or remove it before submitting." });
-    }
+
     const photoCount = await MasjidPhoto.count({ where: { masjidId: masjid.id } });
     if (photoCount === 0) return res.status(400).json({ message: "Upload at least one photograph before submitting." });
 

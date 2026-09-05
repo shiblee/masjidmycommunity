@@ -5,6 +5,7 @@
 // and filtering log rows) so the two never drift apart.
 export const META_ENTITY_LABELS = {
   "masjid-category": "Masjid Category",
+  "masjid-contact-designation": "Masjid Contact Designation",
   "campaign-category": "Campaign Category",
   "campaign-classification": "Fundraising Classification",
   "concern-type": "Type of Concern",

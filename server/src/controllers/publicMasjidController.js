@@ -2,6 +2,8 @@ import { Op } from "sequelize";
 import Masjid from "../models/Masjid.js";
 import MasjidPhoto from "../models/MasjidPhoto.js";
 import MasjidCategory from "../models/MasjidCategory.js";
+import MasjidContactDesignation from "../models/MasjidContactDesignation.js";
+import MasjidContactPerson from "../models/MasjidContactPerson.js";
 import Bank from "../models/Bank.js";
 import DeletionReason from "../models/DeletionReason.js";
 
@@ -40,7 +42,10 @@ export const getPublicOne = async (req, res) => {
     if (!masjid) return res.status(404).json({ message: "Masjid not found." });
 
     const photos = await MasjidPhoto.findAll({ where: { masjidId: masjid.id }, order: [["sortOrder", "ASC"]] });
-    res.json({ masjid: masjid.toJSON(), photos });
+    // The public profile still shows an "Imam" line — sourced from the
+    // office-bearers list now rather than a single column on Masjid.
+    const imam = await MasjidContactPerson.findOne({ where: { masjidId: masjid.id, designation: "Imam" } });
+    res.json({ masjid: { ...masjid.toJSON(), imamName: imam?.name || null }, photos });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -50,6 +55,19 @@ export const listCategories = async (req, res) => {
   try {
     const categories = await MasjidCategory.findAll({ where: { isActive: true }, order: [["sortOrder", "ASC"]], attributes: ["id", "name"] });
     res.json({ categories });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const listContactDesignations = async (req, res) => {
+  try {
+    const designations = await MasjidContactDesignation.findAll({
+      where: { isActive: true },
+      order: [["sortOrder", "ASC"]],
+      attributes: ["id", "name", "isRequired"],
+    });
+    res.json({ designations });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

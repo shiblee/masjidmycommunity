@@ -31,9 +31,10 @@ function emptyForm() {
     name: "", tagline: "", about: "", category: "",
     address: "", area: "", city: "", district: "", state: "", country: "", postalCode: "", mapLink: "",
     formattedAddress: "", latitude: null, longitude: null,
-    imamName: "", contactMobile: "", contactEmail: "",
   };
 }
+
+const MOBILE_RE = /^[6-9]\d{9}$/;
 
 const STATUS_LABEL = {
   draft: "Draft", submitted: "Submitted", under_review: "Under Review",
@@ -87,6 +88,296 @@ function WizardStepper({ steps, current }) {
   );
 }
 
+function ContactPersonForm({ masjidId, designations, contact, initialDesignation, onCancel, onSaved, onRemoved }) {
+  const isEdit = !!contact;
+  const [designation, setDesignation] = useState(contact?.designation || initialDesignation || "");
+  const [name, setName] = useState(contact?.name || "");
+  const [mobile, setMobile] = useState(contact?.mobile || "");
+  const [contactId, setContactId] = useState(contact?.id || null);
+  const [verified, setVerified] = useState(contact?.verified || false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  const [otpOpen, setOtpOpen] = useState(false);
+  const [otpSending, setOtpSending] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
+  const [otpError, setOtpError] = useState("");
+  const [demoOtp, setDemoOtp] = useState("");
+
+  const mobileChanged = mobile !== (contact?.mobile || "");
+  const effectiveVerified = verified && !mobileChanged;
+
+  const persist = async () => {
+    if (!designation) {
+      setError("Please select a designation.");
+      return null;
+    }
+    if (!name.trim()) {
+      setError("Name is required.");
+      return null;
+    }
+    if (!MOBILE_RE.test(mobile)) {
+      setError("Enter a valid 10-digit Indian mobile number.");
+      return null;
+    }
+    setSaving(true);
+    setError("");
+    try {
+      const payload = { designation, name: name.trim(), mobile };
+      const { data } = contactId
+        ? await masjidApi.patch(`/${masjidId}/contacts/${contactId}`, payload)
+        : await masjidApi.post(`/${masjidId}/contacts`, payload);
+      setContactId(data.contact.id);
+      setVerified(data.contact.verified);
+      return data.contact;
+    } catch (err) {
+      setError(err.response?.data?.message || "Couldn't save this person.");
+      return null;
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const startVerify = async () => {
+    const saved = await persist();
+    if (!saved) return;
+    setOtpSending(true);
+    setOtpError("");
+    setOtpCode("");
+    try {
+      const { data } = await masjidApi.post(`/${masjidId}/contacts/${saved.id}/send-otp`);
+      setDemoOtp(data.demoOtp || "");
+      setOtpOpen(true);
+    } catch (err) {
+      setError(err.response?.data?.message || "Couldn't send the verification code.");
+    } finally {
+      setOtpSending(false);
+    }
+  };
+
+  const resendOtp = async () => {
+    setOtpSending(true);
+    setOtpError("");
+    try {
+      const { data } = await masjidApi.post(`/${masjidId}/contacts/${contactId}/send-otp`);
+      setDemoOtp(data.demoOtp || "");
+    } catch (err) {
+      setOtpError(err.response?.data?.message || "Couldn't resend the code.");
+    } finally {
+      setOtpSending(false);
+    }
+  };
+
+  const confirmVerify = async () => {
+    setOtpError("");
+    try {
+      const { data } = await masjidApi.post(`/${masjidId}/contacts/${contactId}/confirm-otp`, { otp: otpCode });
+      setVerified(data.contact.verified);
+      setOtpOpen(false);
+    } catch (err) {
+      setOtpError(err.response?.data?.message || "Incorrect code.");
+    }
+  };
+
+  const done = async () => {
+    const saved = await persist();
+    if (saved) onSaved(saved);
+  };
+
+  const remove = async () => {
+    if (!contactId) {
+      onCancel();
+      return;
+    }
+    setSaving(true);
+    setError("");
+    try {
+      await masjidApi.delete(`/${masjidId}/contacts/${contactId}`);
+      onRemoved(contactId);
+    } catch (err) {
+      setError(err.response?.data?.message || "Couldn't remove this person.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="msj-contact-form">
+      <h4>{isEdit ? "Edit Contact Person" : "Add Contact Person"}</h4>
+      <Field label="Designation" required>
+        <select value={designation} onChange={(e) => setDesignation(e.target.value)}>
+          <option value="">Select a designation</option>
+          {designations.map((d) => <option key={d.id} value={d.name}>{d.name}</option>)}
+        </select>
+      </Field>
+      <Field label="Name" required>
+        <input value={name} onChange={(e) => setName(e.target.value)} maxLength={255} placeholder="Full name" />
+      </Field>
+      <Field label="Mobile Number" required hint={effectiveVerified ? undefined : "Changing a verified number requires re-verification."}>
+        <div className="msj-verifiable-row">
+          <input
+            value={mobile}
+            onChange={(e) => setMobile(e.target.value.replace(/\D/g, "").slice(0, 10))}
+            placeholder="10-digit mobile number"
+            maxLength={10}
+          />
+          {effectiveVerified ? (
+            <span className="acct-status-pill active"><Icon name="check" size={13} /> Verified</span>
+          ) : (
+            <button className="btn btn-outline-ink" type="button" disabled={!mobile || otpSending || saving} onClick={startVerify}>
+              {otpSending ? "Sending…" : "Verify Mobile"}
+            </button>
+          )}
+        </div>
+      </Field>
+
+      {error && <div className="auth-alert" style={{ marginBottom: 16 }}><Icon name="info" size={17} />{error}</div>}
+
+      <div style={{ display: "flex", gap: 10, marginTop: 8, flexWrap: "wrap", alignItems: "center" }}>
+        <button className="btn btn-gold" type="button" onClick={done} disabled={saving}>{saving ? "Saving…" : "Save"}</button>
+        <button className="btn btn-outline-ink" type="button" onClick={onCancel} disabled={saving}>Cancel</button>
+        {isEdit && (
+          <button className="msj-resend-link" type="button" style={{ marginLeft: "auto", width: "auto" }} onClick={remove} disabled={saving}>
+            Remove this person
+          </button>
+        )}
+      </div>
+
+      {otpOpen && (
+        <div className="msj-modal-overlay" onClick={() => setOtpOpen(false)}>
+          <div className="msj-modal" onClick={(e) => e.stopPropagation()}>
+            <button className="msj-modal-close" onClick={() => setOtpOpen(false)} aria-label="Close"><Icon name="x" size={16} /></button>
+            <h3>Verify Mobile Number</h3>
+            <p className="msj-modal-sub">Enter the 6-digit code sent to {mobile}.</p>
+            {demoOtp && <p className="msj-note">Demo mode — verification code: <strong>{demoOtp}</strong></p>}
+            <div className="auth-field">
+              <input value={otpCode} onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="6-digit code" maxLength={6} style={{ letterSpacing: "6px", textAlign: "center", fontSize: 20 }} />
+            </div>
+            {otpError && <span className="auth-field-error">{otpError}</span>}
+            <button className="btn btn-gold" style={{ width: "100%", marginTop: 12 }} onClick={confirmVerify} type="button">Verify</button>
+            <button className="msj-resend-link" type="button" onClick={resendOtp} disabled={otpSending}>{otpSending ? "Sending…" : "Resend code"}</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ContactPeopleSection({ masjidId, contacts, setContacts, designations }) {
+  const [formTarget, setFormTarget] = useState(null); // null | "new" | contact object | { designation } prefill
+
+  const requiredDesignations = designations.filter((d) => d.isRequired);
+  const optionalContacts = contacts.filter((c) => !requiredDesignations.some((d) => d.name === c.designation));
+  const verifiedCount = requiredDesignations.filter((d) => contacts.some((c) => c.designation === d.name && c.verified)).length;
+
+  const upsert = (contact) => {
+    setContacts((cs) => (cs.some((c) => c.id === contact.id) ? cs.map((c) => (c.id === contact.id ? contact : c)) : [...cs, contact]));
+    setFormTarget(null);
+  };
+  const removed = (contactId) => {
+    setContacts((cs) => cs.filter((c) => c.id !== contactId));
+    setFormTarget(null);
+  };
+
+  if (formTarget) {
+    const editing = formTarget !== "new" && formTarget.id ? formTarget : null;
+    const prefill = formTarget !== "new" && !editing ? formTarget.designation : undefined;
+    return (
+      <ContactPersonForm
+        masjidId={masjidId}
+        designations={designations}
+        contact={editing}
+        initialDesignation={prefill}
+        onCancel={() => setFormTarget(null)}
+        onSaved={upsert}
+        onRemoved={removed}
+      />
+    );
+  }
+
+  return (
+    <>
+      <div className="msj-contact-progress">
+        <div className="msj-contact-progress-top">
+          <strong>Mandatory Verification: {verifiedCount} of {requiredDesignations.length} Completed</strong>
+          <div className="msj-contact-progress-bar">
+            <div className="msj-contact-progress-fill" style={{ width: `${requiredDesignations.length ? (verifiedCount / requiredDesignations.length) * 100 : 0}%` }} />
+          </div>
+        </div>
+        <div className="msj-contact-checklist">
+          {requiredDesignations.map((d) => {
+            const c = contacts.find((c) => c.designation === d.name);
+            const isDone = !!c?.verified;
+            return (
+              <span key={d.id} className={`msj-contact-check-item ${isDone ? "done" : "pending"}`}>
+                <Icon name={isDone ? "check" : "info"} size={14} />
+                {d.name} — {isDone ? "Verified" : c ? "Verification Required" : "Not Added"}
+              </span>
+            );
+          })}
+        </div>
+      </div>
+
+      <p className="msj-note" style={{ marginBottom: 16 }}>
+        Please add the key people responsible for this masjid. At least an Imam, Mutawalli, and Secretary must be added and their mobile numbers verified.
+      </p>
+
+      <div className="msj-contact-table-wrap">
+        <table className="msj-contact-table">
+          <thead>
+            <tr><th>Designation</th><th>Name</th><th>Mobile</th><th>Status</th><th></th></tr>
+          </thead>
+          <tbody>
+            {requiredDesignations.map((d) => {
+              const c = contacts.find((c) => c.designation === d.name);
+              return (
+                <tr key={d.id}>
+                  <td><strong>{d.name}</strong></td>
+                  <td className={c ? "" : "msj-contact-muted"}>{c?.name || "—"}</td>
+                  <td className={c ? "" : "msj-contact-muted"}>{c?.mobile || "—"}</td>
+                  <td>
+                    {c?.verified ? (
+                      <span className="acct-status-pill active"><Icon name="check" size={12} /> Verified</span>
+                    ) : (
+                      <span className="acct-status-pill changes_requested"><Icon name="info" size={12} /> {c ? "Not Verified" : "Required"}</span>
+                    )}
+                  </td>
+                  <td style={{ textAlign: "right" }}>
+                    <button type="button" className="btn btn-outline-ink" onClick={() => setFormTarget(c || { designation: d.name })}>
+                      {c ? "Edit" : "Add"}
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+            {optionalContacts.map((c) => (
+              <tr key={c.id}>
+                <td><strong>{c.designation}</strong></td>
+                <td>{c.name}</td>
+                <td>{c.mobile}</td>
+                <td>
+                  {c.verified ? (
+                    <span className="acct-status-pill active"><Icon name="check" size={12} /> Verified</span>
+                  ) : (
+                    <span className="acct-status-pill changes_requested"><Icon name="info" size={12} /> Not Verified</span>
+                  )}
+                </td>
+                <td style={{ textAlign: "right" }}>
+                  <button type="button" className="btn btn-outline-ink" onClick={() => setFormTarget(c)}>Edit</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <button type="button" className="btn btn-outline-ink" onClick={() => setFormTarget("new")}>
+        <Icon name="plus" size={16} /> Add More Person
+      </button>
+    </>
+  );
+}
+
 function MasjidWizard({ embedded = false }) {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -98,8 +389,8 @@ function MasjidWizard({ embedded = false }) {
   const [adminFeedback, setAdminFeedback] = useState(null);
   const [form, setForm] = useState(emptyForm());
   const [categories, setCategories] = useState([]);
-  const [emailVerified, setEmailVerified] = useState(false);
-  const [mobileVerified, setMobileVerified] = useState(false);
+  const [designations, setDesignations] = useState([]);
+  const [contacts, setContacts] = useState([]);
   const [photos, setPhotos] = useState([]);
   const [uploadCategory, setUploadCategory] = useState("exterior");
   const [dragOver, setDragOver] = useState(false);
@@ -109,12 +400,6 @@ function MasjidWizard({ embedded = false }) {
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState({});
   const [submitted, setSubmitted] = useState(false);
-
-  const [otpTarget, setOtpTarget] = useState(null);
-  const [otpSending, setOtpSending] = useState(false);
-  const [otpCode, setOtpCode] = useState("");
-  const [demoOtp, setDemoOtp] = useState("");
-  const [otpError, setOtpError] = useState("");
 
   // Advancing steps doesn't change the URL (this wizard can be embedded
   // inline on the Community Wall), so the router's own scroll-to-top never
@@ -127,6 +412,10 @@ function MasjidWizard({ embedded = false }) {
     axios
       .get(`${API_BASE}/masjids/public/categories`)
       .then(({ data }) => setCategories([...data.categories].sort((a, b) => a.name.localeCompare(b.name))))
+      .catch(() => {});
+    axios
+      .get(`${API_BASE}/masjids/public/contact-designations`)
+      .then(({ data }) => setDesignations(data.designations || []))
       .catch(() => {});
   }, []);
 
@@ -158,8 +447,7 @@ function MasjidWizard({ embedded = false }) {
       setStatus("draft");
       setAdminFeedback(null);
       setForm(emptyForm());
-      setEmailVerified(false);
-      setMobileVerified(false);
+      setContacts([]);
       setPhotos([]);
       setStep(1);
       setErrors({});
@@ -184,10 +472,8 @@ function MasjidWizard({ embedded = false }) {
           formattedAddress: m.formattedAddress || "",
           latitude: m.latitude != null ? Number(m.latitude) : null,
           longitude: m.longitude != null ? Number(m.longitude) : null,
-          imamName: m.imamName || "", contactMobile: m.contactMobile || "", contactEmail: m.contactEmail || "",
         });
-        setEmailVerified(m.emailVerified);
-        setMobileVerified(m.mobileVerified);
+        setContacts(m.contacts || []);
         setPhotos(m.photos || []);
         setLoaded(true);
       })
@@ -200,26 +486,18 @@ function MasjidWizard({ embedded = false }) {
     setForm((f) => ({ ...f, [key]: e.target.value }));
     setErrors((er) => ({ ...er, [key]: null }));
   };
+  const missingMandatoryContacts = () =>
+    designations
+      .filter((d) => d.isRequired)
+      .filter((d) => !contacts.some((c) => c.designation === d.name && c.verified));
+
   const validateStep = () => {
     if (step === 2) {
-      if (!form.imamName?.trim()) {
-        setErrors({ imamName: "Imam name is required." });
-        return false;
-      }
-      if (!form.contactMobile?.trim()) {
-        setErrors({ contactMobile: "A contact mobile number is required." });
-        return false;
-      }
-      if (!/^[6-9]\d{9}$/.test(form.contactMobile.trim())) {
-        setErrors({ contactMobile: "Enter a valid 10-digit Indian mobile number." });
-        return false;
-      }
-      if (!mobileVerified) {
-        setErrors({ contactMobile: "Please verify the contact mobile number before continuing." });
-        return false;
-      }
-      if (form.contactEmail?.trim() && !emailVerified) {
-        setErrors({ contactEmail: "Please verify the email address, or clear it to continue without one." });
+      const missing = missingMandatoryContacts();
+      if (missing.length) {
+        setErrors({
+          form: `Masjid verification cannot continue. Please add and verify the mobile number${missing.length > 1 ? "s" : ""} of the ${missing.map((d) => d.name).join(", ")}.`,
+        });
         return false;
       }
     }
@@ -273,35 +551,6 @@ function MasjidWizard({ embedded = false }) {
   const saveAsDraft = async () => {
     const ok = await saveCurrentStep();
     if (ok) navigate("/account/my-masjids");
-  };
-
-  const sendOtp = async (target) => {
-    const ok = await saveCurrentStep();
-    if (!ok) return;
-    setOtpSending(true);
-    setOtpError("");
-    setOtpCode("");
-    try {
-      const { data } = await masjidApi.post(`/${masjidId}/verify/send-otp`, { target });
-      setDemoOtp(data.demoOtp || "");
-      setOtpTarget(target);
-    } catch (err) {
-      setErrors((er) => ({ ...er, [target === "email" ? "contactEmail" : "contactMobile"]: err.response?.data?.message || "Couldn't send the verification code." }));
-    } finally {
-      setOtpSending(false);
-    }
-  };
-
-  const confirmOtp = async () => {
-    setOtpError("");
-    try {
-      const { data } = await masjidApi.post(`/${masjidId}/verify/confirm-otp`, { otp: otpCode });
-      if (data.target === "email") setEmailVerified(true);
-      else setMobileVerified(true);
-      setOtpTarget(null);
-    } catch (err) {
-      setOtpError(err.response?.data?.message || "Incorrect code.");
-    }
   };
 
   const handleFiles = async (e) => {
@@ -392,7 +641,7 @@ function MasjidWizard({ embedded = false }) {
               <p>{adminFeedback}</p>
             </div>
           )}
-          <MasjidSummary form={form} photos={photos} emailVerified={emailVerified} mobileVerified={mobileVerified} />
+          <MasjidSummary form={form} photos={photos} contacts={contacts} />
         </div>
       </WizardShell>
     );
@@ -415,7 +664,7 @@ function MasjidWizard({ embedded = false }) {
 
         {errors.form && <div className="auth-alert" style={{ marginBottom: 20 }}><Icon name="info" size={17} />{errors.form}</div>}
 
-        <div className={`card msj-step-card${step === 3 || step === STEPS.length ? " msj-step-card-wide" : ""}`}>
+        <div className={`card msj-step-card${step === 2 || step === 3 || step === STEPS.length ? " msj-step-card-wide" : ""}`}>
           {step === 1 && (
             <>
               <Field label="Masjid Name" required error={errors.name}><input value={form.name} onChange={setField("name")} placeholder="e.g. Al-Noor Masjid" maxLength={255} /></Field>
@@ -459,32 +708,12 @@ function MasjidWizard({ embedded = false }) {
           )}
 
           {step === 2 && (
-            <>
-              <Field label="Imam Name" required error={errors.imamName}><input value={form.imamName} onChange={setField("imamName")} maxLength={255} /></Field>
-
-              <VerifiableField
-                label="Contact Mobile Number"
-                required
-                value={form.contactMobile}
-                onChange={(e) => setField("contactMobile")({ target: { value: e.target.value.replace(/\D/g, "").slice(0, 10) } })}
-                placeholder="10-digit mobile number"
-                maxLength={10}
-                verified={mobileVerified}
-                sending={otpSending}
-                onVerify={() => sendOtp("mobile")}
-                error={errors.contactMobile}
-              />
-              <VerifiableField
-                label="Email Address"
-                value={form.contactEmail}
-                onChange={setField("contactEmail")}
-                placeholder="masjid@example.com"
-                verified={emailVerified}
-                sending={otpSending}
-                onVerify={() => sendOtp("email")}
-                error={errors.contactEmail}
-              />
-            </>
+            <ContactPeopleSection
+              masjidId={masjidId}
+              contacts={contacts}
+              setContacts={setContacts}
+              designations={designations}
+            />
           )}
 
           {step === 3 && (
@@ -531,7 +760,7 @@ function MasjidWizard({ embedded = false }) {
           {step === STEPS.length && (
             <>
               <MasjidSummary
-                form={form} photos={photos} emailVerified={emailVerified} mobileVerified={mobileVerified}
+                form={form} photos={photos} contacts={contacts}
                 onEdit={setStep}
               />
               {errors.submit && <span className="auth-field-error" style={{ display: "block", marginTop: 12 }}>{errors.submit}</span>}
@@ -550,45 +779,11 @@ function MasjidWizard({ embedded = false }) {
           </div>
         </div>
         </div>
-
-      {otpTarget && (
-        <div className="msj-modal-overlay" onClick={() => setOtpTarget(null)}>
-          <div className="msj-modal" onClick={(e) => e.stopPropagation()}>
-            <button className="msj-modal-close" onClick={() => setOtpTarget(null)} aria-label="Close"><Icon name="x" size={16} /></button>
-            <h3>Verify {otpTarget === "email" ? "Email Address" : "Mobile Number"}</h3>
-            <p className="msj-modal-sub">Enter the 6-digit code sent to {otpTarget === "email" ? form.contactEmail : form.contactMobile}.</p>
-            {demoOtp && <p className="msj-note">Demo mode — verification code: <strong>{demoOtp}</strong></p>}
-            <div className="auth-field">
-              <input value={otpCode} onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="6-digit code" maxLength={6} style={{ letterSpacing: "6px", textAlign: "center", fontSize: 20 }} />
-            </div>
-            {otpError && <span className="auth-field-error">{otpError}</span>}
-            <button className="btn btn-gold" style={{ width: "100%", marginTop: 12 }} onClick={confirmOtp} type="button">Verify</button>
-            <button className="msj-resend-link" type="button" onClick={() => sendOtp(otpTarget)}>Resend code</button>
-          </div>
-        </div>
-      )}
     </WizardShell>
   );
 }
 
-function VerifiableField({ label, value, onChange, placeholder, maxLength, verified, sending, onVerify, hint, error, required }) {
-  return (
-    <div className={`auth-field msj-verifiable-field${error ? " has-error" : ""}`}>
-      <label>{label}{required && <span className="msj-required">*</span>}</label>
-      <div className="msj-verifiable-row">
-        <input value={value} onChange={onChange} placeholder={placeholder} maxLength={maxLength} />
-        {verified ? (
-          <span className="acct-status-pill active"><Icon name="check" size={13} /> Verified</span>
-        ) : (
-          <button className="btn btn-outline-ink" type="button" disabled={!value || sending} onClick={onVerify}>{sending ? "Sending…" : "Verify"}</button>
-        )}
-      </div>
-      {error ? <span className="auth-field-error">{error}</span> : hint ? <span className="msj-field-hint">{hint}</span> : null}
-    </div>
-  );
-}
-
-function MasjidSummary({ form, photos, emailVerified, mobileVerified, onEdit }) {
+function MasjidSummary({ form, photos, contacts, onEdit }) {
   // A video can never be the cover (enforced server-side too) — a masjid
   // with only videos uploaded falls back to the branded placeholder instead
   // of silently rendering a video where a still image is expected.
@@ -604,8 +799,15 @@ function MasjidSummary({ form, photos, emailVerified, mobileVerified, onEdit }) 
       </div>
       <div className="msj-summary-block">
         <div className="msj-summary-head"><h4>Contact &amp; Verification</h4>{onEdit && <button type="button" onClick={() => onEdit(2)}>Edit</button>}</div>
-        <p>Imam: {form.imamName || "—"}</p>
-        <p>{form.contactEmail || "—"} {emailVerified && "(verified)"} · {form.contactMobile || "—"} {mobileVerified && "(verified)"}</p>
+        {contacts.length === 0 ? (
+          <p>No contact people added yet.</p>
+        ) : (
+          contacts.map((c) => (
+            <p key={c.id}>
+              {c.designation}: {c.name} — {c.mobile} {c.verified ? "(verified)" : "(not verified)"}
+            </p>
+          ))
+        )}
       </div>
       <div className="msj-summary-block">
         <div className="msj-summary-head"><h4>Photographs</h4>{onEdit && <button type="button" onClick={() => onEdit(3)}>Edit</button>}</div>

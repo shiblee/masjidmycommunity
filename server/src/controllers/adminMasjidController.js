@@ -3,6 +3,7 @@ import Masjid from "../models/Masjid.js";
 import MasjidPhoto from "../models/MasjidPhoto.js";
 import MasjidDonationAccount from "../models/MasjidDonationAccount.js";
 import MasjidHistory from "../models/MasjidHistory.js";
+import MasjidContactPerson from "../models/MasjidContactPerson.js";
 import User from "../models/User.js";
 import { recordMasjidApprovedActivity } from "../services/communityActivityService.js";
 import { sendMasjidChangesRequestedEmail } from "../services/emailService.js";
@@ -49,6 +50,12 @@ export const listAll = async (req, res) => {
         where: { [Op.or]: [{ fullName: like }, { email: like }, { mobile: like }] },
         attributes: ["id"],
       });
+      // Office-bearer name/mobile now lives on MasjidContactPerson, not a
+      // column on Masjid itself — matched via masjidId like matchingOwners.
+      const matchingContacts = await MasjidContactPerson.findAll({
+        where: { [Op.or]: [{ name: like }, { mobile: like }] },
+        attributes: ["masjidId"],
+      });
       const matchingStatuses = Object.entries(STATUS_LABELS)
         .filter(([key, label]) => key.includes(term.toLowerCase()) || label.toLowerCase().includes(term.toLowerCase()))
         .map(([key]) => key);
@@ -64,12 +71,10 @@ export const listAll = async (req, res) => {
         { state: like },
         { country: like },
         { postalCode: like },
-        { imamName: like },
-        { contactMobile: like },
-        { contactEmail: like },
         ...(asId !== null ? [{ id: asId }] : []),
         ...(matchingOwners.length ? [{ userId: { [Op.in]: matchingOwners.map((u) => u.id) } }] : []),
         ...(matchingStatuses.length ? [{ status: { [Op.in]: matchingStatuses } }] : []),
+        ...(matchingContacts.length ? [{ id: { [Op.in]: matchingContacts.map((c) => c.masjidId) } }] : []),
       ];
     }
 
@@ -135,17 +140,19 @@ export const getOne = async (req, res) => {
     const masjid = await Masjid.findByPk(req.params.id);
     if (!masjid) return res.status(404).json({ message: "Masjid not found." });
 
-    const [photos, donationAccount, history] = await Promise.all([
+    const [photos, donationAccount, history, contacts] = await Promise.all([
       MasjidPhoto.findAll({ where: { masjidId: masjid.id }, order: [["sortOrder", "ASC"]] }),
       MasjidDonationAccount.findOne({ where: { masjidId: masjid.id } }),
       MasjidHistory.findAll({ where: { masjidId: masjid.id }, order: [["createdAt", "DESC"]] }),
+      MasjidContactPerson.findAll({ where: { masjidId: masjid.id }, order: [["sortOrder", "ASC"]] }),
     ]);
 
     res.json({
-      masjid: { ...masjid.toJSON(), otpCode: undefined },
+      masjid: masjid.toJSON(),
       photos,
       donationAccount: donationAccount?.toJSON() || null,
       history,
+      contacts: contacts.map((c) => ({ ...c.toJSON(), otpCode: undefined })),
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

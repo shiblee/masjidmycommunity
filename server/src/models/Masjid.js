@@ -24,16 +24,11 @@ const Masjid = sequelize.define(
     latitude: { type: DataTypes.DECIMAL(10, 7), allowNull: true },
     longitude: { type: DataTypes.DECIMAL(10, 7), allowNull: true },
 
-    imamName: { type: DataTypes.STRING, allowNull: true },
-    contactMobile: { type: DataTypes.STRING, allowNull: true },
-    contactEmail: { type: DataTypes.STRING, allowNull: true },
-    mobileVerified: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
-    emailVerified: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
-
-    otpCode: { type: DataTypes.STRING, allowNull: true },
-    otpExpiresAt: { type: DataTypes.DATE, allowNull: true },
-    otpTarget: { type: DataTypes.ENUM("email", "mobile"), allowNull: true },
-    otpAttempts: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+    // Contact & verification moved to a list of office-bearers — see
+    // MasjidContactPerson (one row per designation, each independently
+    // OTP-verified). The old single imamName/contactMobile/contactEmail
+    // columns are gone from this model; server/src/seed/masjidContactBackfill.js
+    // migrates any pre-existing values into that table on first boot.
 
     status: {
       type: DataTypes.ENUM("draft", "submitted", "under_review", "changes_requested", "approved", "rejected", "inactive", "deleted"),
