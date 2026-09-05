@@ -8,6 +8,7 @@ import ExploreMasjidsGrid from "./exploreMasjids/ExploreMasjidsGrid.jsx";
 import ExploreMasjidsList from "./exploreMasjids/ExploreMasjidsList.jsx";
 import ExploreMasjidsMap from "./exploreMasjids/ExploreMasjidsMap.jsx";
 import MasjidReviewModal from "./exploreMasjids/MasjidReviewModal.jsx";
+import CategoryFilter from "./exploreMasjids/CategoryFilter.jsx";
 
 const API = `${API_BASE}/masjids/public`;
 const VIEWS = [
@@ -21,7 +22,8 @@ function ExploreMasjids() {
   const [searchParams, setSearchParams] = useSearchParams();
   const view = VIEWS.some((v) => v.key === searchParams.get("view")) ? searchParams.get("view") : "grid";
   const q = searchParams.get("q") || "";
-  const category = searchParams.get("category") || "";
+  const categoryParam = searchParams.get("category") || "";
+  const selectedCategories = categoryParam ? categoryParam.split(",") : [];
 
   const [rawQ, setRawQ] = useState(q);
   const debounceRef = useRef(null);
@@ -67,16 +69,16 @@ function ExploreMasjids() {
     setPage(1);
     setMasjids(null);
     axios
-      .get(API, { params: { q, category, page: 1, pageSize: PAGE_SIZE } })
+      .get(API, { params: { q, category: categoryParam, page: 1, pageSize: PAGE_SIZE } })
       .then(({ data }) => { setMasjids(data.masjids); setTotal(data.total); })
       .catch(() => setMasjids([]));
-  }, [q, category]);
+  }, [q, categoryParam]);
 
   const loadMore = () => {
     const nextPage = page + 1;
     setLoadingMore(true);
     axios
-      .get(API, { params: { q, category, page: nextPage, pageSize: PAGE_SIZE } })
+      .get(API, { params: { q, category: categoryParam, page: nextPage, pageSize: PAGE_SIZE } })
       .then(({ data }) => { setMasjids((prev) => [...(prev || []), ...data.masjids]); setPage(nextPage); })
       .finally(() => setLoadingMore(false));
   };
@@ -86,10 +88,10 @@ function ExploreMasjids() {
     if (view !== "map") return;
     setMapMasjids(null);
     axios
-      .get(`${API}/map`, { params: { q, category } })
+      .get(`${API}/map`, { params: { q, category: categoryParam } })
       .then(({ data }) => setMapMasjids(data.masjids))
       .catch(() => setMapMasjids([]));
-  }, [view, q, category]);
+  }, [view, q, categoryParam]);
 
   const requestLocation = () => {
     if (!navigator.geolocation) return;
@@ -108,8 +110,16 @@ function ExploreMasjids() {
 
   const activeFilters = [
     q && { key: "q", label: `Search: "${q}"` },
-    category && { key: "category", label: `Category: ${category}` },
+    ...selectedCategories.map((c) => ({ key: `category:${c}`, label: `Category: ${c}`, category: c })),
   ].filter(Boolean);
+
+  const removeFilter = (f) => {
+    if (f.key === "q") { setRawQ(""); setParam({ q: "" }); return; }
+    if (f.category) {
+      const next = selectedCategories.filter((c) => c !== f.category);
+      setParam({ category: next.join(",") });
+    }
+  };
 
   const clearAll = () => { setRawQ(""); setSearchParams({}, { replace: true }); };
 
@@ -139,10 +149,11 @@ function ExploreMasjids() {
               <input value={rawQ} onChange={(e) => setRawQ(e.target.value)} placeholder="Search by name, location, or category…" />
               <MicButton onTranscript={(text, isFinal) => { setRawQ(text); if (isFinal) setParam({ q: text }); }} />
             </div>
-            <select value={category} onChange={(e) => setParam({ category: e.target.value })}>
-              <option value="">All Categories</option>
-              {categories.map((c) => <option key={c.id} value={c.name}>{c.name} ({c.count})</option>)}
-            </select>
+            <CategoryFilter
+              categories={categories}
+              selected={selectedCategories}
+              onChange={(next) => setParam({ category: next.join(",") })}
+            />
             <div className="msj-view-switch">
               {VIEWS.map((v) => (
                 <button key={v.key} type="button" className={view === v.key ? "active" : ""} onClick={() => setParam({ view: v.key })} title={v.label}>
@@ -157,7 +168,7 @@ function ExploreMasjids() {
               {activeFilters.map((f) => (
                 <span className="msj-active-filter-chip" key={f.key}>
                   {f.label}
-                  <button type="button" onClick={() => { if (f.key === "q") setRawQ(""); setParam({ [f.key]: "" }); }}><Icon name="x" size={11} /></button>
+                  <button type="button" onClick={() => removeFilter(f)}><Icon name="x" size={11} /></button>
                 </span>
               ))}
               <button type="button" className="msj-clear-all" onClick={clearAll}>Clear All Filters</button>

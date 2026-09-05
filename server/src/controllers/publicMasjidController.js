@@ -38,7 +38,11 @@ async function baseWhere({ city, country, category, activeOnly, lat, lng }) {
   const where = { status: PUBLIC_STATUS, moderationStatus: "active" };
   if (city) where.city = city;
   if (country) where.country = country;
-  if (category) where.category = category;
+  // `category` may be a single name or a comma-joined list — a masjid
+  // matches if its category is ANY of the selected ones (OR, not AND).
+  const categories = (category || "").split(",").map((c) => c.trim()).filter(Boolean);
+  if (categories.length === 1) where.category = categories[0];
+  else if (categories.length > 1) where.category = { [Op.in]: categories };
   if (activeOnly) where.id = { [Op.in]: await activeMasjidIds() };
 
   const latNum = Number(lat), lngNum = Number(lng);
@@ -193,7 +197,15 @@ export const listCategories = async (req, res) => {
       }),
     ]);
     const countByCategory = new Map(counts.map((r) => [r.category, Number(r.count)]));
-    res.json({ categories: categories.map((c) => ({ ...c.toJSON(), count: countByCategory.get(c.name) || 0 })) });
+    // "Other" is a catch-all, not a real category — it always sorts last in
+    // the public filter regardless of the admin's configured sortOrder.
+    const ordered = [...categories].sort((a, b) => {
+      const aOther = a.name.trim().toLowerCase() === "other";
+      const bOther = b.name.trim().toLowerCase() === "other";
+      if (aOther !== bOther) return aOther ? 1 : -1;
+      return 0;
+    });
+    res.json({ categories: ordered.map((c) => ({ ...c.toJSON(), count: countByCategory.get(c.name) || 0 })) });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
