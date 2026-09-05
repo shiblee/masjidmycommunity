@@ -13,6 +13,7 @@ const SECTIONS = [
   { key: "platform", label: "Platform", icon: "settings" },
   { key: "reportPost", label: "Report Post", icon: "flag" },
   { key: "content", label: "Community / Content", icon: "content" },
+  { key: "reviews", label: "Reviews", icon: "star" },
   { key: "authentication", label: "Authentication", icon: "lock" },
 ];
 
@@ -56,6 +57,16 @@ function Settings() {
   const [contentLimitsInput, setContentLimitsInput] = useState({ maxPostLength: "2000", maxCommentLength: "1000", maxReplyLength: "1000" });
   const [savingContentLimits, setSavingContentLimits] = useState(false);
   const [contentLimitsError, setContentLimitsError] = useState("");
+
+  const REVIEW_DEFAULTS = { maxLength: 1000, maxImages: 5, maxVideoSizeMB: 50, maxVideoDurationSeconds: 60, allowedImageFormats: "jpg,png,webp", allowedVideoFormats: "mp4,webm,mov", mediaEnabled: true, speechToTextEnabled: true };
+  const [reviewSettings, setReviewSettings] = useState(REVIEW_DEFAULTS);
+  const [reviewSettingsInput, setReviewSettingsInput] = useState({
+    maxLength: "1000", maxImages: "5", maxVideoSizeMB: "50", maxVideoDurationSeconds: "60",
+    allowedImageFormats: "jpg,png,webp", allowedVideoFormats: "mp4,webm,mov",
+  });
+  const [savingReviewSettings, setSavingReviewSettings] = useState(false);
+  const [reviewSettingsError, setReviewSettingsError] = useState("");
+  const [togglingReviewFlag, setTogglingReviewFlag] = useState("");
 
   const [authSettings, setAuthSettings] = useState({ otpExpiryMinutes: 5, otpResendCooldownSeconds: 60, otpMaxAttempts: 5 });
   const [authSettingsInput, setAuthSettingsInput] = useState({ otpExpiryMinutes: "5", otpResendCooldownSeconds: "60", otpMaxAttempts: "5" });
@@ -103,6 +114,23 @@ function Settings() {
           maxPostLength: String(data.maxPostLength),
           maxCommentLength: String(data.maxCommentLength),
           maxReplyLength: String(data.maxReplyLength),
+        });
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    adminApi
+      .get("/review-settings")
+      .then(({ data }) => {
+        setReviewSettings(data);
+        setReviewSettingsInput({
+          maxLength: String(data.maxLength),
+          maxImages: String(data.maxImages),
+          maxVideoSizeMB: String(data.maxVideoSizeMB),
+          maxVideoDurationSeconds: String(data.maxVideoDurationSeconds),
+          allowedImageFormats: data.allowedImageFormats,
+          allowedVideoFormats: data.allowedVideoFormats,
         });
       })
       .catch(() => {});
@@ -296,6 +324,57 @@ function Settings() {
       setContentLimitsError(err.response?.data?.message || "Couldn't save these limits. Please try again.");
     } finally {
       setSavingContentLimits(false);
+    }
+  };
+
+  const saveReviewSettings = async (e) => {
+    e.preventDefault();
+    const parsed = {};
+    for (const field of ["maxLength", "maxImages", "maxVideoSizeMB", "maxVideoDurationSeconds"]) {
+      const n = Number(reviewSettingsInput[field]);
+      if (!Number.isInteger(n) || n < 1) {
+        setReviewSettingsError("Each limit must be a whole number of at least 1.");
+        return;
+      }
+      parsed[field] = n;
+    }
+    for (const field of ["allowedImageFormats", "allowedVideoFormats"]) {
+      if (!reviewSettingsInput[field]?.trim()) {
+        setReviewSettingsError("Allowed formats can't be empty.");
+        return;
+      }
+      parsed[field] = reviewSettingsInput[field].trim();
+    }
+    setReviewSettingsError("");
+    setSavingReviewSettings(true);
+    try {
+      const { data } = await adminApi.patch("/review-settings", parsed);
+      setReviewSettings(data);
+      setReviewSettingsInput({
+        maxLength: String(data.maxLength),
+        maxImages: String(data.maxImages),
+        maxVideoSizeMB: String(data.maxVideoSizeMB),
+        maxVideoDurationSeconds: String(data.maxVideoDurationSeconds),
+        allowedImageFormats: data.allowedImageFormats,
+        allowedVideoFormats: data.allowedVideoFormats,
+      });
+      showToast("Review settings saved.");
+    } catch (err) {
+      setReviewSettingsError(err.response?.data?.message || "Couldn't save these settings. Please try again.");
+    } finally {
+      setSavingReviewSettings(false);
+    }
+  };
+
+  const toggleReviewFlag = async (field) => {
+    setTogglingReviewFlag(field);
+    try {
+      const { data } = await adminApi.patch("/review-settings", { [field]: !reviewSettings[field] });
+      setReviewSettings(data);
+    } catch {
+      showToast("Couldn't update that setting. Please try again.");
+    } finally {
+      setTogglingReviewFlag("");
     }
   };
 
@@ -748,6 +827,113 @@ function Settings() {
                   {savingContentLimits ? "Saving…" : "Save Limits"}
                 </button>
               </form>
+            </>
+          )}
+
+          {section === "reviews" && (
+            <>
+              <div className="amx-panel-head">
+                <div>
+                  <h3>Review Settings</h3>
+                  <div className="amx-panel-sub">Configure the text limit, media rules, and speech-to-text availability for masjid reviews</div>
+                </div>
+              </div>
+              <form onSubmit={saveReviewSettings} className="amx-form-grid" noValidate>
+                <div className="amx-form-group">
+                  <label htmlFor="review-max-length">Review Character Limit</label>
+                  <input
+                    id="review-max-length"
+                    type="number"
+                    min={1}
+                    step={1}
+                    value={reviewSettingsInput.maxLength}
+                    onChange={(e) => setReviewSettingsInput((s) => ({ ...s, maxLength: e.target.value }))}
+                  />
+                  <div className="amx-panel-sub" style={{ marginTop: 6 }}>
+                    Shown to users as a live counter. Current: <strong>{reviewSettings.maxLength}</strong> characters.
+                  </div>
+                </div>
+                <div className="amx-form-group">
+                  <label htmlFor="review-max-images">Maximum Images per Review</label>
+                  <input
+                    id="review-max-images"
+                    type="number"
+                    min={1}
+                    step={1}
+                    value={reviewSettingsInput.maxImages}
+                    onChange={(e) => setReviewSettingsInput((s) => ({ ...s, maxImages: e.target.value }))}
+                  />
+                </div>
+                <div className="amx-form-group">
+                  <label htmlFor="review-max-video-size">Maximum Video Size (MB)</label>
+                  <input
+                    id="review-max-video-size"
+                    type="number"
+                    min={1}
+                    step={1}
+                    value={reviewSettingsInput.maxVideoSizeMB}
+                    onChange={(e) => setReviewSettingsInput((s) => ({ ...s, maxVideoSizeMB: e.target.value }))}
+                  />
+                </div>
+                <div className="amx-form-group">
+                  <label htmlFor="review-max-video-duration">Maximum Video Duration (seconds)</label>
+                  <input
+                    id="review-max-video-duration"
+                    type="number"
+                    min={1}
+                    step={1}
+                    value={reviewSettingsInput.maxVideoDurationSeconds}
+                    onChange={(e) => setReviewSettingsInput((s) => ({ ...s, maxVideoDurationSeconds: e.target.value }))}
+                  />
+                  <div className="amx-panel-sub" style={{ marginTop: 6 }}>
+                    Checked in the visitor's browser before upload — this app doesn't run server-side video processing.
+                  </div>
+                </div>
+                <div className="amx-form-group">
+                  <label htmlFor="review-image-formats">Allowed Image Formats</label>
+                  <input
+                    id="review-image-formats"
+                    type="text"
+                    placeholder="jpg,png,webp"
+                    value={reviewSettingsInput.allowedImageFormats}
+                    onChange={(e) => setReviewSettingsInput((s) => ({ ...s, allowedImageFormats: e.target.value }))}
+                  />
+                </div>
+                <div className="amx-form-group">
+                  <label htmlFor="review-video-formats">Allowed Video Formats</label>
+                  <input
+                    id="review-video-formats"
+                    type="text"
+                    placeholder="mp4,webm,mov"
+                    value={reviewSettingsInput.allowedVideoFormats}
+                    onChange={(e) => setReviewSettingsInput((s) => ({ ...s, allowedVideoFormats: e.target.value }))}
+                  />
+                </div>
+                {reviewSettingsError && (
+                  <div className="amx-field-error">
+                    <Icon name="info" size={14} />
+                    {reviewSettingsError}
+                  </div>
+                )}
+                <button type="submit" className="amx-btn amx-btn-primary" disabled={savingReviewSettings} style={{ alignSelf: "end" }}>
+                  {savingReviewSettings ? "Saving…" : "Save Review Settings"}
+                </button>
+              </form>
+
+              <div className="amx-settings-row" style={{ marginTop: 14 }}>
+                <div>
+                  <strong>Review Media</strong>
+                  <span>Allow reviewers to attach images and video to their reviews.</span>
+                </div>
+                <Toggle on={reviewSettings.mediaEnabled} onClick={() => toggleReviewFlag("mediaEnabled")} disabled={togglingReviewFlag === "mediaEnabled"} />
+              </div>
+              <div className="amx-settings-row">
+                <div>
+                  <strong>Speech-to-Text</strong>
+                  <span>Show the microphone button so reviewers can dictate their review.</span>
+                </div>
+                <Toggle on={reviewSettings.speechToTextEnabled} onClick={() => toggleReviewFlag("speechToTextEnabled")} disabled={togglingReviewFlag === "speechToTextEnabled"} />
+              </div>
             </>
           )}
 

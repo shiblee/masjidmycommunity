@@ -3,6 +3,7 @@ import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
 import { Icon } from "../../components/Icons.jsx";
 import MediaThumb from "../../components/MediaThumb.jsx";
+import MicButton from "../../components/MicButton.jsx";
 import { API_BASE, API_ORIGIN } from "../../config.js";
 import { getUserToken } from "../../utils/userAuthStorage.js";
 import { formatDate } from "../../utils/formatDateTime.js";
@@ -80,14 +81,18 @@ function SuggestEditForm({ masjidId, onDone, onCancel }) {
   );
 }
 
-function ReviewForm({ masjidId, existing, onSaved, onCancel }) {
+function ReviewForm({ masjidId, existing, settings, onSaved, onCancel }) {
   const [rating, setRating] = useState(existing?.rating || 0);
   const [body, setBody] = useState(existing?.body || "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
+  const maxLength = settings?.maxLength ?? 1000;
+  const overLimit = body.length > maxLength;
+
   const submit = async () => {
     if (!rating) { setError("Please select a star rating."); return; }
+    if (overLimit) { setError(`Your review must be ${maxLength} characters or fewer.`); return; }
     setBusy(true);
     setError("");
     try {
@@ -108,17 +113,22 @@ function ReviewForm({ masjidId, existing, onSaved, onCancel }) {
   return (
     <div className="msj-review-form">
       <StarRating value={rating} onChange={setRating} size={26} />
-      <textarea
-        rows={4}
-        value={body}
-        onChange={(e) => setBody(e.target.value)}
-        placeholder="Share details of your own experience at this masjid…"
-        maxLength={2000}
-      />
+      <div className="msj-about-wrap">
+        <textarea
+          rows={4}
+          value={body}
+          onChange={(e) => setBody(e.target.value)}
+          placeholder="Share details of your own experience at this masjid…"
+        />
+        {settings?.speechToTextEnabled && (
+          <MicButton onTranscript={(text) => setBody(text)} className="msj-about-mic" />
+        )}
+      </div>
+      <div className={`msj-review-char-counter ${overLimit ? "over" : ""}`}>{body.length} / {maxLength}</div>
       {error && <p className="msj-review-form-error">{error}</p>}
       <div className="msj-review-form-actions">
         <button type="button" className="btn btn-outline-ink" onClick={onCancel} disabled={busy}>Cancel</button>
-        <button type="button" className="btn btn-gold" onClick={submit} disabled={busy}>
+        <button type="button" className="btn btn-gold" onClick={submit} disabled={busy || overLimit}>
           {busy ? "Posting…" : existing ? "Update Review" : "Post Review"}
         </button>
       </div>
@@ -154,7 +164,12 @@ function MasjidReviewModal({ masjid, initialTab = "overview", onClose }) {
   const [shareLabel, setShareLabel] = useState("Share");
   const [showSuggest, setShowSuggest] = useState(false);
   const [suggestSent, setSuggestSent] = useState(false);
+  const [reviewSettings, setReviewSettings] = useState(null);
   const loggedIn = !!getUserToken();
+
+  useEffect(() => {
+    axios.get(`${API}/review-settings`).then(({ data }) => setReviewSettings(data)).catch(() => {});
+  }, []);
 
   const load = () => {
     axios
@@ -337,7 +352,7 @@ function MasjidReviewModal({ masjid, initialTab = "overview", onClose }) {
             )}
 
             {showForm && (
-              <ReviewForm masjidId={masjid.id} existing={myReview} onSaved={handleSaved} onCancel={() => setShowForm(false)} />
+              <ReviewForm masjidId={masjid.id} existing={myReview} settings={reviewSettings} onSaved={handleSaved} onCancel={() => setShowForm(false)} />
             )}
 
             <div className="msj-review-list">

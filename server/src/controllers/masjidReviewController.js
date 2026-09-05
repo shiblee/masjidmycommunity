@@ -1,10 +1,32 @@
 import { fn, col } from "sequelize";
 import Masjid from "../models/Masjid.js";
 import MasjidReview from "../models/MasjidReview.js";
+import ReviewSettings from "../models/ReviewSettings.js";
 import User from "../models/User.js";
 
-const BODY_MAX = 2000;
 const PAGE_SIZE = 20;
+
+async function getReviewSettings() {
+  const settings = await ReviewSettings.findByPk(1);
+  return {
+    maxLength: settings?.maxLength ?? 1000,
+    maxImages: settings?.maxImages ?? 5,
+    maxVideoSizeMB: settings?.maxVideoSizeMB ?? 50,
+    maxVideoDurationSeconds: settings?.maxVideoDurationSeconds ?? 60,
+    allowedImageFormats: settings?.allowedImageFormats ?? "jpg,png,webp",
+    allowedVideoFormats: settings?.allowedVideoFormats ?? "mp4,webm,mov",
+    mediaEnabled: settings?.mediaEnabled ?? true,
+    speechToTextEnabled: settings?.speechToTextEnabled ?? true,
+  };
+}
+
+export const getPublicReviewSettings = async (req, res) => {
+  try {
+    res.json(await getReviewSettings());
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 
 async function withReviewers(reviews) {
   const userIds = [...new Set(reviews.map((r) => r.userId))];
@@ -73,9 +95,10 @@ export const upsertMyReview = async (req, res) => {
     if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
       return res.status(400).json({ message: "Please select a rating from 1 to 5 stars." });
     }
+    const { maxLength } = await getReviewSettings();
     const body = req.body.body?.trim() || null;
-    if (body && body.length > BODY_MAX) {
-      return res.status(400).json({ message: `Your review must be ${BODY_MAX} characters or fewer.` });
+    if (body && body.length > maxLength) {
+      return res.status(400).json({ message: `Your review must be ${maxLength} characters or fewer.` });
     }
 
     const [review] = await MasjidReview.findOrCreate({
