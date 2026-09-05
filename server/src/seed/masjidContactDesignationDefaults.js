@@ -1,11 +1,35 @@
 import MasjidContactDesignation from "../models/MasjidContactDesignation.js";
 
-// Only the three mandatory office-bearers are seeded — admins add any
-// further (optional) designations themselves via Meta.
+// Imam/Mutawalli/Secretary are the three mandatory office-bearers; the rest
+// are common masjid committee/administrative roles seeded as optional
+// starting points — admins can add, rename, deactivate, or mark any of them
+// mandatory via Meta.
 const DEFAULTS = [
   { name: "Imam", isRequired: true },
   { name: "Mutawalli", isRequired: true },
   { name: "Secretary", isRequired: true },
+  { name: "President", isRequired: false },
+  { name: "Vice President", isRequired: false },
+  { name: "Joint Secretary", isRequired: false },
+  { name: "Treasurer", isRequired: false },
+  { name: "Joint Treasurer", isRequired: false },
+  { name: "Trustee", isRequired: false },
+  { name: "Committee Member", isRequired: false },
+  { name: "Auditor", isRequired: false },
+  { name: "Legal Advisor", isRequired: false },
+  { name: "Naib Imam", isRequired: false },
+  { name: "Khatib", isRequired: false },
+  { name: "Muezzin", isRequired: false },
+  { name: "Qari", isRequired: false },
+  { name: "Hafiz", isRequired: false },
+  { name: "Madrasa In-charge", isRequired: false },
+  { name: "Madrasa Teacher", isRequired: false },
+  { name: "Caretaker", isRequired: false },
+  { name: "Chowkidar", isRequired: false },
+  { name: "Women's Wing Coordinator", isRequired: false },
+  { name: "Youth Wing Coordinator", isRequired: false },
+  { name: "Public Relations Officer", isRequired: false },
+  { name: "Event Coordinator", isRequired: false },
 ];
 
 // Additive on every boot: creates any default name not already present
