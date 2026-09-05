@@ -318,7 +318,7 @@ function Profile() {
             </div>
 
             <aside className="cw-side">
-              {isOwner && masjids.length === 0 && (
+              {isOwner && (
                 <div className="cw-side-card cw-side-card-cta">
                   <h4>Register Your Masjid</h4>
                   <p className="cw-side-card-sub">Get verified and featured on the wall.</p>
@@ -338,7 +338,7 @@ function Profile() {
                 icon="mosque"
               />
 
-              {isOwner && campaigns.length === 0 && (
+              {isOwner && (
                 <div className="cw-side-card cw-side-card-cta">
                   <h4>Start a Campaign</h4>
                   <p className="cw-side-card-sub">Raise funds for your masjid's next project.</p>

@@ -95,6 +95,11 @@ function ContactPersonForm({ masjidId, designations, contact, initialDesignation
   const [mobile, setMobile] = useState(contact?.mobile || "");
   const [contactId, setContactId] = useState(contact?.id || null);
   const [verified, setVerified] = useState(contact?.verified || false);
+  // Tracks the mobile value actually persisted server-side (not the initial
+  // prop, which is null for a brand-new person) — comparing against the prop
+  // would make mobileChanged permanently true for a new contact, hiding the
+  // Verified pill even right after a real OTP confirmation succeeds.
+  const [savedMobile, setSavedMobile] = useState(contact?.mobile || null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -104,7 +109,7 @@ function ContactPersonForm({ masjidId, designations, contact, initialDesignation
   const [otpError, setOtpError] = useState("");
   const [demoOtp, setDemoOtp] = useState("");
 
-  const mobileChanged = mobile !== (contact?.mobile || "");
+  const mobileChanged = mobile !== savedMobile;
   const effectiveVerified = verified && !mobileChanged;
 
   const persist = async () => {
@@ -129,6 +134,7 @@ function ContactPersonForm({ masjidId, designations, contact, initialDesignation
         : await masjidApi.post(`/${masjidId}/contacts`, payload);
       setContactId(data.contact.id);
       setVerified(data.contact.verified);
+      setSavedMobile(data.contact.mobile);
       return data.contact;
     } catch (err) {
       setError(err.response?.data?.message || "Couldn't save this person.");

@@ -7,6 +7,7 @@ import adminApi from "../services/adminApi.js";
 import StaticLocationMap from "../../components/StaticLocationMap.jsx";
 import MediaThumb from "../../components/MediaThumb.jsx";
 import AddressAutocomplete from "../../components/AddressAutocomplete.jsx";
+import MicButton from "../../components/MicButton.jsx";
 import { formatDateTime } from "../../utils/formatDateTime.js";
 
 const TABS = [
@@ -64,10 +65,17 @@ function Row({ label, value }) {
 
 // Consistent label + mandatory-red-* + red-error-below pattern for every
 // editable field across the tabs below.
-function AField({ label, children, required, error, hint }) {
+function AField({ label, children, required, error, hint, labelExtra }) {
   return (
     <div className="amx-form-group">
-      <label>{label}{required && <span className="amx-required">*</span>}</label>
+      {labelExtra ? (
+        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 10, marginBottom: 7 }}>
+          <label style={{ marginBottom: 0 }}>{label}{required && <span className="amx-required">*</span>}</label>
+          {labelExtra}
+        </div>
+      ) : (
+        <label>{label}{required && <span className="amx-required">*</span>}</label>
+      )}
       {children}
       {error ? (
         <div className="amx-field-error"><Icon name="info" size={14} />{error}</div>
@@ -143,8 +151,22 @@ function BasicInfoTab({ id, masjid, categories, onSaved }) {
       <AField label="Tagline / Short Description" error={errors.tagline}>
         <input value={form.tagline} onChange={setField("tagline")} maxLength={255} />
       </AField>
-      <AField label="About the Masjid" required error={errors.about} hint={`${form.about.length}/5000`}>
-        <textarea rows={5} maxLength={5000} value={form.about} onChange={setField("about")} />
+      <AField
+        label="About the Masjid"
+        required
+        error={errors.about}
+        labelExtra={<span className="pf-char-counter">{form.about.length}/5000</span>}
+      >
+        <div className="msj-about-wrap">
+          <textarea rows={5} maxLength={5000} value={form.about} onChange={setField("about")} />
+          <MicButton
+            onTranscript={(text) => {
+              setForm((f) => ({ ...f, about: text.slice(0, 5000) }));
+              setErrors((er) => ({ ...er, about: null }));
+            }}
+            className="msj-about-mic"
+          />
+        </div>
       </AField>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
         <AField label="Category" error={errors.category}>
@@ -188,37 +210,118 @@ function ContactPersonAdminForm({ id, designations, contact, initialDesignation,
   const [designation, setDesignation] = useState(contact?.designation || initialDesignation || "");
   const [name, setName] = useState(contact?.name || "");
   const [mobile, setMobile] = useState(contact?.mobile || "");
+  const [contactId, setContactId] = useState(contact?.id || null);
   const [verified, setVerified] = useState(contact?.verified || false);
+  // Tracks the mobile value actually persisted server-side (not the initial
+  // prop, which is null for a brand-new person) — comparing against the prop
+  // would make mobileChanged permanently true for a new contact, since it
+  // never had an "original" number to compare against, hiding the Verified
+  // pill even right after a real OTP confirmation succeeds.
+  const [savedMobile, setSavedMobile] = useState(contact?.mobile || null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  const save = async () => {
-    if (!designation) return setError("Please select a designation.");
-    if (!name.trim()) return setError("Name is required.");
-    if (!/^[6-9]\d{9}$/.test(mobile)) return setError("Enter a valid 10-digit Indian mobile number.");
+  const [otpOpen, setOtpOpen] = useState(false);
+  const [otpSending, setOtpSending] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
+  const [otpError, setOtpError] = useState("");
+  const [demoOtp, setDemoOtp] = useState("");
+
+  // Same rule as the owner-facing wizard: a mobile number is only ever
+  // marked verified through the real OTP round-trip below — never a manual
+  // toggle, even for admin — and editing it back out invalidates the proof.
+  const mobileChanged = mobile !== savedMobile;
+  const effectiveVerified = verified && !mobileChanged;
+
+  const persist = async () => {
+    if (!designation) {
+      setError("Please select a designation.");
+      return null;
+    }
+    if (!name.trim()) {
+      setError("Name is required.");
+      return null;
+    }
+    if (!/^[6-9]\d{9}$/.test(mobile)) {
+      setError("Enter a valid 10-digit Indian mobile number.");
+      return null;
+    }
     setSaving(true);
     setError("");
     try {
-      const payload = { designation, name: name.trim(), mobile, verified };
-      const { data } = isEdit
-        ? await adminApi.patch(`/masjids/${id}/contacts/${contact.id}`, payload)
+      const payload = { designation, name: name.trim(), mobile };
+      const { data } = contactId
+        ? await adminApi.patch(`/masjids/${id}/contacts/${contactId}`, payload)
         : await adminApi.post(`/masjids/${id}/contacts`, payload);
-      onSaved(data.contact);
-      showToast(isEdit ? "Contact person updated." : "Contact person added.");
+      setContactId(data.contact.id);
+      setVerified(data.contact.verified);
+      setSavedMobile(data.contact.mobile);
+      return data.contact;
     } catch (err) {
       setError(err.response?.data?.message || "Couldn't save this person.");
+      return null;
     } finally {
       setSaving(false);
     }
   };
 
+  const startVerify = async () => {
+    const saved = await persist();
+    if (!saved) return;
+    setOtpSending(true);
+    setOtpError("");
+    setOtpCode("");
+    try {
+      const { data } = await adminApi.post(`/masjids/${id}/contacts/${saved.id}/send-otp`);
+      setDemoOtp(data.demoOtp || "");
+      setOtpOpen(true);
+    } catch (err) {
+      setError(err.response?.data?.message || "Couldn't send the verification code.");
+    } finally {
+      setOtpSending(false);
+    }
+  };
+
+  const resendOtp = async () => {
+    setOtpSending(true);
+    setOtpError("");
+    try {
+      const { data } = await adminApi.post(`/masjids/${id}/contacts/${contactId}/send-otp`);
+      setDemoOtp(data.demoOtp || "");
+    } catch (err) {
+      setOtpError(err.response?.data?.message || "Couldn't resend the code.");
+    } finally {
+      setOtpSending(false);
+    }
+  };
+
+  const confirmVerify = async () => {
+    setOtpError("");
+    try {
+      const { data } = await adminApi.post(`/masjids/${id}/contacts/${contactId}/confirm-otp`, { otp: otpCode });
+      setVerified(data.contact.verified);
+      setOtpOpen(false);
+      showToast("Mobile number verified.");
+    } catch (err) {
+      setOtpError(err.response?.data?.message || "Incorrect code.");
+    }
+  };
+
+  const done = async () => {
+    const saved = await persist();
+    if (saved) {
+      onSaved(saved);
+      showToast(isEdit ? "Contact person updated." : "Contact person added.");
+    }
+  };
+
   const remove = async () => {
-    if (!isEdit) return onCancel();
+    if (!contactId) return onCancel();
     setSaving(true);
     setError("");
     try {
-      await adminApi.delete(`/masjids/${id}/contacts/${contact.id}`);
-      onRemoved(contact.id);
+      await adminApi.delete(`/masjids/${id}/contacts/${contactId}`);
+      onRemoved(contactId);
       showToast("Contact person removed.");
     } catch (err) {
       setError(err.response?.data?.message || "Couldn't remove this person.");
@@ -239,21 +342,23 @@ function ContactPersonAdminForm({ id, designations, contact, initialDesignation,
       <AField label="Name" required>
         <input value={name} onChange={(e) => setName(e.target.value)} maxLength={255} placeholder="Full name" />
       </AField>
-      <AField label="Mobile Number" required hint="10-digit Indian mobile number">
-        <input value={mobile} onChange={(e) => setMobile(e.target.value.replace(/\D/g, "").slice(0, 10))} maxLength={10} />
-      </AField>
-      <div className="amx-form-group" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <label style={{ marginBottom: 0 }}>Mobile Verified</label>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span className="amx-panel-sub">{verified ? "Verified" : "Not Verified"}</span>
-          <Toggle on={verified} onClick={() => setVerified((v) => !v)} disabled={saving} />
+      <AField label="Mobile Number" required hint={effectiveVerified ? undefined : "Changing a verified number requires re-verification."}>
+        <div className="msj-verifiable-row">
+          <input value={mobile} onChange={(e) => setMobile(e.target.value.replace(/\D/g, "").slice(0, 10))} maxLength={10} />
+          {effectiveVerified ? (
+            <span className="acct-status-pill active"><Icon name="check" size={13} /> Verified</span>
+          ) : (
+            <button className="amx-btn amx-btn-outline" type="button" disabled={!mobile || otpSending || saving} onClick={startVerify}>
+              {otpSending ? "Sending…" : "Verify Mobile"}
+            </button>
+          )}
         </div>
-      </div>
+      </AField>
 
       {error && <div className="amx-field-error"><Icon name="info" size={14} />{error}</div>}
 
       <div style={{ display: "flex", gap: 10, marginTop: 16, alignItems: "center", flexWrap: "wrap" }}>
-        <button className="amx-btn amx-btn-accent" onClick={save} disabled={saving}>{saving ? "Saving…" : "Save"}</button>
+        <button className="amx-btn amx-btn-accent" onClick={done} disabled={saving}>{saving ? "Saving…" : "Save"}</button>
         <button className="amx-btn amx-btn-outline" onClick={onCancel} disabled={saving}>Cancel</button>
         {isEdit && (
           <button className="amx-link-btn" style={{ marginLeft: "auto", color: "var(--a-danger)" }} onClick={remove} disabled={saving}>
@@ -261,6 +366,29 @@ function ContactPersonAdminForm({ id, designations, contact, initialDesignation,
           </button>
         )}
       </div>
+
+      {otpOpen && (
+        <div className="msj-modal-overlay" onClick={() => setOtpOpen(false)}>
+          <div className="msj-modal" onClick={(e) => e.stopPropagation()}>
+            <button className="msj-modal-close" onClick={() => setOtpOpen(false)} aria-label="Close"><Icon name="x" size={16} /></button>
+            <h3>Verify Mobile Number</h3>
+            <p className="msj-modal-sub">Enter the 6-digit code sent to {mobile}.</p>
+            {demoOtp && <p className="msj-note">Demo mode — verification code: <strong>{demoOtp}</strong></p>}
+            <div className="amx-form-group">
+              <input
+                value={otpCode}
+                onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                placeholder="6-digit code"
+                maxLength={6}
+                style={{ letterSpacing: "6px", textAlign: "center", fontSize: 20 }}
+              />
+            </div>
+            {otpError && <span className="amx-field-error">{otpError}</span>}
+            <button className="amx-btn amx-btn-accent" style={{ width: "100%", marginTop: 12 }} onClick={confirmVerify} type="button">Verify</button>
+            <button className="msj-resend-link" type="button" onClick={resendOtp} disabled={otpSending}>{otpSending ? "Sending…" : "Resend code"}</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

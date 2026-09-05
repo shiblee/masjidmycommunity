@@ -21,6 +21,8 @@ import {
   create as createContact,
   update as updateContact,
   remove as removeContact,
+  sendOtp as sendContactOtp,
+  confirmOtp as confirmContactOtp,
 } from "../controllers/adminMasjidContactController.js";
 
 const router = Router();
@@ -37,6 +39,8 @@ router.get("/:id/contacts", listContacts);
 router.post("/:id/contacts", createContact);
 router.patch("/:id/contacts/:contactId", updateContact);
 router.delete("/:id/contacts/:contactId", removeContact);
+router.post("/:id/contacts/:contactId/send-otp", sendContactOtp);
+router.post("/:id/contacts/:contactId/confirm-otp", confirmContactOtp);
 router.post("/:id/approve", approve);
 router.post("/:id/reject", reject);
 router.post("/:id/request-changes", requestChanges);
