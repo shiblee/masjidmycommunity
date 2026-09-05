@@ -982,6 +982,11 @@ const DEFAULTS = [
   ["profile", "profile.nav.skills.desc", "What you're good at", "आप किसमें अच्छे हैं", "آپ کس چیز میں اچھے ہیں", "ما تجيده"],
   ["profile", "profile.nav.security.label", "Security", "सुरक्षा", "سیکیورٹی", "الأمان"],
   ["profile", "profile.nav.security.desc", "Password & account safety", "पासवर्ड और खाता सुरक्षा", "پاس ورڈ اور اکاؤنٹ کی حفاظت", "كلمة المرور وأمان الحساب"],
+  ["community", "community.explore.heading", "Explore", "एक्सप्लोर करें", "دریافت کریں", "استكشف"],
+  ["community", "community.explore.masjid", "Masjid", "मस्जिद", "مسجد", "المسجد"],
+  ["community", "community.explore.campaign", "Campaign", "अभियान", "مہم", "الحملة"],
+  ["community", "community.explore.jobs", "Jobs", "नौकरियां", "ملازمتیں", "الوظائف"],
+  ["community", "community.explore.comingSoon", "This feature is coming soon — stay tuned!", "यह सुविधा जल्द आ रही है — बने रहें!", "یہ فیچر جلد آ رہا ہے — منتظر رہیں!", "هذه الميزة قادمة قريبًا — ترقبوها!"],
 ];
 
 // Additive, not "seed once": every deploy that adds new keys to DEFAULTS

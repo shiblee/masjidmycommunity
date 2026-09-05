@@ -8,6 +8,7 @@ import campaignApi from "../services/campaignApi.js";
 import reportApi from "../services/reportApi.js";
 import MediaThumb from "../components/MediaThumb.jsx";
 import { Icon } from "../components/Icons.jsx";
+import { useTranslation } from "../i18n/LanguageContext.jsx";
 import RequireUserAuth from "../components/RequireUserAuth.jsx";
 import MasjidWizard from "./masjid/MasjidWizard.jsx";
 import MasjidDeleteFlow from "../components/masjid/MasjidDeleteFlow.jsx";
@@ -110,12 +111,9 @@ const CAMPAIGN_STATUS_LABEL = {
 // Adding a future real category is one more entry here (plus its own action
 // panel below, mirroring "masjid"/"campaign") — nothing else needs to change.
 const COMMUNITY_SECTIONS = [
-  { key: "masjid", label: "Masjid", icon: "mosque", wallFilter: "masjid_update" },
-  { key: "campaign", label: "Campaign", icon: "flag", wallFilter: "fundraising" },
-  { key: "jobs", label: "Jobs", icon: "building", wallFilter: null },
-  { key: "ads", label: "Ads", icon: "monitor", wallFilter: null },
-  { key: "advertisement", label: "Advertisement", icon: "bulb", wallFilter: null },
-  { key: "sponsors", label: "Sponsors", icon: "star", wallFilter: null },
+  { key: "masjid", labelKey: "community.explore.masjid", label: "Masjid", icon: "mosque", wallFilter: "masjid_update" },
+  { key: "campaign", labelKey: "community.explore.campaign", label: "Campaign", icon: "flag", wallFilter: "fundraising" },
+  { key: "jobs", labelKey: "community.explore.jobs", label: "Jobs", icon: "building", wallFilter: null },
 ];
 
 const SIDE_LIST_PREVIEW_COUNT = 3;
@@ -928,6 +926,7 @@ function CommunityPost({ post, user, navigate, onVote, onEdit, onDelete, onRepor
 }
 
 function Community() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const { id: idParam } = useParams();
@@ -1298,7 +1297,7 @@ function Community() {
 
             <aside className="cw-side">
               <div className="cw-side-card">
-                <h4>Explore</h4>
+                <h4>{t("community.explore.heading", "Explore")}</h4>
                 <div className="cw-section-menu">
                   {COMMUNITY_SECTIONS.map((s) => (
                     <button
@@ -1307,7 +1306,7 @@ function Community() {
                       className={`cw-section-chip${section === s.key ? " active" : ""}`}
                       onClick={() => selectSection(s.key)}
                     >
-                      <Icon name={s.icon} size={15} /> {s.label}
+                      <Icon name={s.icon} size={15} /> {t(s.labelKey, s.label)}
                     </button>
                   ))}
                 </div>
@@ -1411,9 +1410,12 @@ function Community() {
                 <div className="cw-side-card cw-side-card-soon">
                   <h4>
                     <Icon name={COMMUNITY_SECTIONS.find((s) => s.key === section)?.icon} size={15} />{" "}
-                    {COMMUNITY_SECTIONS.find((s) => s.key === section)?.label}
+                    {(() => {
+                      const cfg = COMMUNITY_SECTIONS.find((s) => s.key === section);
+                      return cfg ? t(cfg.labelKey, cfg.label) : null;
+                    })()}
                   </h4>
-                  <p className="cw-side-card-sub">This feature is coming soon — stay tuned!</p>
+                  <p className="cw-side-card-sub">{t("community.explore.comingSoon", "This feature is coming soon — stay tuned!")}</p>
                 </div>
               )}
 
