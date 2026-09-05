@@ -13,7 +13,15 @@ const MasjidReview = sequelize.define(
     userId: { type: DataTypes.INTEGER, allowNull: false },
     rating: { type: DataTypes.INTEGER, allowNull: false },
     body: { type: DataTypes.TEXT, allowNull: true },
-    status: { type: DataTypes.ENUM("visible", "hidden"), allowNull: false, defaultValue: "visible" },
+    // "pending" = held for admin review after the AI moderation layer (see
+    // aiProviderService.classifyReviewContent) returned a non-"safe"
+    // classification that wasn't already rejected outright by the rule-based
+    // restricted-word filter. Public queries only ever select "visible".
+    status: { type: DataTypes.ENUM("visible", "hidden", "pending"), allowNull: false, defaultValue: "visible" },
+    // Set only for "pending" reviews — a short admin-facing label like
+    // "AI: sexual" so PendingReviews.jsx can show *why* without ever
+    // exposing the restricted-word library itself.
+    flagReason: { type: DataTypes.STRING, allowNull: true },
   },
   {
     tableName: "masjid_reviews",

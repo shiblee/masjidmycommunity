@@ -6,6 +6,7 @@ import ReviewMedia from "../models/ReviewMedia.js";
 import ReviewSettings from "../models/ReviewSettings.js";
 import User from "../models/User.js";
 import { checkRestrictedWords } from "../utils/reviewModeration.js";
+import { classifyReviewContent } from "../services/aiProviderService.js";
 import { mediaTypeOf } from "../middleware/upload.js";
 
 // Never expose which term matched or "invalid" jargon — a clear, generic
@@ -144,10 +145,22 @@ export const upsertMyReview = async (req, res) => {
       return res.status(400).json({ message: `Your review must be ${maxLength} characters or fewer.` });
     }
 
+    let status = "visible";
+    let flagReason = null;
     if (body) {
       const moderation = await checkRestrictedWords(body);
       if (moderation.flagged) {
         return res.status(400).json({ message: MODERATION_MESSAGE });
+      }
+      // Second layer: contextual AI classification catches abusive/explicit
+      // content with no exact restricted-word match. No-op (returns null)
+      // until ANTHROPIC_API_KEY is configured — rule-based-only moderation
+      // above is the real, active layer until then. A non-"safe" result
+      // doesn't reject the review outright; it's held for admin review.
+      const aiResult = await classifyReviewContent({ text: body, languageCode: req.body.languageCode });
+      if (aiResult && aiResult.classification !== "safe") {
+        status = "pending";
+        flagReason = `AI: ${aiResult.classification}`;
       }
     }
 
@@ -186,11 +199,12 @@ export const upsertMyReview = async (req, res) => {
 
     const [review] = await MasjidReview.findOrCreate({
       where: { masjidId: masjid.id, userId: req.user.id },
-      defaults: { rating, body, status: "visible" },
+      defaults: { rating, body, status, flagReason },
     });
     review.rating = rating;
     review.body = body;
-    review.status = "visible";
+    review.status = status;
+    review.flagReason = flagReason;
     await review.save();
 
     const toRemove = existingMedia.filter((m) => !keepIds.includes(m.id));

@@ -57,6 +57,7 @@ const NAV_ITEMS = [
   { to: "/admin/reports", label: "Reports & Analytics", icon: "reports" },
   { to: "/admin/community-wall", label: "Community Wall", icon: "megaphone" },
   { to: "/admin/moderation", label: "Reported Content", icon: "flag" },
+  { to: "/admin/pending-reviews", label: "Pending Reviews", icon: "star" },
 ];
 
 // Nav items whose badge count is polled alongside the bell notifications —

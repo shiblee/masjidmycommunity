@@ -315,6 +315,82 @@ export async function generateEducationEnhancement({ level, degree, institution,
   }
 }
 
+const ReviewClassificationSchema = z.object({
+  classification: z.enum(["vulgar", "sexual", "harassment", "hate", "threat", "safe"]),
+  confidence: z.number(),
+});
+
+function reviewClassificationSystemPrompt(languageCode) {
+  return [
+    "You are a content moderation classifier for masjid reviews on Masjid My Community, a community platform.",
+    "Classify the review text below into exactly one category: 'vulgar' (crude/abusive language), 'sexual' (sexual/explicit content), 'harassment' (targeted harassment or bullying), 'hate' (hate speech or discrimination), 'threat' (threatening or violent language), or 'safe' (none of the above — a normal, acceptable review, even if critical or negative in tone).",
+    "A negative or critical review of a masjid, its management, or its facilities is 'safe' unless it also contains vulgar, sexual, hateful, harassing, or threatening language.",
+    "This classification has already passed a separate restricted-word filter — focus on contextual meaning (e.g. implied or disguised abuse) rather than re-flagging ordinary critical language.",
+    `The review may be written in this language: ${languageCode || "unknown"}. Classify based on meaning, not language.`,
+    "'confidence' is a number from 0 to 1 for how confident you are in the classification.",
+  ].join(" ");
+}
+
+async function callClaudeReviewClassification({ text, languageCode }) {
+  const response = await anthropic.messages.parse({
+    model: AI_MODEL,
+    max_tokens: 200,
+    system: [{ type: "text", text: reviewClassificationSystemPrompt(languageCode), cache_control: { type: "ephemeral" } }],
+    output_config: { format: zodOutputFormat(ReviewClassificationSchema), effort: AI_EFFORT },
+    messages: [{ role: "user", content: `Review text:\n${text}` }],
+  });
+  return response.parsed_output;
+}
+
+async function callGeminiReviewClassification({ text, languageCode }) {
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${AI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
+    {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: reviewClassificationSystemPrompt(languageCode) }] },
+        contents: [{ role: "user", parts: [{ text: `Review text:\n${text}` }] }],
+        generationConfig: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: "object",
+            properties: {
+              classification: { type: "string", enum: ["vulgar", "sexual", "harassment", "hate", "threat", "safe"] },
+              confidence: { type: "number" },
+            },
+            required: ["classification", "confidence"],
+          },
+        },
+      }),
+    }
+  );
+  if (!res.ok) throw new Error(`Gemini API error: ${res.status}`);
+  const data = await res.json();
+  const text2 = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  return text2 ? JSON.parse(text2) : null;
+}
+
+// Second-layer contextual moderation, run only on text the rule-based
+// restricted-word filter did NOT already flag — catches abusive/explicit
+// content with no exact-word match. Same null-on-failure contract as every
+// other function here: null when unconfigured (today) or on any failure,
+// so the caller falls back to rule-based-only moderation with no crash.
+export async function classifyReviewContent({ text, languageCode }) {
+  if (!aiProviderConfigured) return null;
+  try {
+    const parsed =
+      AI_PROVIDER === "claude"
+        ? await callClaudeReviewClassification({ text, languageCode })
+        : await callGeminiReviewClassification({ text, languageCode });
+    if (!parsed?.classification) return null;
+    return { classification: parsed.classification, confidence: Number(parsed.confidence) || 0 };
+  } catch (error) {
+    console.error("AI provider review classification failed:", error.message);
+    return null;
+  }
+}
+
 // Returns null (not a thrown error) both when unconfigured and when the
 // call fails — callers distinguish "not configured" from "temporarily
 // unavailable" using aiProviderConfigured, and log the real error either way.
