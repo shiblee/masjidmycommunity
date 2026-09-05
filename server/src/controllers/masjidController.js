@@ -1,5 +1,5 @@
 import fs from "fs";
-import { Op } from "sequelize";
+import { Op, fn, col } from "sequelize";
 import Masjid from "../models/Masjid.js";
 import MasjidPhoto from "../models/MasjidPhoto.js";
 import MasjidDonationAccount from "../models/MasjidDonationAccount.js";
@@ -67,11 +67,19 @@ export const listMine = async (req, res) => {
     });
     const withCounts = await Promise.all(
       masjids.map(async (m) => {
-        const [coverPhoto, campaignCount] = await Promise.all([
+        const [coverPhoto, campaignCount, mediaCounts] = await Promise.all([
           MasjidPhoto.findOne({ where: { masjidId: m.id, isCover: true } }),
           Campaign.count({ where: { masjidId: m.id } }),
+          MasjidPhoto.findAll({
+            where: { masjidId: m.id },
+            attributes: ["mediaType", [fn("COUNT", col("id")), "count"]],
+            group: ["mediaType"],
+            raw: true,
+          }),
         ]);
-        return { ...m.toJSON(), otpCode: undefined, coverPhotoUrl: coverPhoto?.url || null, campaignCount };
+        const photoCount = Number(mediaCounts.find((r) => r.mediaType === "photo")?.count || 0);
+        const videoCount = Number(mediaCounts.find((r) => r.mediaType === "video")?.count || 0);
+        return { ...m.toJSON(), otpCode: undefined, coverPhotoUrl: coverPhoto?.url || null, campaignCount, photoCount, videoCount };
       })
     );
     res.json({ masjids: withCounts });

@@ -2944,6 +2944,76 @@ footer{
 .msj-list-campaigns strong{ color:var(--text-on-paper); }
 .msj-list-campaigns:hover strong{ color:var(--teal-deep); }
 
+/* ===== MY MASJIDS: stats, filters, view switcher, list & map views ===== */
+.msj-stats-strip{ display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:14px; margin-bottom:22px; }
+.msj-stat-box{
+  background:#fff; border:1px solid var(--line); border-radius:12px; padding:16px 18px;
+  display:flex; flex-direction:column; gap:4px;
+}
+.msj-stat-box strong{ font-size:24px; color:var(--text-on-paper); font-family:var(--mono); }
+.msj-stat-box span{ font-size:12.5px; color:var(--text-on-paper-dim); }
+
+.msj-category-badge{
+  display:inline-block; font-size:11.5px; font-weight:600; color:var(--teal-deep); background:rgba(141,198,63,.12);
+  padding:3px 10px; border-radius:100px; margin:8px 0 0;
+}
+
+.msj-media-badge{
+  position:absolute; bottom:8px; right:8px; display:flex; gap:8px; background:rgba(11,31,30,.72); color:#fff;
+  font-size:11.5px; font-weight:600; padding:4px 8px; border-radius:100px;
+}
+.msj-media-badge span{ display:flex; align-items:center; gap:3px; }
+.msj-list-thumb{ position:relative; }
+
+.msj-view-switch{ display:flex; border:1px solid var(--line); border-radius:100px; overflow:hidden; background:#fff; }
+.msj-view-switch button{
+  display:flex; align-items:center; gap:6px; padding:10px 16px; font-size:13.5px; font-weight:600;
+  color:var(--text-on-paper-dim); background:none; border:none; cursor:pointer; font-family:var(--sans);
+}
+.msj-view-switch button.active{ background:var(--ink); color:#fff; }
+.msj-view-switch button + button{ border-left:1px solid var(--line); }
+
+.msj-active-filters{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:14px 0 24px; }
+.msj-active-filter-chip{
+  display:flex; align-items:center; gap:6px; background:var(--paper-dim); border:1px solid var(--line);
+  border-radius:100px; padding:6px 8px 6px 14px; font-size:12.5px; font-weight:600; color:var(--text-on-paper);
+}
+.msj-active-filter-chip button{ display:flex; background:none; border:none; padding:3px; cursor:pointer; color:var(--text-on-paper-dim); }
+.msj-active-filter-chip button:hover{ color:#C24B3F; }
+.msj-clear-all{ background:none; border:none; font-size:12.5px; font-weight:700; color:var(--teal-deep); cursor:pointer; font-family:var(--sans); }
+
+.msj-row-list{ display:flex; flex-direction:column; gap:12px; margin-top:8px; }
+.msj-row-item{
+  display:flex; align-items:center; gap:16px; background:#fff; border:1px solid var(--line); border-radius:12px; padding:12px 16px;
+}
+.msj-row-thumb{ width:76px; height:56px; border-radius:8px; overflow:hidden; flex-shrink:0; background:var(--paper-dim); display:flex; align-items:center; justify-content:center; }
+.msj-row-thumb img{ width:100%; height:100%; object-fit:cover; }
+.msj-row-main{ flex:1; min-width:0; }
+.msj-row-top{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.msj-row-top h3{ font-size:15px; color:var(--text-on-paper); }
+.msj-row-top .msj-category-badge{ margin:0; }
+.msj-row-meta{ display:flex; align-items:center; gap:16px; flex-wrap:wrap; margin-top:6px; font-size:12.5px; color:var(--text-on-paper-dim); }
+.msj-row-meta span{ display:flex; align-items:center; gap:5px; }
+.msj-row-meta .msj-media-badge{ position:static; background:none; color:var(--text-on-paper-dim); padding:0; gap:8px; }
+.msj-row-meta .msj-list-campaigns{ font-size:12.5px; }
+.msj-row-item .msj-list-actions{ margin-top:0; flex-shrink:0; }
+
+.msj-mymasjids-map{ height:480px; }
+.msj-map-unmapped{
+  display:flex; align-items:flex-start; gap:8px; margin-top:14px; padding:12px 16px; background:var(--paper-dim);
+  border-radius:10px; font-size:13px; color:var(--text-on-paper-dim); line-height:1.6;
+}
+.msj-map-unmapped svg{ flex-shrink:0; margin-top:2px; color:var(--teal-deep); }
+.msj-map-unmapped a{ color:var(--teal-deep); font-weight:600; }
+
+.msj-map-popup{ width:220px; }
+.msj-map-popup-thumb{ width:100%; height:110px; object-fit:cover; border-radius:8px 8px 0 0; }
+.msj-map-popup-body{ padding:10px 2px 2px; }
+.msj-map-popup-body h4{ font-size:14px; color:var(--text-on-paper); margin-bottom:6px; }
+.msj-map-popup-meta{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:6px; }
+.msj-map-popup-body p{ font-size:12.5px; color:var(--text-on-paper-dim); margin-bottom:8px; }
+.msj-map-popup-body a{ font-size:12.5px; font-weight:700; color:var(--teal-deep); }
+
 .msj-reason-list{ display:flex; flex-direction:column; gap:2px; margin-bottom:16px; }
 .msj-reason-option{
   display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; cursor:pointer; font-size:14px; color:var(--text-on-paper);

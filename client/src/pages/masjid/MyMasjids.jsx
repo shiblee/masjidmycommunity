@@ -1,23 +1,37 @@
-import React, { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import React, { useEffect, useMemo, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { Icon } from "../../components/Icons.jsx";
-import { API_ORIGIN } from "../../config.js";
-import { formatDate } from "../../utils/formatDateTime.js";
 import masjidApi from "../../services/masjidApi.js";
-import MediaThumb from "../../components/MediaThumb.jsx";
 import MasjidDeleteFlow from "../../components/masjid/MasjidDeleteFlow.jsx";
+import MyMasjidsGrid from "./MyMasjidsGrid.jsx";
+import MyMasjidsList from "./MyMasjidsList.jsx";
+import MyMasjidsMap from "./MyMasjidsMap.jsx";
+import { STATUS_LABEL, matchesSearch } from "./myMasjidsShared.jsx";
 
-const STATUS_LABEL = {
-  draft: "Draft", submitted: "Submitted", under_review: "Under Review",
-  changes_requested: "Changes Requested", approved: "Approved", rejected: "Rejected", inactive: "Inactive", deleted: "Deleted",
-};
-const EDITABLE = new Set(["draft", "changes_requested"]);
+const VIEWS = [
+  { key: "grid", label: "Grid", icon: "grid" },
+  { key: "list", label: "List", icon: "list" },
+  { key: "map", label: "Map", icon: "map" },
+];
 
 function MyMasjids() {
-  const navigate = useNavigate();
   const [masjids, setMasjids] = useState(null);
+  const [categories, setCategories] = useState([]);
   const [error, setError] = useState("");
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const view = VIEWS.some((v) => v.key === searchParams.get("view")) ? searchParams.get("view") : "grid";
+  const q = searchParams.get("q") || "";
+  const category = searchParams.get("category") || "";
+  const status = searchParams.get("status") || "";
+
+  const setParam = (key, value) => {
+    const next = new URLSearchParams(searchParams);
+    if (value) next.set(key, value);
+    else next.delete(key);
+    setSearchParams(next, { replace: true });
+  };
 
   const load = () => {
     masjidApi
@@ -27,6 +41,35 @@ function MyMasjids() {
   };
 
   useEffect(() => { load(); }, []);
+  useEffect(() => {
+    masjidApi.get("/public/categories").then(({ data }) => setCategories(data.categories)).catch(() => {});
+  }, []);
+
+  const filtered = useMemo(() => {
+    if (!masjids) return [];
+    return masjids.filter((m) => matchesSearch(m, q) && (!category || m.category === category) && (!status || m.status === status));
+  }, [masjids, q, category, status]);
+
+  const stats = useMemo(() => {
+    const list = masjids || [];
+    return {
+      total: list.length,
+      approved: list.filter((m) => m.status === "approved").length,
+      photos: list.reduce((sum, m) => sum + (m.photoCount || 0), 0),
+      videos: list.reduce((sum, m) => sum + (m.videoCount || 0), 0),
+    };
+  }, [masjids]);
+
+  const activeFilters = [
+    q && { key: "q", label: `Search: "${q}"` },
+    category && { key: "category", label: `Category: ${category}` },
+    status && { key: "status", label: `Status: ${STATUS_LABEL[status]}` },
+  ].filter(Boolean);
+
+  const clearAll = () => setSearchParams({}, { replace: true });
+
+  const hasAnyMasjids = masjids && masjids.length > 0;
+  const hasNoResults = hasAnyMasjids && filtered.length === 0;
 
   return (
     <main className="acct-page">
@@ -56,38 +99,71 @@ function MyMasjids() {
             </div>
           )}
 
-          <div className="msj-list-grid">
-            {masjids?.map((m) => (
-              <div className="msj-list-card" key={m.id}>
-                <div className="msj-list-thumb">
-                  <MediaThumb src={m.coverPhotoUrl ? `${API_ORIGIN}${m.coverPhotoUrl}` : null} />
+          {hasAnyMasjids && (
+            <>
+              <div className="msj-stats-strip">
+                <div className="msj-stat-box"><strong>{stats.total}</strong><span>Total Masjids</span></div>
+                <div className="msj-stat-box"><strong>{stats.approved}</strong><span>Approved</span></div>
+                <div className="msj-stat-box"><strong>{stats.photos}</strong><span>Photos</span></div>
+                <div className="msj-stat-box"><strong>{stats.videos}</strong><span>Videos</span></div>
+              </div>
+
+              <div className="msj-explore-filters">
+                <div className="msj-search">
+                  <Icon name="search" size={16} />
+                  <input value={q} onChange={(e) => setParam("q", e.target.value)} placeholder="Search your masjids..." />
                 </div>
-                <div className="msj-list-body">
-                  <div className="msj-list-top">
-                    <h3>{m.name}</h3>
-                    <span className={`acct-status-pill ${m.status}`}>{STATUS_LABEL[m.status]}</span>
-                  </div>
-                  <p className="msj-list-loc"><Icon name="mapPin" size={14} /> {[m.city, m.country].filter(Boolean).join(", ") || "Location not set"}</p>
-                  <p className="msj-list-meta">Registered {formatDate(m.createdAt)}</p>
-                  <button
-                    type="button"
-                    className="msj-list-campaigns"
-                    onClick={() => navigate(`/account/my-campaigns?masjidId=${m.id}`)}
-                  >
-                    Campaigns: <strong>{m.campaignCount}</strong>
-                  </button>
-                  <div className="msj-list-actions">
-                    <Link to={`/account/my-masjids/${m.id}`}>{EDITABLE.has(m.status) ? "Edit" : "View Details"}</Link>
-                    {m.adminFeedback && <Link to={`/account/my-masjids/${m.id}`}>View Admin Feedback</Link>}
-                    {m.status === "approved" && <Link to={`/masjid/${m.id}`}>View Public Profile</Link>}
-                    {m.status === "approved" && <Link to={`/account/my-campaigns/new?masjidId=${m.id}`}>Create a Campaign</Link>}
-                    {m.status === "approved" && <Link to={`/account/my-campaigns?masjidId=${m.id}`}>Manage Campaigns</Link>}
-                    <button type="button" className="danger" onClick={() => setDeleteTarget(m)}>Delete</button>
-                  </div>
+                <select value={category} onChange={(e) => setParam("category", e.target.value)}>
+                  <option value="">All Categories</option>
+                  {categories.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
+                </select>
+                <select value={status} onChange={(e) => setParam("status", e.target.value)}>
+                  <option value="">All Statuses</option>
+                  {Object.entries(STATUS_LABEL).filter(([key]) => key !== "deleted").map(([key, label]) => (
+                    <option key={key} value={key}>{label}</option>
+                  ))}
+                </select>
+                <div className="msj-view-switch">
+                  {VIEWS.map((v) => (
+                    <button
+                      key={v.key}
+                      type="button"
+                      className={view === v.key ? "active" : ""}
+                      onClick={() => setParam("view", v.key)}
+                      title={v.label}
+                    >
+                      <Icon name={v.icon} size={16} /> {v.label}
+                    </button>
+                  ))}
                 </div>
               </div>
-            ))}
-          </div>
+
+              {activeFilters.length > 0 && (
+                <div className="msj-active-filters">
+                  {activeFilters.map((f) => (
+                    <span className="msj-active-filter-chip" key={f.key}>
+                      {f.label}
+                      <button type="button" onClick={() => setParam(f.key, "")}><Icon name="x" size={11} /></button>
+                    </span>
+                  ))}
+                  <button type="button" className="msj-clear-all" onClick={clearAll}>Clear All Filters</button>
+                </div>
+              )}
+
+              {hasNoResults && (
+                <div className="msj-empty-state">
+                  <Icon name="search" size={30} />
+                  <h3>No masjids match your search</h3>
+                  <p>Try a different search term or remove some filters.</p>
+                  <button type="button" className="btn btn-gold" onClick={clearAll}>Clear Filters</button>
+                </div>
+              )}
+
+              {!hasNoResults && view === "grid" && <MyMasjidsGrid masjids={filtered} onDelete={setDeleteTarget} />}
+              {!hasNoResults && view === "list" && <MyMasjidsList masjids={filtered} onDelete={setDeleteTarget} />}
+              {!hasNoResults && view === "map" && <MyMasjidsMap masjids={filtered} />}
+            </>
+          )}
         </div>
       </section>
 
