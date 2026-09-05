@@ -19,6 +19,7 @@ function MyMasjids() {
   const [categories, setCategories] = useState([]);
   const [error, setError] = useState("");
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [selectedId, setSelectedId] = useState(null);
   const [searchParams, setSearchParams] = useSearchParams();
 
   const view = VIEWS.some((v) => v.key === searchParams.get("view")) ? searchParams.get("view") : "grid";
@@ -67,6 +68,11 @@ function MyMasjids() {
   ].filter(Boolean);
 
   const clearAll = () => setSearchParams({}, { replace: true });
+
+  const handleViewOnMap = (m) => {
+    setSelectedId(m.id);
+    setParam("view", "map");
+  };
 
   const hasAnyMasjids = masjids && masjids.length > 0;
   const hasNoResults = hasAnyMasjids && filtered.length === 0;
@@ -160,8 +166,8 @@ function MyMasjids() {
               )}
 
               {!hasNoResults && view === "grid" && <MyMasjidsGrid masjids={filtered} onDelete={setDeleteTarget} />}
-              {!hasNoResults && view === "list" && <MyMasjidsList masjids={filtered} onDelete={setDeleteTarget} />}
-              {!hasNoResults && view === "map" && <MyMasjidsMap masjids={filtered} />}
+              {!hasNoResults && view === "list" && <MyMasjidsList masjids={filtered} onDelete={setDeleteTarget} onViewOnMap={handleViewOnMap} />}
+              {!hasNoResults && view === "map" && <MyMasjidsMap masjids={filtered} selectedId={selectedId} onSelect={setSelectedId} />}
             </>
           )}
         </div>

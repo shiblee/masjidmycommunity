@@ -4,13 +4,7 @@ import { Icon } from "../../components/Icons.jsx";
 import MediaThumb from "../../components/MediaThumb.jsx";
 import MediaCountBadge from "../../components/MediaCountBadge.jsx";
 import { API_ORIGIN } from "../../config.js";
-import { locationOf, VerifiedTick, ActiveCampaignBadge } from "./exploreMasjidsShared.jsx";
-
-function excerpt(text, max = 140) {
-  if (!text) return null;
-  const trimmed = text.trim();
-  return trimmed.length > max ? `${trimmed.slice(0, max).trim()}…` : trimmed;
-}
+import { locationOf, VerifiedTick, ActiveCampaignBadge, excerpt } from "./exploreMasjidsShared.jsx";
 
 function ExploreMasjidsList({ masjids, onViewOnMap }) {
   return (

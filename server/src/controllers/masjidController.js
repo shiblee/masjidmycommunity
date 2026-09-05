@@ -67,19 +67,30 @@ export const listMine = async (req, res) => {
     });
     const withCounts = await Promise.all(
       masjids.map(async (m) => {
-        const [coverPhoto, campaignCount, mediaCounts] = await Promise.all([
+        const [coverPhoto, campaignCount, activeCampaignCount, mediaCounts, imam] = await Promise.all([
           MasjidPhoto.findOne({ where: { masjidId: m.id, isCover: true } }),
           Campaign.count({ where: { masjidId: m.id } }),
+          Campaign.count({ where: { masjidId: m.id, status: "active" } }),
           MasjidPhoto.findAll({
             where: { masjidId: m.id },
             attributes: ["mediaType", [fn("COUNT", col("id")), "count"]],
             group: ["mediaType"],
             raw: true,
           }),
+          MasjidContactPerson.findOne({ where: { masjidId: m.id, designation: "Imam" } }),
         ]);
         const photoCount = Number(mediaCounts.find((r) => r.mediaType === "photo")?.count || 0);
         const videoCount = Number(mediaCounts.find((r) => r.mediaType === "video")?.count || 0);
-        return { ...m.toJSON(), otpCode: undefined, coverPhotoUrl: coverPhoto?.url || null, campaignCount, photoCount, videoCount };
+        return {
+          ...m.toJSON(),
+          otpCode: undefined,
+          coverPhotoUrl: coverPhoto?.url || null,
+          campaignCount,
+          activeCampaignCount,
+          photoCount,
+          videoCount,
+          imamName: imam?.name || null,
+        };
       })
     );
     res.json({ masjids: withCounts });

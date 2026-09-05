@@ -7,24 +7,11 @@ import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 import { Icon } from "../../components/Icons.jsx";
 import MediaThumb from "../../components/MediaThumb.jsx";
 import { API_ORIGIN } from "../../config.js";
+import { loadClusterPlugin } from "../../utils/loadMarkerCluster.js";
 import { locationOf } from "./exploreMasjidsShared.jsx";
 
 const DEFAULT_CENTER = [20.5937, 78.9629];
 const DEFAULT_ZOOM = 4;
-
-// leaflet.markercluster is a UMD plugin that attaches L.MarkerClusterGroup to
-// a *global* L rather than importing it — a static `import "leaflet.markercluster"`
-// isn't guaranteed to run after `L` is set up on window (bundler/ESM evaluation
-// order isn't specified for that). A dynamic import after `window.L = L` makes
-// the ordering explicit and correct; loaded once and cached for the app's life.
-let clusterPluginPromise = null;
-function loadClusterPlugin() {
-  if (!clusterPluginPromise) {
-    window.L = L;
-    clusterPluginPromise = import("leaflet.markercluster");
-  }
-  return clusterPluginPromise;
-}
 
 const pinIcon = L.divIcon({
   className: "msj-map-pin",

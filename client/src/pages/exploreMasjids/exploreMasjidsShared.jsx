@@ -34,3 +34,9 @@ export function ActiveCampaignBadge({ m }) {
     </span>
   );
 }
+
+export function excerpt(text, max = 140) {
+  if (!text) return null;
+  const trimmed = text.trim();
+  return trimmed.length > max ? `${trimmed.slice(0, max).trim()}…` : trimmed;
+}

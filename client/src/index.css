@@ -3074,6 +3074,11 @@ footer{
 .msj-explore-row-about{ font-size:13.5px; color:var(--text-on-paper-dim); line-height:1.6; margin-top:8px; }
 .msj-explore-row-meta{ display:flex; align-items:center; gap:10px; margin-top:10px; }
 .msj-explore-row-actions{ flex-direction:column; align-items:flex-end; gap:10px; flex-shrink:0; margin-top:0; }
+.msj-explore-row-actions-col{ display:flex; flex-direction:column; align-items:flex-end; gap:12px; flex-shrink:0; width:150px; }
+.msj-explore-row-actions-col .msj-list-actions{ flex-direction:column; align-items:flex-end; gap:8px; margin-top:0; }
+.msj-view-on-map{
+  font-size:13px; font-weight:700; color:var(--teal-deep); background:none; border:none; cursor:pointer; font-family:var(--sans); padding:0;
+}
 
 .msj-explore-map-layout{ display:grid; grid-template-columns:360px 1fr; gap:20px; margin-top:8px; }
 .msj-explore-map-panel{
