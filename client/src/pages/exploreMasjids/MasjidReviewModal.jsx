@@ -103,6 +103,12 @@ function extOf(filename) {
   return filename.split(".").pop()?.toLowerCase() || "";
 }
 
+// "jpg" and "jpeg" are the same format under two spellings — accept either
+// whichever one the admin listed in Review Settings.
+function normalizeImageExt(ext) {
+  return ext === "jpeg" ? "jpg" : ext;
+}
+
 function ReviewForm({ masjidId, existing, settings, onSaved, onCancel }) {
   const [rating, setRating] = useState(existing?.rating || 0);
   const [body, setBody] = useState(existing?.body || "");
@@ -117,7 +123,7 @@ function ReviewForm({ masjidId, existing, settings, onSaved, onCancel }) {
   const overLimit = body.length > maxLength;
   const mediaEnabled = settings?.mediaEnabled ?? true;
   const maxImages = settings?.maxImages ?? 5;
-  const imageFormats = (settings?.allowedImageFormats || "jpg,png,webp").split(",").map((f) => f.trim().toLowerCase());
+  const imageFormats = (settings?.allowedImageFormats || "jpg,png,webp").split(",").map((f) => normalizeImageExt(f.trim().toLowerCase()));
   const videoFormats = (settings?.allowedVideoFormats || "mp4,webm,mov").split(",").map((f) => f.trim().toLowerCase());
   const maxVideoBytes = (settings?.maxVideoSizeMB ?? 50) * 1024 * 1024;
   const maxVideoDuration = settings?.maxVideoDurationSeconds ?? 60;
@@ -153,7 +159,7 @@ function ReviewForm({ masjidId, existing, settings, onSaved, onCancel }) {
           setError(`You can attach up to ${maxImages} image${maxImages === 1 ? "" : "s"}.`);
           continue;
         }
-        if (!imageFormats.includes(ext)) { setError(`Images must be one of: ${imageFormats.join(", ")}.`); continue; }
+        if (!imageFormats.includes(normalizeImageExt(ext))) { setError(`Images must be one of: ${imageFormats.join(", ")}.`); continue; }
         if (file.size > IMAGE_SIZE_MAX_BYTES) { setError(`Images must be under ${IMAGE_SIZE_MAX_BYTES / (1024 * 1024)}MB.`); continue; }
         runningPhotoCount += 1;
       }
