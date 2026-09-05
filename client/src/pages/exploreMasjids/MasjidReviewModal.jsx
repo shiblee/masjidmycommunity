@@ -6,7 +6,7 @@ import MediaThumb from "../../components/MediaThumb.jsx";
 import { API_BASE, API_ORIGIN } from "../../config.js";
 import { getUserToken } from "../../utils/userAuthStorage.js";
 import { formatDate } from "../../utils/formatDateTime.js";
-import { locationOf, excerpt, StarRating } from "./exploreMasjidsShared.jsx";
+import { locationOf, StarRating } from "./exploreMasjidsShared.jsx";
 
 const API = `${API_BASE}/masjids/public`;
 
@@ -146,14 +146,28 @@ function MasjidReviewModal({ masjid, initialTab = "overview", onClose }) {
 
         <div className="msj-review-tabs">
           <button type="button" className={tab === "overview" ? "active" : ""} onClick={() => setTab("overview")}>Overview</button>
+          <button type="button" className={tab === "about" ? "active" : ""} onClick={() => setTab("about")}>About</button>
           <button type="button" className={tab === "reviews" ? "active" : ""} onClick={() => setTab("reviews")}>Reviews</button>
         </div>
 
         {tab === "overview" && (
           <div className="msj-review-overview">
-            {masjid.category && <span className="msj-category-badge">{masjid.category}</span>}
-            {excerpt(masjid.about, 320) && <p className="msj-review-about">{excerpt(masjid.about, 320)}</p>}
             <Link to={`/masjid/${masjid.id}`} className="btn btn-outline-ink msj-review-view-profile">View Full Profile</Link>
+          </div>
+        )}
+
+        {tab === "about" && (
+          <div className="msj-review-about-panel">
+            {masjid.tagline && <p className="msj-review-tagline">{masjid.tagline}</p>}
+            {masjid.category && <span className="msj-category-badge">{masjid.category}</span>}
+            {masjid.about ? (
+              <>
+                <h4 className="msj-review-about-heading">About the Masjid</h4>
+                <p className="msj-review-about">{masjid.about}</p>
+              </>
+            ) : (
+              <p className="msj-review-empty">No description added yet.</p>
+            )}
           </div>
         )}
 

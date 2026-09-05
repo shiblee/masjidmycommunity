@@ -3273,8 +3273,12 @@ footer{
 .msj-review-tabs button.active{ color:var(--teal-deep); border-bottom-color:var(--teal-deep); }
 
 .msj-review-overview .msj-category-badge{ margin:0 0 10px; }
-.msj-review-about{ font-size:14px; color:var(--text-on-paper-dim); line-height:1.65; }
-.msj-review-view-profile{ display:inline-flex; margin-top:16px; }
+.msj-review-view-profile{ display:inline-flex; }
+
+.msj-review-about-panel .msj-category-badge{ margin:0 0 16px; }
+.msj-review-tagline{ font-size:15px; color:var(--text-on-paper); font-style:italic; margin-bottom:10px; }
+.msj-review-about-heading{ font-size:12.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--text-on-paper-dim); margin-bottom:8px; }
+.msj-review-about{ font-size:14px; color:var(--text-on-paper-dim); line-height:1.7; white-space:pre-wrap; }
 
 .msj-rating-breakdown{ display:flex; flex-direction:column; gap:6px; margin-bottom:18px; }
 .msj-rating-breakdown-row{ display:flex; align-items:center; gap:10px; font-size:12.5px; color:var(--text-on-paper-dim); }
