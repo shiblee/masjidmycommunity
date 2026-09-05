@@ -34,6 +34,8 @@ import TestimonialsAndStories from "./pages/TestimonialsAndStories.jsx";
 import Moderation from "./pages/Moderation.jsx";
 import ModerationDetail from "./pages/ModerationDetail.jsx";
 import PendingReviews from "./pages/PendingReviews.jsx";
+import MasjidCorrections from "./pages/MasjidCorrections.jsx";
+import MasjidCorrectionDetail from "./pages/MasjidCorrectionDetail.jsx";
 
 function AdminApp() {
   return (
@@ -81,6 +83,8 @@ function AdminApp() {
         <Route path="moderation" element={<Moderation />} />
         <Route path="moderation/:targetType/:targetId" element={<ModerationDetail />} />
         <Route path="pending-reviews" element={<PendingReviews />} />
+        <Route path="masjid-corrections" element={<MasjidCorrections />} />
+        <Route path="masjid-corrections/:id" element={<MasjidCorrectionDetail />} />
         <Route path="settings" element={<Settings />} />
       </Route>
 

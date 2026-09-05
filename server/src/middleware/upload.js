@@ -29,6 +29,9 @@ fs.mkdirSync(SUCCESS_STORY_UPLOAD_ROOT, { recursive: true });
 const REVIEW_MEDIA_UPLOAD_ROOT = path.resolve("uploads", "review-media");
 fs.mkdirSync(REVIEW_MEDIA_UPLOAD_ROOT, { recursive: true });
 
+const CORRECTION_MEDIA_UPLOAD_ROOT = path.resolve("uploads", "correction-media");
+fs.mkdirSync(CORRECTION_MEDIA_UPLOAD_ROOT, { recursive: true });
+
 function diskStorageFor(root) {
   return multer.diskStorage({
     destination: (req, file, cb) => cb(null, root),
@@ -228,5 +231,27 @@ export function uploadReviewMedia(req, res, next) {
       return res.status(400).json({ message: `Each file must be under ${REVIEW_MEDIA_ABSOLUTE_MAX_BYTES / (1024 * 1024)}MB.` });
     }
     res.status(400).json({ message: err.message || "Couldn't upload that file." });
+  });
+}
+
+// Photos attached to a Masjid Correction Request — images only, no video;
+// small cap since these are illustrative "here's what it should look like"
+// attachments, not a media gallery.
+const correctionPhotoUpload = multer({
+  storage: diskStorageFor(CORRECTION_MEDIA_UPLOAD_ROOT),
+  limits: { fileSize: IMAGE_MAX_BYTES, files: 5 },
+  fileFilter: (req, file, cb) => {
+    if (!IMAGE_TYPES.has(file.mimetype)) return cb(new Error("Only JPG, PNG, or WEBP photos are allowed."));
+    cb(null, true);
+  },
+});
+
+export function uploadCorrectionPhotos(req, res, next) {
+  correctionPhotoUpload.array("photos", 5)(req, res, (err) => {
+    if (!err) return next();
+    if (err.code === "LIMIT_FILE_SIZE") {
+      return res.status(400).json({ message: `Each photo must be under ${IMAGE_MAX_BYTES / (1024 * 1024)}MB.` });
+    }
+    res.status(400).json({ message: err.message || "Couldn't upload that photo." });
   });
 }

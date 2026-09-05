@@ -10,7 +10,17 @@ import { formatDate } from "../../utils/formatDateTime.js";
 import { locationOf, StarRating, directionsUrl } from "./exploreMasjidsShared.jsx";
 
 const API = `${API_BASE}/masjids/public`;
-const SUGGESTION_CATEGORIES = ["Name", "Category", "Location", "Photos", "Other"];
+
+const CORRECTION_FIELDS = [
+  { key: "name", label: "Name" },
+  { key: "category", label: "Category" },
+  { key: "location", label: "Location" },
+  { key: "photos", label: "Photos" },
+  { key: "contact", label: "Contact Details" },
+  { key: "other", label: "Other" },
+];
+const CORRECTION_TEXT_MAX = 1000;
+const CORRECTION_PHOTO_MAX = 5;
 
 function HeartIcon({ filled, size = 20 }) {
   const path = "M12 21s-6.7-4.35-9.3-8.1C.8 10.1 1.4 6.8 4 5.2c2-1.2 4.4-.6 5.7 1 .7.8 1.4 1.8 2.3 1.8s1.6-1 2.3-1.8c1.3-1.6 3.7-2.2 5.7-1 2.6 1.6 3.2 4.9 1.3 7.7C18.7 16.65 12 21 12 21z";
@@ -33,24 +43,159 @@ function ShareIcon({ size = 20 }) {
   );
 }
 
-function SuggestEditForm({ masjidId, onDone, onCancel }) {
-  const [category, setCategory] = useState("");
-  const [description, setDescription] = useState("");
+function emptyValueFor(fieldKey) {
+  if (fieldKey === "contact") return { designation: "", name: "", mobile: "" };
+  if (fieldKey === "photos") return { files: [], caption: "" };
+  return { text: "" };
+}
+
+function CorrectionCard({ fieldKey, label, masjid, categories, designations, value, onChange, onRemove }) {
+  const set = (patch) => onChange({ ...value, ...patch });
+
+  const addPhotos = (fileList) => {
+    const files = Array.from(fileList || []).slice(0, CORRECTION_PHOTO_MAX - value.files.length);
+    const accepted = [];
+    for (const file of files) {
+      if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) continue;
+      if (file.size > IMAGE_SIZE_MAX_BYTES) continue;
+      accepted.push({ file, previewUrl: URL.createObjectURL(file) });
+    }
+    if (accepted.length) set({ files: [...value.files, ...accepted] });
+  };
+
+  const removePhoto = (i) => {
+    URL.revokeObjectURL(value.files[i].previewUrl);
+    set({ files: value.files.filter((_, idx) => idx !== i) });
+  };
+
+  let current;
+  let suggestedInput;
+
+  if (fieldKey === "name") {
+    current = masjid.name || "Not set";
+    suggestedInput = <input type="text" value={value.text} onChange={(e) => set({ text: e.target.value })} placeholder="Suggested name" maxLength={CORRECTION_TEXT_MAX} />;
+  } else if (fieldKey === "category") {
+    current = masjid.category || "Not set";
+    suggestedInput = (
+      <select value={value.text} onChange={(e) => set({ text: e.target.value })}>
+        <option value="">Suggested category…</option>
+        {categories.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
+      </select>
+    );
+  } else if (fieldKey === "location") {
+    current = masjid.formattedAddress || masjid.address || "Not set";
+    suggestedInput = <textarea rows={2} value={value.text} onChange={(e) => set({ text: e.target.value })} placeholder="Suggested location / landmark" maxLength={CORRECTION_TEXT_MAX} />;
+  } else if (fieldKey === "contact") {
+    current = masjid.imamName ? `Imam: ${masjid.imamName}` : "No contact on file";
+    suggestedInput = (
+      <div className="msj-correction-contact-inputs">
+        <select value={value.designation} onChange={(e) => set({ designation: e.target.value })}>
+          <option value="">Designation…</option>
+          {designations.map((d) => <option key={d.id} value={d.name}>{d.name}</option>)}
+        </select>
+        <input type="text" value={value.name} onChange={(e) => set({ name: e.target.value })} placeholder="Name" />
+        <input type="tel" value={value.mobile} onChange={(e) => set({ mobile: e.target.value })} placeholder="Mobile number" />
+      </div>
+    );
+  } else if (fieldKey === "photos") {
+    current = masjid.coverPhotoUrl ? <MediaThumb src={`${API_ORIGIN}${masjid.coverPhotoUrl}`} className="msj-correction-current-photo" /> : "No photo yet";
+    suggestedInput = (
+      <div>
+        <label className="msj-review-dropzone msj-correction-photo-dropzone">
+          <Icon name="upload" size={16} />
+          <span>Attach a photo</span>
+          <input type="file" accept="image/png,image/jpeg,image/webp" multiple hidden onChange={(e) => { addPhotos(e.target.files); e.target.value = ""; }} />
+        </label>
+        {value.files.length > 0 && (
+          <div className="msj-review-media-grid">
+            {value.files.map((f, i) => (
+              <div className="msj-review-media-thumb" key={i}>
+                <MediaThumb src={f.previewUrl} />
+                <button type="button" className="msj-review-media-remove" onClick={() => removePhoto(i)} aria-label="Remove"><Icon name="x" size={12} /></button>
+              </div>
+            ))}
+          </div>
+        )}
+        <input type="text" value={value.caption} onChange={(e) => set({ caption: e.target.value })} placeholder="Caption (optional)" maxLength={CORRECTION_TEXT_MAX} style={{ marginTop: 10 }} />
+      </div>
+    );
+  } else {
+    current = null;
+    suggestedInput = <textarea rows={3} value={value.text} onChange={(e) => set({ text: e.target.value })} placeholder="Describe the correction…" maxLength={CORRECTION_TEXT_MAX} />;
+  }
+
+  return (
+    <div className="msj-correction-card">
+      <div className="msj-correction-card-head">
+        <strong>{label}</strong>
+        <button type="button" className="msj-correction-remove" onClick={onRemove} aria-label={`Remove ${label}`}><Icon name="x" size={13} /></button>
+      </div>
+      {current !== null && (
+        <div className="msj-correction-current">
+          <span className="msj-correction-label">Current</span>
+          {typeof current === "string" ? <span>{current}</span> : current}
+        </div>
+      )}
+      <div className="msj-correction-suggested">
+        <span className="msj-correction-label">Suggested</span>
+        {suggestedInput}
+      </div>
+    </div>
+  );
+}
+
+function SuggestEditForm({ masjid, onDone, onCancel }) {
+  const masjidId = masjid.id;
+  const [selected, setSelected] = useState([]);
+  const [values, setValues] = useState({});
+  const [categories, setCategories] = useState([]);
+  const [designations, setDesignations] = useState([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
+  useEffect(() => {
+    axios.get(`${API}/categories`).then(({ data }) => setCategories(data.categories)).catch(() => {});
+    axios.get(`${API}/contact-designations`).then(({ data }) => setDesignations(data.designations)).catch(() => {});
+  }, []);
+
+  const toggleField = (key) => {
+    setSelected((s) => {
+      if (s.includes(key)) return s.filter((k) => k !== key);
+      return [...s, key];
+    });
+    setValues((v) => (v[key] ? v : { ...v, [key]: emptyValueFor(key) }));
+  };
+
+  const removeField = (key) => setSelected((s) => s.filter((k) => k !== key));
+
   const submit = async () => {
-    if (!category) { setError("Please select what needs to be corrected."); return; }
-    if (!description.trim()) { setError("Please describe the correction."); return; }
+    if (selected.length === 0) { setError("Please select at least one field to correct."); return; }
+
+    const payload = [];
+    const photoFiles = [];
+    for (const key of selected) {
+      const v = values[key] || emptyValueFor(key);
+      if (key === "contact") {
+        if (!v.designation || !v.name.trim() || !v.mobile.trim()) { setError("Please fill in designation, name, and mobile number for the contact suggestion."); return; }
+        payload.push({ fieldKey: key, suggestedValue: { designation: v.designation, name: v.name.trim(), mobile: v.mobile.trim() } });
+      } else if (key === "photos") {
+        if (v.files.length === 0) { setError("Please attach at least one photo."); return; }
+        v.files.forEach((f) => photoFiles.push(f.file));
+        payload.push({ fieldKey: key, suggestedValue: { caption: v.caption.trim() } });
+      } else {
+        if (!v.text.trim()) { setError(`Please enter a suggested value for ${CORRECTION_FIELDS.find((f) => f.key === key).label}.`); return; }
+        payload.push({ fieldKey: key, suggestedValue: { text: v.text.trim() } });
+      }
+    }
+
     setBusy(true);
     setError("");
     try {
       const token = getUserToken();
-      await axios.post(
-        `${API}/${masjidId}/suggest-edit`,
-        { category, description: description.trim() },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const fd = new FormData();
+      fd.append("fields", JSON.stringify(payload));
+      photoFiles.forEach((f) => fd.append("photos", f));
+      await axios.post(`${API}/${masjidId}/suggest-edit`, fd, { headers: { Authorization: `Bearer ${token}` } });
       onDone();
     } catch (err) {
       setError(err.response?.data?.message || "Couldn't send your suggestion. Please try again.");
@@ -61,17 +206,33 @@ function SuggestEditForm({ masjidId, onDone, onCancel }) {
 
   return (
     <div className="msj-suggest-edit-form">
-      <select value={category} onChange={(e) => setCategory(e.target.value)}>
-        <option value="">What needs to be corrected?</option>
-        {SUGGESTION_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-      </select>
-      <textarea
-        rows={4}
-        value={description}
-        onChange={(e) => setDescription(e.target.value)}
-        placeholder="Describe the correction…"
-        maxLength={1000}
-      />
+      <p className="msj-correction-intro">Select what needs to be corrected — you can pick more than one.</p>
+      <div className="msj-correction-checklist">
+        {CORRECTION_FIELDS.map((f) => (
+          <label key={f.key} className="msj-correction-checkbox">
+            <input type="checkbox" checked={selected.includes(f.key)} onChange={() => toggleField(f.key)} />
+            {f.label}
+          </label>
+        ))}
+      </div>
+
+      {selected.map((key) => {
+        const def = CORRECTION_FIELDS.find((f) => f.key === key);
+        return (
+          <CorrectionCard
+            key={key}
+            fieldKey={key}
+            label={def.label}
+            masjid={masjid}
+            categories={categories}
+            designations={designations}
+            value={values[key] || emptyValueFor(key)}
+            onChange={(next) => setValues((v) => ({ ...v, [key]: next }))}
+            onRemove={() => removeField(key)}
+          />
+        );
+      })}
+
       {error && <p className="msj-review-form-error">{error}</p>}
       <div className="msj-review-form-actions">
         <button type="button" className="btn btn-outline-ink" onClick={onCancel} disabled={busy}>Cancel</button>
@@ -455,10 +616,10 @@ function MasjidReviewModal({ masjid, initialTab = "overview", onClose }) {
 
             <div className="msj-suggest-edit">
               {suggestSent ? (
-                <p className="msj-suggest-edit-sent"><Icon name="check" size={15} /> Thanks! Your suggestion has been sent for review.</p>
+                <p className="msj-suggest-edit-sent"><Icon name="check" size={15} /> Thanks! Your correction request has been sent for review.</p>
               ) : showSuggest ? (
                 loggedIn ? (
-                  <SuggestEditForm masjidId={masjid.id} onDone={() => { setShowSuggest(false); setSuggestSent(true); }} onCancel={() => setShowSuggest(false)} />
+                  <SuggestEditForm masjid={masjid} onDone={() => { setShowSuggest(false); setSuggestSent(true); }} onCancel={() => setShowSuggest(false)} />
                 ) : (
                   <p className="msj-review-login-prompt"><Link to="/auth">Sign in</Link> to suggest an edit.</p>
                 )
