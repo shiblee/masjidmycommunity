@@ -1,14 +1,84 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Icon } from "../../components/Icons.jsx";
 import MediaThumb from "../../components/MediaThumb.jsx";
 import { API_BASE, API_ORIGIN } from "../../config.js";
 import { getUserToken } from "../../utils/userAuthStorage.js";
 import { formatDate } from "../../utils/formatDateTime.js";
-import { locationOf, StarRating } from "./exploreMasjidsShared.jsx";
+import { locationOf, StarRating, directionsUrl } from "./exploreMasjidsShared.jsx";
 
 const API = `${API_BASE}/masjids/public`;
+const SUGGESTION_CATEGORIES = ["Name", "Category", "Location", "Photos", "Other"];
+
+function HeartIcon({ filled, size = 20 }) {
+  const path = "M12 21s-6.7-4.35-9.3-8.1C.8 10.1 1.4 6.8 4 5.2c2-1.2 4.4-.6 5.7 1 .7.8 1.4 1.8 2.3 1.8s1.6-1 2.3-1.8c1.3-1.6 3.7-2.2 5.7-1 2.6 1.6 3.2 4.9 1.3 7.7C18.7 16.65 12 21 12 21z";
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? "#C24B3F" : "none"} stroke={filled ? "#C24B3F" : "currentColor"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d={path} />
+    </svg>
+  );
+}
+
+function ShareIcon({ size = 20 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="18" cy="5" r="3" />
+      <circle cx="6" cy="12" r="3" />
+      <circle cx="18" cy="19" r="3" />
+      <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+      <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+    </svg>
+  );
+}
+
+function SuggestEditForm({ masjidId, onDone, onCancel }) {
+  const [category, setCategory] = useState("");
+  const [description, setDescription] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  const submit = async () => {
+    if (!category) { setError("Please select what needs to be corrected."); return; }
+    if (!description.trim()) { setError("Please describe the correction."); return; }
+    setBusy(true);
+    setError("");
+    try {
+      const token = getUserToken();
+      await axios.post(
+        `${API}/${masjidId}/suggest-edit`,
+        { category, description: description.trim() },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      onDone();
+    } catch (err) {
+      setError(err.response?.data?.message || "Couldn't send your suggestion. Please try again.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="msj-suggest-edit-form">
+      <select value={category} onChange={(e) => setCategory(e.target.value)}>
+        <option value="">What needs to be corrected?</option>
+        {SUGGESTION_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+      </select>
+      <textarea
+        rows={4}
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
+        placeholder="Describe the correction…"
+        maxLength={1000}
+      />
+      {error && <p className="msj-review-form-error">{error}</p>}
+      <div className="msj-review-form-actions">
+        <button type="button" className="btn btn-outline-ink" onClick={onCancel} disabled={busy}>Cancel</button>
+        <button type="button" className="btn btn-gold" onClick={submit} disabled={busy}>{busy ? "Sending…" : "Submit"}</button>
+      </div>
+    </div>
+  );
+}
 
 function ReviewForm({ masjidId, existing, onSaved, onCancel }) {
   const [rating, setRating] = useState(existing?.rating || 0);
@@ -74,10 +144,16 @@ function ReviewRow({ review }) {
 }
 
 function MasjidReviewModal({ masjid, initialTab = "overview", onClose }) {
+  const navigate = useNavigate();
   const [tab, setTab] = useState(initialTab);
   const [data, setData] = useState(null);
   const [myReview, setMyReview] = useState(null);
   const [showForm, setShowForm] = useState(false);
+  const [favorited, setFavorited] = useState(false);
+  const [favBusy, setFavBusy] = useState(false);
+  const [shareLabel, setShareLabel] = useState("Share");
+  const [showSuggest, setShowSuggest] = useState(false);
+  const [suggestSent, setSuggestSent] = useState(false);
   const loggedIn = !!getUserToken();
 
   const load = () => {
@@ -91,6 +167,10 @@ function MasjidReviewModal({ masjid, initialTab = "overview", onClose }) {
         .get(`${API}/${masjid.id}/reviews/mine`, { headers: { Authorization: `Bearer ${token}` } })
         .then(({ data }) => setMyReview(data.review))
         .catch(() => {});
+      axios
+        .get(`${API}/${masjid.id}/favorite`, { headers: { Authorization: `Bearer ${token}` } })
+        .then(({ data }) => setFavorited(data.favorited))
+        .catch(() => {});
     }
   };
 
@@ -103,6 +183,41 @@ function MasjidReviewModal({ masjid, initialTab = "overview", onClose }) {
     setMyReview(review);
     setShowForm(false);
     load();
+  };
+
+  const toggleFavorite = async () => {
+    if (!loggedIn) { navigate("/auth"); return; }
+    setFavBusy(true);
+    const token = getUserToken();
+    try {
+      if (favorited) {
+        await axios.delete(`${API}/${masjid.id}/favorite`, { headers: { Authorization: `Bearer ${token}` } });
+        setFavorited(false);
+      } else {
+        await axios.post(`${API}/${masjid.id}/favorite`, {}, { headers: { Authorization: `Bearer ${token}` } });
+        setFavorited(true);
+      }
+    } catch {
+      // no-op — the button simply won't change state, safe to retry
+    } finally {
+      setFavBusy(false);
+    }
+  };
+
+  const handleShare = async () => {
+    const url = `${window.location.origin}/masjid/${masjid.id}`;
+    if (navigator.share) {
+      navigator.share({ title: masjid.name, url }).catch(() => {});
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      setShareLabel("Link Copied!");
+      setTimeout(() => setShareLabel("Share"), 2000);
+    } catch {
+      setShareLabel("Couldn't copy");
+      setTimeout(() => setShareLabel("Share"), 2000);
+    }
   };
 
   return (
@@ -147,27 +262,51 @@ function MasjidReviewModal({ masjid, initialTab = "overview", onClose }) {
         <div className="msj-review-tabs">
           <button type="button" className={tab === "overview" ? "active" : ""} onClick={() => setTab("overview")}>Overview</button>
           <button type="button" className={tab === "reviews" ? "active" : ""} onClick={() => setTab("reviews")}>Reviews</button>
-          <button type="button" className={tab === "about" ? "active" : ""} onClick={() => setTab("about")}>About</button>
         </div>
 
         {tab === "overview" && (
           <div className="msj-review-overview">
-            <Link to={`/masjid/${masjid.id}`} className="btn btn-outline-ink msj-review-view-profile">View Full Profile</Link>
-          </div>
-        )}
+            <div className="msj-review-actions-row">
+              {directionsUrl(masjid) ? (
+                <a href={directionsUrl(masjid)} target="_blank" rel="noopener noreferrer" className="msj-review-action-btn">
+                  <span className="msj-review-action-icon"><Icon name="compass" size={20} /></span>
+                  Directions
+                </a>
+              ) : (
+                <span className="msj-review-action-btn disabled" title="Location not set for this masjid">
+                  <span className="msj-review-action-icon"><Icon name="compass" size={20} /></span>
+                  Directions
+                </span>
+              )}
+              <button type="button" className={`msj-review-action-btn ${favorited ? "active" : ""}`} onClick={toggleFavorite} disabled={favBusy}>
+                <span className="msj-review-action-icon"><HeartIcon filled={favorited} /></span>
+                {favorited ? "Saved" : "Save"}
+              </button>
+              <button type="button" className="msj-review-action-btn" onClick={handleShare}>
+                <span className="msj-review-action-icon"><ShareIcon /></span>
+                {shareLabel}
+              </button>
+            </div>
 
-        {tab === "about" && (
-          <div className="msj-review-about-panel">
-            {masjid.tagline && <p className="msj-review-tagline">{masjid.tagline}</p>}
-            {masjid.category && <span className="msj-category-badge">{masjid.category}</span>}
-            {masjid.about ? (
-              <>
-                <h4 className="msj-review-about-heading">About the Masjid</h4>
-                <p className="msj-review-about">{masjid.about}</p>
-              </>
-            ) : (
-              <p className="msj-review-empty">No description added yet.</p>
+            {(masjid.formattedAddress || masjid.address) && (
+              <p className="msj-review-address"><Icon name="mapPin" size={15} /> {masjid.formattedAddress || masjid.address}</p>
             )}
+
+            <Link to={`/masjid/${masjid.id}`} className="btn btn-outline-ink msj-review-view-profile">View Full Profile</Link>
+
+            <div className="msj-suggest-edit">
+              {suggestSent ? (
+                <p className="msj-suggest-edit-sent"><Icon name="check" size={15} /> Thanks! Your suggestion has been sent for review.</p>
+              ) : showSuggest ? (
+                loggedIn ? (
+                  <SuggestEditForm masjidId={masjid.id} onDone={() => { setShowSuggest(false); setSuggestSent(true); }} onCancel={() => setShowSuggest(false)} />
+                ) : (
+                  <p className="msj-review-login-prompt"><Link to="/auth">Sign in</Link> to suggest an edit.</p>
+                )
+              ) : (
+                <button type="button" className="msj-suggest-edit-link" onClick={() => setShowSuggest(true)}>Suggest an edit</button>
+              )}
+            </div>
           </div>
         )}
 

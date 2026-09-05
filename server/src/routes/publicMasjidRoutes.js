@@ -2,6 +2,8 @@ import { Router } from "express";
 import auth, { requireUser } from "../middleware/auth.js";
 import { listPublic, listMapPoints, listStats, getPublicOne, listFilters, listCategories, listContactDesignations, listBanks, listDeletionReasons } from "../controllers/publicMasjidController.js";
 import { listReviews, getMyReview, upsertMyReview, deleteMyReview } from "../controllers/masjidReviewController.js";
+import { getFavoriteStatus, addFavorite, removeFavorite } from "../controllers/masjidFavoriteController.js";
+import { suggestEdit } from "../controllers/masjidSuggestionController.js";
 
 const router = Router();
 
@@ -17,6 +19,10 @@ router.get("/:id/reviews", listReviews);
 router.get("/:id/reviews/mine", auth, requireUser, getMyReview);
 router.post("/:id/reviews", auth, requireUser, upsertMyReview);
 router.delete("/:id/reviews", auth, requireUser, deleteMyReview);
+router.get("/:id/favorite", auth, requireUser, getFavoriteStatus);
+router.post("/:id/favorite", auth, requireUser, addFavorite);
+router.delete("/:id/favorite", auth, requireUser, removeFavorite);
+router.post("/:id/suggest-edit", auth, requireUser, suggestEdit);
 router.get("/:id", getPublicOne);
 
 export default router;
