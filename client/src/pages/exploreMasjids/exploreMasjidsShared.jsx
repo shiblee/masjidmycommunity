@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Icon } from "../../components/Icons.jsx";
 
 export function locationOf(m) {
@@ -82,6 +82,53 @@ export function GetDirectionsButton({ m, className = "" }) {
     >
       <Icon name="compass" size={16} />
     </a>
+  );
+}
+
+const STAR_PATH = "M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z";
+const STAR_COLOR = "#F5A623";
+
+function StarIcon({ filled, size }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? STAR_COLOR : "none"} stroke={filled ? STAR_COLOR : "currentColor"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d={STAR_PATH} />
+    </svg>
+  );
+}
+
+/** Read-only when `onChange` is omitted; a clickable 1-5 input (with hover preview) otherwise. `value` may be fractional for display (rounded to the nearest star). */
+export function StarRating({ value = 0, onChange, size = 16 }) {
+  const [hover, setHover] = useState(0);
+  const stars = [1, 2, 3, 4, 5];
+  return (
+    <span className={`msj-star-rating ${onChange ? "interactive" : ""}`} onMouseLeave={() => setHover(0)}>
+      {stars.map((n) =>
+        onChange ? (
+          <button
+            type="button"
+            key={n}
+            className="msj-star-btn"
+            onClick={() => onChange(n)}
+            onMouseEnter={() => setHover(n)}
+            aria-label={`${n} star${n > 1 ? "s" : ""}`}
+          >
+            <StarIcon filled={n <= (hover || value)} size={size} />
+          </button>
+        ) : (
+          <StarIcon key={n} filled={n <= Math.round(value)} size={size} />
+        )
+      )}
+    </span>
+  );
+}
+
+/** Compact "4.4 (119)" chip used on Grid/List/Map-panel — clickable to jump straight to a masjid's Reviews tab. */
+export function RatingChip({ m, onClick }) {
+  if (!m.reviewCount) return null;
+  return (
+    <button type="button" className="msj-rating-chip" onClick={(e) => { e.stopPropagation(); onClick(); }}>
+      <StarIcon filled size={12} /> {Number(m.avgRating).toFixed(1)} <span className="msj-rating-chip-count">({m.reviewCount})</span>
+    </button>
   );
 }
 

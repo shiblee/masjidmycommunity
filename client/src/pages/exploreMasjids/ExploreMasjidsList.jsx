@@ -1,17 +1,15 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
 import { Icon } from "../../components/Icons.jsx";
 import MediaThumb from "../../components/MediaThumb.jsx";
 import MediaCountBadge from "../../components/MediaCountBadge.jsx";
 import { API_ORIGIN } from "../../config.js";
-import { locationOf, VerifiedTick, ActiveCampaignBadge, DistanceBadge, GetDirectionsButton, excerpt } from "./exploreMasjidsShared.jsx";
+import { locationOf, VerifiedTick, ActiveCampaignBadge, DistanceBadge, GetDirectionsButton, RatingChip, excerpt } from "./exploreMasjidsShared.jsx";
 
-function ExploreMasjidsList({ masjids, onViewOnMap, userLocation }) {
-  const navigate = useNavigate();
+function ExploreMasjidsList({ masjids, onViewOnMap, userLocation, onOpenReviews }) {
   return (
     <div className="msj-explore-row-list">
       {masjids.map((m) => (
-        <div className="msj-explore-row msj-explore-row-clickable" key={m.id} onClick={() => navigate(`/masjid/${m.id}`)} role="link" tabIndex={0}>
+        <div className="msj-explore-row msj-explore-row-clickable" key={m.id} onClick={() => onOpenReviews(m)} role="link" tabIndex={0}>
           <div className="msj-explore-row-thumb">
             <MediaThumb src={m.coverPhotoUrl ? `${API_ORIGIN}${m.coverPhotoUrl}` : null} />
             <MediaCountBadge photoCount={m.photoCount} videoCount={m.videoCount} />
@@ -26,6 +24,7 @@ function ExploreMasjidsList({ masjids, onViewOnMap, userLocation }) {
             {m.imamName && <p className="msj-explore-row-imam">Imam: {m.imamName}</p>}
             {excerpt(m.about) && <p className="msj-explore-row-about">{excerpt(m.about)}</p>}
             <div className="msj-explore-row-meta">
+              <RatingChip m={m} onClick={() => onOpenReviews(m, "reviews")} />
               <ActiveCampaignBadge m={m} />
               <DistanceBadge userLocation={userLocation} m={m} />
             </div>

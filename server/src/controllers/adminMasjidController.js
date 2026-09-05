@@ -6,6 +6,7 @@ import MasjidDonationAccount from "../models/MasjidDonationAccount.js";
 import MasjidHistory from "../models/MasjidHistory.js";
 import MasjidContactDesignation from "../models/MasjidContactDesignation.js";
 import MasjidContactPerson from "../models/MasjidContactPerson.js";
+import MasjidReview from "../models/MasjidReview.js";
 import User from "../models/User.js";
 import { recordMasjidApprovedActivity } from "../services/communityActivityService.js";
 import { sendMasjidChangesRequestedEmail } from "../services/emailService.js";
@@ -461,6 +462,19 @@ export const verifyDonationAccount = async (req, res) => {
     json.accountNumberMasked = maskAccountNumber(json.accountNumber);
     delete json.accountNumber;
     res.json({ donationAccount: json });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+/** Admin on/off moderation switch for a review — same shape as verifyDonationAccount's toggle. */
+export const setReviewVisibility = async (req, res) => {
+  try {
+    const review = await MasjidReview.findByPk(req.params.reviewId);
+    if (!review) return res.status(404).json({ message: "Review not found." });
+    review.status = req.body.visible === false ? "hidden" : "visible";
+    await review.save();
+    res.json({ review });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

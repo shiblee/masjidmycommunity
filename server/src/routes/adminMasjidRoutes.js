@@ -15,6 +15,7 @@ import {
   activate,
   deactivate,
   verifyDonationAccount,
+  setReviewVisibility,
 } from "../controllers/adminMasjidController.js";
 import {
   list as listContacts,
@@ -48,5 +49,6 @@ router.post("/:id/notes", addNote);
 router.post("/:id/activate", activate);
 router.post("/:id/deactivate", deactivate);
 router.post("/:id/donation-account/verify", verifyDonationAccount);
+router.patch("/reviews/:reviewId/visibility", setReviewVisibility);
 
 export default router;

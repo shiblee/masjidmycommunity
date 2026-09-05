@@ -7,6 +7,7 @@ import { API_BASE } from "../config.js";
 import ExploreMasjidsGrid from "./exploreMasjids/ExploreMasjidsGrid.jsx";
 import ExploreMasjidsList from "./exploreMasjids/ExploreMasjidsList.jsx";
 import ExploreMasjidsMap from "./exploreMasjids/ExploreMasjidsMap.jsx";
+import MasjidReviewModal from "./exploreMasjids/MasjidReviewModal.jsx";
 import { distanceKm, NEARBY_RADIUS_KM } from "./exploreMasjids/exploreMasjidsShared.jsx";
 
 const API = `${API_BASE}/masjids/public`;
@@ -44,7 +45,10 @@ function ExploreMasjids() {
 
   const [mapMasjids, setMapMasjids] = useState(null);
   const [selectedId, setSelectedId] = useState(null);
+  const [reviewModal, setReviewModal] = useState(null);
   const cityRef = useRef(null);
+
+  const openReviews = (m, initialTab = "overview") => setReviewModal({ masjid: m, initialTab });
 
   const setParam = (updates) => {
     const next = new URLSearchParams(searchParams);
@@ -251,7 +255,7 @@ function ExploreMasjids() {
 
           {view === "grid" && hasResults && (
             <>
-              <ExploreMasjidsGrid masjids={masjids} userLocation={coords} />
+              <ExploreMasjidsGrid masjids={masjids} userLocation={coords} onOpenReviews={openReviews} />
               {masjids.length < total && (
                 <div className="msj-load-more"><button type="button" className="btn btn-outline-ink" onClick={loadMore} disabled={loadingMore}>{loadingMore ? "Loading…" : "Load More"}</button></div>
               )}
@@ -260,7 +264,7 @@ function ExploreMasjids() {
 
           {view === "list" && hasResults && (
             <>
-              <ExploreMasjidsList masjids={masjids} onViewOnMap={handleViewOnMap} userLocation={coords} />
+              <ExploreMasjidsList masjids={masjids} onViewOnMap={handleViewOnMap} userLocation={coords} onOpenReviews={openReviews} />
               {masjids.length < total && (
                 <div className="msj-load-more"><button type="button" className="btn btn-outline-ink" onClick={loadMore} disabled={loadingMore}>{loadingMore ? "Loading…" : "Load More"}</button></div>
               )}
@@ -270,10 +274,14 @@ function ExploreMasjids() {
           {view === "map" && (
             mapMasjids == null
               ? <p className="msj-explore-map-loading">Loading map…</p>
-              : <ExploreMasjidsMap masjids={mapMasjids} selectedId={selectedId} onSelect={setSelectedId} userLocation={coords} onLocateMe={requestLocation} />
+              : <ExploreMasjidsMap masjids={mapMasjids} selectedId={selectedId} onSelect={setSelectedId} userLocation={coords} onLocateMe={requestLocation} onOpenReviews={openReviews} />
           )}
         </div>
       </section>
+
+      {reviewModal && (
+        <MasjidReviewModal masjid={reviewModal.masjid} initialTab={reviewModal.initialTab} onClose={() => setReviewModal(null)} />
+      )}
     </main>
   );
 }

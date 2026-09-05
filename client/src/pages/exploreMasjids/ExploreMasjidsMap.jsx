@@ -7,7 +7,7 @@ import { Icon } from "../../components/Icons.jsx";
 import MediaThumb from "../../components/MediaThumb.jsx";
 import { API_ORIGIN } from "../../config.js";
 import { loadClusterPlugin } from "../../utils/loadMarkerCluster.js";
-import { locationOf, distanceToMasjid, formatDistance, directionsUrl, GetDirectionsButton } from "./exploreMasjidsShared.jsx";
+import { locationOf, distanceToMasjid, formatDistance, directionsUrl, GetDirectionsButton, RatingChip } from "./exploreMasjidsShared.jsx";
 
 // Same path data as Icons.jsx's "compass" — hand-embedded because this
 // popup is raw HTML (a Leaflet popup, outside the React tree).
@@ -55,7 +55,7 @@ function popupHtml(m, distanceLabel) {
   `;
 }
 
-function ExploreMasjidsMap({ masjids, selectedId, onSelect, userLocation, onLocateMe }) {
+function ExploreMasjidsMap({ masjids, selectedId, onSelect, userLocation, onLocateMe, onOpenReviews }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const clusterRef = useRef(null);
@@ -162,7 +162,7 @@ function ExploreMasjidsMap({ masjids, selectedId, onSelect, userLocation, onLoca
             key={m.id}
             ref={(el) => { if (el) itemRefs.current.set(m.id, el); else itemRefs.current.delete(m.id); }}
             className={`msj-explore-map-item ${selectedId === m.id ? "active" : ""}`}
-            onClick={() => onSelect(m.id)}
+            onClick={() => { onSelect(m.id); onOpenReviews?.(m); }}
           >
             <div className="msj-explore-map-item-thumb">
               <MediaThumb src={m.coverPhotoUrl ? `${API_ORIGIN}${m.coverPhotoUrl}` : null} />
@@ -175,6 +175,7 @@ function ExploreMasjidsMap({ masjids, selectedId, onSelect, userLocation, onLoca
                 const d = distanceToMasjid(userLocation, m);
                 return d != null && <span className="msj-explore-map-item-distance">{formatDistance(d)}</span>;
               })()}
+              <RatingChip m={m} onClick={() => onOpenReviews?.(m, "reviews")} />
             </div>
             <GetDirectionsButton m={m} className="msj-explore-map-item-link" />
           </button>

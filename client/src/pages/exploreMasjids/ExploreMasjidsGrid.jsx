@@ -1,19 +1,17 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
 import { Icon } from "../../components/Icons.jsx";
 import MediaThumb from "../../components/MediaThumb.jsx";
 import MediaCountBadge from "../../components/MediaCountBadge.jsx";
 import { API_ORIGIN } from "../../config.js";
-import { locationOf, VerifiedTick, ActiveCampaignBadge, DistanceBadge, GetDirectionsButton } from "./exploreMasjidsShared.jsx";
+import { locationOf, VerifiedTick, ActiveCampaignBadge, DistanceBadge, GetDirectionsButton, RatingChip } from "./exploreMasjidsShared.jsx";
 
-function ExploreMasjidsGrid({ masjids, userLocation }) {
-  const navigate = useNavigate();
+function ExploreMasjidsGrid({ masjids, userLocation, onOpenReviews }) {
   return (
     <div className="msj-explore-grid">
       {masjids.map((m) => (
         // A plain div (not <Link>) so the Get Directions <a> below can nest safely —
         // an <a> can't be a valid descendant of another <a>.
-        <div className="msj-explore-card" key={m.id} onClick={() => navigate(`/masjid/${m.id}`)} role="link" tabIndex={0}>
+        <div className="msj-explore-card" key={m.id} onClick={() => onOpenReviews(m)} role="link" tabIndex={0}>
           <div className="msj-explore-thumb">
             <MediaThumb src={m.coverPhotoUrl ? `${API_ORIGIN}${m.coverPhotoUrl}` : null} />
             <VerifiedTick />
@@ -28,6 +26,7 @@ function ExploreMasjidsGrid({ masjids, userLocation }) {
             {m.tagline && <p className="msj-explore-tagline">{m.tagline}</p>}
             <p className="msj-list-loc"><Icon name="mapPin" size={14} /> {locationOf(m)}</p>
             <div className="msj-explore-row-meta">
+              <RatingChip m={m} onClick={() => onOpenReviews(m, "reviews")} />
               <ActiveCampaignBadge m={m} />
               <DistanceBadge userLocation={userLocation} m={m} />
             </div>

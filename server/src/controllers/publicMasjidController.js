@@ -8,6 +8,7 @@ import MasjidContactPerson from "../models/MasjidContactPerson.js";
 import Bank from "../models/Bank.js";
 import DeletionReason from "../models/DeletionReason.js";
 import Campaign from "../models/Campaign.js";
+import MasjidReview from "../models/MasjidReview.js";
 
 const PUBLIC_STATUS = "approved";
 const MAP_POINTS_CAP = 500;
@@ -60,13 +61,26 @@ function rankByQuery(rows, q) {
   return fuse.search(q).map((r) => r.item);
 }
 
+async function ratingSummary(masjidId) {
+  const rows = await MasjidReview.findAll({
+    where: { masjidId, status: "visible" },
+    attributes: [[fn("AVG", col("rating")), "avg"], [fn("COUNT", col("id")), "count"]],
+    raw: true,
+  });
+  const reviewCount = Number(rows[0]?.count || 0);
+  return { avgRating: reviewCount > 0 ? Number(rows[0].avg) : 0, reviewCount };
+}
+
 async function withCover(masjid) {
-  const cover = await MasjidPhoto.findOne({ where: { masjidId: masjid.id, isCover: true } });
-  return { ...masjid.toJSON(), coverPhotoUrl: cover?.url || null };
+  const [cover, rating] = await Promise.all([
+    MasjidPhoto.findOne({ where: { masjidId: masjid.id, isCover: true } }),
+    ratingSummary(masjid.id),
+  ]);
+  return { ...masjid.toJSON(), coverPhotoUrl: cover?.url || null, ...rating };
 }
 
 async function withCoverAndCampaigns(masjid) {
-  const [cover, activeCampaignCount, mediaCounts, imam] = await Promise.all([
+  const [cover, activeCampaignCount, mediaCounts, imam, rating] = await Promise.all([
     MasjidPhoto.findOne({ where: { masjidId: masjid.id, isCover: true } }),
     Campaign.count({ where: { masjidId: masjid.id, status: "active" } }),
     MasjidPhoto.findAll({
@@ -76,10 +90,11 @@ async function withCoverAndCampaigns(masjid) {
       raw: true,
     }),
     MasjidContactPerson.findOne({ where: { masjidId: masjid.id, designation: "Imam" } }),
+    ratingSummary(masjid.id),
   ]);
   const photoCount = Number(mediaCounts.find((r) => r.mediaType === "photo")?.count || 0);
   const videoCount = Number(mediaCounts.find((r) => r.mediaType === "video")?.count || 0);
-  return { ...masjid.toJSON(), coverPhotoUrl: cover?.url || null, activeCampaignCount, photoCount, videoCount, imamName: imam?.name || null };
+  return { ...masjid.toJSON(), coverPhotoUrl: cover?.url || null, activeCampaignCount, photoCount, videoCount, imamName: imam?.name || null, ...rating };
 }
 
 export const listPublic = async (req, res) => {
