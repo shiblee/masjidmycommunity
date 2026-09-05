@@ -1411,6 +1411,10 @@ footer{
 
 .cw-layout{ display:grid; grid-template-columns:280px 1fr 320px; gap:44px; align-items:start; }
 .cw-main{ min-width:0; }
+/* The masjid/campaign wizard is a focused task, not wall browsing — give it
+   the full width instead of squeezing a multi-step form between two sidebars. */
+.cw-layout-focused{ grid-template-columns:1fr; }
+.cw-layout-focused > .cw-side{ display:none; }
 .cw-filters{ margin:0 0 24px; }
 
 .cw-feed{ display:flex; flex-direction:column; gap:20px; }
@@ -2694,6 +2698,56 @@ footer{
 .msj-step-dot.active{ color:var(--text-on-paper); }
 .msj-step-dot.active span{ background:var(--gold); color:var(--ink); }
 .msj-step-dot.done span{ background:rgba(141,198,63,.18); color:var(--teal-deep); }
+
+/* ===== Masjid Wizard: connected stepper, step headers, two-column layout, live preview ===== */
+.msj-stepper{ display:flex; align-items:flex-start; margin-bottom:8px; }
+.msj-stepper-item{ flex:1; display:flex; flex-direction:column; align-items:center; position:relative; text-align:center; }
+.msj-stepper-item:not(:first-child)::before{
+  content:""; position:absolute; top:18px; left:-50%; width:100%; height:2px; background:var(--line); z-index:0;
+}
+.msj-stepper-item.done::before, .msj-stepper-item.active::before{ background:var(--teal-deep); }
+.msj-stepper-dot{
+  position:relative; z-index:1; width:36px; height:36px; border-radius:50%; background:#fff; border:2px solid var(--line);
+  display:flex; align-items:center; justify-content:center; color:var(--text-on-paper-dim); flex-shrink:0; transition:all .2s;
+}
+.msj-stepper-item.active .msj-stepper-dot{ background:var(--gold); border-color:var(--gold); color:var(--ink); box-shadow:0 0 0 5px rgba(141,198,63,.18); }
+.msj-stepper-item.done .msj-stepper-dot{ background:var(--teal-deep); border-color:var(--teal-deep); color:#fff; }
+.msj-stepper-label{ margin-top:9px; font-size:12px; font-weight:600; color:var(--text-on-paper-dim); line-height:1.3; padding:0 4px; }
+.msj-stepper-item.active .msj-stepper-label{ color:var(--text-on-paper); }
+.msj-stepper-current{ display:none; font-size:13px; font-weight:700; color:var(--text-on-paper); margin:0 0 24px; }
+@media (max-width:640px){
+  .msj-stepper-label{ display:none; }
+  .msj-stepper-current{ display:block; text-align:center; }
+}
+
+.msj-step-header{ display:flex; gap:14px; align-items:flex-start; margin-bottom:24px; padding-bottom:20px; border-bottom:1px solid var(--line); }
+.msj-step-header-icon{
+  width:42px; height:42px; border-radius:12px; background:var(--paper-dim); color:var(--teal-deep);
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+.msj-step-header h3{ font-size:19px; color:var(--text-on-paper); margin:0; }
+.msj-step-header p{ font-size:13.5px; color:var(--text-on-paper-dim); margin-top:4px; line-height:1.5; }
+
+/* Single focused column, centered in the available width (the community wall's
+   side columns are hidden while a wizard is open — see .cw-layout-focused). */
+.msj-wizard-center{ max-width:1120px; margin:0 auto; }
+.msj-wizard-center .msj-step-card{ margin:0 auto; }
+
+.msj-dropzone{
+  border:2px dashed var(--line); border-radius:14px; padding:28px 20px; display:flex; flex-direction:column; align-items:center;
+  gap:16px; background:var(--paper-dim); transition:border-color .2s, background .2s; margin-bottom:20px;
+}
+.msj-dropzone.drag-over{ border-color:var(--teal-deep); background:rgba(141,198,63,.1); }
+.msj-dropzone-inner{ display:flex; flex-direction:column; align-items:center; gap:6px; cursor:pointer; text-align:center; }
+.msj-dropzone-icon{
+  width:48px; height:48px; border-radius:50%; background:#fff; border:1px solid var(--line); color:var(--teal-deep);
+  display:flex; align-items:center; justify-content:center; margin-bottom:4px;
+}
+.msj-dropzone-inner strong{ font-size:14.5px; color:var(--text-on-paper); }
+.msj-dropzone-inner span{ font-size:12.5px; color:var(--text-on-paper-dim); max-width:340px; }
+.msj-dropzone-category{ display:flex; align-items:center; gap:10px; }
+.msj-dropzone-category label{ font-size:12.5px; font-weight:600; color:var(--text-on-paper-dim); }
+.msj-dropzone-category select{ border:1px solid var(--line); border-radius:8px; padding:8px 12px; font-size:13px; background:#fff; }
 
 .msj-step-card{ max-width:760px; }
 .msj-step-card h3{ font-size:20px; margin-bottom:20px; color:var(--text-on-paper); }
