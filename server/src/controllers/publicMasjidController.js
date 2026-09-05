@@ -1,5 +1,5 @@
 import Fuse from "fuse.js";
-import { fn, col } from "sequelize";
+import { fn, col, literal, Op } from "sequelize";
 import Masjid from "../models/Masjid.js";
 import MasjidPhoto from "../models/MasjidPhoto.js";
 import MasjidCategory from "../models/MasjidCategory.js";
@@ -24,11 +24,32 @@ const FUSE_KEYS = [
   "country",
 ];
 
-function baseWhere({ city, country, category }) {
+const NEARBY_RADIUS_KM = 25;
+
+async function activeMasjidIds() {
+  const rows = await Campaign.findAll({ where: { status: "active" }, attributes: ["masjidId"], group: ["masjidId"], raw: true });
+  return rows.map((r) => r.masjidId);
+}
+
+/** `activeOnly`/`lat`+`lng` are async-derived (need a DB lookup / SQL fragment), so
+ * callers build the rest of the filters first and pass this pre-resolved. */
+async function baseWhere({ city, country, category, activeOnly, lat, lng }) {
   const where = { status: PUBLIC_STATUS, moderationStatus: "active" };
   if (city) where.city = city;
   if (country) where.country = country;
   if (category) where.category = category;
+  if (activeOnly) where.id = { [Op.in]: await activeMasjidIds() };
+
+  const latNum = Number(lat), lngNum = Number(lng);
+  if (Number.isFinite(latNum) && Number.isFinite(lngNum)) {
+    where.latitude = { [Op.ne]: null };
+    where.longitude = { [Op.ne]: null };
+    where[Op.and] = [
+      literal(
+        `(6371 * acos(cos(radians(${latNum})) * cos(radians(latitude)) * cos(radians(longitude) - radians(${lngNum})) + sin(radians(${latNum})) * sin(radians(latitude)))) <= ${NEARBY_RADIUS_KM}`
+      ),
+    ];
+  }
   return where;
 }
 
@@ -63,8 +84,8 @@ async function withCoverAndCampaigns(masjid) {
 
 export const listPublic = async (req, res) => {
   try {
-    const { q, city, country, category, page = 1, pageSize = 12 } = req.query;
-    const where = baseWhere({ city, country, category });
+    const { q, city, country, category, activeOnly, lat, lng, page = 1, pageSize = 12 } = req.query;
+    const where = await baseWhere({ city, country, category, activeOnly, lat, lng });
     const limit = Math.min(Number(pageSize) || 12, 48);
     const pageNum = Math.max(Number(page) || 1, 1);
 
@@ -97,8 +118,8 @@ export const listPublic = async (req, res) => {
 /** Full (unpaginated, capped) point list for Map view — the left panel and markers need the complete filtered set, not one page of it. */
 export const listMapPoints = async (req, res) => {
   try {
-    const { q, city, country, category } = req.query;
-    const where = baseWhere({ city, country, category });
+    const { q, city, country, category, activeOnly, lat, lng } = req.query;
+    const where = await baseWhere({ city, country, category, activeOnly, lat, lng });
     const rows = await Masjid.findAll({
       where,
       attributes: ["id", "name", "category", "city", "country", "latitude", "longitude", "status"],
