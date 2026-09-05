@@ -2724,10 +2724,9 @@ footer{
 .msj-step-header h3{ font-size:19px; color:var(--text-on-paper); margin:0; }
 .msj-step-header p{ font-size:13.5px; color:var(--text-on-paper-dim); margin-top:4px; line-height:1.5; }
 
-/* Centers the wizard's step card within cw-main, which sits between the
-   wall's two sidebars exactly as it does for the normal wall content. */
-.msj-wizard-center{ max-width:1120px; margin:0 auto; }
-.msj-wizard-center .msj-step-card{ margin:0 auto; }
+/* Fills cw-main edge-to-edge, same as any other wall content — no extra
+   max-width/centering, so it doesn't sit narrower than the column around it. */
+.msj-wizard-center .msj-step-card{ max-width:none; }
 
 .msj-dropzone{
   border:2px dashed var(--line); border-radius:14px; padding:28px 20px; display:flex; flex-direction:column; align-items:center;
