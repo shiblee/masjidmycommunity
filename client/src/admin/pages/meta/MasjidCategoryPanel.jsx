@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import Icon from "../../components/Icons.jsx";
 import StatusBadge from "../../components/StatusBadge.jsx";
 import SortHeader from "../../components/SortHeader.jsx";
@@ -266,7 +267,15 @@ function MasjidCategoryPanel() {
                 <tr key={c.id}>
                   <td><strong>{c.name}</strong></td>
                   <td><StatusBadge status={c.isActive ? "active" : "inactive"} /></td>
-                  <td>{c.masjidCount || 0}</td>
+                  <td>
+                    {c.masjidCount ? (
+                      <Link to={`/admin/masjids?category=${encodeURIComponent(c.name)}`} className="amx-count-link">
+                        {c.masjidCount}
+                      </Link>
+                    ) : (
+                      0
+                    )}
+                  </td>
                   <td>{formatDate(c.createdAt)}</td>
                   <td>{formatDate(c.updatedAt)}</td>
                   <td>

@@ -37,9 +37,10 @@ const STATUS_LABELS = {
 
 export const listAll = async (req, res) => {
   try {
-    const { status, q, page = 1, pageSize = 20, sortBy = "createdAt", sortDir = "desc" } = req.query;
+    const { status, q, category, page = 1, pageSize = 20, sortBy = "createdAt", sortDir = "desc" } = req.query;
     const where = {};
     if (status && status !== "all") where.status = status;
+    if (category && category !== "all") where.category = category;
 
     if (q) {
       const term = q.trim();
@@ -51,6 +52,7 @@ export const listAll = async (req, res) => {
       const matchingStatuses = Object.entries(STATUS_LABELS)
         .filter(([key, label]) => key.includes(term.toLowerCase()) || label.toLowerCase().includes(term.toLowerCase()))
         .map(([key]) => key);
+      const asId = /^\d+$/.test(term) ? Number(term) : null;
 
       where[Op.or] = [
         { name: like },
@@ -65,6 +67,7 @@ export const listAll = async (req, res) => {
         { imamName: like },
         { contactMobile: like },
         { contactEmail: like },
+        ...(asId !== null ? [{ id: asId }] : []),
         ...(matchingOwners.length ? [{ userId: { [Op.in]: matchingOwners.map((u) => u.id) } }] : []),
         ...(matchingStatuses.length ? [{ status: { [Op.in]: matchingStatuses } }] : []),
       ];

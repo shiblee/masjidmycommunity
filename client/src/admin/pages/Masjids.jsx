@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import Icon from "../components/Icons.jsx";
 import { API_ORIGIN } from "../../config.js";
 import StatusBadge from "../components/StatusBadge.jsx";
@@ -20,13 +20,33 @@ const TABS = [
 ];
 
 function Masjids() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [tab, setTab] = useState("all");
   const [q, setQ] = useState("");
+  // Category filter is URL-synced (searchParams is the source of truth) so a
+  // link from Meta → Masjid Category's "Registered Masjids" count can deep-link
+  // straight into a pre-filtered list.
+  const category = searchParams.get("category") || "all";
+  const [categories, setCategories] = useState([]);
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState("createdAt");
   const [sortDir, setSortDir] = useState("desc");
   const [data, setData] = useState({ masjids: [], total: 0, pageSize: 20, counts: {} });
   const [loading, setLoading] = useState(true);
+
+  const setCategory = (next) => {
+    setSearchParams((prev) => {
+      const nextParams = new URLSearchParams(prev);
+      if (!next || next === "all") nextParams.delete("category");
+      else nextParams.set("category", next);
+      return nextParams;
+    });
+    setPage(1);
+  };
+
+  useEffect(() => {
+    adminApi.get("/masjid-categories").then(({ data }) => setCategories(data.categories)).catch(() => {});
+  }, []);
 
   const toggleSort = (key) => {
     if (sortBy === key) {
@@ -41,11 +61,11 @@ function Masjids() {
   useEffect(() => {
     setLoading(true);
     adminApi
-      .get("/masjids", { params: { status: tab, q: q || undefined, page, pageSize: 100, sortBy, sortDir } })
+      .get("/masjids", { params: { status: tab, q: q || undefined, category: category !== "all" ? category : undefined, page, pageSize: 100, sortBy, sortDir } })
       .then(({ data }) => setData(data))
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [tab, q, page, sortBy, sortDir]);
+  }, [tab, q, category, page, sortBy, sortDir]);
 
   const totalPages = Math.max(1, Math.ceil(data.total / data.pageSize));
 
@@ -68,9 +88,32 @@ function Masjids() {
           ))}
         </div>
 
-        <div className="amx-topbar-search" style={{ maxWidth: 360, marginBottom: 20 }}>
-          <Icon name="search" />
-          <input type="text" placeholder="Search masjids, cities, countries…" value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} />
+        {category !== "all" && (
+          <div className="amx-filter-banner" style={{ marginBottom: 16 }}>
+            <Icon name="info" size={15} />
+            <span>Filtered by category: <strong>{categories.find((c) => c.name === category)?.name || category}</strong></span>
+            <button type="button" className="amx-btn amx-btn-outline amx-btn-sm" onClick={() => setCategory("all")}>
+              <Icon name="x" size={13} /> Clear Filter
+            </button>
+          </div>
+        )}
+
+        <div className="amx-filters">
+          <div className="amx-search">
+            <Icon name="search" />
+            <input
+              type="text"
+              placeholder="Search by name, masjid ID, city, state, country…"
+              value={q}
+              onChange={(e) => { setQ(e.target.value); setPage(1); }}
+            />
+          </div>
+          <select className="amx-select" value={category} onChange={(e) => setCategory(e.target.value)}>
+            <option value="all">All Categories</option>
+            {categories.map((c) => (
+              <option key={c.id} value={c.name}>{c.name}{!c.isActive ? " (inactive)" : ""}</option>
+            ))}
+          </select>
         </div>
 
         {!loading && data.masjids.length === 0 && (
@@ -102,7 +145,10 @@ function Masjids() {
                       <div className="amx-verify-thumb" style={{ width: 36, height: 36 }}>
                         {m.coverPhotoUrl ? <img src={`${API_ORIGIN}${m.coverPhotoUrl}`} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 8 }} /> : <Icon name="mosque" size={16} />}
                       </div>
-                      <strong>{m.name}</strong>
+                      <div>
+                        <strong>{m.name}</strong>
+                        <div className="amx-cell-sub">ID {m.id}{m.category ? ` · ${m.category}` : ""}</div>
+                      </div>
                     </div>
                   </td>
                   <td>

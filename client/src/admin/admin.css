@@ -455,6 +455,8 @@ table.amx-table{ width:100%; border-collapse:collapse; font-size:13.5px; }
 .amx-table .amx-cell-main{ display:flex; align-items:center; gap:10px; font-weight:600; }
 .amx-table .amx-cell-sub{ font-size:12px; color:var(--a-text-faint); margin-top:1px; font-weight:400; }
 .amx-table .num{ font-family:var(--mono); }
+.amx-table .amx-count-link{ color:var(--a-green-deep); font-weight:700; text-decoration:underline; text-underline-offset:2px; }
+.amx-table .amx-count-link:hover{ color:var(--a-navy); }
 .amx-row-actions{ display:flex; gap:6px; justify-content:flex-end; }
 
 /* ---------- activity feed ---------- */
@@ -509,6 +511,12 @@ table.amx-table{ width:100%; border-collapse:collapse; font-size:13.5px; }
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2317262C' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
   background-repeat:no-repeat; background-position:right 8px center; background-size:14px;
 }
+.amx-filter-banner{
+  display:flex; align-items:center; gap:10px; background:var(--a-ok-bg); border:1px solid rgba(141,198,63,.35); border-radius:10px;
+  padding:10px 14px; font-size:13.5px; color:var(--a-text);
+}
+.amx-filter-banner svg{ color:var(--a-green-deep); flex-shrink:0; }
+.amx-filter-banner button{ margin-left:auto; }
 .amx-empty{ text-align:center; padding:56px 20px; color:var(--a-text-dim); }
 .amx-empty svg{ width:44px; height:44px; margin:0 auto 14px; color:var(--a-text-faint); }
 .amx-empty strong{ display:block; font-size:15px; color:var(--a-text); margin-bottom:5px; }
