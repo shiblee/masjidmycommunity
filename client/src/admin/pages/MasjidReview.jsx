@@ -152,7 +152,7 @@ function BasicInfoTab({ id, masjid, categories, onSaved }) {
       <AField label="Masjid Name" required error={errors.name}>
         <input value={form.name} onChange={setField("name")} maxLength={255} />
       </AField>
-      <AField label="Tagline / Short Description" error={errors.tagline}>
+      <AField label="Tagline / Short Description" required error={errors.tagline}>
         <input value={form.tagline} onChange={setField("tagline")} maxLength={255} />
       </AField>
       <AField
@@ -173,7 +173,7 @@ function BasicInfoTab({ id, masjid, categories, onSaved }) {
         </div>
       </AField>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-        <AField label="Category" error={errors.category}>
+        <AField label="Category" required error={errors.category}>
           <select value={form.category} onChange={setField("category")}>
             <option value="">Select a category</option>
             {categories.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}

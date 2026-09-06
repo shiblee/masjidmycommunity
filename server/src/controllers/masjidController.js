@@ -422,7 +422,7 @@ export const submit = async (req, res) => {
       return res.status(400).json({ message: "This masjid has already been submitted." });
     }
 
-    const required = ["name", "about", "address", "city", "country"];
+    const required = ["name", "tagline", "category", "about", "address", "city", "country"];
     const missing = required.filter((f) => !masjid[f]?.toString().trim());
     if (missing.length) {
       const labels = missing.map((f) => STRING_FIELD_LABELS[f] || f);

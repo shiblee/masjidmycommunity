@@ -629,6 +629,22 @@ function MasjidWizard({ embedded = false }) {
     if (step === 1) {
       const flaggedField = ["name", "tagline", "about"].find((k) => errors[k] === RESTRICTED_CONTENT_MESSAGE);
       if (flaggedField) return false;
+
+      const requiredFields = {
+        name: "Masjid Name",
+        tagline: "Tagline / Short Description",
+        category: "Masjid Category",
+        about: "About the Masjid",
+        address: "Address",
+      };
+      const missing = {};
+      for (const [key, label] of Object.entries(requiredFields)) {
+        if (!form[key]?.trim()) missing[key] = `${label} is required.`;
+      }
+      if (Object.keys(missing).length) {
+        setErrors((er) => ({ ...er, ...missing }));
+        return false;
+      }
     }
     if (step === 2) {
       const missing = missingMandatoryContacts();
@@ -807,10 +823,10 @@ function MasjidWizard({ embedded = false }) {
             <>
               <Field label="Masjid Name" required error={errors.name}><input value={form.name} onChange={setField("name")} placeholder="e.g. Al-Noor Masjid" maxLength={255} /></Field>
               <div className="msj-field-row">
-                <Field label="Tagline / Short Description" error={errors.tagline}>
+                <Field label="Tagline / Short Description" required error={errors.tagline}>
                   <input value={form.tagline} onChange={setField("tagline")} placeholder="A brief line that captures your masjid" maxLength={255} />
                 </Field>
-                <Field label="Masjid Category" error={errors.category}>
+                <Field label="Masjid Category" required error={errors.category}>
                   <select value={form.category} onChange={setField("category")}>
                     <option value="">Select a category</option>
                     {categories.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
@@ -837,7 +853,7 @@ function MasjidWizard({ embedded = false }) {
               <Field label="Address" required error={errors.address} hint={!errors.address ? "Search for the masjid by name or address — the rest of the location details fill in automatically." : undefined}>
                 <AddressAutocomplete
                   value={form.address}
-                  onChange={(v) => setForm((f) => ({ ...f, address: v }))}
+                  onChange={(v) => { setForm((f) => ({ ...f, address: v })); setErrors((er) => ({ ...er, address: null })); }}
                   onResolved={applyResolvedAddress}
                   placeholder="e.g. Jama Masjid, Delhi"
                 />
