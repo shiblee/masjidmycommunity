@@ -3,6 +3,7 @@ import "dotenv/config";
 import app from "./app.js";
 import connectDB from "./config/db.js";
 import { ensureEmailDefaults } from "./seed/emailDefaults.js";
+import { ensurePlatformUserDefaults } from "./seed/platformUserDefaults.js";
 import { ensureMasjidCategoryDefaults } from "./seed/masjidCategoryDefaults.js";
 import { ensureReviewRestrictedWordDefaults } from "./seed/reviewRestrictedWordDefaults.js";
 import { ensureMasjidContactDesignationDefaults } from "./seed/masjidContactDesignationDefaults.js";
@@ -37,6 +38,7 @@ connectDB()
   .then(() =>
     Promise.all([
       ensureEmailDefaults(),
+      ensurePlatformUserDefaults(),
       ensureMasjidCategoryDefaults(),
       ensureReviewRestrictedWordDefaults(),
       ensureMasjidContactDesignationDefaults(),

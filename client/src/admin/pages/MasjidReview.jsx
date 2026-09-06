@@ -8,6 +8,7 @@ import StaticLocationMap from "../../components/StaticLocationMap.jsx";
 import MediaThumb from "../../components/MediaThumb.jsx";
 import AddressAutocomplete from "../../components/AddressAutocomplete.jsx";
 import MicButton from "../../components/MicButton.jsx";
+import { StarRating } from "../../pages/exploreMasjids/exploreMasjidsShared.jsx";
 import { formatDateTime } from "../../utils/formatDateTime.js";
 
 const TABS = [
@@ -15,6 +16,7 @@ const TABS = [
   { key: "basic", label: "Basic Information" },
   { key: "contact", label: "Contact & Verification" },
   { key: "photos", label: "Photographs" },
+  { key: "reviews", label: "Reviews & Ratings" },
   { key: "donation", label: "Donation Account" },
 ];
 
@@ -641,6 +643,64 @@ function DonationTab({ id, donationAccount, setDonationAccount, showToast }) {
   );
 }
 
+// Shows every review regardless of status (not just the visible-only ones
+// the public site shows) so an admin can moderate hidden reviews here too —
+// the Hide/Show button below is the first UI ever wired to the existing
+// setReviewVisibility endpoint.
+function ReviewsTab({ reviews, avgRating, reviewCount, loading, onToggleVisibility, busy }) {
+  return (
+    <div className="amx-card amx-panel" style={{ maxWidth: 720 }}>
+      <div className="amx-panel-head" style={{ alignItems: "center" }}>
+        <h3>Reviews & Ratings</h3>
+        {reviewCount > 0 ? (
+          <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <StarRating value={avgRating} size={16} />
+            <strong>{avgRating.toFixed(1)}</strong>
+            <span className="amx-panel-sub">({reviewCount} visible review{reviewCount === 1 ? "" : "s"})</span>
+          </span>
+        ) : (
+          <span className="amx-panel-sub">No visible reviews yet</span>
+        )}
+      </div>
+
+      {loading ? (
+        <div className="amx-empty"><Icon name="star" /><strong>Loading reviews…</strong></div>
+      ) : reviews.length === 0 ? (
+        <div className="amx-empty">
+          <Icon name="star" />
+          <strong>No reviews yet</strong>
+          <span>This masjid hasn't received any reviews.</span>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {reviews.map((r) => (
+            <div key={r.id} style={{ borderBottom: "1px solid var(--a-border)", paddingBottom: 16 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+                <div>
+                  <strong>{r.reviewer?.fullName || "Deleted user"}</strong>
+                  <div className="amx-cell-sub">{formatDateTime(r.createdAt)}</div>
+                </div>
+                <StatusBadge status={r.status === "visible" ? "active" : "inactive"} label={r.status === "visible" ? "Visible" : "Hidden"} />
+              </div>
+              <div style={{ margin: "8px 0" }}><StarRating value={r.rating} size={14} /></div>
+              {r.body && <p style={{ margin: 0, color: "var(--a-text)" }}>{r.body}</p>}
+              <button
+                type="button"
+                className="amx-btn amx-btn-outline amx-btn-sm"
+                style={{ marginTop: 10 }}
+                onClick={() => onToggleVisibility(r)}
+                disabled={busy}
+              >
+                {r.status === "visible" ? "Hide Review" : "Make Visible"}
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function MasjidReview() {
   const { id, tab: tabParam } = useParams();
   const navigate = useNavigate();
@@ -659,6 +719,9 @@ function MasjidReview() {
   const [modal, setModal] = useState(null);
   const [toast, setToast] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [reviews, setReviews] = useState([]);
+  const [reviewsRating, setReviewsRating] = useState({ avgRating: 0, reviewCount: 0 });
+  const [reviewsLoading, setReviewsLoading] = useState(false);
 
   const load = () => {
     adminApi.get(`/masjids/${id}`).then(({ data }) => {
@@ -671,6 +734,37 @@ function MasjidReview() {
   };
 
   useEffect(() => { load(); }, [id]);
+
+  // Lazy-loaded only when the tab is actually opened — a masjid's full
+  // review list isn't needed for every other tab on this page.
+  const loadReviews = () => {
+    setReviewsLoading(true);
+    adminApi
+      .get(`/masjids/${id}/reviews`)
+      .then(({ data }) => {
+        setReviews(data.reviews);
+        setReviewsRating({ avgRating: data.avgRating, reviewCount: data.reviewCount });
+      })
+      .finally(() => setReviewsLoading(false));
+  };
+  useEffect(() => {
+    if (tab === "reviews") loadReviews();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, tab]);
+
+  const toggleReviewVisibility = async (review) => {
+    setBusy(true);
+    try {
+      const nextVisible = review.status !== "visible";
+      await adminApi.patch(`/masjids/reviews/${review.id}/visibility`, { visible: nextVisible });
+      loadReviews();
+      showToast(nextVisible ? "Review made visible." : "Review hidden.");
+    } catch (err) {
+      showToast(err.response?.data?.message || "Couldn't update this review.");
+    } finally {
+      setBusy(false);
+    }
+  };
   useEffect(() => {
     adminApi.get("/masjid-categories").then(({ data }) => setCategories(data.categories)).catch(() => {});
     adminApi.get("/masjid-contact-designations").then(({ data }) => setDesignations(data.designations)).catch(() => {});
@@ -868,6 +962,17 @@ function MasjidReview() {
 
       {tab === "photos" && (
         <PhotosTab id={id} photos={photos} setPhotos={setPhotos} showToast={showToast} />
+      )}
+
+      {tab === "reviews" && (
+        <ReviewsTab
+          reviews={reviews}
+          avgRating={reviewsRating.avgRating}
+          reviewCount={reviewsRating.reviewCount}
+          loading={reviewsLoading}
+          onToggleVisibility={toggleReviewVisibility}
+          busy={busy}
+        />
       )}
 
       {tab === "donation" && (

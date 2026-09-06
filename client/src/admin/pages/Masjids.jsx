@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import Icon from "../components/Icons.jsx";
 import { API_ORIGIN } from "../../config.js";
 import StatusBadge from "../components/StatusBadge.jsx";
@@ -19,7 +19,66 @@ const TABS = [
   { key: "deleted", label: "Deleted" },
 ];
 
+// Mirrors the owner wizard's own createDraft — a masjid needs only a name
+// to exist; everything else is filled in afterward on the Basic
+// Information tab this redirects to, so no extra fields are duplicated here.
+function AddMasjidModal({ onCancel, onCreated }) {
+  const [name, setName] = useState("");
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const submit = async (e) => {
+    e.preventDefault();
+    if (!name.trim()) {
+      setError("Masjid name is required.");
+      return;
+    }
+    setSaving(true);
+    setError("");
+    try {
+      const { data } = await adminApi.post("/masjids", { name: name.trim() });
+      onCreated(data.masjid);
+    } catch (err) {
+      setError(err.response?.data?.message || "Couldn't create this masjid.");
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="amx-modal-overlay" onClick={() => (saving ? null : onCancel())}>
+      <div className="amx-modal" onClick={(e) => e.stopPropagation()}>
+        <button className="amx-modal-close" onClick={onCancel} aria-label="Close" disabled={saving}>
+          <Icon name="x" size={16} />
+        </button>
+        <h3>Add Masjid</h3>
+        <p className="amx-modal-sub">
+          Registers a new masjid under the platform account ("Masjid My Community"). You'll land on its Basic
+          Information tab next to fill in the rest.
+        </p>
+        <form onSubmit={submit}>
+          <div className="amx-form-group">
+            <label htmlFor="new-masjid-name">Masjid Name</label>
+            <input id="new-masjid-name" type="text" autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Al-Noor Masjid" maxLength={255} />
+          </div>
+          {error && (
+            <div className="amx-field-error">
+              <Icon name="info" size={14} />
+              {error}
+            </div>
+          )}
+          <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+            <button type="button" className="amx-btn amx-btn-outline" style={{ flex: 1 }} onClick={onCancel} disabled={saving}>Cancel</button>
+            <button type="submit" className="amx-btn amx-btn-primary" style={{ flex: 1 }} disabled={saving}>{saving ? "Creating…" : "Create"}</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 function Masjids() {
+  const navigate = useNavigate();
+  const [addingMasjid, setAddingMasjid] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const [tab, setTab] = useState("all");
   const [q, setQ] = useState("");
@@ -77,7 +136,17 @@ function Masjids() {
           <h1>Masjid Management</h1>
           <p>Review and manage masjid registrations submitted by users</p>
         </div>
+        <button type="button" className="amx-btn amx-btn-primary" onClick={() => setAddingMasjid(true)}>
+          <Icon name="plus" size={15} /> Add Masjid
+        </button>
       </div>
+
+      {addingMasjid && (
+        <AddMasjidModal
+          onCancel={() => setAddingMasjid(false)}
+          onCreated={(masjid) => navigate(`/admin/masjids/${masjid.id}/basic`)}
+        />
+      )}
 
       <div className="amx-card amx-panel">
         <div className="amx-tabs" style={{ marginBottom: 20, flexWrap: "wrap" }}>
@@ -132,6 +201,7 @@ function Masjids() {
                 <SortHeader label="Masjid" sortKey="name" activeKey={sortBy} direction={sortDir} onSort={toggleSort} />
                 <SortHeader label="Registered By" sortKey="ownerName" activeKey={sortBy} direction={sortDir} onSort={toggleSort} />
                 <SortHeader label="Location" sortKey="location" activeKey={sortBy} direction={sortDir} onSort={toggleSort} />
+                <th>Rating</th>
                 <SortHeader label="Registered" sortKey="createdAt" activeKey={sortBy} direction={sortDir} onSort={toggleSort} />
                 <SortHeader label="Status" sortKey="status" activeKey={sortBy} direction={sortDir} onSort={toggleSort} />
                 <th></th>
@@ -156,6 +226,17 @@ function Masjids() {
                     <div className="amx-cell-sub">{m.ownerEmail || m.ownerMobile || "—"}</div>
                   </td>
                   <td>{[m.city, m.country].filter(Boolean).join(", ") || "—"}</td>
+                  <td>
+                    {m.reviewCount > 0 ? (
+                      <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                        <Icon name="star" size={14} style={{ color: "var(--a-warn, #C9942C)" }} />
+                        {m.avgRating.toFixed(1)}
+                        <span className="amx-cell-sub">({m.reviewCount})</span>
+                      </span>
+                    ) : (
+                      <span className="amx-cell-sub">No reviews yet</span>
+                    )}
+                  </td>
                   <td>{formatDate(m.createdAt)}</td>
                   <td><StatusBadge status={m.status} /></td>
                   <td style={{ textAlign: "right" }}>

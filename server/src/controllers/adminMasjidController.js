@@ -1,5 +1,5 @@
 import fs from "fs";
-import { Op } from "sequelize";
+import { Op, fn, col } from "sequelize";
 import Masjid from "../models/Masjid.js";
 import MasjidPhoto from "../models/MasjidPhoto.js";
 import MasjidDonationAccount from "../models/MasjidDonationAccount.js";
@@ -14,6 +14,9 @@ import { notifyUser } from "../services/notificationService.js";
 import { mediaTypeOf, IMAGE_MAX_BYTES } from "../middleware/upload.js";
 import { firstRestrictedField, RESTRICTED_CONTENT_MESSAGE } from "../utils/contentModeration.js";
 import { classifyContent } from "../services/aiProviderService.js";
+import { ratingSummary } from "./publicMasjidController.js";
+import { withReviewers } from "./masjidReviewController.js";
+import { PLATFORM_EMAIL } from "../seed/platformUserDefaults.js";
 
 // Same second-layer AI check as masjidController.js's own write paths — see
 // that file for the full rationale. No-op until an AI provider is configured.
@@ -80,6 +83,28 @@ const STATUS_LABELS = {
   rejected: "Rejected",
   inactive: "Inactive",
   deleted: "Deleted",
+};
+
+// Admin-initiated registration — mirrors the owner wizard's own
+// createDraft (name only; everything else is filled in afterward via the
+// same Basic Info/Contact/Photos/Donation tabs used to review any other
+// masjid). Owned by the platform account so it reads as "Masjid My
+// Community" wherever a masjid's registering identity is shown, rather
+// than requiring a real end-user to exist first.
+export const createMasjid = async (req, res) => {
+  try {
+    const { name } = req.body;
+    if (!name?.trim()) return res.status(400).json({ message: "Masjid name is required." });
+
+    const platformUser = await User.findOne({ where: { email: PLATFORM_EMAIL } });
+    if (!platformUser) return res.status(500).json({ message: "Platform account is not configured." });
+
+    const masjid = await Masjid.create({ userId: platformUser.id, name: name.trim(), status: "draft" });
+    await logHistory(masjid.id, "admin_created", null, req.user.email);
+    res.status(201).json({ masjid: masjid.toJSON() });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
 export const listAll = async (req, res) => {
@@ -155,6 +180,19 @@ export const listAll = async (req, res) => {
     const owners = await User.findAll({ where: { id: ownerIds }, attributes: ["id", "fullName", "email", "mobile"] });
     const ownerById = Object.fromEntries(owners.map((u) => [u.id, u]));
 
+    // One grouped query for the whole page, not one per row — same pattern
+    // publicMasjidController.js's own list endpoint already uses.
+    const masjidIds = rows.map((m) => m.id);
+    const ratingRows = masjidIds.length
+      ? await MasjidReview.findAll({
+          where: { masjidId: masjidIds, status: "visible" },
+          attributes: ["masjidId", [fn("AVG", col("rating")), "avg"], [fn("COUNT", col("id")), "count"]],
+          group: ["masjidId"],
+          raw: true,
+        })
+      : [];
+    const ratingByMasjid = new Map(ratingRows.map((r) => [r.masjidId, { avgRating: Number(r.avg), reviewCount: Number(r.count) }]));
+
     const masjids = await Promise.all(
       rows.map(async (m) => {
         const cover = await MasjidPhoto.findOne({ where: { masjidId: m.id, isCover: true } });
@@ -166,6 +204,7 @@ export const listAll = async (req, res) => {
           ownerName: owner?.fullName || null,
           ownerEmail: owner?.email || null,
           ownerMobile: owner?.mobile || null,
+          ...(ratingByMasjid.get(m.id) || { avgRating: 0, reviewCount: 0 }),
         };
       })
     );
@@ -186,11 +225,12 @@ export const getOne = async (req, res) => {
     const masjid = await Masjid.findByPk(req.params.id);
     if (!masjid) return res.status(404).json({ message: "Masjid not found." });
 
-    const [photos, donationAccount, history, contacts] = await Promise.all([
+    const [photos, donationAccount, history, contacts, rating] = await Promise.all([
       MasjidPhoto.findAll({ where: { masjidId: masjid.id }, order: [["sortOrder", "ASC"]] }),
       MasjidDonationAccount.findOne({ where: { masjidId: masjid.id } }),
       MasjidHistory.findAll({ where: { masjidId: masjid.id }, order: [["createdAt", "DESC"]] }),
       MasjidContactPerson.findAll({ where: { masjidId: masjid.id }, order: [["sortOrder", "ASC"]] }),
+      ratingSummary(masjid.id),
     ]);
 
     let donationAccountJson = null;
@@ -201,7 +241,7 @@ export const getOne = async (req, res) => {
     }
 
     res.json({
-      masjid: { ...masjid.toJSON(), completion: await computeMasjidCompletion(masjid, contacts, photos.length) },
+      masjid: { ...masjid.toJSON(), completion: await computeMasjidCompletion(masjid, contacts, photos.length), ...rating },
       photos,
       donationAccount: donationAccountJson,
       history,
@@ -497,6 +537,24 @@ export const setReviewVisibility = async (req, res) => {
     review.status = req.body.visible === false ? "hidden" : "visible";
     await review.save();
     res.json({ review });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// All reviews for one masjid, any status — not visible-only like the public
+// endpoint, since an admin needs to see hidden ones too in order to
+// moderate them via setReviewVisibility above. The rating summary returned
+// alongside is still visible-only, matching what's actually live publicly.
+export const listMasjidReviews = async (req, res) => {
+  try {
+    const masjidId = req.params.id;
+    const reviews = await MasjidReview.findAll({ where: { masjidId }, order: [["createdAt", "DESC"]] });
+    const [reviewsWithReviewers, rating] = await Promise.all([
+      withReviewers(reviews, null),
+      ratingSummary(masjidId),
+    ]);
+    res.json({ reviews: reviewsWithReviewers, ...rating });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

@@ -62,7 +62,7 @@ export const getPublicReviewSettings = async (req, res) => {
 
 /** `currentUserId` is optional (routes using this are public) — when given,
  * each review also reports whether that user has liked it. */
-async function withReviewers(reviews, currentUserId) {
+export async function withReviewers(reviews, currentUserId) {
   const userIds = [...new Set(reviews.map((r) => r.userId))];
   const reviewIds = reviews.map((r) => r.id);
   const [users, media, likeCounts, myLikes] = await Promise.all([

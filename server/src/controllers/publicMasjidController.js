@@ -68,7 +68,7 @@ function rankByQuery(rows, q) {
   return fuse.search(q).map((r) => r.item);
 }
 
-async function ratingSummary(masjidId) {
+export async function ratingSummary(masjidId) {
   const rows = await MasjidReview.findAll({
     where: { masjidId, status: "visible" },
     attributes: [[fn("AVG", col("rating")), "avg"], [fn("COUNT", col("id")), "count"]],

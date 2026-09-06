@@ -4,6 +4,7 @@ import { uploadMasjidPhotos } from "../middleware/upload.js";
 import {
   listAll,
   getOne,
+  createMasjid,
   updateBasicInfo,
   uploadPhotos,
   updatePhoto,
@@ -16,6 +17,7 @@ import {
   deactivate,
   verifyDonationAccount,
   setReviewVisibility,
+  listMasjidReviews,
 } from "../controllers/adminMasjidController.js";
 import {
   list as listContacts,
@@ -31,7 +33,9 @@ const router = Router();
 router.use(auth, requireAdmin);
 
 router.get("/", listAll);
+router.post("/", createMasjid);
 router.get("/:id", getOne);
+router.get("/:id/reviews", listMasjidReviews);
 router.patch("/:id", updateBasicInfo);
 router.post("/:id/photos", uploadMasjidPhotos, uploadPhotos);
 router.patch("/:id/photos/:photoId", updatePhoto);
