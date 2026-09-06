@@ -3250,7 +3250,10 @@ footer{
 }
 .msj-hub-tabs button.active{ color:var(--teal-deep); border-bottom-color:var(--teal-deep); }
 
-.msj-hub-layout{ display:grid; grid-template-columns:2fr 1fr; gap:40px; align-items:start; }
+/* Matches the Profile page's .cw-layout column widths (280px 1fr 320px) —
+   .msj-hub-left is an empty placeholder for now, reserved for future content. */
+.msj-hub-layout{ display:grid; grid-template-columns:280px 1fr 320px; gap:40px; align-items:start; }
+.msj-hub-left{ min-width:0; }
 .msj-hub-main{ min-width:0; }
 .msj-hub-about-text h3{ font-size:17px; color:var(--text-on-paper); margin-bottom:10px; }
 .msj-hub-about-text p{ font-size:14.5px; line-height:1.75; color:var(--text-on-paper-dim); white-space:pre-wrap; }
@@ -3278,6 +3281,11 @@ footer{
   font-size:13.5px; font-weight:600; color:var(--text-on-paper); cursor:pointer; font-family:var(--sans); text-decoration:none;
 }
 .msj-hub-quick-actions button:hover, .msj-hub-quick-actions a:hover{ background:rgba(141,198,63,.16); }
+
+@media (max-width: 1080px){
+  .msj-hub-layout{ grid-template-columns:1fr 320px; }
+  .msj-hub-left{ display:none; }
+}
 
 @media (max-width: 860px){
   .msj-hub-layout{ grid-template-columns:1fr; }

@@ -211,6 +211,7 @@ function MasjidProfile() {
 
       <section className="py-md">
         <div className="wrap msj-hub-layout">
+          <div className="msj-hub-left" />
           <div className="msj-hub-main">
             {tab === "about" && (
               <>
