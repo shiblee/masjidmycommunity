@@ -993,6 +993,10 @@ const DEFAULTS = [
   ["prayer", "prayer.asr", "Asr", "अस्र", "عصر", "العصر"],
   ["prayer", "prayer.maghrib", "Maghrib", "मग़रिब", "مغرب", "المغرب"],
   ["prayer", "prayer.isha", "Isha", "इशा", "عشاء", "العشاء"],
+  ["prayer", "prayer.tahajjud", "Tahajjud", "तहज्जुद", "تہجد", "التهجد"],
+  ["prayer", "prayer.sunrise", "Sunrise", "सूर्योदय", "شروق", "الشروق"],
+  ["prayer", "prayer.jumu'ah", "Jumu'ah", "जुमा", "جمعہ", "الجمعة"],
+  ["prayer", "prayer.witr", "Witr", "वित्र", "وتر", "الوتر"],
   ["prayer", "prayer.rosterHeading", "Today's Prayer Times", "आज के नमाज़ के समय", "آج کے نماز کے اوقات", "مواقيت الصلاة اليوم"],
 ];
 
