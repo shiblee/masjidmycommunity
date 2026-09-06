@@ -79,6 +79,9 @@ function PrayerRosterSection({ basePath, api }) {
   const [modal, setModal] = useState(null);
   const [modalBusy, setModalBusy] = useState(false);
   const [modalError, setModalError] = useState("");
+  const [rowErrors, setRowErrors] = useState({});
+  const [verifyModal, setVerifyModal] = useState(null); // { warnings, entries } | null
+  const [verifyBusy, setVerifyBusy] = useState(false);
 
   const loadRoster = useCallback(() => {
     setLoading(true);
@@ -133,15 +136,52 @@ function PrayerRosterSection({ basePath, api }) {
     setSaving(true);
     setError("");
     setNotice("");
+    setRowErrors({});
     try {
       const { data } = await api.put(`${basePath}/prayer-times`, { date, entries });
+      if (data.saved === false) {
+        setVerifyModal({ warnings: data.warnings, entries });
+        return;
+      }
       setRoster(data.roster);
       setNotice("Prayer times saved.");
       if (historyOpen) loadHistory();
     } catch (err) {
-      setError(err.response?.data?.message || "Couldn't save prayer times.");
+      const errs = err.response?.data?.errors;
+      if (err.response?.status === 422 && Array.isArray(errs)) {
+        setRowErrors(Object.fromEntries(errs.map((e) => [e.prayerId, e.message])));
+        setError("Invalid Prayer Time — see the highlighted field(s) below.");
+      } else {
+        setError(err.response?.data?.message || "Couldn't save prayer times.");
+      }
     } finally {
       setSaving(false);
+    }
+  };
+
+  const closeVerifyModal = () => {
+    if (verifyBusy) return;
+    setVerifyModal(null);
+  };
+
+  const confirmSaveAnyway = async () => {
+    if (!verifyModal) return;
+    setVerifyBusy(true);
+    try {
+      const { data } = await api.put(`${basePath}/prayer-times`, { date, entries: verifyModal.entries, confirmWarnings: true });
+      setRoster(data.roster);
+      setNotice("Prayer times saved.");
+      setVerifyModal(null);
+      if (historyOpen) loadHistory();
+    } catch (err) {
+      const errs = err.response?.data?.errors;
+      if (err.response?.status === 422 && Array.isArray(errs)) {
+        setRowErrors(Object.fromEntries(errs.map((e) => [e.prayerId, e.message])));
+      }
+      setError(err.response?.data?.message || "Couldn't save prayer times.");
+      setVerifyModal(null);
+    } finally {
+      setVerifyBusy(false);
     }
   };
 
@@ -286,8 +326,9 @@ function PrayerRosterSection({ basePath, api }) {
             <div className="msj-prayer-rows">
               {roster.map((r) => {
                 const meta = SOURCE_META[r.source] || SOURCE_META.none;
+                const rowError = rowErrors[r.prayerId];
                 return (
-                  <div className="msj-prayer-row" key={r.prayerId}>
+                  <div className={`msj-prayer-row${rowError ? " has-error" : ""}`} key={r.prayerId}>
                     <div className="msj-prayer-row-name">
                       <strong>{t(`prayer.${r.name.toLowerCase()}`, r.name)}</strong>
                       {r.category && <span className="msj-prayer-cat">{r.category}</span>}
@@ -296,12 +337,16 @@ function PrayerRosterSection({ basePath, api }) {
                       type="time"
                       className="msj-prayer-time"
                       value={drafts[r.prayerId] || ""}
-                      onChange={(e) => setDrafts((d) => ({ ...d, [r.prayerId]: e.target.value }))}
+                      onChange={(e) => {
+                        setDrafts((d) => ({ ...d, [r.prayerId]: e.target.value }));
+                        setRowErrors((er) => (er[r.prayerId] ? { ...er, [r.prayerId]: null } : er));
+                      }}
                     />
                     <span className={`msj-prayer-badge msj-prayer-badge-${meta.cls}`}>{meta.label}</span>
                     <span className="msj-prayer-updated">
                       {r.updatedAt ? `Updated ${new Date(r.updatedAt).toLocaleDateString()}` : "Not set"}
                     </span>
+                    {rowError && <span className="msj-prayer-row-error">{rowError}</span>}
                   </div>
                 );
               })}
@@ -402,6 +447,24 @@ function PrayerRosterSection({ basePath, api }) {
               <button type="button" className="btn btn-outline-ink" onClick={closeModal} disabled={modalBusy}>Cancel</button>
               <button type="button" className="btn btn-gold" onClick={confirmModal} disabled={modalBusy}>
                 {modalBusy ? "Applying…" : "Confirm & Overwrite"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {verifyModal && (
+        <div className="msj-modal-overlay" onClick={closeVerifyModal}>
+          <div className="msj-modal" onClick={(e) => e.stopPropagation()}>
+            <h3>Unusual Prayer Time</h3>
+            <p>Please review before saving — this doesn't block saving, it's just worth double-checking:</p>
+            <ul className="msj-prayer-warning-list">
+              {verifyModal.warnings.map((w, i) => <li key={i}>{w.message}</li>)}
+            </ul>
+            <div className="msj-modal-actions">
+              <button type="button" className="btn btn-outline-ink" onClick={closeVerifyModal} disabled={verifyBusy}>Go Back &amp; Edit</button>
+              <button type="button" className="btn btn-gold" onClick={confirmSaveAnyway} disabled={verifyBusy}>
+                {verifyBusy ? "Saving…" : "Save Anyway"}
               </button>
             </div>
           </div>

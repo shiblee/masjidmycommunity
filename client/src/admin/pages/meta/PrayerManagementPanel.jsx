@@ -20,13 +20,23 @@ function Toggle({ on, onClick, disabled }) {
   return <button type="button" className={`amx-toggle${on ? " on" : ""}`} onClick={onClick} disabled={disabled} aria-pressed={on} />;
 }
 
-function PrayerForm({ prayer, onCancel, onSaved }) {
+function PrayerForm({ prayer, allPrayers, onCancel, onSaved }) {
   const isEdit = !!prayer;
   const [name, setName] = useState(prayer?.name || "");
   const [category, setCategory] = useState(prayer?.category || "");
   const [isActive, setIsActive] = useState(prayer ? prayer.isActive : true);
+  const [period, setPeriod] = useState(prayer?.period || "");
+  const [minTime, setMinTime] = useState(prayer?.minTime || "");
+  const [maxTime, setMaxTime] = useState(prayer?.maxTime || "");
+  const [relatedPrayerId, setRelatedPrayerId] = useState(prayer?.relatedPrayerId || "");
+  const [relation, setRelation] = useState(prayer?.relation || "");
+  const [requiresPreviousCheck, setRequiresPreviousCheck] = useState(prayer ? prayer.requiresPreviousCheck : true);
+  const [requiresNextCheck, setRequiresNextCheck] = useState(prayer ? prayer.requiresNextCheck : true);
+  const [aiAnomalyCheck, setAiAnomalyCheck] = useState(prayer ? prayer.aiAnomalyCheck : true);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+
+  const relatable = (allPrayers || []).filter((p) => p.id !== prayer?.id);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -37,7 +47,12 @@ function PrayerForm({ prayer, onCancel, onSaved }) {
     setSaving(true);
     setError("");
     try {
-      const payload = { name: name.trim(), category: category.trim(), isActive };
+      const payload = {
+        name: name.trim(), category: category.trim(), isActive,
+        period: period || "", minTime: minTime || "", maxTime: maxTime || "",
+        relatedPrayerId: relatedPrayerId || "", relation: relation || "",
+        requiresPreviousCheck, requiresNextCheck, aiAnomalyCheck,
+      };
       const { data } = isEdit
         ? await adminApi.patch(`/prayers/${prayer.id}`, payload)
         : await adminApi.post("/prayers", payload);
@@ -64,6 +79,67 @@ function PrayerForm({ prayer, onCancel, onSaved }) {
           <label htmlFor="prayer-category">Category (optional)</label>
           <input id="prayer-category" type="text" value={category} onChange={(e) => setCategory(e.target.value)} placeholder="e.g. Fard, Sunnah, Jumu'ah" maxLength={255} />
         </div>
+
+        <p className="amx-panel-sub" style={{ marginTop: 4, marginBottom: 4 }}>Validation rules</p>
+        <div className="amx-form-group">
+          <label htmlFor="prayer-period">Allowed Period</label>
+          <select id="prayer-period" value={period} onChange={(e) => setPeriod(e.target.value)}>
+            <option value="">No restriction</option>
+            <option value="AM">AM only</option>
+            <option value="PM">PM only</option>
+          </select>
+        </div>
+        <div className="amx-form-row" style={{ display: "flex", gap: 12 }}>
+          <div className="amx-form-group" style={{ flex: 1 }}>
+            <label htmlFor="prayer-min">Minimum Time (optional)</label>
+            <input id="prayer-min" type="time" value={minTime} onChange={(e) => setMinTime(e.target.value)} />
+          </div>
+          <div className="amx-form-group" style={{ flex: 1 }}>
+            <label htmlFor="prayer-max">Maximum Time (optional)</label>
+            <input id="prayer-max" type="time" value={maxTime} onChange={(e) => setMaxTime(e.target.value)} />
+          </div>
+        </div>
+        <p className="amx-panel-sub" style={{ marginTop: -8, marginBottom: 16 }}>
+          Leave blank for no fixed range — e.g. Isha is typically Period-only, decided by each masjid.
+        </p>
+
+        <div className="amx-form-row" style={{ display: "flex", gap: 12 }}>
+          <div className="amx-form-group" style={{ flex: 1 }}>
+            <label htmlFor="prayer-related">Related Prayer (optional)</label>
+            <select id="prayer-related" value={relatedPrayerId} onChange={(e) => setRelatedPrayerId(e.target.value)}>
+              <option value="">None</option>
+              {relatable.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+          </div>
+          <div className="amx-form-group" style={{ flex: 1 }}>
+            <label htmlFor="prayer-relation">Relation</label>
+            <select id="prayer-relation" value={relation} onChange={(e) => setRelation(e.target.value)} disabled={!relatedPrayerId}>
+              <option value="">—</option>
+              <option value="before">Must be before</option>
+              <option value="after">Must be after</option>
+            </select>
+          </div>
+        </div>
+        <p className="amx-panel-sub" style={{ marginTop: -8, marginBottom: 16 }}>
+          e.g. Fajr → "Must be before" → Sunrise. Flagged as a warning, not blocked.
+        </p>
+
+        <div className="amx-form-group" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <label style={{ marginBottom: 0 }}>Requires Previous Prayer Check</label>
+          <Toggle on={requiresPreviousCheck} onClick={() => setRequiresPreviousCheck((v) => !v)} disabled={saving} />
+        </div>
+        <div className="amx-form-group" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <label style={{ marginBottom: 0 }}>Requires Next Prayer Check</label>
+          <Toggle on={requiresNextCheck} onClick={() => setRequiresNextCheck((v) => !v)} disabled={saving} />
+        </div>
+        <div className="amx-form-group" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+          <label style={{ marginBottom: 0 }}>AI Anomaly Checking</label>
+          <Toggle on={aiAnomalyCheck} onClick={() => setAiAnomalyCheck((v) => !v)} disabled={saving} />
+        </div>
+        <p className="amx-panel-sub" style={{ marginTop: -4, marginBottom: 16 }}>
+          Flags a save that differs sharply from this prayer's own previously saved time for that date — a deterministic check, not a generative AI judgment.
+        </p>
+
         {error && (
           <div className="amx-field-error">
             <Icon name="info" size={14} />
@@ -174,7 +250,7 @@ function PrayerManagementPanel() {
   };
 
   if (formModal) {
-    return <PrayerForm prayer={formModal === "new" ? null : formModal} onCancel={() => setFormModal(null)} onSaved={upsertPrayer} />;
+    return <PrayerForm prayer={formModal === "new" ? null : formModal} allPrayers={prayers} onCancel={() => setFormModal(null)} onSaved={upsertPrayer} />;
   }
 
   return (

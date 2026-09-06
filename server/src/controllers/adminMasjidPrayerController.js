@@ -10,6 +10,7 @@ import {
   isValidDateStr,
   isValidTime,
 } from "../services/prayerTimeService.js";
+import { validatePrayerTimes } from "../services/prayerValidationService.js";
 
 // Admin has full management authority over every masjid's roster — unlike
 // the owner-facing controller, these handlers never filter by userId.
@@ -63,6 +64,14 @@ export const saveRoster = async (req, res) => {
       }
     }
 
+    const { errors, warnings } = await validatePrayerTimes({ masjidId: masjid.id, dateStr: date, entries });
+    if (errors.length) {
+      return res.status(422).json({ message: "Invalid Prayer Time", errors });
+    }
+    if (warnings.length && !req.body.confirmWarnings) {
+      return res.json({ saved: false, warnings });
+    }
+
     const actor = await adminActorFrom(req);
     for (const entry of entries) {
       await saveEffectivePrayerTime({
@@ -72,7 +81,7 @@ export const saveRoster = async (req, res) => {
     }
 
     const roster = await getEffectivePrayerTimes(masjid.id, date);
-    res.json({ date, roster });
+    res.json({ date, roster, saved: true });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
