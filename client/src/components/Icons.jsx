@@ -43,6 +43,8 @@ const ICONS = {
   grid: { d: ["M3 3h7v7H3z", "M14 3h7v7h-7z", "M14 14h7v7h-7z", "M3 14h7v7H3z"] },
   list: { d: ["M8 6h13", "M8 12h13", "M8 18h13", "M3 6h.01", "M3 12h.01", "M3 18h.01"] },
   map: { d: ["M1 6l7-4 8 4 7-4v16l-7 4-8-4-7 4z", "M8 2v16", "M16 6v16"] },
+  clock: { circle: { cx: 12, cy: 12, r: 9 }, d: ["M12 7v5l3.5 2"] },
+  calendar: { rect: { x: 3, y: 4, width: 18, height: 17, rx: 2 }, d: ["M16 2v4M8 2v4M3 10h18"] },
 };
 
 export function Icon({ name, size = 24 }) {

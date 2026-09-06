@@ -8,6 +8,7 @@ import AddressAutocomplete from "../../components/AddressAutocomplete.jsx";
 import LocationMap from "../../components/LocationMap.jsx";
 import MediaThumb from "../../components/MediaThumb.jsx";
 import MicButton from "../../components/MicButton.jsx";
+import PrayerRosterSection from "./PrayerRosterSection.jsx";
 
 // Must match server/src/utils/contentModeration.js's RESTRICTED_CONTENT_MESSAGE
 // exactly — used to tell "this field is currently flagged" apart from any
@@ -796,6 +797,7 @@ function MasjidWizard({ embedded = false }) {
             </div>
           )}
           <MasjidSummary form={form} photos={photos} contacts={contacts} />
+          <PrayerRosterSection masjidId={masjidId} api={masjidApi} />
         </div>
       </WizardShell>
     );

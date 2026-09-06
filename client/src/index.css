@@ -2958,6 +2958,62 @@ footer{
 .msj-resend-link{ display:block; margin:14px auto 0; background:none; border:none; color:var(--text-on-paper-dim); font-size:13px; cursor:pointer; text-align:center; width:100%; }
 .msj-resend-link:hover{ color:var(--teal-deep); }
 
+/* ===== Masjid Wizard: Prayer Time Management (date-wise roster) ===== */
+.msj-prayer-section .msj-summary-head h4{ display:flex; align-items:center; gap:7px; }
+.msj-prayer-datebar{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:12px 0 16px; }
+.msj-prayer-daybtn{
+  display:flex; align-items:center; justify-content:center; width:30px; height:30px; border-radius:8px;
+  border:1px solid var(--line); background:#fff; color:var(--text-on-paper); cursor:pointer;
+}
+.msj-prayer-daybtn:hover{ border-color:var(--teal-deep); color:var(--teal-deep); }
+.msj-prayer-dateinput{
+  display:flex; align-items:center; gap:8px; border:1px solid var(--line); border-radius:8px; padding:5px 10px; background:#fff;
+}
+.msj-prayer-dateinput input[type="date"]{ border:none; font-size:14px; font-family:inherit; color:var(--text-on-paper); background:none; }
+.msj-prayer-today{
+  border:1px solid var(--line); background:#fff; border-radius:100px; padding:4px 12px; font-size:12.5px; font-weight:700;
+  color:var(--teal-deep); cursor:pointer;
+}
+.msj-prayer-today:hover{ border-color:var(--teal-deep); }
+.msj-prayer-datelabel{ font-size:13px; color:var(--text-on-paper-dim); margin-inline-start:auto; }
+.msj-prayer-notice{ display:block; font-size:13.5px; color:var(--teal-deep); margin-bottom:10px; }
+
+.msj-prayer-rows{ display:flex; flex-direction:column; gap:10px; }
+.msj-prayer-row{
+  display:grid; grid-template-columns:1.4fr auto 1fr auto; align-items:center; gap:14px;
+  padding:12px 14px; border:1px solid var(--line); border-radius:10px; background:var(--paper-dim);
+}
+.msj-prayer-row-name{ display:flex; align-items:baseline; gap:8px; min-width:0; }
+.msj-prayer-row-name strong{ font-size:14.5px; color:var(--text-on-paper); }
+.msj-prayer-cat{ font-size:11.5px; color:var(--text-on-paper-dim); text-transform:uppercase; letter-spacing:.03em; }
+.msj-prayer-time{
+  border:1px solid var(--line); border-radius:8px; padding:6px 10px; font-size:14px; font-family:var(--mono); background:#fff; color:var(--text-on-paper);
+}
+.msj-prayer-badge{
+  justify-self:start; display:inline-flex; align-items:center; font-size:11.5px; font-weight:700; padding:4px 10px; border-radius:100px;
+  white-space:nowrap; background:rgba(141,198,63,.14); color:var(--teal-deep);
+}
+.msj-prayer-badge-manual{ background:rgba(141,198,63,.14); color:var(--teal-deep); }
+.msj-prayer-badge-recurring{ background:rgba(163,140,20,.12); color:#8a6d1a; }
+.msj-prayer-badge-override{ background:rgba(70,110,190,.12); color:#3a5cb0; }
+.msj-prayer-badge-none{ background:rgba(120,120,120,.12); color:#777; }
+.msj-prayer-updated{ font-size:12px; color:var(--text-on-paper-dim); text-align:end; white-space:nowrap; }
+
+.msj-prayer-savebar{ display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-top:16px; }
+.msj-prayer-scope{ display:flex; flex-direction:column; gap:6px; }
+.msj-prayer-scope label{ display:flex; align-items:center; gap:8px; font-size:13.5px; color:var(--text-on-paper); cursor:pointer; }
+
+.msj-prayer-history{ margin-top:16px; padding-top:14px; border-top:1px dashed var(--line); display:flex; flex-direction:column; gap:10px; }
+.msj-prayer-history-row{ font-size:13px; color:var(--text-on-paper); line-height:1.5; }
+.msj-prayer-history-type{ color:var(--text-on-paper-dim); font-style:italic; }
+.msj-prayer-history-meta{ font-size:12px; color:var(--text-on-paper-dim); margin-top:2px; }
+
+@media (max-width:640px){
+  .msj-prayer-row{ grid-template-columns:1fr; gap:8px; }
+  .msj-prayer-updated{ text-align:start; }
+  .msj-prayer-savebar{ flex-direction:column; align-items:stretch; }
+}
+
 .msj-confirm{ max-width:520px; text-align:center; margin:0 auto; }
 .msj-confirm-icon{
   width:64px; height:64px; border-radius:100px; background:rgba(141,198,63,.14); color:var(--teal-deep);

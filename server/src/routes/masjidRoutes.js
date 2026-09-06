@@ -22,6 +22,7 @@ import {
   sendOtp as sendContactOtp,
   confirmOtp as confirmContactOtp,
 } from "../controllers/masjidContactController.js";
+import { getRoster as getPrayerRoster, saveRoster as savePrayerRoster, getHistory as getPrayerHistory } from "../controllers/masjidPrayerController.js";
 
 const router = Router();
 
@@ -42,6 +43,9 @@ router.patch("/:id/contacts/:contactId", updateContact);
 router.delete("/:id/contacts/:contactId", removeContact);
 router.post("/:id/contacts/:contactId/send-otp", sendContactOtp);
 router.post("/:id/contacts/:contactId/confirm-otp", confirmContactOtp);
+router.get("/:id/prayer-times", getPrayerRoster);
+router.put("/:id/prayer-times", savePrayerRoster);
+router.get("/:id/prayer-times/history", getPrayerHistory);
 router.post("/:id/submit", submit);
 router.post("/:id/delete", deleteMasjid);
 
