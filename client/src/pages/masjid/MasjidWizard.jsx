@@ -11,7 +11,7 @@ import MicButton from "../../components/MicButton.jsx";
 // Must match server/src/utils/contentModeration.js's RESTRICTED_CONTENT_MESSAGE
 // exactly — used to tell "this field is currently flagged" apart from any
 // other kind of field error when clearing a stale restricted-content flag.
-const RESTRICTED_CONTENT_MESSAGE = "This content contains a restricted word or phrase. Please remove it before continuing.";
+const RESTRICTED_CONTENT_MESSAGE = "This content contains restricted or inappropriate language. Please modify the content and try again.";
 
 const STEPS = [
   { key: "basic", label: "Basic Info", icon: "mosque" },

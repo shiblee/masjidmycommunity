@@ -13,6 +13,18 @@ import { sendMasjidChangesRequestedEmail } from "../services/emailService.js";
 import { notifyUser } from "../services/notificationService.js";
 import { mediaTypeOf, IMAGE_MAX_BYTES } from "../middleware/upload.js";
 import { firstRestrictedField, RESTRICTED_CONTENT_MESSAGE } from "../utils/contentModeration.js";
+import { classifyContent } from "../services/aiProviderService.js";
+
+// Same second-layer AI check as masjidController.js's own write paths — see
+// that file for the full rationale. No-op until an AI provider is configured.
+async function firstAiFlaggedField(fields) {
+  for (const [key, value] of Object.entries(fields)) {
+    if (!value) continue;
+    const result = await classifyContent({ text: value, contentType: "masjid_field" });
+    if (result && result.classification !== "safe") return key;
+  }
+  return null;
+}
 
 async function logHistory(masjidId, action, note, actorName) {
   await MasjidHistory.create({ masjidId, action, actorType: "admin", actorName: actorName || "Admin", note: note || null });
@@ -236,6 +248,10 @@ export const updateBasicInfo = async (req, res) => {
     const restrictedField = await firstRestrictedField({ name: masjid.name, tagline: masjid.tagline, about: masjid.about });
     if (restrictedField) {
       return res.status(400).json({ field: restrictedField, message: RESTRICTED_CONTENT_MESSAGE });
+    }
+    const aiFlaggedField = await firstAiFlaggedField({ name: masjid.name, tagline: masjid.tagline, about: masjid.about });
+    if (aiFlaggedField) {
+      return res.status(400).json({ field: aiFlaggedField, message: RESTRICTED_CONTENT_MESSAGE });
     }
 
     await masjid.save();

@@ -15,6 +15,7 @@ import { maskEmail, maskMobile } from "../utils/mask.js";
 import { mediaTypeOf, IMAGE_MAX_BYTES } from "../middleware/upload.js";
 import ContentSettings from "../models/ContentSettings.js";
 import { notifyUser } from "../services/notificationService.js";
+import { checkRestrictedWords, RESTRICTED_CONTENT_MESSAGE } from "../utils/contentModeration.js";
 
 function notifyReply({ parentUserId, actorId, actorName, body, link }) {
   if (!parentUserId || parentUserId === actorId) return;
@@ -474,6 +475,10 @@ export const createComment = async (req, res) => {
       return res.status(400).json({ message: `${parentId ? "Replies" : "Comments"} can be at most ${limit} characters.` });
     }
 
+    if ((await checkRestrictedWords(body)).flagged) {
+      return res.status(400).json({ message: RESTRICTED_CONTENT_MESSAGE });
+    }
+
     const comment = await Comment.create({ activityId, parentId: parentId || null, userId: req.user.id, body: body.trim() });
     const user = await User.findByPk(req.user.id, { attributes: ["id", "fullName"] });
 
@@ -557,6 +562,10 @@ export const updateComment = async (req, res) => {
       return res.status(400).json({ message: `${comment.parentId ? "Replies" : "Comments"} can be at most ${limit} characters.` });
     }
 
+    if ((await checkRestrictedWords(body)).flagged) {
+      return res.status(400).json({ message: RESTRICTED_CONTENT_MESSAGE });
+    }
+
     comment.body = body.trim();
     await comment.save();
     res.json({ comment: { id: comment.id, body: comment.body, updatedAt: comment.updatedAt, edited: true } });
@@ -593,6 +602,11 @@ export const createPost = async (req, res) => {
     if (body && body.length > maxPostLength) {
       files.forEach((f) => fs.unlink(f.path, () => {}));
       return res.status(400).json({ message: `Posts can be at most ${maxPostLength} characters.` });
+    }
+
+    if (body && (await checkRestrictedWords(body)).flagged) {
+      files.forEach((f) => fs.unlink(f.path, () => {}));
+      return res.status(400).json({ message: RESTRICTED_CONTENT_MESSAGE });
     }
 
     const oversizedImage = files.find((f) => mediaTypeOf(f.mimetype) === "photo" && f.size > IMAGE_MAX_BYTES);
@@ -680,6 +694,10 @@ export const updatePost = async (req, res) => {
     const { maxPostLength } = await getContentLimits();
     if (body && body.length > maxPostLength) {
       return res.status(400).json({ message: `Posts can be at most ${maxPostLength} characters.` });
+    }
+
+    if (body && (await checkRestrictedWords(body)).flagged) {
+      return res.status(400).json({ message: RESTRICTED_CONTENT_MESSAGE });
     }
 
     activity.body = body || null;
@@ -866,6 +884,10 @@ export const createImageComment = async (req, res) => {
       return res.status(400).json({ message: `${parentId ? "Replies" : "Comments"} can be at most ${limit} characters.` });
     }
 
+    if ((await checkRestrictedWords(body)).flagged) {
+      return res.status(400).json({ message: RESTRICTED_CONTENT_MESSAGE });
+    }
+
     const comment = await Comment.create({
       activityId: image.activityId,
       imageId: image.id,
@@ -916,6 +938,10 @@ export const updateImageComment = async (req, res) => {
     const limit = comment.parentId ? maxReplyLength : maxCommentLength;
     if (body.trim().length > limit) {
       return res.status(400).json({ message: `${comment.parentId ? "Replies" : "Comments"} can be at most ${limit} characters.` });
+    }
+
+    if ((await checkRestrictedWords(body)).flagged) {
+      return res.status(400).json({ message: RESTRICTED_CONTENT_MESSAGE });
     }
 
     comment.body = body.trim();

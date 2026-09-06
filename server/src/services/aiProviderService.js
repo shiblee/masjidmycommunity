@@ -320,37 +320,49 @@ const ReviewClassificationSchema = z.object({
   confidence: z.number(),
 });
 
-function reviewClassificationSystemPrompt(languageCode) {
+// Human-readable framing per surface — keeps the classifier's sense of
+// "is this a normal, on-topic submission" calibrated per content type (e.g.
+// a masjid Name/Tagline is expected to be a short label, not prose, while a
+// review or Wall post is expected to be free-form).
+const CONTENT_TYPE_LABELS = {
+  review: "a masjid review",
+  masjid_field: "a masjid profile field (such as its Name, Tagline, Short Description, or About text)",
+  community_post: "a Community Wall post",
+  comment: "a comment or reply on the Community Wall",
+};
+
+function contentClassificationSystemPrompt(contentType, languageCode) {
+  const label = CONTENT_TYPE_LABELS[contentType] || "user-submitted content";
   return [
-    "You are a content moderation classifier for masjid reviews on Masjid My Community, a community platform.",
-    "Classify the review text below into exactly one category: 'vulgar' (crude/abusive language), 'sexual' (sexual/explicit content), 'harassment' (targeted harassment or bullying), 'hate' (hate speech or discrimination), 'threat' (threatening or violent language), or 'safe' (none of the above — a normal, acceptable review, even if critical or negative in tone).",
-    "A negative or critical review of a masjid, its management, or its facilities is 'safe' unless it also contains vulgar, sexual, hateful, harassing, or threatening language.",
-    "This classification has already passed a separate restricted-word filter — focus on contextual meaning (e.g. implied or disguised abuse) rather than re-flagging ordinary critical language.",
-    `The review may be written in this language: ${languageCode || "unknown"}. Classify based on meaning, not language.`,
+    `You are a content moderation classifier for ${label} on Masjid My Community, a community platform.`,
+    "Classify the text below into exactly one category: 'vulgar' (crude/abusive language), 'sexual' (sexual/explicit content), 'harassment' (targeted harassment or bullying), 'hate' (hate speech or discrimination), 'threat' (threatening or violent language), or 'safe' (none of the above — normal, acceptable content, even if critical or negative in tone).",
+    "Negative or critical content about a masjid, its management, or its facilities is 'safe' unless it also contains vulgar, sexual, hateful, harassing, or threatening language.",
+    "This classification has already passed a separate restricted-word filter — focus on contextual meaning (e.g. implied or disguised abuse, obfuscated via spacing, special characters, repeated characters, deliberate misspellings, character substitutions, or mixed scripts) rather than re-flagging ordinary language.",
+    `The text may be written in this language: ${languageCode || "unknown"}. Classify based on meaning, not language.`,
     "'confidence' is a number from 0 to 1 for how confident you are in the classification.",
   ].join(" ");
 }
 
-async function callClaudeReviewClassification({ text, languageCode }) {
+async function callClaudeContentClassification({ text, contentType, languageCode }) {
   const response = await anthropic.messages.parse({
     model: AI_MODEL,
     max_tokens: 200,
-    system: [{ type: "text", text: reviewClassificationSystemPrompt(languageCode), cache_control: { type: "ephemeral" } }],
+    system: [{ type: "text", text: contentClassificationSystemPrompt(contentType, languageCode), cache_control: { type: "ephemeral" } }],
     output_config: { format: zodOutputFormat(ReviewClassificationSchema), effort: AI_EFFORT },
-    messages: [{ role: "user", content: `Review text:\n${text}` }],
+    messages: [{ role: "user", content: `Text:\n${text}` }],
   });
   return response.parsed_output;
 }
 
-async function callGeminiReviewClassification({ text, languageCode }) {
+async function callGeminiContentClassification({ text, contentType, languageCode }) {
   const res = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${AI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
     {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
-        systemInstruction: { parts: [{ text: reviewClassificationSystemPrompt(languageCode) }] },
-        contents: [{ role: "user", parts: [{ text: `Review text:\n${text}` }] }],
+        systemInstruction: { parts: [{ text: contentClassificationSystemPrompt(contentType, languageCode) }] },
+        contents: [{ role: "user", parts: [{ text: `Text:\n${text}` }] }],
         generationConfig: {
           responseMimeType: "application/json",
           responseSchema: {
@@ -371,22 +383,27 @@ async function callGeminiReviewClassification({ text, languageCode }) {
   return text2 ? JSON.parse(text2) : null;
 }
 
-// Second-layer contextual moderation, run only on text the rule-based
-// restricted-word filter did NOT already flag — catches abusive/explicit
-// content with no exact-word match. Same null-on-failure contract as every
-// other function here: null when unconfigured (today) or on any failure,
-// so the caller falls back to rule-based-only moderation with no crash.
-export async function classifyReviewContent({ text, languageCode }) {
+// Second-layer contextual moderation (Layer 2 of the Common Content
+// Moderation Engine — Layer 1 is the deterministic Review Restricted Words
+// Meta library in contentModeration.js), run only on text the rule-based
+// filter did NOT already flag — catches abusive/explicit content with no
+// exact-word match, across every surface (`contentType`: "review",
+// "masjid_field", "community_post", "comment"). Same null-on-failure
+// contract as every other function here: null when unconfigured (today) or
+// on any failure, so the caller falls back to rule-based-only moderation
+// with no crash. The administrator-controlled Meta list remains the
+// authoritative restriction source — this only assists detection.
+export async function classifyContent({ text, contentType = "review", languageCode }) {
   if (!aiProviderConfigured) return null;
   try {
     const parsed =
       AI_PROVIDER === "claude"
-        ? await callClaudeReviewClassification({ text, languageCode })
-        : await callGeminiReviewClassification({ text, languageCode });
+        ? await callClaudeContentClassification({ text, contentType, languageCode })
+        : await callGeminiContentClassification({ text, contentType, languageCode });
     if (!parsed?.classification) return null;
     return { classification: parsed.classification, confidence: Number(parsed.confidence) || 0 };
   } catch (error) {
-    console.error("AI provider review classification failed:", error.message);
+    console.error("AI provider content classification failed:", error.message);
     return null;
   }
 }

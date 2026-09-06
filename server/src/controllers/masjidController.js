@@ -12,6 +12,23 @@ import User from "../models/User.js";
 import { sendMasjidSubmittedAdminEmail, sendMasjidSubmittedUserEmail } from "../services/emailService.js";
 import { mediaTypeOf, IMAGE_MAX_BYTES } from "../middleware/upload.js";
 import { firstRestrictedField, RESTRICTED_CONTENT_MESSAGE } from "../utils/contentModeration.js";
+import { classifyContent } from "../services/aiProviderService.js";
+
+// Second-layer contextual check (Layer 2 of the Common Content Moderation
+// Engine) — run only on fields the rule-based filter above did NOT already
+// flag. No-op (returns null per field) until ANTHROPIC_API_KEY is
+// configured, so rule-based-only moderation is the real, active layer until
+// then. Unlike reviews (which can be held "pending" for admin review),
+// masjid identity fields have no such intermediate state, so a flagged
+// field blocks submission outright, same as a rule-based match.
+async function firstAiFlaggedField(fields) {
+  for (const [key, value] of Object.entries(fields)) {
+    if (!value) continue;
+    const result = await classifyContent({ text: value, contentType: "masjid_field" });
+    if (result && result.classification !== "safe") return key;
+  }
+  return null;
+}
 
 // UPI addressing per NPCI: identifier "@" provider handle.
 const UPI_RE = /^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z][a-zA-Z0-9.\-_]{1,63}$/;
@@ -216,6 +233,10 @@ export const update = async (req, res) => {
     if (restrictedField) {
       return res.status(400).json({ field: restrictedField, message: RESTRICTED_CONTENT_MESSAGE });
     }
+    const aiFlaggedField = await firstAiFlaggedField({ name: masjid.name, tagline: masjid.tagline, about: masjid.about });
+    if (aiFlaggedField) {
+      return res.status(400).json({ field: aiFlaggedField, message: RESTRICTED_CONTENT_MESSAGE });
+    }
 
     await masjid.save();
     res.json({ masjid: await serializeMasjid(masjid) });
@@ -411,6 +432,10 @@ export const submit = async (req, res) => {
     const restrictedField = await firstRestrictedField({ name: masjid.name, tagline: masjid.tagline, about: masjid.about });
     if (restrictedField) {
       return res.status(400).json({ field: restrictedField, message: RESTRICTED_CONTENT_MESSAGE });
+    }
+    const aiFlaggedField = await firstAiFlaggedField({ name: masjid.name, tagline: masjid.tagline, about: masjid.about });
+    if (aiFlaggedField) {
+      return res.status(400).json({ field: aiFlaggedField, message: RESTRICTED_CONTENT_MESSAGE });
     }
 
     // The mandatory-office-bearers gate: every isRequired designation (seeded

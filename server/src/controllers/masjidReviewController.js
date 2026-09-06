@@ -7,7 +7,7 @@ import ReviewLike from "../models/ReviewLike.js";
 import ReviewSettings from "../models/ReviewSettings.js";
 import User from "../models/User.js";
 import { checkRestrictedWords } from "../utils/contentModeration.js";
-import { classifyReviewContent } from "../services/aiProviderService.js";
+import { classifyContent } from "../services/aiProviderService.js";
 import { mediaTypeOf } from "../middleware/upload.js";
 
 // Never expose which term matched or "invalid" jargon — a clear, generic
@@ -166,7 +166,7 @@ export const upsertMyReview = async (req, res) => {
       // until ANTHROPIC_API_KEY is configured — rule-based-only moderation
       // above is the real, active layer until then. A non-"safe" result
       // doesn't reject the review outright; it's held for admin review.
-      const aiResult = await classifyReviewContent({ text: body, languageCode: req.body.languageCode });
+      const aiResult = await classifyContent({ text: body, contentType: "review", languageCode: req.body.languageCode });
       if (aiResult && aiResult.classification !== "safe") {
         status = "pending";
         flagReason = `AI: ${aiResult.classification}`;
