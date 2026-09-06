@@ -12,6 +12,7 @@ import MasjidReview from "../models/MasjidReview.js";
 import MasjidFavorite from "../models/MasjidFavorite.js";
 import User from "../models/User.js";
 import MapSettings from "../models/MapSettings.js";
+import { getEffectivePrayerTimes, isValidDateStr } from "../services/prayerTimeService.js";
 
 const PUBLIC_STATUS = "approved";
 const MAP_POINTS_CAP = 500;
@@ -244,6 +245,25 @@ export const listPublicContacts = async (req, res) => {
       order: [["sortOrder", "ASC"]],
     });
     res.json({ contacts });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+/** Read-only, unauthenticated — the same override -> recurring -> none
+ * priority as the owner/admin surfaces, computed by the same shared
+ * service, so a masjid's public prayer times always match what its owner
+ * (or an admin) actually set. */
+export const getPublicPrayerTimes = async (req, res) => {
+  try {
+    const masjid = await Masjid.findOne({ where: { id: req.params.id, status: PUBLIC_STATUS, moderationStatus: "active" } });
+    if (!masjid) return res.status(404).json({ message: "Masjid not found." });
+
+    const dateStr = req.query.date || new Date().toISOString().slice(0, 10);
+    if (!isValidDateStr(dateStr)) return res.status(400).json({ message: "Invalid date." });
+
+    const roster = await getEffectivePrayerTimes(masjid.id, dateStr);
+    res.json({ date: dateStr, roster: roster.filter((r) => r.time) });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

@@ -9,6 +9,7 @@ import { locationOf, StarRating, directionsUrl } from "./exploreMasjidsShared.js
 import SuggestEditForm from "./SuggestEditForm.jsx";
 import ReviewForm from "./ReviewForm.jsx";
 import ReviewRow from "./ReviewRow.jsx";
+import { useTranslation } from "../../i18n/LanguageContext.jsx";
 
 const API = `${API_BASE}/masjids/public`;
 
@@ -35,6 +36,7 @@ function ShareIcon({ size = 20 }) {
 
 function MasjidReviewModal({ masjid, initialTab = "overview", onClose }) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [tab, setTab] = useState(initialTab);
   const [data, setData] = useState(null);
   const [myReview, setMyReview] = useState(null);
@@ -46,6 +48,7 @@ function MasjidReviewModal({ masjid, initialTab = "overview", onClose }) {
   const [suggestSent, setSuggestSent] = useState(false);
   const [reviewSettings, setReviewSettings] = useState(null);
   const [contacts, setContacts] = useState([]);
+  const [prayerRoster, setPrayerRoster] = useState([]);
   const loggedIn = !!getUserToken();
 
   useEffect(() => {
@@ -61,6 +64,10 @@ function MasjidReviewModal({ masjid, initialTab = "overview", onClose }) {
       .get(`${API}/${masjid.id}/contacts`)
       .then(({ data }) => setContacts(data.contacts || []))
       .catch(() => setContacts([]));
+    axios
+      .get(`${API}/${masjid.id}/prayer-times`)
+      .then(({ data }) => setPrayerRoster(data.roster || []))
+      .catch(() => setPrayerRoster([]));
     if (loggedIn) {
       const token = getUserToken();
       axios
@@ -258,6 +265,20 @@ function MasjidReviewModal({ masjid, initialTab = "overview", onClose }) {
               </>
             ) : (
               <p className="msj-review-empty">No description added yet.</p>
+            )}
+
+            {prayerRoster.length > 0 && (
+              <div className="msj-review-prayer">
+                <h4 className="msj-review-about-heading">{t("prayer.rosterHeading", "Today's Prayer Times")}</h4>
+                <div className="msj-review-prayer-grid">
+                  {prayerRoster.map((p) => (
+                    <div className="msj-review-prayer-card" key={p.prayerId}>
+                      <span className="msj-review-prayer-name">{t(`prayer.${p.name.toLowerCase()}`, p.name)}</span>
+                      <span className="msj-review-prayer-time">{p.time}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
 
             {contacts.length > 0 && (

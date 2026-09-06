@@ -11,11 +11,13 @@ import MediaGallery from "./masjidHub/MediaGallery.jsx";
 import NearbyMasjidPanel from "./masjidHub/NearbyMasjidPanel.jsx";
 import ReviewsTab from "./masjidHub/ReviewsTab.jsx";
 import CommunityWallTab from "./masjidHub/CommunityWallTab.jsx";
+import PrayerTimesTab from "./masjidHub/PrayerTimesTab.jsx";
 
 const API = `${API_BASE}/masjids/public`;
 
 const TABS = [
   { key: "about", label: "About" },
+  { key: "prayer-times", label: "Prayer Times" },
   { key: "community-wall", label: "Community Wall" },
   { key: "people", label: "People" },
   { key: "campaigns", label: "Campaigns" },
@@ -236,6 +238,7 @@ function MasjidProfile() {
                 </div>
               </>
             )}
+            {tab === "prayer-times" && <PrayerTimesTab masjidId={id} />}
             {tab === "community-wall" && <CommunityWallTab masjidId={id} masjidName={masjid.name} />}
             {tab === "people" && <ComingSoonPanel label="People" />}
             {tab === "campaigns" && <ComingSoonPanel label="Campaigns" />}
