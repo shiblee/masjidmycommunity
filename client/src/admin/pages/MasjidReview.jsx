@@ -108,10 +108,14 @@ function BasicInfoTab({ id, masjid, categories, onSaved }) {
     setErrors((er) => ({ ...er, [key]: null }));
   };
 
+  // Google's address_components frequently omit informal house/flat/plot
+  // numbers (e.g. "264/146") that don't map to a proper street_number
+  // component — reconstructing the Address line from a selected suggestion
+  // would silently drop exactly what the admin typed and already sees in
+  // the box, so the Address field itself is left untouched here.
   const applyResolvedAddress = (fields) => {
     setForm((f) => ({
       ...f,
-      address: fields.address || f.address,
       formattedAddress: fields.formattedAddress || f.formattedAddress,
       area: fields.area || f.area,
       city: fields.city || f.city,

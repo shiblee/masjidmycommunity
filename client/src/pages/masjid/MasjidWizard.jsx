@@ -431,10 +431,17 @@ function MasjidWizard({ embedded = false }) {
       .catch(() => {});
   }, []);
 
-  const applyResolvedAddress = (fields) => {
+  // `overwriteAddress` defaults to false: when a search suggestion is
+  // picked, Google's own address_components frequently omit informal
+  // house/flat/plot numbers (e.g. "264/146") that don't map to a proper
+  // street_number component — reconstructing the Address line from them
+  // would silently drop exactly what the user typed and already sees in
+  // the box. Only the map-pin-drag flow (nothing was ever typed there)
+  // opts in to overwriting it.
+  const applyResolvedAddress = (fields, { overwriteAddress = false } = {}) => {
     setForm((f) => ({
       ...f,
-      address: fields.address || f.address,
+      address: overwriteAddress ? fields.address || f.address : f.address,
       formattedAddress: fields.formattedAddress || f.formattedAddress,
       area: fields.area || f.area,
       city: fields.city || f.city,
@@ -763,7 +770,11 @@ function MasjidWizard({ embedded = false }) {
                   <input value={form.postalCode} onChange={setField("postalCode")} placeholder="e.g. 110006" maxLength={255} />
                 </Field>
               </div>
-              <LocationMap latitude={form.latitude} longitude={form.longitude} onPinMoved={applyResolvedAddress} />
+              <LocationMap
+                latitude={form.latitude}
+                longitude={form.longitude}
+                onPinMoved={(fields) => applyResolvedAddress(fields, { overwriteAddress: true })}
+              />
             </>
           )}
 
