@@ -12,6 +12,7 @@ import { recordMasjidApprovedActivity } from "../services/communityActivityServi
 import { sendMasjidChangesRequestedEmail } from "../services/emailService.js";
 import { notifyUser } from "../services/notificationService.js";
 import { mediaTypeOf, IMAGE_MAX_BYTES } from "../middleware/upload.js";
+import { firstRestrictedField, RESTRICTED_CONTENT_MESSAGE } from "../utils/contentModeration.js";
 
 async function logHistory(masjidId, action, note, actorName) {
   await MasjidHistory.create({ masjidId, action, actorType: "admin", actorName: actorName || "Admin", note: note || null });
@@ -230,6 +231,11 @@ export const updateBasicInfo = async (req, res) => {
       if (!/^\d{4}$/.test(masjid.yearEstablished) || year < 1300 || year > currentYear) {
         return res.status(400).json({ field: "yearEstablished", message: `Enter a valid year between 1300 and ${currentYear}.` });
       }
+    }
+
+    const restrictedField = await firstRestrictedField({ name: masjid.name, tagline: masjid.tagline, about: masjid.about });
+    if (restrictedField) {
+      return res.status(400).json({ field: restrictedField, message: RESTRICTED_CONTENT_MESSAGE });
     }
 
     await masjid.save();

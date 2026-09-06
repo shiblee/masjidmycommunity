@@ -1,10 +1,15 @@
 import ReviewRestrictedWord from "../models/ReviewRestrictedWord.js";
 
-// Rule-based restricted-word detection for review text. Deliberately never
-// reveals *which* term matched — callers only ever see `{ flagged,
-// confidence }`, and the user-facing message is always the same generic
-// sentence (see masjidReviewController.js) so the library can't be probed
-// or reverse-engineered from the app's own responses.
+// Rule-based restricted-word detection — the shared Common Validation Engine
+// described in the Meta → Review Restricted Words architecture. Reviews
+// (masjidReviewController.js) and Masjid Name/Tagline/About
+// (masjidController.js, adminMasjidController.js) both call this same
+// module rather than keeping separate word lists, so an admin editing the
+// Meta library instantly governs every consumer with no code change.
+// Deliberately never reveals *which* term matched — callers only ever see
+// `{ flagged, confidence }`, and the user-facing message is always the same
+// generic sentence so the library can't be probed or reverse-engineered
+// from the app's own responses.
 
 const LEET_MAP = { 0: "o", 1: "i", 3: "e", 4: "a", 5: "s", 7: "t", "@": "a", $: "s" };
 
@@ -90,4 +95,25 @@ export async function checkRestrictedWords(text) {
 /** Test-only hook: forces the next activeTerms() call to re-hit the DB. */
 export function invalidateRestrictedWordCache() {
   cachedWords = null;
+}
+
+// Single generic message for every consumer — never names the field's
+// content or which term matched, exactly like the review-moderation message
+// this mirrors.
+export const RESTRICTED_CONTENT_MESSAGE = "This content contains a restricted word or phrase. Please remove it before continuing.";
+
+/**
+ * Checks a `{ fieldKey: text }` map against the restricted-word library in
+ * the given key order and returns the first flagged field's key, or `null`
+ * if none are flagged. Used wherever multiple free-text fields (Masjid
+ * Name/Tagline/About, etc.) need the same one-message-per-request UX as a
+ * single review body.
+ */
+export async function firstRestrictedField(fields) {
+  for (const [key, value] of Object.entries(fields)) {
+    if (!value) continue;
+    const result = await checkRestrictedWords(value);
+    if (result.flagged) return key;
+  }
+  return null;
 }

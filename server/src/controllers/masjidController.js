@@ -11,6 +11,7 @@ import DeletionReason from "../models/DeletionReason.js";
 import User from "../models/User.js";
 import { sendMasjidSubmittedAdminEmail, sendMasjidSubmittedUserEmail } from "../services/emailService.js";
 import { mediaTypeOf, IMAGE_MAX_BYTES } from "../middleware/upload.js";
+import { firstRestrictedField, RESTRICTED_CONTENT_MESSAGE } from "../utils/contentModeration.js";
 
 // UPI addressing per NPCI: identifier "@" provider handle.
 const UPI_RE = /^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z][a-zA-Z0-9.\-_]{1,63}$/;
@@ -109,10 +110,27 @@ export const getOne = async (req, res) => {
   }
 };
 
+// Real-time (debounced, as-you-type) check for the wizard — same engine and
+// same generic message as the save-time check, just without persisting
+// anything. Never echoes back which word matched, only which field.
+export const checkContent = async (req, res) => {
+  try {
+    const { name, tagline, about } = req.body;
+    const restrictedField = await firstRestrictedField({ name, tagline, about });
+    res.json({ field: restrictedField, message: restrictedField ? RESTRICTED_CONTENT_MESSAGE : null });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 export const createDraft = async (req, res) => {
   try {
     const { name } = req.body;
     if (!name?.trim()) return res.status(400).json({ message: "Masjid name is required." });
+
+    if (await firstRestrictedField({ name: name.trim() })) {
+      return res.status(400).json({ field: "name", message: RESTRICTED_CONTENT_MESSAGE });
+    }
 
     const masjid = await Masjid.create({ userId: req.user.id, name: name.trim(), status: "draft" });
     await logHistory(masjid.id, "draft_created", null, null);
@@ -189,6 +207,14 @@ export const update = async (req, res) => {
       if (!/^\d{4}$/.test(masjid.yearEstablished) || year < 1300 || year > currentYear) {
         return res.status(400).json({ field: "yearEstablished", message: `Enter a valid year between 1300 and ${currentYear}.` });
       }
+    }
+
+    // Meta → Review Restricted Words is the single source of truth for this
+    // check — same engine the Reviews feature uses, so an admin edit to that
+    // library governs Masjid Name/Tagline/About with no code change here.
+    const restrictedField = await firstRestrictedField({ name: masjid.name, tagline: masjid.tagline, about: masjid.about });
+    if (restrictedField) {
+      return res.status(400).json({ field: restrictedField, message: RESTRICTED_CONTENT_MESSAGE });
     }
 
     await masjid.save();
@@ -378,6 +404,13 @@ export const submit = async (req, res) => {
     if (missing.length) {
       const labels = missing.map((f) => STRING_FIELD_LABELS[f] || f);
       return res.status(400).json({ message: `Please complete: ${labels.join(", ")}.` });
+    }
+
+    // Re-checked here too (not just on save) as defense-in-depth against the
+    // library changing between the last edit and submission.
+    const restrictedField = await firstRestrictedField({ name: masjid.name, tagline: masjid.tagline, about: masjid.about });
+    if (restrictedField) {
+      return res.status(400).json({ field: restrictedField, message: RESTRICTED_CONTENT_MESSAGE });
     }
 
     // The mandatory-office-bearers gate: every isRequired designation (seeded

@@ -1,9 +1,10 @@
 import { DataTypes } from "sequelize";
 import { sequelize } from "../config/db.js";
 
-// Admin-maintained library of terms/phrases not permitted in reviews. Never
-// exposed to end users (see reviewModeration.js) — only whether a submission
-// was flagged, never which term matched.
+// Admin-maintained library of restricted terms/phrases — the single source
+// of truth shared by reviews AND masjid text fields (Name/Tagline/About, see
+// utils/contentModeration.js). Never exposed to end users: only whether a
+// submission was flagged, never which term matched.
 const ReviewRestrictedWord = sequelize.define(
   "ReviewRestrictedWord",
   {

@@ -6,7 +6,7 @@ import ReviewMedia from "../models/ReviewMedia.js";
 import ReviewLike from "../models/ReviewLike.js";
 import ReviewSettings from "../models/ReviewSettings.js";
 import User from "../models/User.js";
-import { checkRestrictedWords } from "../utils/reviewModeration.js";
+import { checkRestrictedWords } from "../utils/contentModeration.js";
 import { classifyReviewContent } from "../services/aiProviderService.js";
 import { mediaTypeOf } from "../middleware/upload.js";
 

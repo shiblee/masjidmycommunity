@@ -8,6 +8,11 @@ import AddressAutocomplete from "../../components/AddressAutocomplete.jsx";
 import MediaThumb from "../../components/MediaThumb.jsx";
 import MicButton from "../../components/MicButton.jsx";
 
+// Must match server/src/utils/contentModeration.js's RESTRICTED_CONTENT_MESSAGE
+// exactly — used to tell "this field is currently flagged" apart from any
+// other kind of field error when clearing a stale restricted-content flag.
+const RESTRICTED_CONTENT_MESSAGE = "This content contains a restricted word or phrase. Please remove it before continuing.";
+
 const STEPS = [
   { key: "basic", label: "Basic Info", icon: "mosque" },
   { key: "contact", label: "Contact & Verification", icon: "shieldCheck" },
@@ -492,12 +497,41 @@ function MasjidWizard({ embedded = false }) {
     setForm((f) => ({ ...f, [key]: e.target.value }));
     setErrors((er) => ({ ...er, [key]: null }));
   };
+
+  // Real-time restricted-word check (Meta → Review Restricted Words) —
+  // debounced so it fires once typing pauses, not on every keystroke. The
+  // same check runs again server-side on save/submit regardless, so this is
+  // purely an early-feedback nicety, not the actual enforcement point.
+  useEffect(() => {
+    if (!form.name && !form.tagline && !form.about) return undefined;
+    const t = setTimeout(() => {
+      masjidApi
+        .post("/check-content", { name: form.name, tagline: form.tagline, about: form.about })
+        .then(({ data }) => {
+          setErrors((er) => {
+            const next = { ...er };
+            ["name", "tagline", "about"].forEach((k) => {
+              if (data.field === k) next[k] = data.message;
+              else if (er[k] === RESTRICTED_CONTENT_MESSAGE) next[k] = null;
+            });
+            return next;
+          });
+        })
+        .catch(() => {});
+    }, 500);
+    return () => clearTimeout(t);
+  }, [form.name, form.tagline, form.about]);
+
   const missingMandatoryContacts = () =>
     designations
       .filter((d) => d.isRequired)
       .filter((d) => !contacts.some((c) => c.designation === d.name && c.verified));
 
   const validateStep = () => {
+    if (step === 1) {
+      const flaggedField = ["name", "tagline", "about"].find((k) => errors[k] === RESTRICTED_CONTENT_MESSAGE);
+      if (flaggedField) return false;
+    }
     if (step === 2) {
       const missing = missingMandatoryContacts();
       if (missing.length) {

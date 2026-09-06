@@ -5,6 +5,7 @@ import {
   listMine,
   getOne,
   createDraft,
+  checkContent,
   update,
   upsertDonationAccount,
   uploadPhotos,
@@ -28,6 +29,7 @@ router.use(auth, requireUser);
 
 router.get("/mine", listMine);
 router.post("/", createDraft);
+router.post("/check-content", checkContent);
 router.get("/:id", getOne);
 router.patch("/:id", update);
 router.put("/:id/donation-account", upsertDonationAccount);
