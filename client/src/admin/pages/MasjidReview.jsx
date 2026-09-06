@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import Icon from "../components/Icons.jsx";
 import { API_ORIGIN } from "../../config.js";
 import StatusBadge from "../components/StatusBadge.jsx";
@@ -17,8 +17,12 @@ const TABS = [
   { key: "contact", label: "Contact & Verification" },
   { key: "photos", label: "Photographs" },
   { key: "reviews", label: "Reviews & Ratings" },
+  { key: "corrections", label: "Suggested Corrections" },
   { key: "donation", label: "Donation Account" },
 ];
+
+const CORRECTION_STATUS_LABEL = { pending: "Pending Review", partially_approved: "Partially Approved", approved: "Approved", rejected: "Rejected" };
+const CORRECTION_FIELD_LABEL = { name: "Name", category: "Category", location: "Location", photos: "Photos", contact: "Contact", other: "Other" };
 
 const PHOTO_CATEGORIES = [
   { key: "community", label: "Community Activities" },
@@ -701,6 +705,61 @@ function ReviewsTab({ reviews, avgRating, reviewCount, loading, onToggleVisibili
   );
 }
 
+// Masjid-scoped view of the same correction requests the global
+// Correction Requests page manages (client/src/admin/pages/MasjidCorrections.jsx
+// + MasjidCorrectionDetail.jsx) — reuses that existing per-field
+// approve/reject/edit moderation UI via the Review link rather than
+// duplicating it here.
+function CorrectionsTab({ requests, loading }) {
+  return (
+    <div className="amx-card amx-panel">
+      <div className="amx-panel-head">
+        <div>
+          <h3>Suggested Corrections</h3>
+          <div className="amx-panel-sub">Structured corrections users have suggested for this masjid's details.</div>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="amx-empty"><Icon name="edit" /><strong>Loading…</strong></div>
+      ) : requests.length === 0 ? (
+        <div className="amx-empty">
+          <Icon name="inbox" />
+          <strong>No suggestions yet</strong>
+          <span>Correction requests for this masjid will show up here once users submit them.</span>
+        </div>
+      ) : (
+        <div className="amx-table-wrap">
+          <table className="amx-table">
+            <thead>
+              <tr>
+                <th>Submitted By</th>
+                <th>Fields</th>
+                <th>Status</th>
+                <th>Submitted</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {requests.map((r) => (
+                <tr key={r.id}>
+                  <td>{r.submitter?.fullName || "Unknown"}</td>
+                  <td>{r.fieldKeys.map((k) => CORRECTION_FIELD_LABEL[k] || k).join(", ")}</td>
+                  <td><StatusBadge status={r.status === "partially_approved" ? "warn" : r.status} label={CORRECTION_STATUS_LABEL[r.status]} /></td>
+                  <td>{formatDateTime(r.createdAt)}</td>
+                  <td style={{ textAlign: "right" }}>
+                    <Link to={`/admin/masjid-corrections/${r.id}`} className="amx-btn amx-btn-sm amx-btn-outline">Review</Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function MasjidReview() {
   const { id, tab: tabParam } = useParams();
   const navigate = useNavigate();
@@ -722,6 +781,8 @@ function MasjidReview() {
   const [reviews, setReviews] = useState([]);
   const [reviewsRating, setReviewsRating] = useState({ avgRating: 0, reviewCount: 0 });
   const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [corrections, setCorrections] = useState([]);
+  const [correctionsLoading, setCorrectionsLoading] = useState(false);
 
   const load = () => {
     adminApi.get(`/masjids/${id}`).then(({ data }) => {
@@ -750,6 +811,19 @@ function MasjidReview() {
   useEffect(() => {
     if (tab === "reviews") loadReviews();
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, tab]);
+
+  // Same lazy-on-tab pattern as reviews above — hits the existing global
+  // correction-requests endpoint (adminMasjidCorrectionController.js's
+  // `list`), just filtered to this one masjid via ?masjidId=.
+  useEffect(() => {
+    if (tab !== "corrections") return;
+    setCorrectionsLoading(true);
+    adminApi
+      .get("/masjid-corrections", { params: { masjidId: id } })
+      .then(({ data }) => setCorrections(data.requests))
+      .catch(() => setCorrections([]))
+      .finally(() => setCorrectionsLoading(false));
   }, [id, tab]);
 
   const toggleReviewVisibility = async (review) => {
@@ -973,6 +1047,10 @@ function MasjidReview() {
           onToggleVisibility={toggleReviewVisibility}
           busy={busy}
         />
+      )}
+
+      {tab === "corrections" && (
+        <CorrectionsTab requests={corrections} loading={correctionsLoading} />
       )}
 
       {tab === "donation" && (

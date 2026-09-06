@@ -20,6 +20,7 @@ export const list = async (req, res) => {
   try {
     const where = {};
     if (req.query.status) where.status = req.query.status;
+    if (req.query.masjidId) where.masjidId = req.query.masjidId;
 
     const requests = await MasjidCorrectionRequest.findAll({ where, order: [["createdAt", "DESC"]] });
     const masjidIds = [...new Set(requests.map((r) => r.masjidId))];
