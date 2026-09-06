@@ -1,14 +1,14 @@
-import { loadGoogleMaps } from "./googleMapsLoader.js";
+import { loadGoogleMaps, getMapSettings } from "./googleMapsLoader.js";
 
-// Google is preferred when its key is configured AND billing is active on the
-// Cloud project. When either is missing it fails fast, and we fall back to the
+// Google is preferred when its key is configured (admin Settings, falling
+// back to the build-time env var) AND billing/APIs are active on the Cloud
+// project. When either is missing it fails fast, and we fall back to the
 // keyless OpenStreetMap/Nominatim geocoder so address search always works.
-let googleUsable = Boolean(import.meta.env.VITE_GOOGLE_MAPS_API_KEY);
+// Optimistic until loadGoogleMaps()/a Google call actually fails — the key
+// itself isn't known synchronously anymore since it may come from the
+// backend, so there's nothing meaningful to check up front.
+let googleUsable = true;
 
-// Restricting search to a country keeps a partial local address (e.g. a Lucknow
-// street) from fuzzy-matching a similarly spelled place on another continent.
-// Blank the env var to search worldwide.
-const COUNTRY = (import.meta.env.VITE_ADDRESS_COUNTRY ?? "in").trim().toLowerCase();
 let placesLib = null; // { AutocompleteSuggestion, AutocompleteSessionToken }
 let geocoder = null;
 let sessionToken = null;
@@ -45,8 +45,9 @@ async function searchGoogle(query) {
   if (!google) return null;
 
   try {
+    const { addressCountry } = await getMapSettings();
     const request = { input: query, sessionToken };
-    if (COUNTRY) request.includedRegionCodes = [COUNTRY.toUpperCase()];
+    if (addressCountry) request.includedRegionCodes = [addressCountry.toUpperCase()];
 
     const { suggestions } = await placesLib.AutocompleteSuggestion.fetchAutocompleteSuggestions(request);
     // An empty array is a valid "no matches" result, not a failure — only a
@@ -178,6 +179,7 @@ function osmToFields(r) {
 }
 
 async function searchNominatim(query, signal) {
+  const { addressCountry } = await getMapSettings();
   const params = new URLSearchParams({
     format: "jsonv2",
     addressdetails: "1",
@@ -185,7 +187,7 @@ async function searchNominatim(query, signal) {
     limit: "6",
     q: query,
   });
-  if (COUNTRY) params.set("countrycodes", COUNTRY);
+  if (addressCountry) params.set("countrycodes", addressCountry);
   const response = await fetch(`${NOMINATIM}/search?${params}`, { signal, headers: { Accept: "application/json" } });
   if (!response.ok) throw new Error("Address search is unavailable right now.");
   const results = await response.json();

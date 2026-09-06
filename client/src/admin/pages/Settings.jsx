@@ -15,6 +15,7 @@ const SECTIONS = [
   { key: "content", label: "Community / Content", icon: "content" },
   { key: "reviews", label: "Reviews", icon: "star" },
   { key: "authentication", label: "Authentication", icon: "lock" },
+  { key: "maps", label: "Google Maps", icon: "globe" },
 ];
 
 function initialsOf(name) {
@@ -57,6 +58,11 @@ function Settings() {
   const [contentLimitsInput, setContentLimitsInput] = useState({ maxPostLength: "2000", maxCommentLength: "1000", maxReplyLength: "1000" });
   const [savingContentLimits, setSavingContentLimits] = useState(false);
   const [contentLimitsError, setContentLimitsError] = useState("");
+
+  const [mapSettings, setMapSettings] = useState({ googleMapsApiKey: "", addressCountry: "" });
+  const [mapSettingsInput, setMapSettingsInput] = useState({ googleMapsApiKey: "", addressCountry: "" });
+  const [savingMapSettings, setSavingMapSettings] = useState(false);
+  const [mapSettingsError, setMapSettingsError] = useState("");
 
   const REVIEW_DEFAULTS = { maxLength: 1000, maxImages: 5, maxVideoSizeMB: 50, maxVideoDurationSeconds: 60, allowedImageFormats: "jpg,png,webp", allowedVideoFormats: "mp4,webm,mov", mediaEnabled: true, speechToTextEnabled: true };
   const [reviewSettings, setReviewSettings] = useState(REVIEW_DEFAULTS);
@@ -115,6 +121,16 @@ function Settings() {
           maxCommentLength: String(data.maxCommentLength),
           maxReplyLength: String(data.maxReplyLength),
         });
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    adminApi
+      .get("/map-settings")
+      .then(({ data }) => {
+        setMapSettings(data);
+        setMapSettingsInput(data);
       })
       .catch(() => {});
   }, []);
@@ -324,6 +340,30 @@ function Settings() {
       setContentLimitsError(err.response?.data?.message || "Couldn't save these limits. Please try again.");
     } finally {
       setSavingContentLimits(false);
+    }
+  };
+
+  const saveMapSettings = async (e) => {
+    e.preventDefault();
+    const country = mapSettingsInput.addressCountry.trim();
+    if (country && !/^[a-zA-Z]{2}$/.test(country)) {
+      setMapSettingsError("Country must be a 2-letter code, e.g. \"in\".");
+      return;
+    }
+    setMapSettingsError("");
+    setSavingMapSettings(true);
+    try {
+      const { data } = await adminApi.patch("/map-settings", {
+        googleMapsApiKey: mapSettingsInput.googleMapsApiKey.trim(),
+        addressCountry: country,
+      });
+      setMapSettings(data);
+      setMapSettingsInput(data);
+      showToast("Google Maps settings saved.");
+    } catch (err) {
+      setMapSettingsError(err.response?.data?.message || "Couldn't save these settings. Please try again.");
+    } finally {
+      setSavingMapSettings(false);
     }
   };
 
@@ -996,6 +1036,65 @@ function Settings() {
                 )}
                 <button type="submit" className="amx-btn amx-btn-primary" disabled={savingAuthSettings} style={{ alignSelf: "end" }}>
                   {savingAuthSettings ? "Saving…" : "Save Settings"}
+                </button>
+              </form>
+            </>
+          )}
+
+          {section === "maps" && (
+            <>
+              <div className="amx-panel-head">
+                <div>
+                  <h3>Google Maps Settings</h3>
+                  <div className="amx-panel-sub">
+                    Configure the Google Maps API key and country bias used by the masjid Address autocomplete and location map — changes
+                    take effect immediately for anyone loading the page, with no rebuild or redeploy needed.
+                  </div>
+                </div>
+              </div>
+              <form onSubmit={saveMapSettings} className="amx-form-grid" noValidate>
+                <div className="amx-form-group">
+                  <label htmlFor="maps-api-key">Google Maps API Key</label>
+                  <input
+                    id="maps-api-key"
+                    type="text"
+                    autoComplete="off"
+                    placeholder="AIza..."
+                    value={mapSettingsInput.googleMapsApiKey}
+                    onChange={(e) => setMapSettingsInput((s) => ({ ...s, googleMapsApiKey: e.target.value }))}
+                  />
+                  <div className="amx-panel-sub" style={{ marginTop: 6 }}>
+                    Used for address autocomplete (Places API (New)) and the location map's reverse-geocoding (Geocoding API). Leave blank
+                    to fall back to the server's default configuration. This value is sent to every visitor's browser by design — a
+                    Google Maps browser key is not a secret; restrict it by domain/API in Google Cloud Console instead.
+                    {mapSettings.googleMapsApiKey && (
+                      <> Current: <strong>{mapSettings.googleMapsApiKey.slice(0, 8)}…{mapSettings.googleMapsApiKey.slice(-4)}</strong>.</>
+                    )}
+                  </div>
+                </div>
+                <div className="amx-form-group">
+                  <label htmlFor="maps-country">Address Search Country</label>
+                  <input
+                    id="maps-country"
+                    type="text"
+                    maxLength={2}
+                    placeholder="in"
+                    value={mapSettingsInput.addressCountry}
+                    onChange={(e) => setMapSettingsInput((s) => ({ ...s, addressCountry: e.target.value }))}
+                  />
+                  <div className="amx-panel-sub" style={{ marginTop: 6 }}>
+                    2-letter country code to bias/restrict address search results (e.g. "in" for India). Leave blank to search worldwide.
+                    Current: <strong>{mapSettings.addressCountry || "worldwide"}</strong>.
+                  </div>
+                </div>
+                {mapSettingsError && (
+                  <div className="amx-field-error">
+                    <Icon name="info" size={14} />
+                    {mapSettingsError}
+                  </div>
+                )}
+                <button type="submit" className="amx-btn amx-btn-primary" disabled={savingMapSettings} style={{ alignSelf: "end" }}>
+                  {savingMapSettings ? "Saving…" : "Save Settings"}
                 </button>
               </form>
             </>

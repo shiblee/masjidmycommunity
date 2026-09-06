@@ -11,6 +11,7 @@ import Campaign from "../models/Campaign.js";
 import MasjidReview from "../models/MasjidReview.js";
 import MasjidFavorite from "../models/MasjidFavorite.js";
 import User from "../models/User.js";
+import MapSettings from "../models/MapSettings.js";
 
 const PUBLIC_STATUS = "approved";
 const MAP_POINTS_CAP = 500;
@@ -391,6 +392,23 @@ export const listFilters = async (req, res) => {
   try {
     const rows = await Masjid.findAll({ where: { status: PUBLIC_STATUS, moderationStatus: "active" }, attributes: ["city", "country"], raw: true });
     res.json({ cities: countBy(rows, "city"), countries: countBy(rows, "country") });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Feeds the address-autocomplete widget (Google Maps API key + country
+// bias) — admin-configurable via Settings, with the client falling back to
+// its own build-time env vars if this returns blank values. Publicly
+// readable by design: a browser-side Maps key is not a secret (see
+// MapSettings.js) — only the admin PATCH endpoint is protected.
+export const getMapSettings = async (req, res) => {
+  try {
+    const settings = await MapSettings.findByPk(1);
+    res.json({
+      googleMapsApiKey: settings?.googleMapsApiKey || "",
+      addressCountry: settings?.addressCountry || "",
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
