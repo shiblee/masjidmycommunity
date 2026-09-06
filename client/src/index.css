@@ -2786,9 +2786,16 @@ footer{
 .msj-step-card-wide{ max-width:1120px; }
 .msj-location-grid{ display:grid; grid-template-columns:1fr; gap:32px; }
 
-.msj-map-head{ margin-bottom:10px; }
+.msj-map-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:10px; }
 .msj-map-head strong{ display:block; font-size:13px; font-weight:700; color:var(--text-on-paper); }
 .msj-map-head span{ display:block; font-size:12.5px; color:var(--text-on-paper-dim); margin-top:3px; }
+.msj-map-locate-btn{
+  display:flex; align-items:center; gap:6px; flex-shrink:0; font-size:12.5px; font-weight:600; color:var(--teal-deep);
+  background:var(--paper-dim); border:1px solid var(--line); border-radius:100px; padding:7px 14px; cursor:pointer;
+  transition:background .15s, border-color .15s;
+}
+.msj-map-locate-btn:hover:not(:disabled){ background:rgba(141,198,63,.14); border-color:var(--teal); }
+.msj-map-locate-btn:disabled{ opacity:.6; cursor:default; }
 .msj-map-canvas-wrap{ position:relative; border-radius:12px; overflow:hidden; border:1px solid var(--line); }
 .msj-map-canvas{ height:460px; width:100%; background:var(--paper-dim); }
 .msj-map-canvas .leaflet-control-attribution{ font-size:9.5px; }
