@@ -12,7 +12,7 @@ const API = `${API_BASE}/masjids/public`;
 
 const TABS = [
   { key: "about", label: "About" },
-  { key: "wall", label: "Community Wall" },
+  { key: "community-wall", label: "Community Wall" },
   { key: "people", label: "People" },
   { key: "campaigns", label: "Campaigns" },
   { key: "media", label: "Media" },
@@ -20,6 +20,8 @@ const TABS = [
   { key: "location", label: "Location" },
   { key: "more", label: "More" },
 ];
+const DEFAULT_TAB = "about";
+const TAB_KEYS = new Set(TABS.map((t) => t.key));
 
 function LikeAvatarStack({ topLikers, likeCount, onClick }) {
   if (!likeCount) return null;
@@ -58,12 +60,13 @@ function InfoCard({ icon, label, children }) {
 }
 
 function MasjidProfile() {
-  const { id } = useParams();
+  const { id, tab: tabParam } = useParams();
   const navigate = useNavigate();
   const [masjid, setMasjid] = useState(null);
   const [photos, setPhotos] = useState([]);
   const [notFound, setNotFound] = useState(false);
-  const [tab, setTab] = useState("about");
+  const tab = TAB_KEYS.has(tabParam) ? tabParam : DEFAULT_TAB;
+  const setTab = (key) => navigate(`/masjid/${id}/${key}`);
   const [favorited, setFavorited] = useState(false);
   const [favBusy, setFavBusy] = useState(false);
   const [shareLabel, setShareLabel] = useState("Share");
@@ -226,7 +229,7 @@ function MasjidProfile() {
                 </div>
               </>
             )}
-            {tab === "wall" && <ComingSoonPanel label="Community Wall" />}
+            {tab === "community-wall" && <ComingSoonPanel label="Community Wall" />}
             {tab === "people" && <ComingSoonPanel label="People" />}
             {tab === "campaigns" && <ComingSoonPanel label="Campaigns" />}
             {tab === "media" && <ComingSoonPanel label="Media" />}

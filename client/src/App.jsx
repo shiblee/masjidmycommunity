@@ -83,6 +83,7 @@ function App() {
           <Route path="/auth" element={<Auth />} />
           <Route path="/explore-masjids" element={<ExploreMasjids />} />
           <Route path="/masjid/:id" element={<MasjidProfile />} />
+          <Route path="/masjid/:id/:tab" element={<MasjidProfile />} />
           <Route path="/campaign/:slug" element={<CampaignProfile />} />
           <Route path="/profile/:username" element={<Profile />} />
           <Route path="/profile/:username/:section" element={<Profile />} />
