@@ -1,13 +1,16 @@
 import { Op } from "sequelize";
 import CommunityActivity from "../models/CommunityActivity.js";
 import User from "../models/User.js";
+import Masjid from "../models/Masjid.js";
+import { deleteActivityCascade } from "./publicCommunityController.js";
 
 export const listAll = async (req, res) => {
   try {
-    const { type, status, page = 1, pageSize = 20 } = req.query;
+    const { type, status, masjidId, page = 1, pageSize = 20 } = req.query;
     const where = {};
     if (type && type !== "all") where.type = type;
     if (status && status !== "all") where.status = status;
+    if (masjidId) where.relatedMasjidId = masjidId;
 
     const limit = Math.min(Number(pageSize) || 20, 100);
     const offset = (Math.max(Number(page) || 1, 1) - 1) * limit;
@@ -22,9 +25,14 @@ export const listAll = async (req, res) => {
       offset,
     });
 
-    const userIds = [...new Set(rows.filter((a) => a.type === "new_user" && a.relatedUserId).map((a) => a.relatedUserId))];
-    const users = userIds.length ? await User.findAll({ where: { id: { [Op.in]: userIds } } }) : [];
+    const userIds = [...new Set(rows.filter((a) => (a.type === "new_user" || a.type === "community_post") && a.relatedUserId).map((a) => a.relatedUserId))];
+    const masjidIds = [...new Set(rows.filter((a) => a.relatedMasjidId).map((a) => a.relatedMasjidId))];
+    const [users, masjids] = await Promise.all([
+      userIds.length ? User.findAll({ where: { id: { [Op.in]: userIds } } }) : [],
+      masjidIds.length ? Masjid.findAll({ where: { id: { [Op.in]: masjidIds } }, attributes: ["id", "name"] }) : [],
+    ]);
     const userById = new Map(users.map((u) => [u.id, u]));
+    const masjidById = new Map(masjids.map((m) => [m.id, m]));
 
     // Authorized admin surface — full contact details are fine here, unlike
     // the masked-only public wall feed.
@@ -43,6 +51,14 @@ export const listAll = async (req, res) => {
               registeredAt: u.createdAt,
             }
           : null;
+      }
+      if (a.type === "community_post" && a.relatedUserId) {
+        const u = userById.get(a.relatedUserId);
+        json.author = u ? { id: u.id, fullName: u.fullName, email: u.email } : null;
+      }
+      if (a.relatedMasjidId) {
+        const m = masjidById.get(a.relatedMasjidId);
+        json.masjid = m ? { id: m.id, name: m.name } : null;
       }
       return json;
     });
@@ -111,7 +127,9 @@ export const remove = async (req, res) => {
   try {
     const activity = await findOr404(req, res);
     if (!activity) return;
-    await activity.destroy();
+    // Same full cascade the author's own delete uses — an admin removing a
+    // community_post shouldn't leave its comments/votes/reports orphaned.
+    await deleteActivityCascade(activity);
     res.json({ deleted: true });
   } catch (error) {
     res.status(500).json({ message: error.message });

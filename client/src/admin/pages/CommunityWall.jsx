@@ -7,6 +7,7 @@ import { formatDateTime } from "../../utils/formatDateTime.js";
 
 const TYPES = [
   { key: "all", label: "All Types" },
+  { key: "community_post", label: "Community Post" },
   { key: "campaign_approved", label: "Campaign Approved" },
   { key: "donation", label: "Donation" },
   { key: "milestone", label: "Fundraising Milestone" },
@@ -47,16 +48,17 @@ function EditModal({ activity, onCancel, onSave }) {
 function CommunityWall() {
   const [type, setType] = useState("all");
   const [status, setStatus] = useState("all");
+  const [masjidId, setMasjidId] = useState("");
   const [page, setPage] = useState(1);
   const [data, setData] = useState({ activities: [], total: 0, pageSize: 20 });
   const [editing, setEditing] = useState(null);
   const [toast, setToast] = useState(null);
 
   const load = () => {
-    adminApi.get("/community", { params: { type, status, page } }).then(({ data }) => setData(data));
+    adminApi.get("/community", { params: { type, status, masjidId: masjidId || undefined, page } }).then(({ data }) => setData(data));
   };
 
-  useEffect(() => { load(); }, [type, status, page]);
+  useEffect(() => { load(); }, [type, status, masjidId, page]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const showToast = (m) => { setToast(m); setTimeout(() => setToast(null), 2400); };
 
@@ -86,6 +88,13 @@ function CommunityWall() {
           <select value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }}>
             {STATUSES.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
           </select>
+          <input
+            type="text"
+            placeholder="Filter by Masjid ID…"
+            value={masjidId}
+            onChange={(e) => { setMasjidId(e.target.value.replace(/\D/g, "")); setPage(1); }}
+            style={{ width: 180 }}
+          />
         </div>
 
         {data.activities.length === 0 && (
@@ -104,6 +113,7 @@ function CommunityWall() {
                   <th>Type</th>
                   <th>Content</th>
                   <th>User</th>
+                  <th>Masjid</th>
                   <th>Generated</th>
                   <th>Status</th>
                   <th></th>
@@ -125,10 +135,16 @@ function CommunityWall() {
                           <div className="amx-cell-sub">{a.user.email || a.user.mobile || "—"}</div>
                           <StatusBadge status={a.user.status} />
                         </>
+                      ) : a.author ? (
+                        <>
+                          <div>{a.author.fullName} <span className="amx-cell-sub">#{a.author.id}</span></div>
+                          <div className="amx-cell-sub">{a.author.email || "—"}</div>
+                        </>
                       ) : (
                         "—"
                       )}
                     </td>
+                    <td>{a.masjid ? <span>{a.masjid.name} <span className="amx-cell-sub">#{a.masjid.id}</span></span> : "—"}</td>
                     <td>{formatDateTime(a.createdAt)}</td>
                     <td><StatusBadge status={a.status} /></td>
                     <td>

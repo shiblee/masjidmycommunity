@@ -179,6 +179,13 @@ export const listPublished = async (req, res) => {
       where.relatedUserId = req.query.userId;
     }
 
+    // The Masjid Community Hub's Wall tab — every activity associated with
+    // one masjid (user posts made from that page, plus any system activity
+    // already carrying that masjid's id), never posts from anywhere else.
+    if (req.query.masjidId) {
+      where.relatedMasjidId = req.query.masjidId;
+    }
+
     // Hashtag filtering is a plain substring prefilter here (cheap, no extra
     // table) — the exact word-boundary match happens once more in JS below
     // so "#Community" doesn't also match "#CommunityXYZ".
@@ -603,10 +610,25 @@ export const createPost = async (req, res) => {
     const imageFiles = files.filter((f) => mediaTypeOf(f.mimetype) === "photo");
     const videoUrl = videoFiles.length ? `/uploads/wall-post-media/${videoFiles[0].filename}` : null;
 
+    // Posted from a masjid's own Community Wall tab — the masjid comes from
+    // the request body (set automatically by that composer, not picked by
+    // the user) but is still verified server-side against a real, publicly
+    // visible masjid so the association can't be spoofed to a fake/hidden id.
+    let relatedMasjidId = null;
+    if (req.body.relatedMasjidId) {
+      const masjid = await Masjid.findOne({ where: { id: req.body.relatedMasjidId, status: "approved", moderationStatus: "active" } });
+      if (!masjid) {
+        files.forEach((f) => fs.unlink(f.path, () => {}));
+        return res.status(400).json({ message: "Masjid not found." });
+      }
+      relatedMasjidId = masjid.id;
+    }
+
     const activity = await CommunityActivity.create({
       type: "community_post",
       body,
       relatedUserId: req.user.id,
+      relatedMasjidId,
       mediaVideoUrl: videoUrl,
       status: "published",
       publishedAt: new Date(),
@@ -668,40 +690,47 @@ export const updatePost = async (req, res) => {
   }
 };
 
+// Shared by the author's own delete (below) and the admin "remove" action
+// (adminCommunityController.js) — both need the same full cascade, not just
+// the two of them independently reinventing it (and drifting out of sync).
+export async function deleteActivityCascade(activity) {
+  const commentIds = (await Comment.findAll({ where: { activityId: activity.id }, attributes: ["id"] })).map((c) => c.id);
+  if (commentIds.length) {
+    await CommentVote.destroy({ where: { commentId: { [Op.in]: commentIds } } });
+    await ContentReport.destroy({ where: { targetType: "comment", targetId: { [Op.in]: commentIds } } });
+    await Comment.destroy({ where: { id: { [Op.in]: commentIds } } });
+  }
+  await CommunityActivityVote.destroy({ where: { activityId: activity.id } });
+  await ContentReport.destroy({ where: { targetType: "activity", targetId: activity.id } });
+
+  const images = await PostImage.findAll({ where: { activityId: activity.id } });
+  if (images.length) {
+    const imageIds = images.map((i) => i.id);
+    const imageCommentIds = (await Comment.findAll({ where: { imageId: { [Op.in]: imageIds } }, attributes: ["id"] })).map((c) => c.id);
+    if (imageCommentIds.length) {
+      await CommentVote.destroy({ where: { commentId: { [Op.in]: imageCommentIds } } });
+      await ContentReport.destroy({ where: { targetType: "comment", targetId: { [Op.in]: imageCommentIds } } });
+      await Comment.destroy({ where: { id: { [Op.in]: imageCommentIds } } });
+    }
+    await PostImageVote.destroy({ where: { imageId: { [Op.in]: imageIds } } });
+    await ContentReport.destroy({ where: { targetType: "image", targetId: { [Op.in]: imageIds } } });
+    await PostImage.destroy({ where: { id: { [Op.in]: imageIds } } });
+  }
+
+  [...images.map((i) => i.url), activity.mediaVideoUrl].filter(Boolean).forEach((url) => {
+    fs.unlink(`.${url}`, () => {});
+  });
+
+  await activity.destroy();
+}
+
 export const deletePost = async (req, res) => {
   try {
     const activity = await CommunityActivity.findOne({ where: { id: req.params.id, type: "community_post" } });
     if (!activity) return res.status(404).json({ message: "Post not found." });
     if (activity.relatedUserId !== req.user.id) return res.status(403).json({ message: "You can only delete your own posts." });
 
-    const commentIds = (await Comment.findAll({ where: { activityId: activity.id }, attributes: ["id"] })).map((c) => c.id);
-    if (commentIds.length) {
-      await CommentVote.destroy({ where: { commentId: { [Op.in]: commentIds } } });
-      await ContentReport.destroy({ where: { targetType: "comment", targetId: { [Op.in]: commentIds } } });
-      await Comment.destroy({ where: { id: { [Op.in]: commentIds } } });
-    }
-    await CommunityActivityVote.destroy({ where: { activityId: activity.id } });
-    await ContentReport.destroy({ where: { targetType: "activity", targetId: activity.id } });
-
-    const images = await PostImage.findAll({ where: { activityId: activity.id } });
-    if (images.length) {
-      const imageIds = images.map((i) => i.id);
-      const imageCommentIds = (await Comment.findAll({ where: { imageId: { [Op.in]: imageIds } }, attributes: ["id"] })).map((c) => c.id);
-      if (imageCommentIds.length) {
-        await CommentVote.destroy({ where: { commentId: { [Op.in]: imageCommentIds } } });
-        await ContentReport.destroy({ where: { targetType: "comment", targetId: { [Op.in]: imageCommentIds } } });
-        await Comment.destroy({ where: { id: { [Op.in]: imageCommentIds } } });
-      }
-      await PostImageVote.destroy({ where: { imageId: { [Op.in]: imageIds } } });
-      await ContentReport.destroy({ where: { targetType: "image", targetId: { [Op.in]: imageIds } } });
-      await PostImage.destroy({ where: { id: { [Op.in]: imageIds } } });
-    }
-
-    [...images.map((i) => i.url), activity.mediaVideoUrl].filter(Boolean).forEach((url) => {
-      fs.unlink(`.${url}`, () => {});
-    });
-
-    await activity.destroy();
+    await deleteActivityCascade(activity);
     res.json({ deleted: true });
   } catch (error) {
     res.status(500).json({ message: error.message });

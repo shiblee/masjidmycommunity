@@ -10,6 +10,7 @@ import SuggestEditForm from "./exploreMasjids/SuggestEditForm.jsx";
 import MediaGallery from "./masjidHub/MediaGallery.jsx";
 import NearbyMasjidPanel from "./masjidHub/NearbyMasjidPanel.jsx";
 import ReviewsTab from "./masjidHub/ReviewsTab.jsx";
+import CommunityWallTab from "./masjidHub/CommunityWallTab.jsx";
 
 const API = `${API_BASE}/masjids/public`;
 
@@ -235,7 +236,7 @@ function MasjidProfile() {
                 </div>
               </>
             )}
-            {tab === "community-wall" && <ComingSoonPanel label="Community Wall" />}
+            {tab === "community-wall" && <CommunityWallTab masjidId={id} masjidName={masjid.name} />}
             {tab === "people" && <ComingSoonPanel label="People" />}
             {tab === "campaigns" && <ComingSoonPanel label="Campaigns" />}
             {tab === "media" && <MediaGallery photos={photos} />}
@@ -266,6 +267,14 @@ function MasjidProfile() {
                 {dirUrl && <a href={dirUrl} target="_blank" rel="noopener noreferrer"><Icon name="compass" size={15} /> Get Directions</a>}
                 <button type="button" onClick={handleShare}><Icon name="link" size={15} /> {shareLabel}</button>
                 {loggedIn && <button type="button" onClick={() => setShowSuggest(true)}><Icon name="edit" size={15} /> Suggest a Correction</button>}
+              </div>
+            </div>
+
+            <div className="card msj-hub-snapshot">
+              <h3>Grow the Community</h3>
+              <div className="msj-hub-quick-actions">
+                <Link to="/account/my-masjids/new"><Icon name="plus" size={15} /> Add a Masjid</Link>
+                <Link to="/account/my-campaigns/new"><Icon name="plus" size={15} /> Add a Campaign</Link>
               </div>
             </div>
           </aside>

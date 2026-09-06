@@ -11,7 +11,10 @@ function initialsOf(name) {
   return ((parts[0]?.[0] || "") + (parts[parts.length - 1]?.[0] || "")).toUpperCase();
 }
 
-function PostComposer({ user, onPosted, maxLength = 2000 }) {
+// `lockedMasjid` ({id, name}), when given, ties every post from this composer
+// to that masjid — used by the Masjid Community Hub's Wall tab, where the
+// masjid is fixed by the page context rather than picked by the user.
+function PostComposer({ user, onPosted, maxLength = 2000, lockedMasjid }) {
   const [body, setBody] = useState("");
   const [images, setImages] = useState([]); // [{file, previewUrl}]
   const [video, setVideo] = useState(null); // {file, previewUrl}
@@ -73,6 +76,7 @@ function PostComposer({ user, onPosted, maxLength = 2000 }) {
       if (body.trim()) form.append("body", body.trim());
       images.forEach((i) => form.append("media", i.file));
       if (video) form.append("media", video.file);
+      if (lockedMasjid) form.append("relatedMasjidId", lockedMasjid.id);
 
       const { data } = await communityApi.post("/posts", form);
       onPosted(data.activity);
@@ -99,6 +103,12 @@ function PostComposer({ user, onPosted, maxLength = 2000 }) {
         )}
         <strong>{user.fullName}</strong>
       </div>
+
+      {lockedMasjid && (
+        <p className="cw-composer-locked-masjid">
+          <Icon name="mosque" size={13} /> This post will be shared with the <strong>{lockedMasjid.name}</strong> community.
+        </p>
+      )}
 
       <label className="cw-composer-prompt" htmlFor="wall-composer-textarea">What would you like to share with the community?</label>
       <MentionTextarea
