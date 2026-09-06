@@ -228,6 +228,68 @@ export const listLikers = async (req, res) => {
   }
 };
 
+/** Every approved masjid, sorted by distance from the one being viewed
+ * (nearest first) — powers the Masjid Hub's left-side discovery panel.
+ * The masjid being viewed is included (distanceKm: 0) so it can be shown
+ * with an active/highlighted state, matching the panel's own selection.
+ * Masjids with no coordinates sort last (distance can't be computed) and
+ * report `distanceKm: null` rather than a fabricated number. */
+export const listNearbyAll = async (req, res) => {
+  try {
+    const masjid = await Masjid.findOne({ where: { id: req.params.id, status: PUBLIC_STATUS, moderationStatus: "active" } });
+    if (!masjid) return res.status(404).json({ message: "Masjid not found." });
+
+    const q = (req.query.q || "").trim();
+    const page = Math.max(Number(req.query.page) || 1, 1);
+    const pageSize = Math.min(Number(req.query.pageSize) || 20, 50);
+
+    const where = { status: PUBLIC_STATUS, moderationStatus: "active" };
+    if (q) where.name = { [Op.like]: `%${q}%` };
+
+    const hasCoords = masjid.latitude != null && masjid.longitude != null;
+    const attributes = ["id", "name", "category", "city", "country", "latitude", "longitude"];
+    let order;
+    if (hasCoords) {
+      const distanceExpr = literal(
+        `(6371 * acos(cos(radians(${masjid.latitude})) * cos(radians(latitude)) * cos(radians(longitude) - radians(${masjid.longitude})) + sin(radians(${masjid.latitude})) * sin(radians(latitude))))`
+      );
+      attributes.push([distanceExpr, "distanceKm"]);
+      order = [[literal("latitude IS NULL OR longitude IS NULL"), "ASC"], [literal("distanceKm"), "ASC"]];
+    } else {
+      attributes.push([literal("NULL"), "distanceKm"]);
+      order = [["approvedAt", "DESC"]];
+    }
+
+    const { rows, count } = await Masjid.findAndCountAll({
+      where,
+      attributes,
+      order,
+      limit: pageSize,
+      offset: (page - 1) * pageSize,
+    });
+
+    const covers = await MasjidPhoto.findAll({ where: { masjidId: rows.map((r) => r.id), isCover: true } });
+    const coverByMasjid = new Map(covers.map((c) => [c.masjidId, c.url]));
+
+    res.json({
+      masjids: rows.map((r) => ({
+        id: r.id,
+        name: r.name,
+        category: r.category,
+        city: r.city,
+        country: r.country,
+        coverPhotoUrl: coverByMasjid.get(r.id) || null,
+        distanceKm: r.get("distanceKm") != null ? Number(r.get("distanceKm")) : null,
+      })),
+      total: count,
+      page,
+      pageSize,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 /** Directory-wide (unfiltered) counts for the discovery summary bar. */
 export const listStats = async (req, res) => {
   try {
