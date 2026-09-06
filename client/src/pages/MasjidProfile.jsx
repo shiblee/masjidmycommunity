@@ -7,6 +7,7 @@ import { API_BASE, API_ORIGIN } from "../config.js";
 import { getUserToken } from "../utils/userAuthStorage.js";
 import { StarRating, directionsUrl } from "./exploreMasjids/exploreMasjidsShared.jsx";
 import SuggestEditForm from "./exploreMasjids/SuggestEditForm.jsx";
+import MediaGallery from "./masjidHub/MediaGallery.jsx";
 
 const API = `${API_BASE}/masjids/public`;
 
@@ -233,7 +234,7 @@ function MasjidProfile() {
             {tab === "community-wall" && <ComingSoonPanel label="Community Wall" />}
             {tab === "people" && <ComingSoonPanel label="People" />}
             {tab === "campaigns" && <ComingSoonPanel label="Campaigns" />}
-            {tab === "media" && <ComingSoonPanel label="Media" />}
+            {tab === "media" && <MediaGallery photos={photos} />}
             {tab === "reviews" && <ComingSoonPanel label="Reviews & Ratings" />}
             {tab === "location" && <ComingSoonPanel label="Location" />}
             {tab === "more" && <ComingSoonPanel label="More" />}
