@@ -5,6 +5,7 @@ import { API_BASE, API_ORIGIN } from "../../config.js";
 import { Icon } from "../../components/Icons.jsx";
 import masjidApi from "../../services/masjidApi.js";
 import AddressAutocomplete from "../../components/AddressAutocomplete.jsx";
+import LocationMap from "../../components/LocationMap.jsx";
 import MediaThumb from "../../components/MediaThumb.jsx";
 import MicButton from "../../components/MicButton.jsx";
 
@@ -35,7 +36,7 @@ function emptyForm() {
   return {
     name: "", tagline: "", about: "", category: "",
     address: "", area: "", city: "", district: "", state: "", country: "", postalCode: "", mapLink: "",
-    formattedAddress: "", latitude: null, longitude: null,
+    formattedAddress: "", latitude: null, longitude: null, placeId: "",
   };
 }
 
@@ -444,6 +445,7 @@ function MasjidWizard({ embedded = false }) {
       mapLink: fields.mapLink || f.mapLink,
       latitude: fields.latitude ?? f.latitude,
       longitude: fields.longitude ?? f.longitude,
+      placeId: fields.placeId || f.placeId,
     }));
   };
 
@@ -483,6 +485,7 @@ function MasjidWizard({ embedded = false }) {
           formattedAddress: m.formattedAddress || "",
           latitude: m.latitude != null ? Number(m.latitude) : null,
           longitude: m.longitude != null ? Number(m.longitude) : null,
+          placeId: m.placeId || "",
         });
         setContacts(m.contacts || []);
         setPhotos(m.photos || []);
@@ -744,6 +747,23 @@ function MasjidWizard({ embedded = false }) {
                   placeholder="e.g. Jama Masjid, Delhi"
                 />
               </Field>
+              <div className="msj-field-row">
+                <Field label="City" error={errors.city}>
+                  <input value={form.city} onChange={setField("city")} placeholder="e.g. Delhi" maxLength={255} />
+                </Field>
+                <Field label="State / Province" error={errors.state}>
+                  <input value={form.state} onChange={setField("state")} placeholder="e.g. Delhi" maxLength={255} />
+                </Field>
+              </div>
+              <div className="msj-field-row">
+                <Field label="Country" error={errors.country}>
+                  <input value={form.country} onChange={setField("country")} placeholder="e.g. India" maxLength={255} />
+                </Field>
+                <Field label="Postal / ZIP Code" error={errors.postalCode}>
+                  <input value={form.postalCode} onChange={setField("postalCode")} placeholder="e.g. 110006" maxLength={255} />
+                </Field>
+              </div>
+              <LocationMap latitude={form.latitude} longitude={form.longitude} onPinMoved={applyResolvedAddress} />
             </>
           )}
 

@@ -23,6 +23,11 @@ const Masjid = sequelize.define(
     formattedAddress: { type: DataTypes.STRING, allowNull: true },
     latitude: { type: DataTypes.DECIMAL(10, 7), allowNull: true },
     longitude: { type: DataTypes.DECIMAL(10, 7), allowNull: true },
+    // Google Place ID of the resolved address, when the location came from a
+    // real Google Places selection — purely informational metadata, never
+    // required for submission (manual/OpenStreetMap-fallback coordinates
+    // remain fully acceptable).
+    placeId: { type: DataTypes.STRING, allowNull: true },
 
     // Contact & verification moved to a list of office-bearers — see
     // MasjidContactPerson (one row per designation, each independently

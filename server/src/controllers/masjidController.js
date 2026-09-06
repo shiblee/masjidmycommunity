@@ -174,6 +174,7 @@ const UPDATABLE_FIELDS = [
   "formattedAddress",
   "latitude",
   "longitude",
+  "placeId",
 ];
 
 // Matches the VARCHAR(255) columns these fields map to in the masjids table —
@@ -193,6 +194,7 @@ const STRING_FIELD_LABELS = {
   postalCode: "Postal / ZIP Code",
   mapLink: "Map Link",
   formattedAddress: "Formatted Address",
+  placeId: "Google Place ID",
 };
 
 export const update = async (req, res) => {

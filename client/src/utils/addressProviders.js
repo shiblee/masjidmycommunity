@@ -9,62 +9,69 @@ let googleUsable = Boolean(import.meta.env.VITE_GOOGLE_MAPS_API_KEY);
 // street) from fuzzy-matching a similarly spelled place on another continent.
 // Blank the env var to search worldwide.
 const COUNTRY = (import.meta.env.VITE_ADDRESS_COUNTRY ?? "in").trim().toLowerCase();
-let autocompleteService = null;
-let placesService = null;
+let placesLib = null; // { AutocompleteSuggestion, AutocompleteSessionToken }
 let geocoder = null;
 let sessionToken = null;
 
 function disableGoogle() {
   googleUsable = false;
-  autocompleteService = null;
-  placesService = null;
+  placesLib = null;
   geocoder = null;
 }
 
 async function ensureGoogleServices() {
   if (!googleUsable) return null;
-  const google = await loadGoogleMaps();
-  // Google calls this global when the key is rejected — including the
-  // BillingNotEnabledMapError case.
-  window.gm_authFailure = disableGoogle;
-  if (!autocompleteService) {
-    autocompleteService = new google.maps.places.AutocompleteService();
-    placesService = new google.maps.places.PlacesService(document.createElement("div"));
-    geocoder = new google.maps.Geocoder();
-    sessionToken = new google.maps.places.AutocompleteSessionToken();
+  try {
+    const google = await loadGoogleMaps();
+    // Google calls this global when the key is rejected — including the
+    // BillingNotEnabledMapError case. A specific API (e.g. Places (New))
+    // not being enabled on the project surfaces as a rejected promise from
+    // importLibrary/fetch calls instead, which the try/catch below covers.
+    window.gm_authFailure = disableGoogle;
+    if (!placesLib) {
+      placesLib = await google.maps.importLibrary("places");
+      geocoder = new (await google.maps.importLibrary("geocoding")).Geocoder();
+      sessionToken = new placesLib.AutocompleteSessionToken();
+    }
+    return google;
+  } catch {
+    disableGoogle();
+    return null;
   }
-  return google;
 }
 
 async function searchGoogle(query) {
   const google = await ensureGoogleServices();
   if (!google) return null;
 
-  const request = { input: query, sessionToken };
-  if (COUNTRY) request.componentRestrictions = { country: COUNTRY };
+  try {
+    const request = { input: query, sessionToken };
+    if (COUNTRY) request.includedRegionCodes = [COUNTRY.toUpperCase()];
 
-  return new Promise((resolve) => {
-    autocompleteService.getPlacePredictions(request, (predictions, status) => {
-      const { OK, ZERO_RESULTS } = google.maps.places.PlacesServiceStatus;
-      if (status === ZERO_RESULTS) return resolve([]);
-      if (status !== OK || !predictions) {
-        disableGoogle();
-        return resolve(null);
-      }
-      resolve(
-        predictions.map((p) => ({
-          id: p.place_id,
-          primary: p.structured_formatting?.main_text || p.description,
-          secondary: p.structured_formatting?.secondary_text || "",
-          label: p.description,
+    const { suggestions } = await placesLib.AutocompleteSuggestion.fetchAutocompleteSuggestions(request);
+    // An empty array is a valid "no matches" result, not a failure — only a
+    // thrown/rejected call (caught below) means Google itself is unusable.
+    return suggestions
+      .filter((s) => s.placePrediction)
+      .map((s) => {
+        const p = s.placePrediction;
+        return {
+          id: p.placeId,
+          primary: p.mainText?.text || p.text?.text || "",
+          secondary: p.secondaryText?.text || "",
+          label: p.text?.text || "",
           source: "google",
-        }))
-      );
-    });
-  });
+          placePrediction: p,
+        };
+      });
+  } catch {
+    disableGoogle();
+    return null;
+  }
 }
 
-function googleComponentsToFields(place) {
+/** Classic Geocoding API result shape (`address_components`/`long_name`) — used only by reverseGoogle, which stays on the classic Geocoder since Places API (New) has no reverse-geocoding endpoint. */
+function geocoderResultToFields(place) {
   const components = place.address_components || [];
   const get = (type) => components.find((c) => c.types.includes(type))?.long_name || "";
   const street = [get("street_number"), get("route")].filter(Boolean).join(" ");
@@ -87,24 +94,43 @@ function googleComponentsToFields(place) {
   };
 }
 
+/** Places API (New) `Place` shape (`addressComponents`/`longText`, no `.geometry` wrapper) — used only by resolveGoogle. */
+function placeToFields(place) {
+  const components = place.addressComponents || [];
+  const get = (type) => components.find((c) => c.types.includes(type))?.longText || "";
+  const street = [get("street_number"), get("route")].filter(Boolean).join(" ");
+  const placeName = place.displayName && place.displayName !== street ? place.displayName : "";
+
+  return {
+    address: [placeName, street].filter(Boolean).join(", ") || place.formattedAddress || "",
+    formattedAddress: place.formattedAddress || "",
+    area: get("sublocality_level_1") || get("sublocality") || get("neighborhood") || "",
+    city: get("locality") || get("postal_town") || "",
+    district: get("administrative_area_level_2") || "",
+    state: get("administrative_area_level_1") || "",
+    country: get("country") || "",
+    postalCode: get("postal_code") || "",
+    latitude: place.location?.lat() ?? null,
+    longitude: place.location?.lng() ?? null,
+    mapLink: place.googleMapsURI || "",
+    placeId: place.id || "",
+  };
+}
+
 async function resolveGoogle(suggestion) {
   const google = await ensureGoogleServices();
-  if (!google) return null;
+  if (!google || !suggestion.placePrediction) return null;
 
-  return new Promise((resolve) => {
-    placesService.getDetails(
-      { placeId: suggestion.id, fields: ["name", "address_components", "formatted_address", "url", "geometry"], sessionToken },
-      (place, status) => {
-        if (status !== google.maps.places.PlacesServiceStatus.OK || !place) {
-          disableGoogle();
-          return resolve(null);
-        }
-        // A new token must be issued once a session ends with a details call.
-        sessionToken = new google.maps.places.AutocompleteSessionToken();
-        resolve(googleComponentsToFields(place));
-      }
-    );
-  });
+  try {
+    const place = suggestion.placePrediction.toPlace();
+    await place.fetchFields({ fields: ["id", "displayName", "formattedAddress", "addressComponents", "location", "googleMapsURI"] });
+    // A new token must be issued once a session ends with a details call.
+    sessionToken = new placesLib.AutocompleteSessionToken();
+    return placeToFields(place);
+  } catch {
+    disableGoogle();
+    return null;
+  }
 }
 
 async function reverseGoogle(lat, lon) {
@@ -117,7 +143,7 @@ async function reverseGoogle(lat, lon) {
         disableGoogle();
         return resolve(null);
       }
-      const fields = googleComponentsToFields(results[0]);
+      const fields = geocoderResultToFields(results[0]);
       resolve({ ...fields, latitude: lat, longitude: lon });
     });
   });
