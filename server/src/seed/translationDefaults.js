@@ -987,6 +987,13 @@ const DEFAULTS = [
   ["community", "community.explore.campaign", "Campaign", "अभियान", "مہم", "الحملة"],
   ["community", "community.explore.jobs", "Jobs", "नौकरियां", "ملازمتیں", "الوظائف"],
   ["community", "community.explore.comingSoon", "This feature is coming soon — stay tuned!", "यह सुविधा जल्द आ रही है — बने रहें!", "یہ فیچر جلد آ رہا ہے — منتظر رہیں!", "هذه الميزة قادمة قريبًا — ترقبوها!"],
+
+  ["prayer", "prayer.fajr", "Fajr", "फ़ज्र", "فجر", "الفجر"],
+  ["prayer", "prayer.dhuhr", "Dhuhr", "ज़ुहर", "ظہر", "الظهر"],
+  ["prayer", "prayer.asr", "Asr", "अस्र", "عصر", "العصر"],
+  ["prayer", "prayer.maghrib", "Maghrib", "मग़रिब", "مغرب", "المغرب"],
+  ["prayer", "prayer.isha", "Isha", "इशा", "عشاء", "العشاء"],
+  ["prayer", "prayer.rosterHeading", "Today's Prayer Times", "आज के नमाज़ के समय", "آج کے نماز کے اوقات", "مواقيت الصلاة اليوم"],
 ];
 
 // Additive, not "seed once": every deploy that adds new keys to DEFAULTS

@@ -6,6 +6,7 @@
 export const META_ENTITY_LABELS = {
   "masjid-category": "Masjid Category",
   "masjid-contact-designation": "Masjid Contact Designation",
+  prayer: "Prayer Management",
   "review-restricted-word": "Review Restricted Word",
   "campaign-category": "Campaign Category",
   "campaign-classification": "Fundraising Classification",
