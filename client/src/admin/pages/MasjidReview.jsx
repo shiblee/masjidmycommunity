@@ -209,7 +209,7 @@ function BasicInfoTab({ id, masjid, categories, onSaved }) {
   );
 }
 
-function ContactPersonAdminForm({ id, designations, contact, initialDesignation, onCancel, onSaved, onRemoved, showToast }) {
+function ContactPersonAdminForm({ id, designations, contact, initialDesignation, lockDesignation, onCancel, onSaved, onRemoved, showToast }) {
   const isEdit = !!contact;
   const [designation, setDesignation] = useState(contact?.designation || initialDesignation || "");
   const [name, setName] = useState(contact?.name || "");
@@ -338,8 +338,8 @@ function ContactPersonAdminForm({ id, designations, contact, initialDesignation,
     <div className="amx-card amx-panel" style={{ maxWidth: 560 }}>
       <div className="amx-panel-head"><h3>{isEdit ? "Edit Contact Person" : "Add Contact Person"}</h3></div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-        <AField label="Designation" required>
-          <select value={designation} onChange={(e) => setDesignation(e.target.value)}>
+        <AField label="Designation" required hint={lockDesignation ? "This is a required role for every masjid and can't be changed here." : undefined}>
+          <select value={designation} onChange={(e) => setDesignation(e.target.value)} disabled={lockDesignation}>
             <option value="">Select a designation</option>
             {designations.map((d) => <option key={d.id} value={d.name}>{d.name}</option>)}
           </select>
@@ -418,12 +418,17 @@ function ContactTab({ id, contacts, setContacts, designations, showToast }) {
   if (formTarget) {
     const editing = formTarget !== "new" && formTarget.id ? formTarget : null;
     const prefill = formTarget !== "new" && !editing ? formTarget.designation : undefined;
+    // A required designation's row always represents that specific role —
+    // lock the dropdown so it can't be repurposed into a different role.
+    // Optional people keep the designation freely choosable.
+    const lockDesignation = requiredDesignations.some((d) => d.name === (editing?.designation ?? prefill));
     return (
       <ContactPersonAdminForm
         id={id}
         designations={designations}
         contact={editing}
         initialDesignation={prefill}
+        lockDesignation={lockDesignation}
         onCancel={() => setFormTarget(null)}
         onSaved={upsert}
         onRemoved={removed}

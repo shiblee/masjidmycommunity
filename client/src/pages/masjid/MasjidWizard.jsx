@@ -94,7 +94,7 @@ function WizardStepper({ steps, current }) {
   );
 }
 
-function ContactPersonForm({ masjidId, designations, contact, initialDesignation, onCancel, onSaved, onRemoved }) {
+function ContactPersonForm({ masjidId, designations, contact, initialDesignation, lockDesignation, onCancel, onSaved, onRemoved }) {
   const isEdit = !!contact;
   const [designation, setDesignation] = useState(contact?.designation || initialDesignation || "");
   const [name, setName] = useState(contact?.name || "");
@@ -217,8 +217,12 @@ function ContactPersonForm({ masjidId, designations, contact, initialDesignation
     <div className="msj-contact-form">
       <h4>{isEdit ? "Edit Contact Person" : "Add Contact Person"}</h4>
       <div className="msj-field-row">
-        <Field label="Designation" required>
-          <select value={designation} onChange={(e) => setDesignation(e.target.value)}>
+        <Field
+          label="Designation"
+          required
+          hint={lockDesignation ? "This is a required role for every masjid and can't be changed here." : undefined}
+        >
+          <select value={designation} onChange={(e) => setDesignation(e.target.value)} disabled={lockDesignation}>
             <option value="">Select a designation</option>
             {designations.map((d) => <option key={d.id} value={d.name}>{d.name}</option>)}
           </select>
@@ -319,12 +323,19 @@ function ContactPeopleSection({ masjidId, contacts, setContacts, designations })
   if (formTarget) {
     const editing = formTarget !== "new" && formTarget.id ? formTarget : null;
     const prefill = formTarget !== "new" && !editing ? formTarget.designation : undefined;
+    // A required designation's row always represents that specific role
+    // (Imam, Mutawalli, Secretary, ...) — the dropdown is locked so it can't
+    // be repurposed into a different role out from under that requirement.
+    // Adding/editing an optional person keeps the designation freely
+    // choosable, since those roles are the masjid's own to define.
+    const lockDesignation = requiredDesignations.some((d) => d.name === (editing?.designation ?? prefill));
     return (
       <ContactPersonForm
         masjidId={masjidId}
         designations={designations}
         contact={editing}
         initialDesignation={prefill}
+        lockDesignation={lockDesignation}
         onCancel={() => setFormTarget(null)}
         onSaved={upsert}
         onRemoved={removed}
