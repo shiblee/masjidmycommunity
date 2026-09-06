@@ -216,15 +216,17 @@ function ContactPersonForm({ masjidId, designations, contact, initialDesignation
   return (
     <div className="msj-contact-form">
       <h4>{isEdit ? "Edit Contact Person" : "Add Contact Person"}</h4>
-      <Field label="Designation" required>
-        <select value={designation} onChange={(e) => setDesignation(e.target.value)}>
-          <option value="">Select a designation</option>
-          {designations.map((d) => <option key={d.id} value={d.name}>{d.name}</option>)}
-        </select>
-      </Field>
-      <Field label="Name" required>
-        <input value={name} onChange={(e) => setName(e.target.value)} maxLength={255} placeholder="Full name" />
-      </Field>
+      <div className="msj-field-row">
+        <Field label="Designation" required>
+          <select value={designation} onChange={(e) => setDesignation(e.target.value)}>
+            <option value="">Select a designation</option>
+            {designations.map((d) => <option key={d.id} value={d.name}>{d.name}</option>)}
+          </select>
+        </Field>
+        <Field label="Name" required>
+          <input value={name} onChange={(e) => setName(e.target.value)} maxLength={255} placeholder="Full name" />
+        </Field>
+      </div>
       <Field label="Mobile Number" required hint={effectiveVerified ? undefined : "Changing a verified number requires re-verification."}>
         <div className="msj-verifiable-row">
           <input

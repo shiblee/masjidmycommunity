@@ -337,15 +337,17 @@ function ContactPersonAdminForm({ id, designations, contact, initialDesignation,
   return (
     <div className="amx-card amx-panel" style={{ maxWidth: 560 }}>
       <div className="amx-panel-head"><h3>{isEdit ? "Edit Contact Person" : "Add Contact Person"}</h3></div>
-      <AField label="Designation" required>
-        <select value={designation} onChange={(e) => setDesignation(e.target.value)}>
-          <option value="">Select a designation</option>
-          {designations.map((d) => <option key={d.id} value={d.name}>{d.name}</option>)}
-        </select>
-      </AField>
-      <AField label="Name" required>
-        <input value={name} onChange={(e) => setName(e.target.value)} maxLength={255} placeholder="Full name" />
-      </AField>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+        <AField label="Designation" required>
+          <select value={designation} onChange={(e) => setDesignation(e.target.value)}>
+            <option value="">Select a designation</option>
+            {designations.map((d) => <option key={d.id} value={d.name}>{d.name}</option>)}
+          </select>
+        </AField>
+        <AField label="Name" required>
+          <input value={name} onChange={(e) => setName(e.target.value)} maxLength={255} placeholder="Full name" />
+        </AField>
+      </div>
       <AField label="Mobile Number" required hint={effectiveVerified ? undefined : "Changing a verified number requires re-verification."}>
         <div className="msj-verifiable-row">
           <input value={mobile} onChange={(e) => setMobile(e.target.value.replace(/\D/g, "").slice(0, 10))} maxLength={10} />
