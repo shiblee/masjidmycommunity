@@ -2,7 +2,7 @@ import { Router } from "express";
 import auth, { requireUser } from "../middleware/auth.js";
 import optionalAuth from "../middleware/optionalAuth.js";
 import { uploadReviewMedia, uploadCorrectionPhotos } from "../middleware/upload.js";
-import { listPublic, listMapPoints, listStats, getPublicOne, listLikers, listNearbyAll, listFilters, listCategories, listContactDesignations, listBanks, listDeletionReasons, getMapSettings } from "../controllers/publicMasjidController.js";
+import { listPublic, listMapPoints, listStats, getPublicOne, listLikers, listPublicContacts, listNearbyAll, listFilters, listCategories, listContactDesignations, listBanks, listDeletionReasons, getMapSettings } from "../controllers/publicMasjidController.js";
 import { listReviews, getMyReview, upsertMyReview, deleteMyReview, getPublicReviewSettings, likeReview, unlikeReview } from "../controllers/masjidReviewController.js";
 import { getFavoriteStatus, addFavorite, removeFavorite } from "../controllers/masjidFavoriteController.js";
 import { submitCorrection } from "../controllers/masjidSuggestionController.js";
@@ -30,6 +30,7 @@ router.post("/:id/favorite", auth, requireUser, addFavorite);
 router.delete("/:id/favorite", auth, requireUser, removeFavorite);
 router.post("/:id/suggest-edit", auth, requireUser, uploadCorrectionPhotos, submitCorrection);
 router.get("/:id/likers", listLikers);
+router.get("/:id/contacts", listPublicContacts);
 router.get("/:id/nearby-list", listNearbyAll);
 router.get("/:id", getPublicOne);
 

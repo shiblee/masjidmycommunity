@@ -45,6 +45,7 @@ function MasjidReviewModal({ masjid, initialTab = "overview", onClose }) {
   const [showSuggest, setShowSuggest] = useState(false);
   const [suggestSent, setSuggestSent] = useState(false);
   const [reviewSettings, setReviewSettings] = useState(null);
+  const [contacts, setContacts] = useState([]);
   const loggedIn = !!getUserToken();
 
   useEffect(() => {
@@ -56,6 +57,10 @@ function MasjidReviewModal({ masjid, initialTab = "overview", onClose }) {
       .get(`${API}/${masjid.id}/reviews`)
       .then(({ data }) => setData(data))
       .catch(() => setData({ average: 0, count: 0, breakdown: {}, reviews: [] }));
+    axios
+      .get(`${API}/${masjid.id}/contacts`)
+      .then(({ data }) => setContacts(data.contacts || []))
+      .catch(() => setContacts([]));
     if (loggedIn) {
       const token = getUserToken();
       axios
@@ -253,6 +258,26 @@ function MasjidReviewModal({ masjid, initialTab = "overview", onClose }) {
               </>
             ) : (
               <p className="msj-review-empty">No description added yet.</p>
+            )}
+
+            {contacts.length > 0 && (
+              <div className="msj-review-contacts">
+                <h4 className="msj-review-about-heading">Community Members</h4>
+                <div className="msj-review-contact-list">
+                  {contacts.map((c) => (
+                    <div key={c.id} className="msj-review-contact-card">
+                      <div className="msj-review-contact-avatar"><Icon name="people" size={17} /></div>
+                      <div className="msj-review-contact-info">
+                        <strong>{c.name}</strong>
+                        <span className="msj-review-contact-designation">{c.designation}</span>
+                      </div>
+                      <a href={`tel:${c.mobile}`} className="msj-review-contact-call">
+                        <Icon name="phone" size={14} /> {c.mobile}
+                      </a>
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
           </div>
         )}

@@ -229,6 +229,26 @@ export const listLikers = async (req, res) => {
   }
 };
 
+// Community members (office bearers — Imam, Mutawalli, Secretary, and any
+// others the masjid has added) shown publicly on the Explore modal's About
+// tab. Only OTP-verified contacts are returned — an unverified name/number
+// hasn't been confirmed as real yet and shouldn't be published.
+export const listPublicContacts = async (req, res) => {
+  try {
+    const masjid = await Masjid.findOne({ where: { id: req.params.id, status: PUBLIC_STATUS, moderationStatus: "active" } });
+    if (!masjid) return res.status(404).json({ message: "Masjid not found." });
+
+    const contacts = await MasjidContactPerson.findAll({
+      where: { masjidId: masjid.id, verified: true },
+      attributes: ["id", "designation", "name", "mobile"],
+      order: [["sortOrder", "ASC"]],
+    });
+    res.json({ contacts });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 /** Every approved masjid, sorted by distance from the one being viewed
  * (nearest first) — powers the Masjid Hub's left-side discovery panel.
  * The masjid being viewed is included (distanceKm: 0) so it can be shown

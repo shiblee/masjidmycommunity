@@ -3451,6 +3451,28 @@ footer{
 .msj-review-about-heading{ font-size:12.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--text-on-paper-dim); margin-bottom:8px; }
 .msj-review-about{ font-size:14px; color:var(--text-on-paper-dim); line-height:1.7; white-space:pre-wrap; }
 
+.msj-review-contacts{ margin-top:24px; }
+.msj-review-contact-list{ display:flex; flex-direction:column; gap:10px; }
+.msj-review-contact-card{
+  display:flex; align-items:center; gap:12px; padding:12px 14px; border:1px solid var(--line); border-radius:12px; background:var(--paper-dim);
+}
+.msj-review-contact-avatar{
+  width:38px; height:38px; border-radius:50%; background:rgba(141,198,63,.16); color:var(--teal-deep);
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+.msj-review-contact-info{ flex:1; min-width:0; }
+.msj-review-contact-info strong{ display:block; font-size:14px; color:var(--text-on-paper); }
+.msj-review-contact-designation{ font-size:12.5px; color:var(--text-on-paper-dim); }
+.msj-review-contact-call{
+  display:flex; align-items:center; gap:6px; flex-shrink:0; font-size:13px; font-weight:600; color:var(--teal-deep);
+  border:1px solid var(--teal); border-radius:100px; padding:7px 13px; text-decoration:none; transition:background .15s;
+}
+.msj-review-contact-call:hover{ background:rgba(141,198,63,.12); }
+@media (max-width: 480px){
+  .msj-review-contact-card{ flex-wrap:wrap; }
+  .msj-review-contact-call{ width:100%; justify-content:center; margin-top:4px; }
+}
+
 .msj-review-actions-row{ display:flex; gap:28px; padding-bottom:18px; margin-bottom:18px; border-bottom:1px solid var(--line); }
 .msj-review-action-btn{
   display:flex; flex-direction:column; align-items:center; gap:6px; background:none; border:none; cursor:pointer;
