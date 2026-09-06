@@ -2,7 +2,9 @@ import React, { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { Icon } from "../../components/Icons.jsx";
 import MediaThumb from "../../components/MediaThumb.jsx";
+import MicButton from "../../components/MicButton.jsx";
 import { API_BASE, API_ORIGIN } from "../../config.js";
+import { StarRating } from "../exploreMasjids/exploreMasjidsShared.jsx";
 
 const API = `${API_BASE}/masjids/public`;
 const PAGE_SIZE = 20;
@@ -54,10 +56,10 @@ function NearbyMasjidPanel({ activeId, onSelect }) {
 
   return (
     <div className="msj-nearby-panel">
-      <h3 className="msj-nearby-title">Masjids Nearby</h3>
       <div className="msj-nearby-search">
         <Icon name="search" size={14} />
         <input value={rawQuery} onChange={(e) => setRawQuery(e.target.value)} placeholder="Search masjids…" />
+        <MicButton onTranscript={(text, isFinal) => { setRawQuery(text); if (isFinal) setQuery(text); }} />
       </div>
 
       <div className="msj-nearby-list">
@@ -76,6 +78,11 @@ function NearbyMasjidPanel({ activeId, onSelect }) {
               <span className="msj-nearby-item-meta">
                 {[m.category, [m.city, m.country].filter(Boolean).join(", ")].filter(Boolean).join(" • ")}
               </span>
+              {m.reviewCount > 0 && (
+                <span className="msj-nearby-item-rating">
+                  <StarRating value={m.avgRating} size={11} /> {m.avgRating.toFixed(1)} ({m.reviewCount})
+                </span>
+              )}
             </span>
             {formatDistanceKm(m.distanceKm) && <span className="msj-nearby-distance">{formatDistanceKm(m.distanceKm)}</span>}
           </button>

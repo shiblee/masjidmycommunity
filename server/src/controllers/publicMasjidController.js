@@ -268,8 +268,20 @@ export const listNearbyAll = async (req, res) => {
       offset: (page - 1) * pageSize,
     });
 
-    const covers = await MasjidPhoto.findAll({ where: { masjidId: rows.map((r) => r.id), isCover: true } });
+    const masjidIds = rows.map((r) => r.id);
+    const [covers, ratingRows] = await Promise.all([
+      MasjidPhoto.findAll({ where: { masjidId: masjidIds, isCover: true } }),
+      masjidIds.length
+        ? MasjidReview.findAll({
+            where: { masjidId: masjidIds, status: "visible" },
+            attributes: ["masjidId", [fn("AVG", col("rating")), "avg"], [fn("COUNT", col("id")), "count"]],
+            group: ["masjidId"],
+            raw: true,
+          })
+        : [],
+    ]);
     const coverByMasjid = new Map(covers.map((c) => [c.masjidId, c.url]));
+    const ratingByMasjid = new Map(ratingRows.map((r) => [r.masjidId, { avgRating: Number(r.avg), reviewCount: Number(r.count) }]));
 
     res.json({
       masjids: rows.map((r) => ({
@@ -280,6 +292,8 @@ export const listNearbyAll = async (req, res) => {
         country: r.country,
         coverPhotoUrl: coverByMasjid.get(r.id) || null,
         distanceKm: r.get("distanceKm") != null ? Number(r.get("distanceKm")) : null,
+        avgRating: ratingByMasjid.get(r.id)?.avgRating || 0,
+        reviewCount: ratingByMasjid.get(r.id)?.reviewCount || 0,
       })),
       total: count,
       page,
