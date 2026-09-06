@@ -1428,6 +1428,7 @@ footer{
    left a large gap under the now-shorter hero — tightened here only. Combined
    selector for specificity, since .py-md is declared later in this file. */
 .py-md.msj-explore-content{ padding-top:32px; }
+.py-md.msj-hub-content{ padding-top:28px; }
 
 .cw-layout{ display:grid; grid-template-columns:280px 1fr 320px; gap:44px; align-items:start; }
 .cw-main{ min-width:0; }
@@ -3468,6 +3469,14 @@ footer{
 .msj-correction-contact-inputs{ display:flex; flex-direction:column; gap:8px; }
 .msj-correction-photo-dropzone{ padding:12px; margin-bottom:0; font-size:13px; }
 
+.msj-hub-reviews-summary{ display:flex; gap:32px; align-items:flex-start; margin-bottom:22px; padding-bottom:22px; border-bottom:1px solid var(--line); }
+.msj-hub-reviews-average{ display:flex; flex-direction:column; align-items:center; gap:4px; flex-shrink:0; min-width:110px; }
+.msj-hub-reviews-average strong{ font-size:40px; color:var(--text-on-paper); line-height:1; }
+.msj-hub-reviews-average span{ font-size:12.5px; color:var(--text-on-paper-dim); }
+.msj-hub-reviews-summary .msj-rating-breakdown{ flex:1; margin-bottom:0; justify-content:center; }
+.msj-hub-reviews .msj-review-form{ margin-top:16px; }
+.msj-hub-reviews .msj-review-list{ margin-top:24px; }
+
 .msj-rating-breakdown{ display:flex; flex-direction:column; gap:6px; margin-bottom:18px; }
 .msj-rating-breakdown-row{ display:flex; align-items:center; gap:10px; font-size:12.5px; color:var(--text-on-paper-dim); }
 .msj-rating-breakdown-row span{ width:10px; }
@@ -3511,6 +3520,13 @@ footer{
 .msj-review-row-top strong{ font-size:14px; color:var(--text-on-paper); }
 .msj-review-date{ font-size:12px; color:var(--text-on-paper-dim); flex-shrink:0; }
 .msj-review-body{ font-size:13.5px; color:var(--text-on-paper-dim); line-height:1.6; margin-top:6px; }
+.msj-review-like-btn{
+  display:inline-flex; align-items:center; gap:6px; margin-top:10px; padding:5px 10px; border-radius:100px; border:1px solid var(--line);
+  background:#fff; font-size:12px; font-weight:600; color:var(--text-on-paper-dim); cursor:pointer; font-family:var(--sans);
+}
+.msj-review-like-btn:hover{ background:var(--paper-dim); }
+.msj-review-like-btn.active{ border-color:#C24B3F; color:#C24B3F; }
+.msj-review-like-btn.active svg{ fill:#C24B3F; stroke:#C24B3F; }
 .msj-review-media-strip{ display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
 .msj-review-media-strip-thumb{ width:64px; height:64px; border-radius:8px; object-fit:cover; background:var(--paper-dim); }
 

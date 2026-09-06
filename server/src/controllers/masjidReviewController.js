@@ -3,6 +3,7 @@ import { fn, col } from "sequelize";
 import Masjid from "../models/Masjid.js";
 import MasjidReview from "../models/MasjidReview.js";
 import ReviewMedia from "../models/ReviewMedia.js";
+import ReviewLike from "../models/ReviewLike.js";
 import ReviewSettings from "../models/ReviewSettings.js";
 import User from "../models/User.js";
 import { checkRestrictedWords } from "../utils/reviewModeration.js";
@@ -59,12 +60,16 @@ export const getPublicReviewSettings = async (req, res) => {
   }
 };
 
-async function withReviewers(reviews) {
+/** `currentUserId` is optional (routes using this are public) — when given,
+ * each review also reports whether that user has liked it. */
+async function withReviewers(reviews, currentUserId) {
   const userIds = [...new Set(reviews.map((r) => r.userId))];
   const reviewIds = reviews.map((r) => r.id);
-  const [users, media] = await Promise.all([
+  const [users, media, likeCounts, myLikes] = await Promise.all([
     User.findAll({ where: { id: userIds }, attributes: ["id", "fullName", "username", "profilePhoto"] }),
     ReviewMedia.findAll({ where: { reviewId: reviewIds }, order: [["sortOrder", "ASC"]] }),
+    ReviewLike.findAll({ where: { reviewId: reviewIds }, attributes: ["reviewId", [fn("COUNT", col("id")), "count"]], group: ["reviewId"], raw: true }),
+    currentUserId ? ReviewLike.findAll({ where: { reviewId: reviewIds, userId: currentUserId }, attributes: ["reviewId"], raw: true }) : [],
   ]);
   const byId = new Map(users.map((u) => [u.id, u]));
   const mediaByReview = new Map();
@@ -73,12 +78,16 @@ async function withReviewers(reviews) {
     list.push(m);
     mediaByReview.set(m.reviewId, list);
   });
+  const likeCountByReview = new Map(likeCounts.map((r) => [r.reviewId, Number(r.count)]));
+  const likedReviewIds = new Set(myLikes.map((r) => r.reviewId));
   return reviews.map((r) => {
     const user = byId.get(r.userId);
     return {
       ...r.toJSON(),
       reviewer: user ? { fullName: user.fullName, username: user.username, profilePhoto: user.profilePhoto } : null,
       media: mediaByReview.get(r.id) || [],
+      likeCount: likeCountByReview.get(r.id) || 0,
+      likedByMe: likedReviewIds.has(r.id),
     };
   });
 }
@@ -112,7 +121,7 @@ export const listReviews = async (req, res) => {
     });
     const average = count > 0 ? ratingSum / count : 0;
 
-    const reviews = await withReviewers(rows);
+    const reviews = await withReviewers(rows, req.user?.id);
     res.json({ average, count, breakdown, reviews, page, pageSize: PAGE_SIZE });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -233,6 +242,28 @@ export const deleteMyReview = async (req, res) => {
   try {
     await MasjidReview.destroy({ where: { masjidId: req.params.id, userId: req.user.id } });
     res.json({ message: "Review removed." });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const likeReview = async (req, res) => {
+  try {
+    const review = await MasjidReview.findOne({ where: { id: req.params.reviewId, status: "visible" } });
+    if (!review) return res.status(404).json({ message: "Review not found." });
+    await ReviewLike.findOrCreate({ where: { reviewId: review.id, userId: req.user.id } });
+    const likeCount = await ReviewLike.count({ where: { reviewId: review.id } });
+    res.json({ likedByMe: true, likeCount });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const unlikeReview = async (req, res) => {
+  try {
+    await ReviewLike.destroy({ where: { reviewId: req.params.reviewId, userId: req.user.id } });
+    const likeCount = await ReviewLike.count({ where: { reviewId: req.params.reviewId } });
+    res.json({ likedByMe: false, likeCount });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

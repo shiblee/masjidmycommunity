@@ -9,6 +9,7 @@ import { StarRating, directionsUrl } from "./exploreMasjids/exploreMasjidsShared
 import SuggestEditForm from "./exploreMasjids/SuggestEditForm.jsx";
 import MediaGallery from "./masjidHub/MediaGallery.jsx";
 import NearbyMasjidPanel from "./masjidHub/NearbyMasjidPanel.jsx";
+import ReviewsTab from "./masjidHub/ReviewsTab.jsx";
 
 const API = `${API_BASE}/masjids/public`;
 
@@ -211,7 +212,7 @@ function MasjidProfile() {
         </div>
       </div>
 
-      <section className="py-md">
+      <section className="py-md msj-hub-content">
         <div className="wrap msj-hub-layout">
           <div className="msj-hub-left">
             <NearbyMasjidPanel activeId={id} onSelect={(newId) => navigate(`/masjid/${newId}/${tab}`)} />
@@ -238,7 +239,7 @@ function MasjidProfile() {
             {tab === "people" && <ComingSoonPanel label="People" />}
             {tab === "campaigns" && <ComingSoonPanel label="Campaigns" />}
             {tab === "media" && <MediaGallery photos={photos} />}
-            {tab === "reviews" && <ComingSoonPanel label="Reviews & Ratings" />}
+            {tab === "reviews" && <ReviewsTab masjidId={id} />}
             {tab === "location" && <ComingSoonPanel label="Location" />}
             {tab === "more" && <ComingSoonPanel label="More" />}
           </div>
