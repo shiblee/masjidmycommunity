@@ -279,8 +279,15 @@ function ContactPersonForm({ masjidId, designations, contact, initialDesignation
 
 function ContactPeopleSection({ masjidId, contacts, setContacts, designations }) {
   const [formTarget, setFormTarget] = useState(null); // null | "new" | contact object | { designation } prefill
+  const [deletingId, setDeletingId] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(null); // contact pending a delete confirmation
+  const [deleteError, setDeleteError] = useState("");
 
   const requiredDesignations = designations.filter((d) => d.isRequired);
+  // Only these — the designations an admin hasn't marked mandatory — are
+  // "subjective" entries the masjid added on its own; a required role
+  // (Imam/Mutawalli/Secretary by default) can be edited but never deleted
+  // outright, since the wizard always needs a row to add/verify that role.
   const optionalContacts = contacts.filter((c) => !requiredDesignations.some((d) => d.name === c.designation));
   const verifiedCount = requiredDesignations.filter((d) => contacts.some((c) => c.designation === d.name && c.verified)).length;
 
@@ -291,6 +298,22 @@ function ContactPeopleSection({ masjidId, contacts, setContacts, designations })
   const removed = (contactId) => {
     setContacts((cs) => cs.filter((c) => c.id !== contactId));
     setFormTarget(null);
+  };
+
+  const confirmDelete = async () => {
+    const contact = deleteConfirm;
+    if (!contact) return;
+    setDeletingId(contact.id);
+    setDeleteError("");
+    try {
+      await masjidApi.delete(`/${masjidId}/contacts/${contact.id}`);
+      setContacts((cs) => cs.filter((c) => c.id !== contact.id));
+      setDeleteConfirm(null);
+    } catch (err) {
+      setDeleteError(err.response?.data?.message || "Couldn't remove this person.");
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   if (formTarget) {
@@ -377,7 +400,18 @@ function ContactPeopleSection({ masjidId, contacts, setContacts, designations })
                   )}
                 </td>
                 <td style={{ textAlign: "right" }}>
-                  <button type="button" className="btn btn-outline-ink" onClick={() => setFormTarget(c)}>Edit</button>
+                  <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+                    <button type="button" className="btn btn-outline-ink" onClick={() => setFormTarget(c)}>Edit</button>
+                    <button
+                      type="button"
+                      className="msj-icon-btn-danger"
+                      title="Remove this person"
+                      aria-label={`Remove ${c.name}`}
+                      onClick={() => setDeleteConfirm(c)}
+                    >
+                      <Icon name="trash" size={16} />
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -388,6 +422,30 @@ function ContactPeopleSection({ masjidId, contacts, setContacts, designations })
       <button type="button" className="btn btn-outline-ink" onClick={() => setFormTarget("new")}>
         <Icon name="plus" size={16} /> Add More Person
       </button>
+
+      {deleteConfirm && (
+        <div className="msj-modal-overlay" onClick={() => (deletingId ? null : setDeleteConfirm(null))}>
+          <div className="msj-modal" onClick={(e) => e.stopPropagation()}>
+            <button className="msj-modal-close" onClick={() => setDeleteConfirm(null)} aria-label="Close" disabled={!!deletingId}>
+              <Icon name="x" size={16} />
+            </button>
+            <h3>Remove {deleteConfirm.name}?</h3>
+            <p className="msj-modal-sub">
+              This removes {deleteConfirm.name} ({deleteConfirm.designation}) from this masjid's contact people. This can't be undone —
+              you can always add them back later.
+            </p>
+            {deleteError && <span className="auth-field-error">{deleteError}</span>}
+            <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+              <button className="btn btn-outline-ink" style={{ flex: 1 }} type="button" onClick={() => setDeleteConfirm(null)} disabled={!!deletingId}>
+                Cancel
+              </button>
+              <button className="btn btn-gold" style={{ flex: 1 }} type="button" onClick={confirmDelete} disabled={!!deletingId}>
+                {deletingId ? "Removing…" : "Remove"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
