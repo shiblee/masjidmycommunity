@@ -107,7 +107,11 @@ function ContactPersonForm({ masjidId, designations, contact, initialDesignation
   // Verified pill even right after a real OTP confirmation succeeds.
   const [savedMobile, setSavedMobile] = useState(contact?.mobile || null);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
+  // Keyed by field name ("designation"/"name"/"mobile") so each message
+  // renders attached to the field it's actually about, matching the rest of
+  // this form's error style — a "form" key covers anything that isn't
+  // tied to one specific field.
+  const [errors, setErrors] = useState({});
 
   const [otpOpen, setOtpOpen] = useState(false);
   const [otpSending, setOtpSending] = useState(false);
@@ -119,20 +123,16 @@ function ContactPersonForm({ masjidId, designations, contact, initialDesignation
   const effectiveVerified = verified && !mobileChanged;
 
   const persist = async () => {
-    if (!designation) {
-      setError("Please select a designation.");
-      return null;
-    }
-    if (!name.trim()) {
-      setError("Name is required.");
-      return null;
-    }
-    if (!MOBILE_RE.test(mobile)) {
-      setError("Enter a valid 10-digit Indian mobile number.");
+    const nextErrors = {};
+    if (!designation) nextErrors.designation = "Please select a designation.";
+    if (!name.trim()) nextErrors.name = "Name is required.";
+    if (!MOBILE_RE.test(mobile)) nextErrors.mobile = "Enter a valid 10-digit Indian mobile number.";
+    if (Object.keys(nextErrors).length) {
+      setErrors(nextErrors);
       return null;
     }
     setSaving(true);
-    setError("");
+    setErrors({});
     try {
       const payload = { designation, name: name.trim(), mobile };
       const { data } = contactId
@@ -143,7 +143,9 @@ function ContactPersonForm({ masjidId, designations, contact, initialDesignation
       setSavedMobile(data.contact.mobile);
       return data.contact;
     } catch (err) {
-      setError(err.response?.data?.message || "Couldn't save this person.");
+      const field = err.response?.data?.field;
+      const message = err.response?.data?.message || "Couldn't save this person.";
+      setErrors(field ? { [field]: message } : { form: message });
       return null;
     } finally {
       setSaving(false);
@@ -161,7 +163,7 @@ function ContactPersonForm({ masjidId, designations, contact, initialDesignation
       setDemoOtp(data.demoOtp || "");
       setOtpOpen(true);
     } catch (err) {
-      setError(err.response?.data?.message || "Couldn't send the verification code.");
+      setErrors({ form: err.response?.data?.message || "Couldn't send the verification code." });
     } finally {
       setOtpSending(false);
     }
@@ -202,12 +204,12 @@ function ContactPersonForm({ masjidId, designations, contact, initialDesignation
       return;
     }
     setSaving(true);
-    setError("");
+    setErrors({});
     try {
       await masjidApi.delete(`/${masjidId}/contacts/${contactId}`);
       onRemoved(contactId);
     } catch (err) {
-      setError(err.response?.data?.message || "Couldn't remove this person.");
+      setErrors({ form: err.response?.data?.message || "Couldn't remove this person." });
     } finally {
       setSaving(false);
     }
@@ -220,22 +222,37 @@ function ContactPersonForm({ masjidId, designations, contact, initialDesignation
         <Field
           label="Designation"
           required
+          error={errors.designation}
           hint={lockDesignation ? "This is a required role for every masjid and can't be changed here." : undefined}
         >
-          <select value={designation} onChange={(e) => setDesignation(e.target.value)} disabled={lockDesignation}>
+          <select
+            value={designation}
+            onChange={(e) => { setDesignation(e.target.value); setErrors((er) => ({ ...er, designation: null })); }}
+            disabled={lockDesignation}
+          >
             <option value="">Select a designation</option>
             {designations.map((d) => <option key={d.id} value={d.name}>{d.name}</option>)}
           </select>
         </Field>
-        <Field label="Name" required>
-          <input value={name} onChange={(e) => setName(e.target.value)} maxLength={255} placeholder="Full name" />
+        <Field label="Name" required error={errors.name}>
+          <input
+            value={name}
+            onChange={(e) => { setName(e.target.value); setErrors((er) => ({ ...er, name: null })); }}
+            maxLength={255}
+            placeholder="Full name"
+          />
         </Field>
       </div>
-      <Field label="Mobile Number" required hint={effectiveVerified ? undefined : "Changing a verified number requires re-verification."}>
+      <Field
+        label="Mobile Number"
+        required
+        error={errors.mobile}
+        hint={effectiveVerified ? undefined : "Changing a verified number requires re-verification."}
+      >
         <div className="msj-verifiable-row">
           <input
             value={mobile}
-            onChange={(e) => setMobile(e.target.value.replace(/\D/g, "").slice(0, 10))}
+            onChange={(e) => { setMobile(e.target.value.replace(/\D/g, "").slice(0, 10)); setErrors((er) => ({ ...er, mobile: null })); }}
             placeholder="10-digit mobile number"
             maxLength={10}
           />
@@ -249,7 +266,7 @@ function ContactPersonForm({ masjidId, designations, contact, initialDesignation
         </div>
       </Field>
 
-      {error && <div className="auth-alert" style={{ marginBottom: 16 }}><Icon name="info" size={17} />{error}</div>}
+      {errors.form && <div className="auth-alert" style={{ marginBottom: 16 }}><Icon name="info" size={17} />{errors.form}</div>}
 
       <div style={{ display: "flex", gap: 10, marginTop: 8, flexWrap: "wrap", alignItems: "center" }}>
         <button className="btn btn-gold" type="button" onClick={done} disabled={saving}>{saving ? "Saving…" : "Save"}</button>

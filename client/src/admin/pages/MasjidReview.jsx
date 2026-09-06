@@ -223,7 +223,9 @@ function ContactPersonAdminForm({ id, designations, contact, initialDesignation,
   // pill even right after a real OTP confirmation succeeds.
   const [savedMobile, setSavedMobile] = useState(contact?.mobile || null);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
+  // Keyed by field name so each message renders attached to the field it's
+  // actually about; "form" covers anything not tied to one specific field.
+  const [errors, setErrors] = useState({});
 
   const [otpOpen, setOtpOpen] = useState(false);
   const [otpSending, setOtpSending] = useState(false);
@@ -238,20 +240,16 @@ function ContactPersonAdminForm({ id, designations, contact, initialDesignation,
   const effectiveVerified = verified && !mobileChanged;
 
   const persist = async () => {
-    if (!designation) {
-      setError("Please select a designation.");
-      return null;
-    }
-    if (!name.trim()) {
-      setError("Name is required.");
-      return null;
-    }
-    if (!/^[6-9]\d{9}$/.test(mobile)) {
-      setError("Enter a valid 10-digit Indian mobile number.");
+    const nextErrors = {};
+    if (!designation) nextErrors.designation = "Please select a designation.";
+    if (!name.trim()) nextErrors.name = "Name is required.";
+    if (!/^[6-9]\d{9}$/.test(mobile)) nextErrors.mobile = "Enter a valid 10-digit Indian mobile number.";
+    if (Object.keys(nextErrors).length) {
+      setErrors(nextErrors);
       return null;
     }
     setSaving(true);
-    setError("");
+    setErrors({});
     try {
       const payload = { designation, name: name.trim(), mobile };
       const { data } = contactId
@@ -262,7 +260,9 @@ function ContactPersonAdminForm({ id, designations, contact, initialDesignation,
       setSavedMobile(data.contact.mobile);
       return data.contact;
     } catch (err) {
-      setError(err.response?.data?.message || "Couldn't save this person.");
+      const field = err.response?.data?.field;
+      const message = err.response?.data?.message || "Couldn't save this person.";
+      setErrors(field ? { [field]: message } : { form: message });
       return null;
     } finally {
       setSaving(false);
@@ -280,7 +280,7 @@ function ContactPersonAdminForm({ id, designations, contact, initialDesignation,
       setDemoOtp(data.demoOtp || "");
       setOtpOpen(true);
     } catch (err) {
-      setError(err.response?.data?.message || "Couldn't send the verification code.");
+      setErrors({ form: err.response?.data?.message || "Couldn't send the verification code." });
     } finally {
       setOtpSending(false);
     }
@@ -322,13 +322,13 @@ function ContactPersonAdminForm({ id, designations, contact, initialDesignation,
   const remove = async () => {
     if (!contactId) return onCancel();
     setSaving(true);
-    setError("");
+    setErrors({});
     try {
       await adminApi.delete(`/masjids/${id}/contacts/${contactId}`);
       onRemoved(contactId);
       showToast("Contact person removed.");
     } catch (err) {
-      setError(err.response?.data?.message || "Couldn't remove this person.");
+      setErrors({ form: err.response?.data?.message || "Couldn't remove this person." });
     } finally {
       setSaving(false);
     }
@@ -338,19 +338,42 @@ function ContactPersonAdminForm({ id, designations, contact, initialDesignation,
     <div className="amx-card amx-panel" style={{ maxWidth: 560 }}>
       <div className="amx-panel-head"><h3>{isEdit ? "Edit Contact Person" : "Add Contact Person"}</h3></div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-        <AField label="Designation" required hint={lockDesignation ? "This is a required role for every masjid and can't be changed here." : undefined}>
-          <select value={designation} onChange={(e) => setDesignation(e.target.value)} disabled={lockDesignation}>
+        <AField
+          label="Designation"
+          required
+          error={errors.designation}
+          hint={lockDesignation ? "This is a required role for every masjid and can't be changed here." : undefined}
+        >
+          <select
+            value={designation}
+            onChange={(e) => { setDesignation(e.target.value); setErrors((er) => ({ ...er, designation: null })); }}
+            disabled={lockDesignation}
+          >
             <option value="">Select a designation</option>
             {designations.map((d) => <option key={d.id} value={d.name}>{d.name}</option>)}
           </select>
         </AField>
-        <AField label="Name" required>
-          <input value={name} onChange={(e) => setName(e.target.value)} maxLength={255} placeholder="Full name" />
+        <AField label="Name" required error={errors.name}>
+          <input
+            value={name}
+            onChange={(e) => { setName(e.target.value); setErrors((er) => ({ ...er, name: null })); }}
+            maxLength={255}
+            placeholder="Full name"
+          />
         </AField>
       </div>
-      <AField label="Mobile Number" required hint={effectiveVerified ? undefined : "Changing a verified number requires re-verification."}>
+      <AField
+        label="Mobile Number"
+        required
+        error={errors.mobile}
+        hint={effectiveVerified ? undefined : "Changing a verified number requires re-verification."}
+      >
         <div className="msj-verifiable-row">
-          <input value={mobile} onChange={(e) => setMobile(e.target.value.replace(/\D/g, "").slice(0, 10))} maxLength={10} />
+          <input
+            value={mobile}
+            onChange={(e) => { setMobile(e.target.value.replace(/\D/g, "").slice(0, 10)); setErrors((er) => ({ ...er, mobile: null })); }}
+            maxLength={10}
+          />
           {effectiveVerified ? (
             <span className="acct-status-pill active"><Icon name="check" size={13} /> Verified</span>
           ) : (
@@ -361,7 +384,7 @@ function ContactPersonAdminForm({ id, designations, contact, initialDesignation,
         </div>
       </AField>
 
-      {error && <div className="amx-field-error"><Icon name="info" size={14} />{error}</div>}
+      {errors.form && <div className="amx-field-error"><Icon name="info" size={14} />{errors.form}</div>}
 
       <div style={{ display: "flex", gap: 10, marginTop: 16, alignItems: "center", flexWrap: "wrap" }}>
         <button className="amx-btn amx-btn-accent" onClick={done} disabled={saving}>{saving ? "Saving…" : "Save"}</button>
