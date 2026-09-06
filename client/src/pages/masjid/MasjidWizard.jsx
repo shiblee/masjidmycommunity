@@ -797,7 +797,7 @@ function MasjidWizard({ embedded = false }) {
             </div>
           )}
           <MasjidSummary form={form} photos={photos} contacts={contacts} />
-          <PrayerRosterSection masjidId={masjidId} api={masjidApi} />
+          <PrayerRosterSection basePath={`/${masjidId}`} api={masjidApi} />
         </div>
       </WizardShell>
     );

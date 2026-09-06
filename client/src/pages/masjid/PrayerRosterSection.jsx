@@ -60,7 +60,7 @@ function pad2(n) {
 // at the admin-authenticated axios instance instead of masjidApi — the
 // effective-time priority (override -> recurring -> none) always comes from
 // the same server-side service either way.
-function PrayerRosterSection({ masjidId, api }) {
+function PrayerRosterSection({ basePath, api }) {
   const { t } = useTranslation();
   const [date, setDate] = useState(todayStr);
   const [view, setView] = useState("list");
@@ -84,14 +84,14 @@ function PrayerRosterSection({ masjidId, api }) {
     setLoading(true);
     setError("");
     api
-      .get(`/${masjidId}/prayer-times`, { params: { date } })
+      .get(`${basePath}/prayer-times`, { params: { date } })
       .then(({ data }) => {
         setRoster(data.roster);
         setDrafts(Object.fromEntries(data.roster.map((r) => [r.prayerId, r.time || ""])));
       })
       .catch(() => setError("Couldn't load prayer times for this date."))
       .finally(() => setLoading(false));
-  }, [api, masjidId, date]);
+  }, [api, basePath, date]);
 
   useEffect(() => {
     loadRoster();
@@ -101,11 +101,11 @@ function PrayerRosterSection({ masjidId, api }) {
   const loadHistory = useCallback(() => {
     setHistoryLoading(true);
     api
-      .get(`/${masjidId}/prayer-times/history`)
+      .get(`${basePath}/prayer-times/history`)
       .then(({ data }) => setHistory(data.entries))
       .catch(() => {})
       .finally(() => setHistoryLoading(false));
-  }, [api, masjidId]);
+  }, [api, basePath]);
 
   useEffect(() => {
     if (historyOpen) loadHistory();
@@ -113,10 +113,10 @@ function PrayerRosterSection({ masjidId, api }) {
 
   const loadOverrideDates = useCallback(() => {
     api
-      .get(`/${masjidId}/prayer-times/overrides`, { params: { year: calMonth.year, month: calMonth.month } })
+      .get(`${basePath}/prayer-times/overrides`, { params: { year: calMonth.year, month: calMonth.month } })
       .then(({ data }) => setOverrideDates(data.dates))
       .catch(() => {});
-  }, [api, masjidId, calMonth]);
+  }, [api, basePath, calMonth]);
 
   useEffect(() => {
     if (view === "calendar") loadOverrideDates();
@@ -134,7 +134,7 @@ function PrayerRosterSection({ masjidId, api }) {
     setError("");
     setNotice("");
     try {
-      const { data } = await api.put(`/${masjidId}/prayer-times`, { date, entries });
+      const { data } = await api.put(`${basePath}/prayer-times`, { date, entries });
       setRoster(data.roster);
       setNotice("Prayer times saved.");
       if (historyOpen) loadHistory();
@@ -172,12 +172,12 @@ function PrayerRosterSection({ masjidId, api }) {
     setModalError("");
     try {
       if (modal.type === "apply-range") {
-        const { data } = await api.post(`/${masjidId}/prayer-times/apply-range`, {
+        const { data } = await api.post(`${basePath}/prayer-times/apply-range`, {
           templateDate: modal.templateDate, startDate: modal.startDate, endDate: modal.endDate,
         });
         setNotice(`Applied to ${data.appliedDates.length} date${data.appliedDates.length === 1 ? "" : "s"}.`);
       } else {
-        const { data } = await api.post(`/${masjidId}/prayer-times/copy`, {
+        const { data } = await api.post(`${basePath}/prayer-times/copy`, {
           fromDate: modal.fromDate, toDate: modal.toDate,
         });
         setNotice(`Copied to ${formatDateShort(modal.toDate)}.`);

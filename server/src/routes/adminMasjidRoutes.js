@@ -27,6 +27,14 @@ import {
   sendOtp as sendContactOtp,
   confirmOtp as confirmContactOtp,
 } from "../controllers/adminMasjidContactController.js";
+import {
+  getRoster as getPrayerRoster,
+  saveRoster as savePrayerRoster,
+  getHistory as getPrayerHistory,
+  copyRoster as copyPrayerRoster,
+  applyRange as applyPrayerRange,
+  getOverrideDates as getPrayerOverrideDates,
+} from "../controllers/adminMasjidPrayerController.js";
 
 const router = Router();
 
@@ -54,5 +62,11 @@ router.post("/:id/activate", activate);
 router.post("/:id/deactivate", deactivate);
 router.post("/:id/donation-account/verify", verifyDonationAccount);
 router.patch("/reviews/:reviewId/visibility", setReviewVisibility);
+router.get("/:id/prayer-times", getPrayerRoster);
+router.put("/:id/prayer-times", savePrayerRoster);
+router.get("/:id/prayer-times/history", getPrayerHistory);
+router.post("/:id/prayer-times/copy", copyPrayerRoster);
+router.post("/:id/prayer-times/apply-range", applyPrayerRange);
+router.get("/:id/prayer-times/overrides", getPrayerOverrideDates);
 
 export default router;

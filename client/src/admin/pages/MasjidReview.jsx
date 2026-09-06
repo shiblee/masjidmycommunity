@@ -10,6 +10,7 @@ import AddressAutocomplete from "../../components/AddressAutocomplete.jsx";
 import MicButton from "../../components/MicButton.jsx";
 import { StarRating } from "../../pages/exploreMasjids/exploreMasjidsShared.jsx";
 import { formatDateTime } from "../../utils/formatDateTime.js";
+import PrayerRosterSection from "../../pages/masjid/PrayerRosterSection.jsx";
 
 const TABS = [
   { key: "overview", label: "Overview" },
@@ -19,6 +20,7 @@ const TABS = [
   { key: "reviews", label: "Reviews & Ratings" },
   { key: "corrections", label: "Suggested Corrections" },
   { key: "donation", label: "Donation Account" },
+  { key: "prayer", label: "Prayer Times" },
 ];
 
 const CORRECTION_STATUS_LABEL = { pending: "Pending Review", partially_approved: "Partially Approved", approved: "Approved", rejected: "Rejected" };
@@ -1055,6 +1057,12 @@ function MasjidReview() {
 
       {tab === "donation" && (
         <DonationTab id={id} donationAccount={donationAccount} setDonationAccount={setDonationAccount} showToast={showToast} />
+      )}
+
+      {tab === "prayer" && (
+        <div className="amx-card amx-panel">
+          <PrayerRosterSection basePath={`/masjids/${id}`} api={adminApi} />
+        </div>
       )}
 
       {modal === "reject" && (
