@@ -1,7 +1,17 @@
+import { Op } from "sequelize";
 import PrayerMaster from "../models/PrayerMaster.js";
 import MasjidPrayerRecurringSchedule from "../models/MasjidPrayerRecurringSchedule.js";
 import MasjidPrayerDateOverride from "../models/MasjidPrayerDateOverride.js";
 import MasjidPrayerTimeChangeLog from "../models/MasjidPrayerTimeChangeLog.js";
+
+// Bulk actions (copy / apply-to-range) always write as per-date overrides,
+// never as the "recurring" scope — they operate on specific dates the owner
+// picked, and letting a bulk write silently redefine the yearly default
+// would contradict the single-source-of-truth the recurring rule is meant
+// to be. Each individual value written still goes through
+// saveEffectivePrayerTime() below, so it's logged to the audit trail the
+// same as any other change.
+export const MAX_RANGE_DAYS = 366;
 
 // This module is the single place the "Effective Prayer Time" priority
 // rule lives — date override -> recurring rule (by month/day) -> not
@@ -120,6 +130,57 @@ export async function saveEffectivePrayerTime({ masjidId, prayerId, dateStr, tim
       actorName: actor?.name || null,
     });
   }
+}
+
+/** Copies one date's effective prayer times onto another date, as overrides. Powers Copy Previous Day/Week and Copy Date -> Date. */
+export async function copyPrayerTimes({ masjidId, fromDateStr, toDateStr, actor }) {
+  const fromRoster = await getEffectivePrayerTimes(masjidId, fromDateStr);
+  for (const entry of fromRoster) {
+    if (entry.time == null) continue;
+    await saveEffectivePrayerTime({
+      masjidId, prayerId: entry.prayerId, dateStr: toDateStr,
+      time: entry.time, scope: "override", actor,
+    });
+  }
+  return getEffectivePrayerTimes(masjidId, toDateStr);
+}
+
+/** Applies one template date's effective prayer times as overrides across every date in an inclusive range (capped at MAX_RANGE_DAYS). */
+export async function applyPrayerTimesToRange({ masjidId, templateDateStr, startDateStr, endDateStr, actor }) {
+  const start = new Date(`${startDateStr}T00:00:00Z`);
+  const end = new Date(`${endDateStr}T00:00:00Z`);
+  const days = Math.round((end - start) / 86400000) + 1;
+  if (days < 1 || days > MAX_RANGE_DAYS) {
+    throw new Error(`The date range must be between 1 and ${MAX_RANGE_DAYS} days.`);
+  }
+
+  const templateRoster = await getEffectivePrayerTimes(masjidId, templateDateStr);
+  const appliedDates = [];
+  for (let i = 0; i < days; i++) {
+    const d = new Date(start);
+    d.setUTCDate(d.getUTCDate() + i);
+    const dateStr = d.toISOString().slice(0, 10);
+    for (const entry of templateRoster) {
+      if (entry.time == null) continue;
+      await saveEffectivePrayerTime({
+        masjidId, prayerId: entry.prayerId, dateStr,
+        time: entry.time, scope: "override", actor,
+      });
+    }
+    appliedDates.push(dateStr);
+  }
+  return appliedDates;
+}
+
+/** Distinct dates within a calendar month that carry at least one date-specific override — powers the Calendar View's highlighting. */
+export async function listOverrideDatesInMonth(masjidId, year, month) {
+  const start = `${year}-${String(month).padStart(2, "0")}-01`;
+  const end = new Date(Date.UTC(year, month, 0)).toISOString().slice(0, 10);
+  const rows = await MasjidPrayerDateOverride.findAll({
+    where: { masjidId, date: { [Op.between]: [start, end] } },
+    attributes: ["date"],
+  });
+  return [...new Set(rows.map((r) => toDateStr(r.date)))];
 }
 
 export async function getPrayerTimeHistory(masjidId, { page = 1, limit = 20 } = {}) {

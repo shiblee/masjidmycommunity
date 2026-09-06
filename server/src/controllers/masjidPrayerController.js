@@ -4,6 +4,9 @@ import {
   getEffectivePrayerTimes,
   saveEffectivePrayerTime,
   getPrayerTimeHistory,
+  copyPrayerTimes,
+  applyPrayerTimesToRange,
+  listOverrideDatesInMonth,
   isValidDateStr,
   isValidTime,
 } from "../services/prayerTimeService.js";
@@ -14,6 +17,11 @@ function today() {
 
 async function findOwnedMasjid(req) {
   return Masjid.findOne({ where: { id: req.params.id, userId: req.user.id } });
+}
+
+async function actorFrom(req) {
+  const owner = await User.findByPk(req.user.id, { attributes: ["fullName"] });
+  return { type: "user", name: owner?.fullName || "Masjid Owner" };
 }
 
 export const getRoster = async (req, res) => {
@@ -49,8 +57,7 @@ export const saveRoster = async (req, res) => {
       }
     }
 
-    const owner = await User.findByPk(req.user.id, { attributes: ["fullName"] });
-    const actor = { type: "user", name: owner?.fullName || "Masjid Owner" };
+    const actor = await actorFrom(req);
     for (const entry of entries) {
       await saveEffectivePrayerTime({
         masjidId: masjid.id,
@@ -64,6 +71,65 @@ export const saveRoster = async (req, res) => {
 
     const roster = await getEffectivePrayerTimes(masjid.id, date);
     res.json({ date, roster });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const copyRoster = async (req, res) => {
+  try {
+    const masjid = await findOwnedMasjid(req);
+    if (!masjid) return res.status(404).json({ message: "Masjid not found." });
+
+    const { fromDate, toDate } = req.body;
+    if (!isValidDateStr(fromDate) || !isValidDateStr(toDate)) {
+      return res.status(400).json({ message: "Invalid date(s)." });
+    }
+
+    const actor = await actorFrom(req);
+    const roster = await copyPrayerTimes({ masjidId: masjid.id, fromDateStr: fromDate, toDateStr: toDate, actor });
+    res.json({ date: toDate, roster });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const applyRange = async (req, res) => {
+  try {
+    const masjid = await findOwnedMasjid(req);
+    if (!masjid) return res.status(404).json({ message: "Masjid not found." });
+
+    const { templateDate, startDate, endDate } = req.body;
+    if (!isValidDateStr(templateDate) || !isValidDateStr(startDate) || !isValidDateStr(endDate)) {
+      return res.status(400).json({ message: "Invalid date(s)." });
+    }
+    if (endDate < startDate) {
+      return res.status(400).json({ message: "End date must be on or after the start date." });
+    }
+
+    const actor = await actorFrom(req);
+    const appliedDates = await applyPrayerTimesToRange({
+      masjidId: masjid.id, templateDateStr: templateDate, startDateStr: startDate, endDateStr: endDate, actor,
+    });
+    res.json({ appliedDates });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+export const getOverrideDates = async (req, res) => {
+  try {
+    const masjid = await findOwnedMasjid(req);
+    if (!masjid) return res.status(404).json({ message: "Masjid not found." });
+
+    const year = Number(req.query.year);
+    const month = Number(req.query.month);
+    if (!year || !month || month < 1 || month > 12) {
+      return res.status(400).json({ message: "Provide a valid year and month." });
+    }
+
+    const dates = await listOverrideDatesInMonth(masjid.id, year, month);
+    res.json({ dates });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
