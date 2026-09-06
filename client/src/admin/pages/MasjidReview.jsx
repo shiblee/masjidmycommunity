@@ -93,7 +93,7 @@ function Toggle({ on, onClick, disabled }) {
 function BasicInfoTab({ id, masjid, categories, onSaved }) {
   const [form, setForm] = useState({
     name: masjid.name || "", tagline: masjid.tagline || "", about: masjid.about || "",
-    category: masjid.category || "", yearEstablished: masjid.yearEstablished || "",
+    category: masjid.category || "",
     address: masjid.address || "", area: masjid.area || "", city: masjid.city || "",
     district: masjid.district || "", state: masjid.state || "", country: masjid.country || "",
     postalCode: masjid.postalCode || "", formattedAddress: masjid.formattedAddress || "",
@@ -172,17 +172,12 @@ function BasicInfoTab({ id, masjid, categories, onSaved }) {
           />
         </div>
       </AField>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-        <AField label="Category" required error={errors.category}>
-          <select value={form.category} onChange={setField("category")}>
-            <option value="">Select a category</option>
-            {categories.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
-          </select>
-        </AField>
-        <AField label="Year Established" error={errors.yearEstablished}>
-          <input value={form.yearEstablished} onChange={(e) => setField("yearEstablished")({ target: { value: e.target.value.replace(/\D/g, "").slice(0, 4) } })} maxLength={4} placeholder="e.g. 1998" />
-        </AField>
-      </div>
+      <AField label="Category" required error={errors.category}>
+        <select value={form.category} onChange={setField("category")}>
+          <option value="">Select a category</option>
+          {categories.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
+        </select>
+      </AField>
 
       <AField label="Address" required error={errors.address} hint={!errors.address ? "Search to auto-fill the rest of the location fields." : undefined}>
         <AddressAutocomplete
