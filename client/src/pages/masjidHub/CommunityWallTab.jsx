@@ -128,11 +128,6 @@ function CommunityWallTab({ masjidId, masjidName }) {
 
   return (
     <div className="msj-hub-wall">
-      <div className="msj-hub-wall-head">
-        <h3>Community Wall</h3>
-        <p>Connect, share and engage with the {masjidName} community.</p>
-      </div>
-
       <PostComposer user={user} onPosted={addNewPost} maxLength={contentLimits.maxPostLength} lockedMasjid={{ id: masjidId, name: masjidName }} />
 
       {activities === null && <p className="msj-review-empty">Loading…</p>}
