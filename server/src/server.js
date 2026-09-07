@@ -6,6 +6,7 @@ import { ensureEmailDefaults } from "./seed/emailDefaults.js";
 import { ensurePlatformUserDefaults } from "./seed/platformUserDefaults.js";
 import { ensureMasjidCategoryDefaults } from "./seed/masjidCategoryDefaults.js";
 import { ensureMasjidSlugs } from "./seed/masjidSlugBackfill.js";
+import { ensureMasjidSeoMeta } from "./seed/masjidSeoBackfill.js";
 import { ensureReviewRestrictedWordDefaults } from "./seed/reviewRestrictedWordDefaults.js";
 import { ensureMasjidContactDesignationDefaults } from "./seed/masjidContactDesignationDefaults.js";
 import { ensurePrayerDefaults } from "./seed/prayerDefaults.js";
@@ -44,6 +45,7 @@ connectDB()
       ensurePlatformUserDefaults(),
       ensureMasjidCategoryDefaults(),
       ensureMasjidSlugs(),
+      ensureMasjidSeoMeta(),
       ensureReviewRestrictedWordDefaults(),
       ensureMasjidContactDesignationDefaults(),
       ensurePrayerDefaults(),

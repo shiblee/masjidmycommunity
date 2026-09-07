@@ -384,27 +384,50 @@ async function callGeminiSeoMeta({ name, category, city, country, tagline, about
   return text ? JSON.parse(text) : null;
 }
 
-// Same null-on-failure contract as generateBio/generateWorkExperienceEnhancement.
+// Deterministic, no-API-key-needed fallback — built entirely from the
+// masjid's own saved fields, never invents anything. Used whenever the AI
+// provider is unconfigured or a call fails, so a masjid's SEO fields are
+// *always* auto-filled on approval, not just when a key happens to be set.
+// Real AI output (above) supersedes this the moment ANTHROPIC_API_KEY is
+// set — no other code change needed.
+function buildFallbackSeoMeta({ name, category, city, country, tagline, about }) {
+  const location = [city, country].filter(Boolean).join(", ");
+  const metaTitle = clampAt([name, location].filter(Boolean).join(" – "), SEO_TITLE_MAX) || name;
+  const summary =
+    tagline ||
+    about ||
+    [name, category ? `a ${category.toLowerCase()}` : null, location ? `in ${location}` : null].filter(Boolean).join(", ");
+  const metaDescription = clampAt(
+    `${summary}. Find prayer times, photos, and community updates on Masjid My Community.`,
+    SEO_DESCRIPTION_MAX
+  );
+  return { metaTitle, metaDescription };
+}
+
 // Called once, automatically, the moment an admin approves a masjid (see
 // adminMasjidController.js's `approve`) — and on demand from the admin SEO
-// tab's "Regenerate with AI" action. Never overwrites fields an admin has
+// tab's "Suggest with AI" action. Never overwrites fields an admin has
 // already set by hand; the caller is responsible for that check, this
-// function only ever generates.
+// function only ever generates. Always returns a usable result (real AI
+// when configured, the deterministic fallback above otherwise/on failure)
+// rather than null, so SEO fields are never left blank.
 export async function generateSeoMeta({ name, category, city, country, tagline, about }) {
-  if (!aiProviderConfigured) return null;
+  if (!aiProviderConfigured) return buildFallbackSeoMeta({ name, category, city, country, tagline, about });
   try {
     const parsed =
       AI_PROVIDER === "claude"
         ? await callClaudeSeoMeta({ name, category, city, country, tagline, about })
         : await callGeminiSeoMeta({ name, category, city, country, tagline, about });
-    if (!parsed?.metaTitle || !parsed?.metaDescription) return null;
+    if (!parsed?.metaTitle || !parsed?.metaDescription) {
+      return buildFallbackSeoMeta({ name, category, city, country, tagline, about });
+    }
     return {
       metaTitle: clampAt(parsed.metaTitle, SEO_TITLE_MAX),
       metaDescription: clampAt(parsed.metaDescription, SEO_DESCRIPTION_MAX),
     };
   } catch (error) {
     console.error("AI provider SEO meta generation failed:", error.message);
-    return null;
+    return buildFallbackSeoMeta({ name, category, city, country, tagline, about });
   }
 }
 
