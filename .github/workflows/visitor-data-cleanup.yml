@@ -1,0 +1,40 @@
+name: One-off - clean up test visitor rows
+
+# Manual-only, one-time use: removes the handful of Playwright-generated
+# test visitor/session/page-view rows created while verifying Phase 1 live
+# on production, so the public counter reflects only real traffic.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Write cleanup script
+        run: |
+          cat > cleanup.mjs <<'EOF'
+          import "dotenv/config";
+          import { sequelize } from "./src/config/db.js";
+          import Visitor from "./src/models/Visitor.js";
+          import VisitorSession from "./src/models/VisitorSession.js";
+          import VisitorPageView from "./src/models/VisitorPageView.js";
+          await VisitorPageView.destroy({ where: {}, truncate: true });
+          await VisitorSession.destroy({ where: {}, truncate: true });
+          await Visitor.destroy({ where: {}, truncate: true });
+          console.log("Cleaned up all visitor rows.");
+          await sequelize.close();
+          EOF
+
+      - name: Run over SSH
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+          scp -i ~/.ssh/deploy_key cleanup.mjs "$DEPLOY_USER@$DEPLOY_HOST:/var/www/masjidmycommunity/server/cleanup_tmp.mjs"
+          ssh -i ~/.ssh/deploy_key "$DEPLOY_USER@$DEPLOY_HOST" '
+            cd /var/www/masjidmycommunity/server && node cleanup_tmp.mjs && rm -f cleanup_tmp.mjs
+          '
