@@ -7,6 +7,7 @@ import Pagination from "../components/Pagination.jsx";
 import SortHeader from "../components/SortHeader.jsx";
 import adminApi from "../services/adminApi.js";
 import { formatDate } from "../../utils/formatDateTime.js";
+import { formatCompactNumber } from "../../utils/formatCompactNumber.js";
 
 const TABS = [
   { key: "all", label: "All Masjids" },
@@ -202,6 +203,7 @@ function Masjids() {
                 <SortHeader label="Registered By" sortKey="ownerName" activeKey={sortBy} direction={sortDir} onSort={toggleSort} />
                 <SortHeader label="Location" sortKey="location" activeKey={sortBy} direction={sortDir} onSort={toggleSort} />
                 <th>Rating</th>
+                <th>Likes</th>
                 <SortHeader label="Registered" sortKey="createdAt" activeKey={sortBy} direction={sortDir} onSort={toggleSort} />
                 <SortHeader label="Status" sortKey="status" activeKey={sortBy} direction={sortDir} onSort={toggleSort} />
                 <th></th>
@@ -235,6 +237,16 @@ function Masjids() {
                       </span>
                     ) : (
                       <span className="amx-cell-sub">No reviews yet</span>
+                    )}
+                  </td>
+                  <td>
+                    {m.likeCount > 0 ? (
+                      <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                        <Icon name="heart" size={14} style={{ color: "#C24B3F" }} />
+                        {formatCompactNumber(m.likeCount)}
+                      </span>
+                    ) : (
+                      <span className="amx-cell-sub">No likes yet</span>
                     )}
                   </td>
                   <td>{formatDate(m.createdAt)}</td>

@@ -10,6 +10,7 @@ import AddressAutocomplete from "../../components/AddressAutocomplete.jsx";
 import MicButton from "../../components/MicButton.jsx";
 import { StarRating } from "../../pages/exploreMasjids/exploreMasjidsShared.jsx";
 import { formatDateTime } from "../../utils/formatDateTime.js";
+import { formatCompactNumber } from "../../utils/formatCompactNumber.js";
 import PrayerRosterSection from "../../pages/masjid/PrayerRosterSection.jsx";
 
 const TABS = [
@@ -17,7 +18,7 @@ const TABS = [
   { key: "basic", label: "Basic Information" },
   { key: "contact", label: "Contact & Verification" },
   { key: "photos", label: "Photographs" },
-  { key: "reviews", label: "Reviews & Ratings" },
+  { key: "reviews", label: "Engagement" },
   { key: "corrections", label: "Suggested Corrections" },
   { key: "donation", label: "Donation Account" },
   { key: "prayer", label: "Prayer Times" },
@@ -653,11 +654,88 @@ function DonationTab({ id, donationAccount, setDonationAccount, showToast }) {
 // the public site shows) so an admin can moderate hidden reviews here too —
 // the Hide/Show button below is the first UI ever wired to the existing
 // setReviewVisibility endpoint.
-function ReviewsTab({ reviews, avgRating, reviewCount, loading, onToggleVisibility, busy }) {
+function ReviewsTab({
+  reviews, avgRating, reviewCount, likeCount, distribution, loading, onToggleVisibility, busy,
+  likers, likersTotal, likersLoading, onLoadMoreLikers,
+}) {
   return (
-    <div className="amx-card amx-panel" style={{ maxWidth: 720 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <div className="amx-card amx-panel" style={{ maxWidth: 720 }}>
+        <div className="amx-panel-head" style={{ alignItems: "center" }}>
+          <h3>Engagement Overview</h3>
+        </div>
+        <div style={{ display: "flex", gap: 32, flexWrap: "wrap", marginBottom: 20 }}>
+          <div>
+            <div className="amx-panel-sub">Total Likes</div>
+            <strong style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 20 }}>
+              <Icon name="heart" size={17} style={{ color: "#C24B3F" }} /> {formatCompactNumber(likeCount || 0)}
+            </strong>
+          </div>
+          <div>
+            <div className="amx-panel-sub">Average Rating</div>
+            <strong style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 20 }}>
+              <StarRating value={avgRating} size={16} /> {reviewCount > 0 ? avgRating.toFixed(1) : "—"}
+            </strong>
+          </div>
+          <div>
+            <div className="amx-panel-sub">Total Reviews</div>
+            <strong style={{ fontSize: 20 }}>{reviewCount}</strong>
+          </div>
+        </div>
+
+        {reviewCount > 0 && (
+          <div className="msj-rating-breakdown" style={{ marginBottom: 4 }}>
+            {[5, 4, 3, 2, 1].map((n) => (
+              <div className="msj-rating-breakdown-row" key={n}>
+                <span>{n}</span>
+                <div className="msj-rating-breakdown-track">
+                  <div className="msj-rating-breakdown-fill" style={{ width: `${reviewCount ? ((distribution?.[n] || 0) / reviewCount) * 100 : 0}%` }} />
+                </div>
+                <span className="amx-cell-sub">{distribution?.[n] || 0}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="amx-card amx-panel" style={{ maxWidth: 720 }}>
+        <div className="amx-panel-head">
+          <h3>People Who Liked</h3>
+          <span className="amx-panel-sub">{likersTotal} total</span>
+        </div>
+        {likersLoading && likers.length === 0 ? (
+          <div className="amx-empty"><Icon name="heart" /><strong>Loading…</strong></div>
+        ) : likers.length === 0 ? (
+          <div className="amx-empty">
+            <Icon name="heart" />
+            <strong>No likes yet</strong>
+            <span>This masjid hasn't been liked by anyone yet.</span>
+          </div>
+        ) : (
+          <>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 10 }}>
+              {likers.map((u) => (
+                <div key={u.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", border: "1px solid var(--a-border)", borderRadius: 10 }}>
+                  <MediaThumb src={u.profilePhoto ? `${API_ORIGIN}${u.profilePhoto}` : null} style={{ width: 32, height: 32, borderRadius: "50%", flexShrink: 0 }} />
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{u.fullName || u.username}</div>
+                    <div className="amx-cell-sub">{formatDateTime(u.likedAt)}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {likers.length < likersTotal && (
+              <button type="button" className="amx-btn amx-btn-outline amx-btn-sm" style={{ marginTop: 14 }} onClick={onLoadMoreLikers} disabled={likersLoading}>
+                {likersLoading ? "Loading…" : "Load More"}
+              </button>
+            )}
+          </>
+        )}
+      </div>
+
+      <div className="amx-card amx-panel" style={{ maxWidth: 720 }}>
       <div className="amx-panel-head" style={{ alignItems: "center" }}>
-        <h3>Reviews & Ratings</h3>
+        <h3>Reviews</h3>
         {reviewCount > 0 ? (
           <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <StarRating value={avgRating} size={16} />
@@ -703,6 +781,7 @@ function ReviewsTab({ reviews, avgRating, reviewCount, loading, onToggleVisibili
           ))}
         </div>
       )}
+      </div>
     </div>
   );
 }
@@ -781,8 +860,12 @@ function MasjidReview() {
   const [toast, setToast] = useState(null);
   const [busy, setBusy] = useState(false);
   const [reviews, setReviews] = useState([]);
-  const [reviewsRating, setReviewsRating] = useState({ avgRating: 0, reviewCount: 0 });
+  const [reviewsRating, setReviewsRating] = useState({ avgRating: 0, reviewCount: 0, likeCount: 0, distribution: {} });
   const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [likers, setLikers] = useState([]);
+  const [likersTotal, setLikersTotal] = useState(0);
+  const [likersPage, setLikersPage] = useState(1);
+  const [likersLoading, setLikersLoading] = useState(false);
   const [corrections, setCorrections] = useState([]);
   const [correctionsLoading, setCorrectionsLoading] = useState(false);
 
@@ -806,12 +889,23 @@ function MasjidReview() {
       .get(`/masjids/${id}/reviews`)
       .then(({ data }) => {
         setReviews(data.reviews);
-        setReviewsRating({ avgRating: data.avgRating, reviewCount: data.reviewCount });
+        setReviewsRating({ avgRating: data.avgRating, reviewCount: data.reviewCount, likeCount: data.likeCount, distribution: data.distribution || {} });
       })
       .finally(() => setReviewsLoading(false));
   };
+  const loadLikers = (p = 1) => {
+    setLikersLoading(true);
+    adminApi
+      .get(`/masjids/${id}/likers`, { params: { page: p } })
+      .then(({ data }) => {
+        setLikers((prev) => (p === 1 ? data.likers : [...prev, ...data.likers]));
+        setLikersTotal(data.total);
+        setLikersPage(p);
+      })
+      .finally(() => setLikersLoading(false));
+  };
   useEffect(() => {
-    if (tab === "reviews") loadReviews();
+    if (tab === "reviews") { loadReviews(); loadLikers(1); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, tab]);
 
@@ -1045,9 +1139,15 @@ function MasjidReview() {
           reviews={reviews}
           avgRating={reviewsRating.avgRating}
           reviewCount={reviewsRating.reviewCount}
+          likeCount={reviewsRating.likeCount}
+          distribution={reviewsRating.distribution}
           loading={reviewsLoading}
           onToggleVisibility={toggleReviewVisibility}
           busy={busy}
+          likers={likers}
+          likersTotal={likersTotal}
+          likersLoading={likersLoading}
+          onLoadMoreLikers={() => loadLikers(likersPage + 1)}
         />
       )}
 

@@ -8,6 +8,7 @@ import CampaignUpdate from "../models/CampaignUpdate.js";
 import Masjid from "../models/Masjid.js";
 import MasjidDonationAccount from "../models/MasjidDonationAccount.js";
 import Donation from "../models/Donation.js";
+import { getEngagementFor } from "../services/masjidEngagementService.js";
 import { amountRaised } from "./campaignController.js";
 
 const PUBLIC_STATUSES = ["active", "paused", "goal_reached", "completed"];
@@ -71,7 +72,10 @@ export const getPublicOne = async (req, res) => {
       campaign.categoryId ? CampaignCategory.findByPk(campaign.categoryId, { attributes: ["id", "name"] }) : null,
     ]);
 
-    const donationAccount = await MasjidDonationAccount.findOne({ where: { masjidId: campaign.masjidId, verified: true } });
+    const [donationAccount, masjidEngagement] = await Promise.all([
+      MasjidDonationAccount.findOne({ where: { masjidId: campaign.masjidId, verified: true } }),
+      getEngagementFor(campaign.masjidId, req.user?.id),
+    ]);
     const goal = campaign.goalAmount ? Number(campaign.goalAmount) : null;
 
     res.json({
@@ -83,7 +87,7 @@ export const getPublicOne = async (req, res) => {
       photos,
       budgetItems,
       updates,
-      masjid,
+      masjid: masjid ? { ...masjid.toJSON(), ...masjidEngagement } : null,
       category,
       donationAccount: donationAccount
         ? {

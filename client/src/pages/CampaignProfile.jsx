@@ -5,6 +5,7 @@ import MediaThumb from "../components/MediaThumb.jsx";
 import axios from "axios";
 import { API_BASE, API_ORIGIN } from "../config.js";
 import { formatDate } from "../utils/formatDateTime.js";
+import EngagementRow from "../components/masjid/EngagementRow.jsx";
 
 const API = `${API_BASE}/campaigns/public`;
 
@@ -53,7 +54,12 @@ function CampaignProfile() {
           <span className="msj-verified-badge"><Icon name="shieldCheck" size={13} /> Admin Reviewed</span>
           <h1>{campaign.title}</h1>
           {campaign.shortDescription && <p className="msj-profile-tagline">{campaign.shortDescription}</p>}
-          <p className="msj-list-loc"><Icon name="mosque" size={15} /> {masjid?.name} · {[masjid?.city, masjid?.country].filter(Boolean).join(", ")}</p>
+          <p className="msj-list-loc">
+            <Icon name="mosque" size={15} />{" "}
+            {masjid?.id ? <Link to={`/masjid/${masjid.id}`} className="msj-campaign-masjid-link">{masjid.name}</Link> : masjid?.name}
+            {" · "}{[masjid?.city, masjid?.country].filter(Boolean).join(", ")}
+          </p>
+          {masjid?.id && <EngagementRow masjid={masjid} variant="list" className="msj-campaign-masjid-engagement" />}
         </div>
       </section>
 

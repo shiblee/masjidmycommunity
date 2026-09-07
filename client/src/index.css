@@ -3532,6 +3532,11 @@ footer{
 .msj-engagement-detail .msj-like-btn, .msj-engagement-detail .msj-rating-chip-static, .msj-engagement-detail .msj-rating-chip{
   font-size:13px; padding:5px 13px;
 }
+.msj-campaign-masjid-link{ color:inherit; text-decoration:underline; text-underline-offset:2px; }
+.msj-campaign-masjid-engagement{ margin-top:10px; }
+.on-ink .msj-campaign-masjid-engagement .msj-like-btn,
+.on-ink .msj-campaign-masjid-engagement .msj-rating-chip-static{ background:rgba(255,255,255,.14); color:var(--text-on-ink-dim); }
+.on-ink .msj-campaign-masjid-engagement .msj-like-btn.liked{ background:rgba(194,75,63,.28); color:#ff9c8d; }
 
 .msj-review-modal{ max-width:640px; max-height:85vh; overflow-y:auto; }
 .msj-review-modal .msj-modal-close{
