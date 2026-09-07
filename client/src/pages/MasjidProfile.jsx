@@ -15,6 +15,7 @@ import PrayerTimesTab from "./masjidHub/PrayerTimesTab.jsx";
 import PeopleWhoLikedTab from "./masjidHub/PeopleWhoLikedTab.jsx";
 import { useMasjidLike } from "../hooks/useMasjidLike.js";
 import GreenTickBadge from "../components/masjid/GreenTickBadge.jsx";
+import { trackMasjidView } from "../utils/trackMasjidView.js";
 
 const API = `${API_BASE}/masjids/public`;
 
@@ -95,7 +96,7 @@ function MasjidProfile() {
       .catch(() => setNotFound(true));
   };
 
-  useEffect(() => { load(); }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { load(); trackMasjidView(id, "detail"); }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const toggleFavorite = async () => {
     const result = await toggleLike();
@@ -235,6 +236,7 @@ function MasjidProfile() {
               <h3>Masjid Snapshot</h3>
               {masjid.category && <div className="msj-hub-snapshot-row"><span>Category</span><strong>{masjid.category}</strong></div>}
               <div className="msj-hub-snapshot-row"><span>Location</span><strong>{[masjid.city, masjid.country].filter(Boolean).join(", ") || "—"}</strong></div>
+              <div className="msj-hub-snapshot-row"><span>Views</span><strong>{(masjid.viewCount || 0).toLocaleString()}</strong></div>
               <div className="msj-hub-snapshot-row"><span>Likes</span><strong>{likeCount.toLocaleString()}</strong></div>
               <div className="msj-hub-snapshot-row">
                 <span>Rating</span>

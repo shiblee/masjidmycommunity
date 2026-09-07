@@ -12,6 +12,7 @@ import ReviewRow from "./ReviewRow.jsx";
 import { useTranslation } from "../../i18n/LanguageContext.jsx";
 import { useMasjidLike } from "../../hooks/useMasjidLike.js";
 import { formatCompactNumber } from "../../utils/formatCompactNumber.js";
+import { trackMasjidView } from "../../utils/trackMasjidView.js";
 import GreenTickBadge from "../../components/masjid/GreenTickBadge.jsx";
 
 const API = `${API_BASE}/masjids/public`;
@@ -84,6 +85,7 @@ function MasjidReviewModal({ masjid, initialTab = "overview", onClose }) {
 
   useEffect(() => {
     load();
+    trackMasjidView(masjid.id, "popup");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [masjid.id]);
 
@@ -154,6 +156,9 @@ function MasjidReviewModal({ masjid, initialTab = "overview", onClose }) {
             <div className="msj-review-modal-rating">
               <StarRating value={data?.average || 0} size={16} />
               {data && <span>{data.average.toFixed(1)} ({data.count} review{data.count === 1 ? "" : "s"})</span>}
+              {masjid.viewCount > 0 && (
+                <span className="msj-review-modal-views"><Icon name="eye" size={13} /> {formatCompactNumber(masjid.viewCount)} views</span>
+              )}
             </div>
             <p className="msj-list-loc"><Icon name="mapPin" size={13} /> {locationOf(masjid)}</p>
           </div>

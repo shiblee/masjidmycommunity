@@ -3735,6 +3735,7 @@ footer{
 .msj-review-modal-header h3{ font-size:19px; color:var(--text-on-paper); margin:0; padding-right:30px; }
 .msj-review-modal-header .msj-card-title-row{ margin-bottom:6px; }
 .msj-review-modal-rating{ display:flex; align-items:center; gap:8px; font-size:13px; color:var(--text-on-paper-dim); margin-bottom:6px; }
+.msj-review-modal-views{ display:flex; align-items:center; gap:4px; }
 
 .msj-review-tabs{ display:flex; gap:22px; border-bottom:1px solid var(--line); margin:18px 0 18px; }
 .msj-review-tabs button{

@@ -1,8 +1,9 @@
 import { fn, col } from "sequelize";
 import MasjidFavorite from "../models/MasjidFavorite.js";
 import MasjidReview from "../models/MasjidReview.js";
+import MasjidView from "../models/MasjidView.js";
 
-// The single source of truth for a Masjid's Like/Rating/Review numbers —
+// The single source of truth for a Masjid's Like/Rating/Review/View numbers —
 // every surface that displays a masjid (Grid/List/Map, detail page, My
 // Masjid, Nearby, Liked Masjids, Admin Panel) reads through this module so
 // "like it from Grid View" is immediately reflected everywhere else, per
@@ -14,7 +15,7 @@ import MasjidReview from "../models/MasjidReview.js";
  * learn whether THAT user has liked this masjid (`likedByMe`); omit it
  * (e.g. for admin surfaces) and `likedByMe` is always false. */
 export async function getEngagementFor(masjidId, userId) {
-  const [likeCount, ratingRows, likedByMe] = await Promise.all([
+  const [likeCount, ratingRows, likedByMe, viewCount] = await Promise.all([
     MasjidFavorite.count({ where: { masjidId } }),
     MasjidReview.findAll({
       where: { masjidId, status: "visible" },
@@ -22,6 +23,7 @@ export async function getEngagementFor(masjidId, userId) {
       raw: true,
     }),
     userId ? MasjidFavorite.findOne({ where: { masjidId, userId } }) : null,
+    MasjidView.count({ where: { masjidId } }),
   ]);
   const reviewCount = Number(ratingRows[0]?.count || 0);
   return {
@@ -29,6 +31,7 @@ export async function getEngagementFor(masjidId, userId) {
     avgRating: reviewCount > 0 ? Number(ratingRows[0].avg) : 0,
     reviewCount,
     likedByMe: !!likedByMe,
+    viewCount,
   };
 }
 
@@ -39,7 +42,7 @@ export async function getEngagementForMany(masjidIds, userId) {
   const result = new Map();
   if (!masjidIds.length) return result;
 
-  const [likeRows, ratingRows, likedRows] = await Promise.all([
+  const [likeRows, ratingRows, likedRows, viewRows] = await Promise.all([
     MasjidFavorite.findAll({
       where: { masjidId: masjidIds },
       attributes: ["masjidId", [fn("COUNT", col("id")), "count"]],
@@ -55,11 +58,18 @@ export async function getEngagementForMany(masjidIds, userId) {
     userId
       ? MasjidFavorite.findAll({ where: { masjidId: masjidIds, userId }, attributes: ["masjidId"], raw: true })
       : [],
+    MasjidView.findAll({
+      where: { masjidId: masjidIds },
+      attributes: ["masjidId", [fn("COUNT", col("id")), "count"]],
+      group: ["masjidId"],
+      raw: true,
+    }),
   ]);
 
   const likeByMasjid = new Map(likeRows.map((r) => [r.masjidId, Number(r.count)]));
   const ratingByMasjid = new Map(ratingRows.map((r) => [r.masjidId, { avgRating: Number(r.avg), reviewCount: Number(r.count) }]));
   const likedSet = new Set(likedRows.map((r) => r.masjidId));
+  const viewByMasjid = new Map(viewRows.map((r) => [r.masjidId, Number(r.count)]));
 
   for (const id of masjidIds) {
     result.set(id, {
@@ -67,6 +77,7 @@ export async function getEngagementForMany(masjidIds, userId) {
       avgRating: ratingByMasjid.get(id)?.avgRating || 0,
       reviewCount: ratingByMasjid.get(id)?.reviewCount || 0,
       likedByMe: likedSet.has(id),
+      viewCount: viewByMasjid.get(id) || 0,
     });
   }
   return result;

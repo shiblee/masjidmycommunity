@@ -10,6 +10,7 @@ import DeletionReason from "../models/DeletionReason.js";
 import Campaign from "../models/Campaign.js";
 import MasjidReview from "../models/MasjidReview.js";
 import MasjidFavorite from "../models/MasjidFavorite.js";
+import MasjidView from "../models/MasjidView.js";
 import User from "../models/User.js";
 import MapSettings from "../models/MapSettings.js";
 import { getEffectivePrayerTimes, isValidDateStr } from "../services/prayerTimeService.js";
@@ -205,6 +206,38 @@ export const getPublicOne = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+};
+
+/** Logs one page view — called once by the detail page and once by the
+ * quick-view popup, each time a masjid is opened (not on every re-render/tab
+ * switch). Fire-and-forget from the client: this never blocks or affects
+ * what the visitor sees, so it fails silently (204 either way) rather than
+ * surfacing an error for something the visitor didn't initiate themselves.
+ * Logs full detail (who, when, from where) so a later trend/analytics view
+ * has real data — "Total Views" itself is just a COUNT of this table via
+ * masjidEngagementService, not a separate running counter. */
+export const trackView = async (req, res) => {
+  try {
+    const masjid = await Masjid.findOne({
+      where: { id: req.params.id, status: PUBLIC_STATUS, moderationStatus: "active" },
+      attributes: ["id"],
+    });
+    if (!masjid) return res.status(204).end();
+
+    const source = req.body?.source === "popup" ? "popup" : "detail";
+    const ipAddress = (req.headers["x-forwarded-for"] || req.ip || "").toString().split(",")[0].trim() || null;
+    await MasjidView.create({
+      masjidId: masjid.id,
+      userId: req.user?.id || null,
+      source,
+      ipAddress,
+      userAgent: req.headers["user-agent"] || null,
+      referrer: req.body?.referrer || req.headers.referer || null,
+    });
+    res.status(204).end();
+  } catch {
+    res.status(204).end();
   }
 };
 

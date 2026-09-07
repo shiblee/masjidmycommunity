@@ -661,7 +661,7 @@ function DonationTab({ id, donationAccount, setDonationAccount, showToast }) {
 // the Hide/Show button below is the first UI ever wired to the existing
 // setReviewVisibility endpoint.
 function ReviewsTab({
-  reviews, avgRating, reviewCount, likeCount, distribution, loading, onToggleVisibility, busy,
+  reviews, avgRating, reviewCount, likeCount, viewCount, distribution, loading, onToggleVisibility, busy,
   likers, likersTotal, likersLoading, onLoadMoreLikers,
 }) {
   return (
@@ -671,6 +671,12 @@ function ReviewsTab({
           <h3>Engagement Overview</h3>
         </div>
         <div style={{ display: "flex", gap: 32, flexWrap: "wrap", marginBottom: 20 }}>
+          <div>
+            <div className="amx-panel-sub">Total Views</div>
+            <strong style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 20 }}>
+              <Icon name="eye" size={17} style={{ color: "var(--a-navy)" }} /> {formatCompactNumber(viewCount || 0)}
+            </strong>
+          </div>
           <div>
             <div className="amx-panel-sub">Total Likes</div>
             <strong style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 20 }}>
@@ -866,7 +872,7 @@ function MasjidReview() {
   const [toast, setToast] = useState(null);
   const [busy, setBusy] = useState(false);
   const [reviews, setReviews] = useState([]);
-  const [reviewsRating, setReviewsRating] = useState({ avgRating: 0, reviewCount: 0, likeCount: 0, distribution: {} });
+  const [reviewsRating, setReviewsRating] = useState({ avgRating: 0, reviewCount: 0, likeCount: 0, viewCount: 0, distribution: {} });
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [likers, setLikers] = useState([]);
   const [likersTotal, setLikersTotal] = useState(0);
@@ -895,7 +901,7 @@ function MasjidReview() {
       .get(`/masjids/${id}/reviews`)
       .then(({ data }) => {
         setReviews(data.reviews);
-        setReviewsRating({ avgRating: data.avgRating, reviewCount: data.reviewCount, likeCount: data.likeCount, distribution: data.distribution || {} });
+        setReviewsRating({ avgRating: data.avgRating, reviewCount: data.reviewCount, likeCount: data.likeCount, viewCount: data.viewCount, distribution: data.distribution || {} });
       })
       .finally(() => setReviewsLoading(false));
   };
@@ -1147,6 +1153,7 @@ function MasjidReview() {
           avgRating={reviewsRating.avgRating}
           reviewCount={reviewsRating.reviewCount}
           likeCount={reviewsRating.likeCount}
+          viewCount={reviewsRating.viewCount}
           distribution={reviewsRating.distribution}
           loading={reviewsLoading}
           onToggleVisibility={toggleReviewVisibility}
