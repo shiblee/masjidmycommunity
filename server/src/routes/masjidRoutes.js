@@ -26,9 +26,7 @@ import {
   getRoster as getPrayerRoster,
   saveRoster as savePrayerRoster,
   getHistory as getPrayerHistory,
-  copyRoster as copyPrayerRoster,
-  applyRange as applyPrayerRange,
-  getOverrideDates as getPrayerOverrideDates,
+  getChangeDates as getPrayerChangeDates,
 } from "../controllers/masjidPrayerController.js";
 
 const router = Router();
@@ -53,9 +51,7 @@ router.post("/:id/contacts/:contactId/confirm-otp", confirmContactOtp);
 router.get("/:id/prayer-times", getPrayerRoster);
 router.put("/:id/prayer-times", savePrayerRoster);
 router.get("/:id/prayer-times/history", getPrayerHistory);
-router.post("/:id/prayer-times/copy", copyPrayerRoster);
-router.post("/:id/prayer-times/apply-range", applyPrayerRange);
-router.get("/:id/prayer-times/overrides", getPrayerOverrideDates);
+router.get("/:id/prayer-times/changes", getPrayerChangeDates);
 router.post("/:id/submit", submit);
 router.post("/:id/delete", deleteMasjid);
 

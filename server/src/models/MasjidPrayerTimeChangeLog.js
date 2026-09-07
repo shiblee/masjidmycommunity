@@ -5,14 +5,15 @@ import { sequelize } from "../config/db.js";
 // (freeform note, no old/new columns) nor MetaChangeLog (built for global
 // admin-list entities, not per-masjid+per-prayer+per-date values) fit this
 // cleanly, so this borrows MetaChangeLogPanel's old/new-value display
-// convention in a small table shaped for this specific data.
+// convention in a small table shaped for this specific data. There's only
+// one kind of change now (the timeline model has no recurring/override
+// distinction), so no changeType column.
 const MasjidPrayerTimeChangeLog = sequelize.define(
   "MasjidPrayerTimeChangeLog",
   {
     masjidId: { type: DataTypes.INTEGER, allowNull: false },
     prayerId: { type: DataTypes.INTEGER, allowNull: false },
     effectiveDate: { type: DataTypes.DATEONLY, allowNull: false },
-    changeType: { type: DataTypes.ENUM("recurring_rule", "date_override"), allowNull: false },
     oldValue: { type: DataTypes.STRING, allowNull: true },
     newValue: { type: DataTypes.STRING, allowNull: false },
     actorType: { type: DataTypes.ENUM("user", "admin"), allowNull: false },

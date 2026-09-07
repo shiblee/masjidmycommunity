@@ -4,9 +4,7 @@ import {
   getEffectivePrayerTimes,
   saveEffectivePrayerTime,
   getPrayerTimeHistory,
-  copyPrayerTimes,
-  applyPrayerTimesToRange,
-  listOverrideDatesInMonth,
+  listChangeDatesInMonth,
   isValidDateStr,
   isValidTime,
 } from "../services/prayerTimeService.js";
@@ -53,9 +51,6 @@ export const saveRoster = async (req, res) => {
       if (!entry.prayerId || !isValidTime(entry.time)) {
         return res.status(400).json({ message: "Each entry needs a valid prayer and a time in HH:mm format." });
       }
-      if (!["recurring", "override"].includes(entry.scope)) {
-        return res.status(400).json({ message: "Each entry's scope must be 'recurring' or 'override'." });
-      }
     }
 
     const { errors, warnings } = await validatePrayerTimes({ masjidId: masjid.id, dateStr: date, entries });
@@ -73,7 +68,6 @@ export const saveRoster = async (req, res) => {
         prayerId: entry.prayerId,
         dateStr: date,
         time: entry.time,
-        scope: entry.scope,
         actor,
       });
     }
@@ -85,48 +79,7 @@ export const saveRoster = async (req, res) => {
   }
 };
 
-export const copyRoster = async (req, res) => {
-  try {
-    const masjid = await findOwnedMasjid(req);
-    if (!masjid) return res.status(404).json({ message: "Masjid not found." });
-
-    const { fromDate, toDate } = req.body;
-    if (!isValidDateStr(fromDate) || !isValidDateStr(toDate)) {
-      return res.status(400).json({ message: "Invalid date(s)." });
-    }
-
-    const actor = await actorFrom(req);
-    const roster = await copyPrayerTimes({ masjidId: masjid.id, fromDateStr: fromDate, toDateStr: toDate, actor });
-    res.json({ date: toDate, roster });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-export const applyRange = async (req, res) => {
-  try {
-    const masjid = await findOwnedMasjid(req);
-    if (!masjid) return res.status(404).json({ message: "Masjid not found." });
-
-    const { templateDate, startDate, endDate } = req.body;
-    if (!isValidDateStr(templateDate) || !isValidDateStr(startDate) || !isValidDateStr(endDate)) {
-      return res.status(400).json({ message: "Invalid date(s)." });
-    }
-    if (endDate < startDate) {
-      return res.status(400).json({ message: "End date must be on or after the start date." });
-    }
-
-    const actor = await actorFrom(req);
-    const appliedDates = await applyPrayerTimesToRange({
-      masjidId: masjid.id, templateDateStr: templateDate, startDateStr: startDate, endDateStr: endDate, actor,
-    });
-    res.json({ appliedDates });
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-};
-
-export const getOverrideDates = async (req, res) => {
+export const getChangeDates = async (req, res) => {
   try {
     const masjid = await findOwnedMasjid(req);
     if (!masjid) return res.status(404).json({ message: "Masjid not found." });
@@ -137,7 +90,7 @@ export const getOverrideDates = async (req, res) => {
       return res.status(400).json({ message: "Provide a valid year and month." });
     }
 
-    const dates = await listOverrideDatesInMonth(masjid.id, year, month);
+    const dates = await listChangeDatesInMonth(masjid.id, year, month);
     res.json({ dates });
   } catch (error) {
     res.status(500).json({ message: error.message });

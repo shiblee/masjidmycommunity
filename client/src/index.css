@@ -2993,9 +2993,8 @@ footer{
   justify-self:start; display:inline-flex; align-items:center; font-size:11.5px; font-weight:700; padding:4px 10px; border-radius:100px;
   white-space:nowrap; background:rgba(141,198,63,.14); color:var(--teal-deep);
 }
-.msj-prayer-badge-manual{ background:rgba(141,198,63,.14); color:var(--teal-deep); }
-.msj-prayer-badge-recurring{ background:rgba(163,140,20,.12); color:#8a6d1a; }
-.msj-prayer-badge-override{ background:rgba(70,110,190,.12); color:#3a5cb0; }
+.msj-prayer-badge-set{ background:rgba(141,198,63,.14); color:var(--teal-deep); }
+.msj-prayer-badge-carried{ background:rgba(163,140,20,.12); color:#8a6d1a; }
 .msj-prayer-badge-none{ background:rgba(120,120,120,.12); color:#777; }
 .msj-prayer-updated{ font-size:12px; color:var(--text-on-paper-dim); text-align:end; white-space:nowrap; }
 .msj-prayer-row.has-error{ border-color:#C24B3F; background:rgba(194,75,63,.06); }
@@ -3005,12 +3004,10 @@ footer{
 .msj-prayer-warning-list li{ margin-bottom:6px; }
 
 .msj-prayer-savebar{ display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-top:16px; }
-.msj-prayer-scope{ display:flex; flex-direction:column; gap:6px; }
-.msj-prayer-scope label{ display:flex; align-items:center; gap:8px; font-size:13.5px; color:var(--text-on-paper); cursor:pointer; }
+.msj-prayer-savehint{ font-size:13px; color:var(--text-on-paper-dim); margin:0; }
 
 .msj-prayer-history{ margin-top:16px; padding-top:14px; border-top:1px dashed var(--line); display:flex; flex-direction:column; gap:10px; }
 .msj-prayer-history-row{ font-size:13px; color:var(--text-on-paper); line-height:1.5; }
-.msj-prayer-history-type{ color:var(--text-on-paper-dim); font-style:italic; }
 .msj-prayer-history-meta{ font-size:12px; color:var(--text-on-paper-dim); margin-top:2px; }
 
 .msj-prayer-headactions{ display:flex; align-items:center; gap:14px; }
@@ -3022,16 +3019,6 @@ footer{
 .msj-prayer-viewtoggle button + button{ border-inline-start:1px solid var(--line); }
 .msj-prayer-viewtoggle button.active{ background:var(--teal-deep); color:#fff; }
 
-.msj-prayer-bulkbar{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:14px; padding-top:14px; border-top:1px solid var(--line); }
-.msj-prayer-bulklabel{ font-size:12.5px; color:var(--text-on-paper-dim); font-weight:700; margin-inline-end:2px; }
-.msj-prayer-bulkbar button{
-  border:1px solid var(--line); background:#fff; border-radius:100px; padding:6px 14px; font-size:12.5px; font-weight:700;
-  color:var(--teal-deep); cursor:pointer;
-}
-.msj-prayer-bulkbar button:hover{ border-color:var(--teal-deep); }
-
-.msj-modal-field{ display:flex; flex-direction:column; gap:6px; font-size:13px; font-weight:700; color:var(--text-on-paper); margin-bottom:14px; }
-.msj-modal-field input{ border:1px solid var(--line); border-radius:8px; padding:8px 10px; font-size:14px; font-family:inherit; font-weight:400; color:var(--text-on-paper); }
 .msj-modal-actions{ display:flex; justify-content:flex-end; gap:10px; margin-top:8px; }
 
 .msj-prayer-calendar-head{ display:flex; align-items:center; justify-content:center; gap:16px; margin-bottom:14px; }
@@ -3046,11 +3033,10 @@ footer{
 }
 .msj-prayer-cal-day:hover{ border-color:var(--teal-deep); }
 .msj-prayer-cal-day.today{ font-weight:700; color:var(--teal-deep); }
-.msj-prayer-cal-day.has-override{ background:rgba(70,110,190,.12); }
-.msj-prayer-cal-day.has-override::after{ content:""; }
+.msj-prayer-cal-day.has-change{ background:rgba(163,140,20,.14); }
 .msj-prayer-cal-day.selected{ background:var(--teal-deep); color:#fff; border-color:var(--teal-deep); }
 .msj-prayer-calendar-legend{ display:flex; align-items:center; gap:8px; margin-top:14px; font-size:12px; color:var(--text-on-paper-dim); }
-.msj-prayer-legend-dot{ display:inline-block; width:10px; height:10px; border-radius:3px; background:rgba(70,110,190,.35); }
+.msj-prayer-legend-dot{ display:inline-block; width:10px; height:10px; border-radius:3px; background:rgba(163,140,20,.35); }
 
 @media (max-width:640px){
   .msj-prayer-row{ grid-template-columns:1fr; gap:8px; }

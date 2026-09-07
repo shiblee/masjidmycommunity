@@ -1,22 +1,20 @@
 import { Op } from "sequelize";
 import PrayerMaster from "../models/PrayerMaster.js";
-import MasjidPrayerRecurringSchedule from "../models/MasjidPrayerRecurringSchedule.js";
-import MasjidPrayerDateOverride from "../models/MasjidPrayerDateOverride.js";
+import MasjidPrayerTimeline from "../models/MasjidPrayerTimeline.js";
 import MasjidPrayerTimeChangeLog from "../models/MasjidPrayerTimeChangeLog.js";
 
-// Bulk actions (copy / apply-to-range) always write as per-date overrides,
-// never as the "recurring" scope — they operate on specific dates the owner
-// picked, and letting a bulk write silently redefine the yearly default
-// would contradict the single-source-of-truth the recurring rule is meant
-// to be. Each individual value written still goes through
-// saveEffectivePrayerTime() below, so it's logged to the audit trail the
-// same as any other change.
-export const MAX_RANGE_DAYS = 366;
-
-// This module is the single place the "Effective Prayer Time" priority
-// rule lives — date override -> recurring rule (by month/day) -> not
-// configured — so the owner UI, the admin tab, and every public display
-// surface all compute the same answer from the same code path.
+// This module is the single place the "Effective Prayer Time" rule lives —
+// so the owner UI, the admin tab, and every public display surface all
+// compute the same answer from the same code path.
+//
+// The model: a prayer time is effective from the date it's set, forward,
+// until the next explicit change for that prayer — no separate "recurring
+// rule" vs "override" concept. Within a year that's a plain forward-fill.
+// Across a year boundary, a date with no explicit row of its own inherits
+// the PREVIOUS YEAR's own forward-filled value for that same calendar date
+// — which chains (2026 -> 2027 -> 2028 -> ...) rather than always
+// reaching back to the original entry, once a later year gets its own
+// explicit change.
 
 function parseDateStr(dateStr) {
   const [year, month, day] = dateStr.split("-").map(Number);
@@ -27,6 +25,11 @@ function parseDateStr(dateStr) {
 function toDateStr(value) {
   if (typeof value === "string") return value.slice(0, 10);
   return value.toISOString().slice(0, 10);
+}
+
+function monthDay(dateStr) {
+  const { month, day } = parseDateStr(dateStr);
+  return month * 100 + day;
 }
 
 const TIME_RE = /^([01]\d|2[0-3]):([0-5]\d)$/;
@@ -43,79 +46,83 @@ export function isValidDateStr(dateStr) {
 }
 
 /**
- * Every active prayer's effective time for one masjid on one date, plus
- * where that value came from:
- *  - "override": a MasjidPrayerDateOverride exists for this exact date.
- *  - "manual": a recurring rule exists AND this exact date is the one it
- *    was last set from (originDate) — the masjid is looking at the year
- *    they actually typed this value in.
- *  - "recurring": a recurring rule exists, inherited from a different
- *    year's edit.
- *  - "none": nothing configured for this prayer/date at all.
+ * The row that determines a prayer's effective time on `dateStr`, or null
+ * if never configured. Candidates are every timeline row for this
+ * masjid+prayer with (month,day) <= the target's (month,day) — applied to
+ * EVERY year, not just the target year (a plain "effectiveDate <= target"
+ * comparison would be wrong: it would let a December change bleed into the
+ * following January before that year has any data of its own). Among
+ * candidates, the answer is the one from the highest year, and within that
+ * year the latest date — which is exactly "this year's own value if it has
+ * one by this point, else inherit last year's value for this same date,
+ * else the year before that, etc."
  */
-export async function getEffectivePrayerTimes(masjidId, dateStr) {
-  const { month, day } = parseDateStr(dateStr);
+async function findEffectiveRow(masjidId, prayerId, dateStr) {
+  const { year: targetYear } = parseDateStr(dateStr);
+  const targetMd = monthDay(dateStr);
 
-  const [prayers, overrides, recurring] = await Promise.all([
-    PrayerMaster.findAll({ where: { isActive: true }, order: [["sortOrder", "ASC"]] }),
-    MasjidPrayerDateOverride.findAll({ where: { masjidId, date: dateStr } }),
-    MasjidPrayerRecurringSchedule.findAll({ where: { masjidId, month, day } }),
-  ]);
-
-  const overrideByPrayer = new Map(overrides.map((o) => [o.prayerId, o]));
-  const recurringByPrayer = new Map(recurring.map((r) => [r.prayerId, r]));
-
-  return prayers.map((p) => {
-    const override = overrideByPrayer.get(p.id);
-    if (override) {
-      return { prayerId: p.id, name: p.name, category: p.category, time: override.time, source: "override", updatedAt: override.updatedAt };
-    }
-    const rule = recurringByPrayer.get(p.id);
-    if (rule) {
-      const source = toDateStr(rule.originDate) === dateStr ? "manual" : "recurring";
-      return { prayerId: p.id, name: p.name, category: p.category, time: rule.time, source, updatedAt: rule.updatedAt };
-    }
-    return { prayerId: p.id, name: p.name, category: p.category, time: null, source: "none", updatedAt: null };
+  const rows = await MasjidPrayerTimeline.findAll({
+    where: { masjidId, prayerId, effectiveDate: { [Op.lte]: `${targetYear}-12-31` } },
   });
+
+  const candidates = rows.filter((r) => {
+    const rDateStr = toDateStr(r.effectiveDate);
+    const { year } = parseDateStr(rDateStr);
+    return year <= targetYear && monthDay(rDateStr) <= targetMd;
+  });
+  if (!candidates.length) return null;
+
+  const maxYear = Math.max(...candidates.map((r) => parseDateStr(toDateStr(r.effectiveDate)).year));
+  return candidates
+    .filter((r) => parseDateStr(toDateStr(r.effectiveDate)).year === maxYear)
+    .reduce((a, b) => (toDateStr(a.effectiveDate) > toDateStr(b.effectiveDate) ? a : b));
 }
 
 /**
- * Saves one prayer's time for one date, per the given scope:
- *  - "recurring" (the default a first-time entry should use): upserts the
- *    (masjidId, prayerId, month, day) rule and sets its originDate to this
- *    exact date — becomes the default for this calendar day in every
- *    future year unless a later date-specific override exists. Never
- *    touches any OTHER date's override.
- *  - "override": upserts a (masjidId, prayerId, exact date) row only —
- *    the recurring rule, if any, is left completely untouched.
+ * Every active prayer's effective time for one masjid on one date, plus
+ * where that value came from:
+ *  - "set": a timeline row exists dated exactly `dateStr` — the masjid is
+ *    looking at the date they actually typed this value in.
+ *  - "carried": inherited from an earlier date (this year or a previous
+ *    year) — `originDate` names that date.
+ *  - "none": never configured.
+ */
+export async function getEffectivePrayerTimes(masjidId, dateStr) {
+  const prayers = await PrayerMaster.findAll({ where: { isActive: true }, order: [["sortOrder", "ASC"]] });
+
+  return Promise.all(
+    prayers.map(async (p) => {
+      const row = await findEffectiveRow(masjidId, p.id, dateStr);
+      if (!row) return { prayerId: p.id, name: p.name, category: p.category, time: null, source: "none", originDate: null, updatedAt: null };
+      const originDate = toDateStr(row.effectiveDate);
+      return {
+        prayerId: p.id, name: p.name, category: p.category, time: row.time,
+        source: originDate === dateStr ? "set" : "carried",
+        originDate, updatedAt: row.updatedAt,
+      };
+    })
+  );
+}
+
+/**
+ * Sets a prayer's time effective from `dateStr` forward — upserts the
+ * (masjidId, prayerId, dateStr) row. Never touches any other date's row;
+ * every other date's effective time is computed fresh from
+ * getEffectivePrayerTimes, so this one write is all a change ever needs.
  * Always logs one MasjidPrayerTimeChangeLog row (the value that was
  * effective for this date before the change -> the new value).
  */
-export async function saveEffectivePrayerTime({ masjidId, prayerId, dateStr, time, scope, actor }) {
-  const { month, day } = parseDateStr(dateStr);
-
+export async function saveEffectivePrayerTime({ masjidId, prayerId, dateStr, time, actor }) {
   const before = await getEffectivePrayerTimes(masjidId, dateStr);
   const oldValue = before.find((e) => e.prayerId === prayerId)?.time ?? null;
 
-  if (scope === "override") {
-    const [row, created] = await MasjidPrayerDateOverride.findOrCreate({
-      where: { masjidId, prayerId, date: dateStr },
-      defaults: { time },
-    });
-    if (!created && row.time !== time) {
-      row.time = time;
-      await row.save();
-    }
-  } else {
-    const [row, created] = await MasjidPrayerRecurringSchedule.findOrCreate({
-      where: { masjidId, prayerId, month, day },
-      defaults: { time, originDate: dateStr },
-    });
-    if (!created && (row.time !== time || toDateStr(row.originDate) !== dateStr)) {
-      row.time = time;
-      row.originDate = dateStr;
-      await row.save();
-    }
+  const [row, created] = await MasjidPrayerTimeline.findOrCreate({
+    where: { masjidId, prayerId, effectiveDate: dateStr },
+    defaults: { time },
+  });
+  if (!created && row.time !== time) {
+    row.time = time;
+    await row.save();
   }
 
   if (oldValue !== time) {
@@ -123,7 +130,6 @@ export async function saveEffectivePrayerTime({ masjidId, prayerId, dateStr, tim
       masjidId,
       prayerId,
       effectiveDate: dateStr,
-      changeType: scope === "override" ? "date_override" : "recurring_rule",
       oldValue,
       newValue: time,
       actorType: actor?.type || "user",
@@ -132,55 +138,15 @@ export async function saveEffectivePrayerTime({ masjidId, prayerId, dateStr, tim
   }
 }
 
-/** Copies one date's effective prayer times onto another date, as overrides. Powers Copy Previous Day/Week and Copy Date -> Date. */
-export async function copyPrayerTimes({ masjidId, fromDateStr, toDateStr, actor }) {
-  const fromRoster = await getEffectivePrayerTimes(masjidId, fromDateStr);
-  for (const entry of fromRoster) {
-    if (entry.time == null) continue;
-    await saveEffectivePrayerTime({
-      masjidId, prayerId: entry.prayerId, dateStr: toDateStr,
-      time: entry.time, scope: "override", actor,
-    });
-  }
-  return getEffectivePrayerTimes(masjidId, toDateStr);
-}
-
-/** Applies one template date's effective prayer times as overrides across every date in an inclusive range (capped at MAX_RANGE_DAYS). */
-export async function applyPrayerTimesToRange({ masjidId, templateDateStr, startDateStr, endDateStr, actor }) {
-  const start = new Date(`${startDateStr}T00:00:00Z`);
-  const end = new Date(`${endDateStr}T00:00:00Z`);
-  const days = Math.round((end - start) / 86400000) + 1;
-  if (days < 1 || days > MAX_RANGE_DAYS) {
-    throw new Error(`The date range must be between 1 and ${MAX_RANGE_DAYS} days.`);
-  }
-
-  const templateRoster = await getEffectivePrayerTimes(masjidId, templateDateStr);
-  const appliedDates = [];
-  for (let i = 0; i < days; i++) {
-    const d = new Date(start);
-    d.setUTCDate(d.getUTCDate() + i);
-    const dateStr = d.toISOString().slice(0, 10);
-    for (const entry of templateRoster) {
-      if (entry.time == null) continue;
-      await saveEffectivePrayerTime({
-        masjidId, prayerId: entry.prayerId, dateStr,
-        time: entry.time, scope: "override", actor,
-      });
-    }
-    appliedDates.push(dateStr);
-  }
-  return appliedDates;
-}
-
-/** Distinct dates within a calendar month that carry at least one date-specific override — powers the Calendar View's highlighting. */
-export async function listOverrideDatesInMonth(masjidId, year, month) {
+/** Distinct dates within a calendar month that carry an explicit timeline edit for any prayer — powers the Calendar View's highlighting. */
+export async function listChangeDatesInMonth(masjidId, year, month) {
   const start = `${year}-${String(month).padStart(2, "0")}-01`;
   const end = new Date(Date.UTC(year, month, 0)).toISOString().slice(0, 10);
-  const rows = await MasjidPrayerDateOverride.findAll({
-    where: { masjidId, date: { [Op.between]: [start, end] } },
-    attributes: ["date"],
+  const rows = await MasjidPrayerTimeline.findAll({
+    where: { masjidId, effectiveDate: { [Op.between]: [start, end] } },
+    attributes: ["effectiveDate"],
   });
-  return [...new Set(rows.map((r) => toDateStr(r.date)))];
+  return [...new Set(rows.map((r) => toDateStr(r.effectiveDate)))];
 }
 
 export async function getPrayerTimeHistory(masjidId, { page = 1, limit = 20 } = {}) {
