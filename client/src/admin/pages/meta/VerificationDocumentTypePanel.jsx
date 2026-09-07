@@ -30,6 +30,9 @@ function DocumentTypeForm({ type, onCancel, onSaved }) {
   const [description, setDescription] = useState(type?.description || "");
   const [isActive, setIsActive] = useState(type ? type.isActive : true);
   const [isRequired, setIsRequired] = useState(type ? type.isRequired : false);
+  const [documentNumberRequired, setDocumentNumberRequired] = useState(type ? type.documentNumberRequired !== false : true);
+  const [allowedFormats, setAllowedFormats] = useState(type?.allowedFormats || "");
+  const [maxFileSizeMB, setMaxFileSizeMB] = useState(type?.maxFileSizeMB ? String(type.maxFileSizeMB) : "");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -42,7 +45,10 @@ function DocumentTypeForm({ type, onCancel, onSaved }) {
     setSaving(true);
     setError("");
     try {
-      const payload = { name: name.trim(), category, description: description.trim(), isActive, isRequired };
+      const payload = {
+        name: name.trim(), category, description: description.trim(), isActive, isRequired,
+        documentNumberRequired, allowedFormats: allowedFormats.trim(), maxFileSizeMB: maxFileSizeMB.trim() || null,
+      };
       const { data } = isEdit
         ? await adminApi.patch(`/verification-document-types/${type.id}`, payload)
         : await adminApi.post("/verification-document-types", payload);
@@ -100,6 +106,33 @@ function DocumentTypeForm({ type, onCancel, onSaved }) {
         <p className="amx-panel-sub" style={{ marginTop: -4, marginBottom: 16 }}>
           A Green Tick application can't be submitted until every mandatory document type (in its category) has at least one uploaded document.
         </p>
+        <div className="amx-form-group" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+          <label style={{ marginBottom: 0 }}>Document Number Required</label>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span className="amx-panel-sub">{documentNumberRequired ? "Required" : "Not required"}</span>
+            <Toggle on={documentNumberRequired} onClick={() => setDocumentNumberRequired((r) => !r)} disabled={saving} />
+          </div>
+        </div>
+        <p className="amx-panel-sub" style={{ marginTop: -4, marginBottom: 16 }}>
+          When required, a masjid must enter this document's number before it can be uploaded.
+        </p>
+        <div className="amx-form-group">
+          <label htmlFor="doctype-formats">Allowed File Formats (optional)</label>
+          <input
+            id="doctype-formats" type="text" value={allowedFormats}
+            onChange={(e) => setAllowedFormats(e.target.value)}
+            placeholder="e.g. pdf,jpg,jpeg,png — leave blank to use the site default"
+            maxLength={100}
+          />
+        </div>
+        <div className="amx-form-group">
+          <label htmlFor="doctype-maxsize">Max File Size in MB (optional)</label>
+          <input
+            id="doctype-maxsize" type="number" min={1} max={50} value={maxFileSizeMB}
+            onChange={(e) => setMaxFileSizeMB(e.target.value)}
+            placeholder="Leave blank to use the site default (10MB)"
+          />
+        </div>
         <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
           <button type="submit" className="amx-btn amx-btn-primary" disabled={saving || !name.trim()}>
             {saving ? "Saving…" : isEdit ? "Save Changes" : "Add Document Type"}
@@ -283,6 +316,7 @@ function VerificationDocumentTypePanel() {
                 <SortHeader label="Category" sortKey="category" activeKey={sortKey} direction={sortDir} onSort={toggleSort} />
                 <SortHeader label="Status" sortKey="status" activeKey={sortKey} direction={sortDir} onSort={toggleSort} />
                 <SortHeader label="Mandatory" sortKey="isRequired" activeKey={sortKey} direction={sortDir} onSort={toggleSort} />
+                <th>Rules</th>
                 <SortHeader label="Documents Submitted" sortKey="usageCount" activeKey={sortKey} direction={sortDir} onSort={toggleSort} />
                 <SortHeader label="Created Date" sortKey="createdAt" activeKey={sortKey} direction={sortDir} onSort={toggleSort} />
                 <th></th>
@@ -298,6 +332,9 @@ function VerificationDocumentTypePanel() {
                   <td>{CATEGORY_LABEL[t.category] || t.category}</td>
                   <td><StatusBadge status={t.isActive ? "active" : "inactive"} /></td>
                   <td>{t.isRequired ? <StatusBadge status="approved" label="Mandatory" /> : "Optional"}</td>
+                  <td className="amx-cell-sub">
+                    {t.documentNumberRequired ? "Number required" : "No number"} · {t.allowedFormats ? t.allowedFormats.toUpperCase() : "Default formats"} · {t.maxFileSizeMB ? `${t.maxFileSizeMB}MB` : "Default size"}
+                  </td>
                   <td>{t.usageCount || 0}</td>
                   <td>{formatDate(t.createdAt)}</td>
                   <td>

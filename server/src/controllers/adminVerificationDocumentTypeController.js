@@ -26,7 +26,7 @@ export const list = async (req, res) => {
 
 export const create = async (req, res) => {
   try {
-    const { name, category, description, isActive, isRequired } = req.body;
+    const { name, category, description, isActive, isRequired, documentNumberRequired, allowedFormats, maxFileSizeMB } = req.body;
     if (!name?.trim()) return res.status(400).json({ message: "Document type name is required." });
     if (!["representative", "masjid", "property"].includes(category)) {
       return res.status(400).json({ message: "Category must be representative, masjid, or property." });
@@ -39,6 +39,9 @@ export const create = async (req, res) => {
       sortOrder: maxOrder + 1,
       ...(isActive !== undefined ? { isActive } : {}),
       ...(isRequired !== undefined ? { isRequired } : {}),
+      ...(documentNumberRequired !== undefined ? { documentNumberRequired } : {}),
+      allowedFormats: allowedFormats?.trim() || null,
+      maxFileSizeMB: maxFileSizeMB ? Number(maxFileSizeMB) : null,
     });
     recordMetaChange({
       entityType: ENTITY_TYPE,
@@ -59,7 +62,10 @@ export const update = async (req, res) => {
   try {
     const type = await VerificationDocumentType.findByPk(req.params.id);
     if (!type) return res.status(404).json({ message: "Document type not found." });
-    const before = { name: type.name, category: type.category, description: type.description, isActive: type.isActive, isRequired: type.isRequired, sortOrder: type.sortOrder };
+    const before = {
+      name: type.name, category: type.category, description: type.description, isActive: type.isActive, isRequired: type.isRequired, sortOrder: type.sortOrder,
+      documentNumberRequired: type.documentNumberRequired, allowedFormats: type.allowedFormats, maxFileSizeMB: type.maxFileSizeMB,
+    };
     if (req.body.name !== undefined) type.name = req.body.name.trim();
     if (req.body.category !== undefined) {
       if (!["representative", "masjid", "property"].includes(req.body.category)) {
@@ -71,6 +77,9 @@ export const update = async (req, res) => {
     if (req.body.isActive !== undefined) type.isActive = req.body.isActive;
     if (req.body.isRequired !== undefined) type.isRequired = req.body.isRequired;
     if (req.body.sortOrder !== undefined) type.sortOrder = req.body.sortOrder;
+    if (req.body.documentNumberRequired !== undefined) type.documentNumberRequired = req.body.documentNumberRequired;
+    if (req.body.allowedFormats !== undefined) type.allowedFormats = req.body.allowedFormats?.trim() || null;
+    if (req.body.maxFileSizeMB !== undefined) type.maxFileSizeMB = req.body.maxFileSizeMB ? Number(req.body.maxFileSizeMB) : null;
     await type.save();
     recordMetaChange({
       entityType: ENTITY_TYPE,
@@ -85,6 +94,9 @@ export const update = async (req, res) => {
         { field: "isActive", oldValue: before.isActive, newValue: type.isActive },
         { field: "isRequired", oldValue: before.isRequired, newValue: type.isRequired },
         { field: "sortOrder", oldValue: before.sortOrder, newValue: type.sortOrder },
+        { field: "documentNumberRequired", oldValue: before.documentNumberRequired, newValue: type.documentNumberRequired },
+        { field: "allowedFormats", oldValue: before.allowedFormats, newValue: type.allowedFormats },
+        { field: "maxFileSizeMB", oldValue: before.maxFileSizeMB, newValue: type.maxFileSizeMB },
       ],
     }).catch(() => {});
     const counts = await usageCounts();

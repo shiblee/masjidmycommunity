@@ -16,6 +16,12 @@ const VerificationDocumentType = sequelize.define(
     isRequired: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
     isActive: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true },
     sortOrder: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+    // Per-type upload rules — each nullable/defaulted so an admin never has
+    // to configure them; a null allowedFormats/maxFileSizeMB just falls
+    // back to the global defaults enforced in upload.js/greenTickController.js.
+    documentNumberRequired: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true },
+    allowedFormats: { type: DataTypes.STRING, allowNull: true },
+    maxFileSizeMB: { type: DataTypes.INTEGER, allowNull: true },
   },
   {
     tableName: "verification_document_types",

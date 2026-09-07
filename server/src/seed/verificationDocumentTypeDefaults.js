@@ -4,12 +4,12 @@ import VerificationDocumentType from "../models/VerificationDocumentType.js";
 // Tick spec — admins can rename, deactivate, reorder, or add further types
 // (per category) via Meta with no code change.
 const DEFAULTS = [
-  { name: "Government Photo ID", category: "representative", isRequired: true, sortOrder: 0 },
-  { name: "Masjid Registration Certificate", category: "masjid", isRequired: true, sortOrder: 1 },
-  { name: "Trust/Waqf/Committee Document", category: "masjid", isRequired: false, sortOrder: 2 },
-  { name: "Authorization Letter", category: "masjid", isRequired: false, sortOrder: 3 },
-  { name: "Government/Local Authority Document", category: "masjid", isRequired: false, sortOrder: 4 },
-  { name: "Property/Land Ownership Document", category: "property", isRequired: true, sortOrder: 5 },
+  { name: "Government Photo ID", category: "representative", isRequired: true, sortOrder: 0, documentNumberRequired: true },
+  { name: "Masjid Registration Certificate", category: "masjid", isRequired: true, sortOrder: 1, documentNumberRequired: true },
+  { name: "Trust/Waqf/Committee Document", category: "masjid", isRequired: false, sortOrder: 2, documentNumberRequired: false },
+  { name: "Authorization Letter", category: "masjid", isRequired: false, sortOrder: 3, documentNumberRequired: false },
+  { name: "Government/Local Authority Document", category: "masjid", isRequired: false, sortOrder: 4, documentNumberRequired: false },
+  { name: "Property/Land Ownership Document", category: "property", isRequired: true, sortOrder: 5, documentNumberRequired: true },
 ];
 
 // Additive on every boot: creates any default name not already present
