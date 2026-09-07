@@ -12,6 +12,7 @@ import { StarRating } from "../../pages/exploreMasjids/exploreMasjidsShared.jsx"
 import { formatDateTime } from "../../utils/formatDateTime.js";
 import { formatCompactNumber } from "../../utils/formatCompactNumber.js";
 import PrayerRosterSection from "../../pages/masjid/PrayerRosterSection.jsx";
+import GreenTickTab from "./greenTick/GreenTickTab.jsx";
 
 const TABS = [
   { key: "overview", label: "Overview" },
@@ -22,6 +23,7 @@ const TABS = [
   { key: "corrections", label: "Suggested Corrections" },
   { key: "donation", label: "Donation Account" },
   { key: "prayer", label: "Prayer Times" },
+  { key: "greentick", label: "Green Tick" },
 ];
 
 const CORRECTION_STATUS_LABEL = { pending: "Pending Review", partially_approved: "Partially Approved", approved: "Approved", rejected: "Rejected" };
@@ -1164,6 +1166,8 @@ function MasjidReview() {
           <PrayerRosterSection basePath={`/masjids/${id}`} api={adminApi} />
         </div>
       )}
+
+      {tab === "greentick" && <GreenTickTab masjidId={id} showToast={showToast} />}
 
       {modal === "reject" && (
         <ReasonModal title="Reject Masjid" placeholder="Explain why this masjid is being rejected…" onCancel={() => setModal(null)} onSubmit={(reason) => act(() => adminApi.post(`/masjids/${id}/reject`, { reason }), "Masjid rejected.")} />

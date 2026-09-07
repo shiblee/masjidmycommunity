@@ -14,7 +14,7 @@ import Donations from "./pages/Donations.jsx";
 import Donors from "./pages/Donors.jsx";
 import Projects from "./pages/Projects.jsx";
 import FundUtilization from "./pages/FundUtilization.jsx";
-import Verification from "./pages/Verification.jsx";
+import GreenTickApplications from "./pages/GreenTickApplications.jsx";
 import ReportsAnalytics from "./pages/ReportsAnalytics.jsx";
 import RegisteredUsers from "./pages/RegisteredUsers.jsx";
 import RegisteredUserDetail from "./pages/RegisteredUserDetail.jsx";
@@ -60,7 +60,7 @@ function AdminApp() {
         <Route path="donors" element={<Donors />} />
         <Route path="projects" element={<Projects />} />
         <Route path="fund-utilization" element={<FundUtilization />} />
-        <Route path="verification" element={<Verification />} />
+        <Route path="verification" element={<GreenTickApplications />} />
         <Route path="reports" element={<ReportsAnalytics />} />
         <Route path="registered-users" element={<RegisteredUsers />} />
         <Route path="registered-users/:id" element={<RegisteredUserDetail />} />

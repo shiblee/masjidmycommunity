@@ -53,7 +53,7 @@ const NAV_ITEMS = [
   { to: "/admin/donors", label: "Donors", icon: "donors" },
   { to: "/admin/projects", label: "Projects", icon: "projects" },
   { to: "/admin/fund-utilization", label: "Fund Utilization", icon: "fund" },
-  { to: "/admin/verification", label: "Verification", icon: "verify" },
+  { to: "/admin/verification", label: "Green Tick", icon: "verify" },
   { to: "/admin/reports", label: "Reports & Analytics", icon: "reports" },
   { to: "/admin/community-wall", label: "Community Wall", icon: "megaphone" },
   { to: "/admin/moderation", label: "Reported Content", icon: "flag" },
