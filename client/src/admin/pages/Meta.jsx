@@ -4,6 +4,7 @@ import adminApi from "../services/adminApi.js";
 import MasjidCategoryPanel from "./meta/MasjidCategoryPanel.jsx";
 import MasjidContactDesignationPanel from "./meta/MasjidContactDesignationPanel.jsx";
 import PrayerManagementPanel from "./meta/PrayerManagementPanel.jsx";
+import VerificationDocumentTypePanel from "./meta/VerificationDocumentTypePanel.jsx";
 import ReviewRestrictedWordPanel from "./meta/ReviewRestrictedWordPanel.jsx";
 import CampaignCategoryPanel from "./meta/CampaignCategoryPanel.jsx";
 import CampaignClassificationPanel from "./meta/CampaignClassificationPanel.jsx";
@@ -35,6 +36,7 @@ const META_ENTITIES = [
   { key: "masjid-category", label: META_ENTITY_LABELS["masjid-category"], icon: "mosque", Component: MasjidCategoryPanel, path: "masjid-categories", countKey: "categories" },
   { key: "masjid-contact-designation", label: META_ENTITY_LABELS["masjid-contact-designation"], icon: "verify", Component: MasjidContactDesignationPanel, path: "masjid-contact-designations", countKey: "designations" },
   { key: "prayer", label: META_ENTITY_LABELS.prayer, icon: "clock", Component: PrayerManagementPanel, path: "prayers", countKey: "prayers" },
+  { key: "verification-document-type", label: META_ENTITY_LABELS["verification-document-type"], icon: "fileText", Component: VerificationDocumentTypePanel, path: "verification-document-types", countKey: "types" },
   { key: "review-restricted-word", label: META_ENTITY_LABELS["review-restricted-word"], icon: "shield", Component: ReviewRestrictedWordPanel, path: "review-restricted-words", countKey: "words" },
   { key: "campaign-category", label: META_ENTITY_LABELS["campaign-category"], icon: "campaign", Component: CampaignCategoryPanel, path: "campaign-categories", countKey: "categories" },
   { key: "campaign-classification", label: META_ENTITY_LABELS["campaign-classification"], icon: "donation", Component: CampaignClassificationPanel, path: "campaign-classifications", countKey: "classifications" },

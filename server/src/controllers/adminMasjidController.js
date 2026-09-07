@@ -16,6 +16,7 @@ import { mediaTypeOf, IMAGE_MAX_BYTES } from "../middleware/upload.js";
 import { firstRestrictedField, RESTRICTED_CONTENT_MESSAGE } from "../utils/contentModeration.js";
 import { classifyContent } from "../services/aiProviderService.js";
 import { getEngagementFor, getEngagementForMany, getRatingDistribution } from "../services/masjidEngagementService.js";
+import { getGreenTickBadgeInfo, getGreenTickBadgeInfoForMany } from "../services/greenTickService.js";
 import { withReviewers } from "./masjidReviewController.js";
 import { PLATFORM_EMAIL } from "../seed/platformUserDefaults.js";
 
@@ -184,7 +185,10 @@ export const listAll = async (req, res) => {
     // One shared-service batch call for the whole page, not one query per
     // row — the same masjidEngagementService every other surface uses.
     const masjidIds = rows.map((m) => m.id);
-    const engagementMap = await getEngagementForMany(masjidIds);
+    const [engagementMap, greenTickMap] = await Promise.all([
+      getEngagementForMany(masjidIds),
+      getGreenTickBadgeInfoForMany(masjidIds),
+    ]);
 
     const masjids = await Promise.all(
       rows.map(async (m) => {
@@ -198,6 +202,7 @@ export const listAll = async (req, res) => {
           ownerEmail: owner?.email || null,
           ownerMobile: owner?.mobile || null,
           ...(engagementMap.get(m.id) || { likeCount: 0, avgRating: 0, reviewCount: 0, likedByMe: false }),
+          ...(greenTickMap.get(m.id) || { greenTickStatus: null, verificationId: null, issuedAt: null, isGreenTick: false }),
         };
       })
     );
@@ -218,12 +223,13 @@ export const getOne = async (req, res) => {
     const masjid = await Masjid.findByPk(req.params.id);
     if (!masjid) return res.status(404).json({ message: "Masjid not found." });
 
-    const [photos, donationAccount, history, contacts, engagement] = await Promise.all([
+    const [photos, donationAccount, history, contacts, engagement, greenTick] = await Promise.all([
       MasjidPhoto.findAll({ where: { masjidId: masjid.id }, order: [["sortOrder", "ASC"]] }),
       MasjidDonationAccount.findOne({ where: { masjidId: masjid.id } }),
       MasjidHistory.findAll({ where: { masjidId: masjid.id }, order: [["createdAt", "DESC"]] }),
       MasjidContactPerson.findAll({ where: { masjidId: masjid.id }, order: [["sortOrder", "ASC"]] }),
       getEngagementFor(masjid.id),
+      getGreenTickBadgeInfo(masjid.id),
     ]);
 
     let donationAccountJson = null;
@@ -234,7 +240,7 @@ export const getOne = async (req, res) => {
     }
 
     res.json({
-      masjid: { ...masjid.toJSON(), completion: await computeMasjidCompletion(masjid, contacts, photos.length), ...engagement },
+      masjid: { ...masjid.toJSON(), completion: await computeMasjidCompletion(masjid, contacts, photos.length), ...engagement, ...greenTick },
       photos,
       donationAccount: donationAccountJson,
       history,

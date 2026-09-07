@@ -14,6 +14,7 @@ import User from "../models/User.js";
 import MapSettings from "../models/MapSettings.js";
 import { getEffectivePrayerTimes, isValidDateStr } from "../services/prayerTimeService.js";
 import { getEngagementFor, getEngagementForMany } from "../services/masjidEngagementService.js";
+import { getGreenTickBadgeInfo, getGreenTickBadgeInfoForMany } from "../services/greenTickService.js";
 
 const PUBLIC_STATUS = "approved";
 const MAP_POINTS_CAP = 500;
@@ -111,8 +112,11 @@ export const listPublic = async (req, res) => {
       const pageIds = ranked.slice((pageNum - 1) * limit, pageNum * limit).map((m) => m.id);
       const rows = await Masjid.findAll({ where: { id: pageIds } });
       const byId = new Map(rows.map((r) => [r.id, r]));
-      const engagementMap = await getEngagementForMany(pageIds, userId);
-      masjids = await Promise.all(pageIds.map((id) => withCoverAndCampaigns(byId.get(id), engagementMap.get(id))));
+      const [engagementMap, greenTickMap] = await Promise.all([
+        getEngagementForMany(pageIds, userId),
+        getGreenTickBadgeInfoForMany(pageIds),
+      ]);
+      masjids = await Promise.all(pageIds.map((id) => withCoverAndCampaigns(byId.get(id), { ...engagementMap.get(id), ...greenTickMap.get(id) })));
     } else {
       const { rows, count } = await Masjid.findAndCountAll({
         where,
@@ -121,8 +125,12 @@ export const listPublic = async (req, res) => {
         offset: (pageNum - 1) * limit,
       });
       total = count;
-      const engagementMap = await getEngagementForMany(rows.map((r) => r.id), userId);
-      masjids = await Promise.all(rows.map((m) => withCoverAndCampaigns(m, engagementMap.get(m.id))));
+      const ids = rows.map((r) => r.id);
+      const [engagementMap, greenTickMap] = await Promise.all([
+        getEngagementForMany(ids, userId),
+        getGreenTickBadgeInfoForMany(ids),
+      ]);
+      masjids = await Promise.all(rows.map((m) => withCoverAndCampaigns(m, { ...engagementMap.get(m.id), ...greenTickMap.get(m.id) })));
     }
 
     res.json({ masjids, total, page: pageNum, pageSize: limit });
@@ -144,8 +152,12 @@ export const listMapPoints = async (req, res) => {
     const ranked = rankByQuery(rows, q);
     const truncated = ranked.length > MAP_POINTS_CAP;
     const page = truncated ? ranked.slice(0, MAP_POINTS_CAP) : ranked;
-    const engagementMap = await getEngagementForMany(page.map((r) => r.id), userId);
-    const masjids = await Promise.all(page.map((m) => withCover(m, engagementMap.get(m.id))));
+    const ids = page.map((r) => r.id);
+    const [engagementMap, greenTickMap] = await Promise.all([
+      getEngagementForMany(ids, userId),
+      getGreenTickBadgeInfoForMany(ids),
+    ]);
+    const masjids = await Promise.all(page.map((m) => withCover(m, { ...engagementMap.get(m.id), ...greenTickMap.get(m.id) })));
     res.json({ masjids, truncated });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -158,13 +170,14 @@ export const getPublicOne = async (req, res) => {
     const masjid = await Masjid.findOne({ where: { id: req.params.id, status: PUBLIC_STATUS, moderationStatus: "active" } });
     if (!masjid) return res.status(404).json({ message: "Masjid not found." });
 
-    const [photos, imam, topLikerFavorites, engagement, campaignCount] = await Promise.all([
+    const [photos, imam, topLikerFavorites, engagement, greenTick, campaignCount] = await Promise.all([
       MasjidPhoto.findAll({ where: { masjidId: masjid.id }, order: [["sortOrder", "ASC"]] }),
       // The public profile still shows an "Imam" line — sourced from the
       // office-bearers list now rather than a single column on Masjid.
       MasjidContactPerson.findOne({ where: { masjidId: masjid.id, designation: "Imam" } }),
       MasjidFavorite.findAll({ where: { masjidId: masjid.id }, order: [["createdAt", "DESC"]], limit: 6 }),
       getEngagementFor(masjid.id, userId),
+      getGreenTickBadgeInfo(masjid.id),
       Campaign.count({ where: { masjidId: masjid.id, status: "active" } }),
     ]);
     const topLikerUsers = await User.findAll({
@@ -182,6 +195,7 @@ export const getPublicOne = async (req, res) => {
         imamName: imam?.name || null,
         topLikers,
         ...engagement,
+        ...greenTick,
         campaignCount,
         photoCount,
         videoCount,
@@ -242,8 +256,12 @@ export const listMyLiked = async (req, res) => {
 
     const total = ordered.length;
     const pageRows = ordered.slice((page - 1) * limit, page * limit);
-    const engagementMap = await getEngagementForMany(pageRows.map((m) => m.id), userId);
-    const cards = await Promise.all(pageRows.map((m) => withCoverAndCampaigns(m, engagementMap.get(m.id))));
+    const ids = pageRows.map((m) => m.id);
+    const [engagementMap, greenTickMap] = await Promise.all([
+      getEngagementForMany(ids, userId),
+      getGreenTickBadgeInfoForMany(ids),
+    ]);
+    const cards = await Promise.all(pageRows.map((m) => withCoverAndCampaigns(m, { ...engagementMap.get(m.id), ...greenTickMap.get(m.id) })));
 
     res.json({ masjids: cards, total, page, pageSize: limit });
   } catch (error) {
@@ -332,9 +350,10 @@ export const listNearbyAll = async (req, res) => {
     });
 
     const masjidIds = rows.map((r) => r.id);
-    const [covers, engagementMap] = await Promise.all([
+    const [covers, engagementMap, greenTickMap] = await Promise.all([
       MasjidPhoto.findAll({ where: { masjidId: masjidIds, isCover: true } }),
       getEngagementForMany(masjidIds, userId),
+      getGreenTickBadgeInfoForMany(masjidIds),
     ]);
     const coverByMasjid = new Map(covers.map((c) => [c.masjidId, c.url]));
 
@@ -348,6 +367,7 @@ export const listNearbyAll = async (req, res) => {
         coverPhotoUrl: coverByMasjid.get(r.id) || null,
         distanceKm: r.get("distanceKm") != null ? Number(r.get("distanceKm")) : null,
         ...(engagementMap.get(r.id) || { likeCount: 0, avgRating: 0, reviewCount: 0, likedByMe: false }),
+        ...(greenTickMap.get(r.id) || { greenTickStatus: null, verificationId: null, issuedAt: null, isGreenTick: false }),
       })),
       total: count,
       page,

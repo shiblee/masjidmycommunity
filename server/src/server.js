@@ -8,6 +8,7 @@ import { ensureMasjidCategoryDefaults } from "./seed/masjidCategoryDefaults.js";
 import { ensureReviewRestrictedWordDefaults } from "./seed/reviewRestrictedWordDefaults.js";
 import { ensureMasjidContactDesignationDefaults } from "./seed/masjidContactDesignationDefaults.js";
 import { ensurePrayerDefaults } from "./seed/prayerDefaults.js";
+import { ensureVerificationDocumentTypeDefaults } from "./seed/verificationDocumentTypeDefaults.js";
 import { ensureMaritalStatusDefaults } from "./seed/maritalStatusDefaults.js";
 import { ensureEducationLevelDefaults } from "./seed/educationLevelDefaults.js";
 import { ensureDegreeDefaults } from "./seed/degreeDefaults.js";
@@ -44,6 +45,7 @@ connectDB()
       ensureReviewRestrictedWordDefaults(),
       ensureMasjidContactDesignationDefaults(),
       ensurePrayerDefaults(),
+      ensureVerificationDocumentTypeDefaults(),
       ensureMaritalStatusDefaults(),
       ensureEducationLevelDefaults(),
       ensureDegreeDefaults(),
