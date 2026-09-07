@@ -10,6 +10,7 @@ import Campaign from "../models/Campaign.js";
 import DeletionReason from "../models/DeletionReason.js";
 import User from "../models/User.js";
 import { sendMasjidSubmittedAdminEmail, sendMasjidSubmittedUserEmail } from "../services/emailService.js";
+import { notifyAdmins } from "../services/adminAlertService.js";
 import { mediaTypeOf, IMAGE_MAX_BYTES } from "../middleware/upload.js";
 import { firstRestrictedField, RESTRICTED_CONTENT_MESSAGE } from "../utils/contentModeration.js";
 import { classifyContent } from "../services/aiProviderService.js";
@@ -482,6 +483,13 @@ export const submit = async (req, res) => {
     const submitter = await User.findByPk(masjid.userId);
     sendMasjidSubmittedAdminEmail(masjid, submitter).catch(() => {});
     sendMasjidSubmittedUserEmail(masjid, submitter).catch(() => {});
+    notifyAdmins({
+      type: "masjid_submitted",
+      title: `New masjid submitted: ${masjid.name}`,
+      body: `${submitter?.fullName || "A user"} submitted "${masjid.name}" for review.`,
+      link: `/admin/masjids/${masjid.id}`,
+      relatedMasjidId: masjid.id,
+    }).catch(() => {});
 
     res.json({ masjid: await serializeMasjid(masjid) });
   } catch (error) {

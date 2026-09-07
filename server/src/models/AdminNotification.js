@@ -14,6 +14,7 @@ const AdminNotification = sequelize.define(
     link: { type: DataTypes.STRING, allowNull: true },
     relatedConcernId: { type: DataTypes.INTEGER, allowNull: true },
     relatedContactId: { type: DataTypes.INTEGER, allowNull: true },
+    relatedMasjidId: { type: DataTypes.INTEGER, allowNull: true },
     isRead: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
     readAt: { type: DataTypes.DATE, allowNull: true },
   },
