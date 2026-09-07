@@ -7,7 +7,7 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - name: Check pm2 process status and recent logs
+      - name: Memory and process check
         env:
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
           DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
@@ -17,14 +17,10 @@ jobs:
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
           ssh -i ~/.ssh/deploy_key "$DEPLOY_USER@$DEPLOY_HOST" '
-            echo "===== pm2 describe ====="
-            pm2 describe masjidmycommunity-api
-            echo "===== error log tail ====="
-            tail -n 200 ~/.pm2/logs/masjidmycommunity-api-error.log
-            echo "===== out log tail ====="
-            tail -n 40 ~/.pm2/logs/masjidmycommunity-api-out.log
-            echo "===== node version ====="
-            node -v
-            echo "===== package.json start script ====="
-            cat /var/www/masjidmycommunity/server/package.json | grep -A3 "\"scripts\""
+            echo "===== free -h ====="
+            free -h
+            echo "===== dmesg oom (last 30 matching lines) ====="
+            sudo dmesg 2>/dev/null | grep -i "out of memory\|oom" | tail -30
+            echo "===== journalctl kernel oom ====="
+            sudo journalctl -k --since "-10 min" 2>/dev/null | grep -i "oom\|killed process" | tail -30
           '
