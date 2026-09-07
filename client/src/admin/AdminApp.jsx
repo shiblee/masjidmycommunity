@@ -19,6 +19,8 @@ import ReportsAnalytics from "./pages/ReportsAnalytics.jsx";
 import RegisteredUsers from "./pages/RegisteredUsers.jsx";
 import RegisteredUserDetail from "./pages/RegisteredUserDetail.jsx";
 import UserActivityHistory from "./pages/UserActivityHistory.jsx";
+import Visitors from "./pages/visitors/Visitors.jsx";
+import VisitorSessionDetail from "./pages/visitors/VisitorSessionDetail.jsx";
 import Notifications from "./pages/Notifications.jsx";
 import EmailTemplateEditor from "./pages/EmailTemplateEditor.jsx";
 import Settings from "./pages/Settings.jsx";
@@ -65,6 +67,8 @@ function AdminApp() {
         <Route path="registered-users" element={<RegisteredUsers />} />
         <Route path="registered-users/:id" element={<RegisteredUserDetail />} />
         <Route path="registered-users/:id/activity" element={<UserActivityHistory />} />
+        <Route path="visitors" element={<Visitors />} />
+        <Route path="visitors/:sessionKey" element={<VisitorSessionDetail />} />
         <Route path="registered-users/:id/:tab" element={<RegisteredUserDetail />} />
         <Route path="notifications" element={<Notifications />} />
         <Route path="notifications/templates/:key" element={<EmailTemplateEditor />} />
