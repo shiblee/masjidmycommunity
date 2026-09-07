@@ -145,17 +145,47 @@ export const uploadDocuments = async (req, res) => {
     if (!EDITABLE_STATUSES.has(application.status)) return res.status(400).json({ message: "This application can't be edited right now." });
     if (!req.files?.length) return res.status(400).json({ message: "No documents were uploaded." });
 
+    const cleanupFiles = () => req.files.forEach((f) => fs.unlink(f.path, () => {}));
+    const reject = (status, message) => {
+      cleanupFiles();
+      return res.status(status).json({ message });
+    };
+
     const { documentTypeId, representativeId, documentNumber, issueDate, expiryDate } = req.body;
     const type = await VerificationDocumentType.findOne({ where: { id: documentTypeId, isActive: true } });
-    if (!type) return res.status(400).json({ message: "Invalid document type." });
+    if (!type) return reject(400, "Invalid document type.");
 
     let representative = null;
     if (representativeId) {
       representative = await GreenTickRepresentative.findOne({ where: { id: representativeId, applicationId: application.id } });
-      if (!representative) return res.status(404).json({ message: "Representative not found." });
-      if (type.category !== "representative") return res.status(400).json({ message: "That document type isn't a representative identity document." });
+      if (!representative) return reject(404, "Representative not found.");
+      if (type.category !== "representative") return reject(400, "That document type isn't a representative identity document.");
     } else if (type.category === "representative") {
-      return res.status(400).json({ message: "Select which representative this identity document belongs to." });
+      return reject(400, "Select which representative this identity document belongs to.");
+    }
+
+    // This type's own number/format/size rules (Admin Panel → Meta →
+    // Verification Document Types) — a null allowedFormats/maxFileSizeMB
+    // means "use the global default", already enforced coarsely by
+    // uploadGreenTickDocuments' multer config; this is the precise, per-type
+    // gate on top of it. Multer's fileFilter can't see req.body reliably
+    // (multipart field order isn't guaranteed), so this has to happen here,
+    // after the whole request is parsed.
+    if (type.documentNumberRequired && !documentNumber?.trim()) {
+      return reject(400, `A document number is required for "${type.name}".`);
+    }
+
+    if (type.allowedFormats) {
+      const allowed = new Set(type.allowedFormats.split(",").map((f) => f.trim().toLowerCase()).filter(Boolean));
+      const badFile = req.files.find((f) => !allowed.has(f.originalname.split(".").pop()?.toLowerCase()));
+      if (badFile) return reject(400, `"${type.name}" only accepts: ${type.allowedFormats.toUpperCase()}.`);
+    }
+
+    if (type.maxFileSizeMB) {
+      const maxBytes = type.maxFileSizeMB * 1024 * 1024;
+      if (req.files.some((f) => f.size > maxBytes)) {
+        return reject(400, `"${type.name}" documents must be under ${type.maxFileSizeMB}MB.`);
+      }
     }
 
     const created = await Promise.all(
