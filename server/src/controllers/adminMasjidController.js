@@ -78,6 +78,8 @@ const DB_SORT_COLUMNS = {
   status: "status",
 };
 
+const ENGAGEMENT_SORT_KEYS = new Set(["avgRating", "likeCount", "viewCount"]);
+
 const STATUS_LABELS = {
   draft: "Draft",
   submitted: "Submitted",
@@ -171,6 +173,20 @@ export const listAll = async (req, res) => {
         const av = nameById[a.userId] || "";
         const bv = nameById[b.userId] || "";
         const cmp = av.localeCompare(bv);
+        return dir === "ASC" ? cmp : -cmp;
+      });
+      count = all.length;
+      rows = all.slice(offset, offset + limit);
+    } else if (ENGAGEMENT_SORT_KEYS.has(sortBy)) {
+      // Rating/Likes/Views aren't columns on Masjid either — they're
+      // computed by masjidEngagementService from other tables — so the same
+      // fetch-all-then-sort-in-JS approach as ownerName above applies here.
+      const all = await Masjid.findAll({ where, order: [["createdAt", "DESC"]] });
+      const engagementMap = await getEngagementForMany(all.map((m) => m.id));
+      all.sort((a, b) => {
+        const av = engagementMap.get(a.id)?.[sortBy] || 0;
+        const bv = engagementMap.get(b.id)?.[sortBy] || 0;
+        const cmp = av - bv;
         return dir === "ASC" ? cmp : -cmp;
       });
       count = all.length;

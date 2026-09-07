@@ -203,9 +203,9 @@ function Masjids() {
                 <SortHeader label="Masjid" sortKey="name" activeKey={sortBy} direction={sortDir} onSort={toggleSort} />
                 <SortHeader label="Registered By" sortKey="ownerName" activeKey={sortBy} direction={sortDir} onSort={toggleSort} />
                 <SortHeader label="Location" sortKey="location" activeKey={sortBy} direction={sortDir} onSort={toggleSort} />
-                <th>Rating</th>
-                <th>Likes</th>
-                <th>Views</th>
+                <SortHeader label="Rating" sortKey="avgRating" activeKey={sortBy} direction={sortDir} onSort={toggleSort} />
+                <SortHeader label="Likes" sortKey="likeCount" activeKey={sortBy} direction={sortDir} onSort={toggleSort} />
+                <SortHeader label="Views" sortKey="viewCount" activeKey={sortBy} direction={sortDir} onSort={toggleSort} />
                 <SortHeader label="Registered" sortKey="createdAt" activeKey={sortBy} direction={sortDir} onSort={toggleSort} />
                 <SortHeader label="Status" sortKey="status" activeKey={sortBy} direction={sortDir} onSort={toggleSort} />
                 <th></th>
