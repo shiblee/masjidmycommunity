@@ -1018,7 +1018,11 @@ function MasjidReview() {
             </Section>
 
             <Section title="Location">
-              <Row label="Address" value={[masjid.address, masjid.area, masjid.city, masjid.district, masjid.state, masjid.country, masjid.postalCode].filter(Boolean).join(", ")} />
+              <Row label="Address" value={masjid.address} />
+              <Row label="City" value={masjid.city} />
+              <Row label="State / Province" value={masjid.state} />
+              <Row label="Country" value={masjid.country} />
+              <Row label="Postal / ZIP Code" value={masjid.postalCode} />
               {masjid.latitude != null && (
                 <Row label="Coordinates" value={`${Number(masjid.latitude).toFixed(6)}, ${Number(masjid.longitude).toFixed(6)}`} />
               )}

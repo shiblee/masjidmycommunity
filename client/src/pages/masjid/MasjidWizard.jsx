@@ -743,7 +743,11 @@ function MasjidSummary({ form, photos, contacts, onEdit }) {
         <div className="msj-summary-head"><h4>Basic Information</h4>{onEdit && <button type="button" onClick={() => onEdit(1)}>Edit</button>}</div>
         <p><strong>{form.name}</strong>{form.tagline && ` — ${form.tagline}`}</p>
         <p>{form.about}</p>
-        <p>{[form.address, form.area, form.city, form.district, form.state, form.country, form.postalCode].filter(Boolean).join(", ")}</p>
+        <p><strong>Address:</strong> {form.address || "—"}</p>
+        <p><strong>City:</strong> {form.city || "—"}</p>
+        <p><strong>State / Province:</strong> {form.state || "—"}</p>
+        <p><strong>Country:</strong> {form.country || "—"}</p>
+        <p><strong>Postal / ZIP Code:</strong> {form.postalCode || "—"}</p>
       </div>
       <div className="msj-summary-block">
         <div className="msj-summary-head"><h4>Contact &amp; Verification</h4>{onEdit && <button type="button" onClick={() => onEdit(2)}>Edit</button>}</div>
