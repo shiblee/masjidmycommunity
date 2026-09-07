@@ -22,11 +22,11 @@ function GreenTickBadge({ masjid, variant = "list", className = "" }) {
 
   if (!masjid?.isGreenTick) return null;
 
-  const iconSize = variant === "detail" ? 15 : 13;
+  const iconSize = variant === "detail" ? 14 : 10;
   const verbose = variant === "detail";
 
   return (
-    <span className={`msj-greentick-badge ${className}`} ref={ref}>
+    <span className={`msj-greentick-badge msj-greentick-badge-${variant} ${className}`} ref={ref}>
       <button
         type="button"
         className="msj-greentick-badge-trigger"
@@ -34,14 +34,14 @@ function GreenTickBadge({ masjid, variant = "list", className = "" }) {
         aria-label="Green Tick verified — view details"
         aria-expanded={open}
       >
-        <Icon name="shieldCheck" size={iconSize} />
-        {verbose && <span>Green Tick Verified</span>}
+        <span className="msj-greentick-badge-icon"><Icon name="check" size={iconSize} /></span>
+        {verbose && <span className="msj-greentick-badge-text">Green Tick Verified</span>}
       </button>
 
       {open && (
         <div className="msj-greentick-badge-popover" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
           <div className="msj-greentick-badge-popover-title">
-            <Icon name="shieldCheck" size={14} /> Green Tick Verified
+            <span className="msj-greentick-badge-icon"><Icon name="check" size={11} /></span> Green Tick Verified
           </div>
           <p>
             Masjid My Community has completed its defined verification process for this masjid and its

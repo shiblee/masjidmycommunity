@@ -29,10 +29,10 @@ const HEART_SVG =
   '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 21s-6.7-4.35-9.3-8.1C.8 10.1 1.4 6.8 4 5.2c2-1.2 4.4-.6 5.7 1 .7.8 1.4 1.8 2.3 1.8s1.6-1 2.3-1.8c1.3-1.6 3.7-2.2 5.7-1 2.6 1.6 3.2 4.9 1.3 7.7C18.7 16.65 12 21 12 21z"></path></svg>';
 const STAR_SVG_FILLED =
   '<svg width="11" height="11" viewBox="0 0 24 24" fill="#F5A623" stroke="none"><path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"></path></svg>';
-// Same path data as Icons.jsx's "shieldCheck" — a plain, non-interactive
-// mark here (this popup is raw HTML, not React).
+// Matches GreenTickBadge.jsx's own filled-checkmark-disc mark — a plain,
+// non-interactive version here since this popup is raw HTML, not React.
 const SHIELD_SVG =
-  '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z"></path><path d="M9 12l2 2 4-4"></path></svg>';
+  '<svg width="14" height="14" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#5E9A2C"></circle><path d="M7 12.5l3.3 3.3L17 8" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" fill="none"></path></svg>';
 
 function popupHtml(m) {
   const cover = m.coverPhotoUrl ? `${API_ORIGIN}${m.coverPhotoUrl}` : null;

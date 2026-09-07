@@ -3153,27 +3153,43 @@ footer{
 
 /* ===== Green Tick badge (used everywhere a masjid name appears) ===== */
 .msj-card-title-row{ display:flex; align-items:center; gap:6px; min-width:0; flex:1; flex-wrap:wrap; }
-.msj-greentick-badge{ position:relative; display:inline-flex; }
+.msj-greentick-badge{ position:relative; display:inline-flex; vertical-align:middle; }
 .msj-greentick-badge-trigger{
-  display:inline-flex; align-items:center; gap:5px; background:none; border:none; padding:0; margin:0;
-  color:var(--teal-deep); cursor:pointer; font-family:var(--sans); font-size:12.5px; font-weight:700; line-height:1;
+  display:inline-flex; align-items:center; gap:6px; background:none; border:none; padding:0; margin:0;
+  cursor:pointer; font-family:var(--sans); line-height:1;
 }
+/* The mark itself: a filled, gradient checkmark disc — the recognizable
+   "verified" language (Twitter/Instagram-style), not a bare outline icon,
+   so it actually reads as a badge at a glance next to a masjid's name. */
+.msj-greentick-badge-icon{
+  display:inline-flex; align-items:center; justify-content:center; flex-shrink:0;
+  width:16px; height:16px; border-radius:50%; color:#fff;
+  background:linear-gradient(135deg, #A3D65C 0%, var(--teal-deep) 100%);
+  box-shadow:0 1px 3px rgba(94,154,44,.45);
+  transition:transform .15s var(--ease);
+}
+.msj-greentick-badge-trigger:hover .msj-greentick-badge-icon{ transform:scale(1.14); }
+.msj-greentick-badge-text{ font-size:13px; font-weight:700; color:var(--teal-deep); white-space:nowrap; }
+
+.msj-greentick-badge-detail .msj-greentick-badge-icon{ width:24px; height:24px; box-shadow:0 2px 6px rgba(94,154,44,.5); }
+.msj-greentick-badge-detail .msj-greentick-badge-text{ font-size:14px; }
+
 .msj-greentick-badge-popover{
-  position:absolute; top:calc(100% + 8px); left:0; z-index:40; width:260px; background:#fff;
-  border:1px solid var(--line); border-radius:12px; padding:16px; box-shadow:0 14px 34px -14px rgba(11,31,30,.28);
+  position:absolute; top:calc(100% + 10px); left:0; z-index:40; width:270px; background:#fff;
+  border:1px solid var(--line); border-radius:14px; padding:18px; box-shadow:0 18px 38px -16px rgba(11,31,30,.32);
   text-align:left; cursor:default;
 }
 .msj-greentick-badge-popover-title{
-  display:flex; align-items:center; gap:7px; font-size:13.5px; font-weight:700; color:var(--teal-deep); margin-bottom:8px;
+  display:flex; align-items:center; gap:8px; font-size:14px; font-weight:700; color:var(--text-on-paper); margin-bottom:9px;
 }
-.msj-greentick-badge-popover p{ font-size:12px; color:var(--text-on-paper-dim); line-height:1.6; margin-bottom:10px; }
+.msj-greentick-badge-popover p{ font-size:12.5px; color:var(--text-on-paper-dim); line-height:1.6; margin-bottom:12px; }
 .msj-greentick-badge-popover-meta{
-  display:flex; flex-direction:column; gap:4px; font-size:12px; color:var(--text-on-paper-dim);
-  padding-top:10px; margin-bottom:10px; border-top:1px solid var(--line);
+  display:flex; flex-direction:column; gap:5px; font-size:12px; color:var(--text-on-paper-dim);
+  padding-top:12px; margin-bottom:12px; border-top:1px solid var(--line);
 }
 .msj-greentick-badge-popover-meta strong{ color:var(--text-on-paper); font-family:var(--mono); }
 .msj-greentick-badge-popover a{ font-size:12.5px; font-weight:700; color:var(--teal-deep); }
-.on-ink .msj-greentick-badge-trigger{ color:#fff; background:rgba(141,198,63,.28); padding:4px 10px; border-radius:100px; }
+.on-ink .msj-greentick-badge-text{ color:#fff; }
 .on-ink .msj-greentick-badge-popover{ color:var(--text-on-paper); }
 
 /* ===== Public Green Tick verification page ===== */
@@ -3303,7 +3319,7 @@ footer{
 .msj-map-popup-thumb{ width:100%; height:110px; object-fit:cover; border-radius:8px 8px 0 0; }
 .msj-map-popup-body{ padding:10px 2px 2px; }
 .msj-map-popup-body h4{ font-size:14px; color:var(--text-on-paper); margin-bottom:6px; }
-.msj-map-popup-greentick{ display:inline-flex; vertical-align:-2px; color:var(--teal-deep); margin-inline-start:4px; }
+.msj-map-popup-greentick{ display:inline-flex; vertical-align:-2px; margin-inline-start:4px; }
 .msj-map-popup-meta{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:6px; }
 .msj-map-popup-body p{ font-size:12.5px; color:var(--text-on-paper-dim); margin-bottom:8px; }
 .msj-map-popup-directions{
