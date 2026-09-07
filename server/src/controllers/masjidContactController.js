@@ -51,6 +51,22 @@ function requireEditable(masjid, res) {
   return true;
 }
 
+// An approved masjid's EXISTING contacts stay locked (they're already public,
+// per listPublicContacts below, so changing one without review would silently
+// alter public content) — but adding a brand-new office bearer is purely
+// additive and only goes public once its mobile is verified, so it's allowed
+// here too. This is what lets an approved masjid's Green Tick application add
+// a representative that isn't already a contact person.
+const ADDABLE_STATUSES = new Set([...EDITABLE_STATUSES, "approved"]);
+
+function requireAddable(masjid, res) {
+  if (!ADDABLE_STATUSES.has(masjid.status)) {
+    res.status(400).json({ message: "This masjid's contacts can't be edited while it's under review." });
+    return false;
+  }
+  return true;
+}
+
 export const list = async (req, res) => {
   try {
     const masjid = await findOwnedMasjid(req, res);
@@ -66,7 +82,7 @@ export const create = async (req, res) => {
   try {
     const masjid = await findOwnedMasjid(req, res);
     if (!masjid) return;
-    if (!requireEditable(masjid, res)) return;
+    if (!requireAddable(masjid, res)) return;
 
     const designationName = req.body.designation?.trim();
     const name = req.body.name?.trim();
@@ -177,7 +193,7 @@ export const sendOtp = async (req, res) => {
   try {
     const masjid = await findOwnedMasjid(req, res);
     if (!masjid) return;
-    if (!requireEditable(masjid, res)) return;
+    if (!requireAddable(masjid, res)) return;
     const contact = await findOwnedContact(req, res, masjid);
     if (!contact) return;
 
@@ -215,7 +231,7 @@ export const confirmOtp = async (req, res) => {
   try {
     const masjid = await findOwnedMasjid(req, res);
     if (!masjid) return;
-    if (!requireEditable(masjid, res)) return;
+    if (!requireAddable(masjid, res)) return;
     const contact = await findOwnedContact(req, res, masjid);
     if (!contact) return;
 

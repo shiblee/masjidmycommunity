@@ -11,6 +11,7 @@ import { Icon } from "../components/Icons.jsx";
 import { useTranslation } from "../i18n/LanguageContext.jsx";
 import RequireUserAuth from "../components/RequireUserAuth.jsx";
 import MasjidWizard from "./masjid/MasjidWizard.jsx";
+import GreenTickWizard from "./masjid/GreenTickWizard.jsx";
 import MasjidDeleteFlow from "../components/masjid/MasjidDeleteFlow.jsx";
 import ReportModal from "../components/ReportModal.jsx";
 import ImageViewer from "../components/ImageViewer.jsx";
@@ -283,10 +284,15 @@ function Community() {
   const navigate = useNavigate();
   const location = useLocation();
   const { id: idParam } = useParams();
+  // A masjid's Green Tick application is reached from its own wall-embedded
+  // page and must keep the exact same left/right sidebars — never its own
+  // standalone layout — so it's detected first and excluded from the plain
+  // masjid-wizard check below.
+  const showGreenTickWizard = location.pathname.startsWith("/account/my-masjids/") && location.pathname.endsWith("/green-tick") && !!idParam;
   // Matches both /account/my-masjids/new and /account/my-masjids/:id (same for
   // campaigns) — creating and editing a (draft) masjid/campaign share the
   // same embedded-in-the-wall experience.
-  const showMasjidWizard = location.pathname === "/account/my-masjids/new" || (location.pathname.startsWith("/account/my-masjids/") && !!idParam);
+  const showMasjidWizard = !showGreenTickWizard && (location.pathname === "/account/my-masjids/new" || (location.pathname.startsWith("/account/my-masjids/") && !!idParam));
   const showCampaignWizard = location.pathname === "/account/my-campaigns/new" || (location.pathname.startsWith("/account/my-campaigns/") && !!idParam);
   const [searchParams, setSearchParams] = useSearchParams();
   const filterParam = searchParams.get("filter");
@@ -296,7 +302,7 @@ function Community() {
   // Opening a wizard always means its own section — the sidebar should keep
   // showing the matching CTA/list regardless of whatever section query param
   // (if any) was active on the wall before navigating here.
-  const section = showMasjidWizard
+  const section = showMasjidWizard || showGreenTickWizard
     ? "masjid"
     : showCampaignWizard
     ? "campaign"
@@ -307,7 +313,7 @@ function Community() {
   const selectSection = (key) => {
     // A wizard occupies cw-main and pins the sidebar to its own section —
     // picking another section only makes sense back on the wall itself.
-    if (showMasjidWizard || showCampaignWizard) {
+    if (showMasjidWizard || showCampaignWizard || showGreenTickWizard) {
       const cfg = COMMUNITY_SECTIONS.find((s) => s.key === key);
       const next = new URLSearchParams();
       next.set("section", key);
@@ -602,6 +608,10 @@ function Community() {
               {showMasjidWizard ? (
                 <RequireUserAuth>
                   <MasjidWizard embedded />
+                </RequireUserAuth>
+              ) : showGreenTickWizard ? (
+                <RequireUserAuth>
+                  <GreenTickWizard embedded />
                 </RequireUserAuth>
               ) : showCampaignWizard ? (
                 <RequireUserAuth>

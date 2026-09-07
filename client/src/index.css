@@ -74,6 +74,7 @@ h1,h2,h3{ font-family:var(--sans); font-weight:450; line-height:1.05; letter-spa
 .section-head{ max-width:640px; margin-bottom:48px; }
 .msj-wizard-engagement{ margin-top:14px; }
 .section-head h2{ font-size:clamp(30px,3.6vw,46px); margin-top:14px; text-wrap:balance; }
+.msj-greentick-header-sub{ font-size:14.5px; color:var(--text-on-paper-dim); margin-top:6px; }
 .section-head p{ margin-top:16px; font-size:18px; line-height:1.6; color:var(--text-on-paper-dim); }
 .section-head.on-ink p{ color:var(--text-on-ink-dim); }
 .section-head.center{ margin-left:auto; margin-right:auto; text-align:center; }
@@ -2690,7 +2691,7 @@ footer{
 
 /* ===== Masjid Registration & Explore Masjids ===== */
 .py-md{ padding:76px 0; }
-.py-lg{ padding:96px 0; }
+.py-lg{ padding-block:96px; }
 .card{ background:#fff; border:1px solid var(--line); border-radius:16px; padding:28px; }
 
 .msj-page{ background:var(--paper); }
@@ -3068,7 +3069,7 @@ footer{
 .msj-greentick-cta > div:nth-child(2){ flex:1; }
 
 /* ===== Green Tick application wizard ===== */
-.msj-greentick-progress{ margin:20px 0 4px; }
+.msj-greentick-progress{ margin:4px 0; }
 .msj-greentick-progress-bar{ height:8px; border-radius:100px; background:var(--line); overflow:hidden; margin-bottom:8px; }
 .msj-greentick-progress-fill{ height:100%; background:var(--teal-deep); border-radius:100px; transition:width .3s var(--ease); }
 .msj-greentick-progress span{ font-size:13px; font-weight:700; color:var(--text-on-paper-dim); }
@@ -3113,6 +3114,23 @@ footer{
 .msj-greentick-checklist-row.done{ color:var(--text-on-paper); }
 .msj-greentick-checklist-row svg{ color:var(--text-on-paper-dim); flex-shrink:0; }
 .msj-greentick-checklist-row.done svg{ color:var(--teal-deep); }
+
+.msj-greentick-journey{ display:flex; flex-direction:column; }
+.msj-greentick-journey-row{ display:flex; align-items:flex-start; gap:14px; padding:16px 4px; border-bottom:1px solid var(--line); }
+.msj-greentick-journey-row:last-child{ border-bottom:none; }
+.msj-greentick-journey-marker{
+  width:26px; height:26px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center;
+  font-size:12px; font-weight:700; background:var(--paper-dim); color:var(--text-on-paper-dim); margin-top:1px;
+}
+.msj-greentick-journey-row.done .msj-greentick-journey-marker{ background:rgba(141,198,63,.16); color:var(--teal-deep); }
+.msj-greentick-journey-row.current .msj-greentick-journey-marker{ background:rgba(201,148,44,.16); color:#8a6d1a; }
+.msj-greentick-journey-body{ flex:1; min-width:0; display:flex; flex-direction:column; gap:3px; }
+.msj-greentick-journey-body strong{ font-size:14.5px; color:var(--text-on-paper); }
+.msj-greentick-journey-body span{ font-size:12.5px; color:var(--text-on-paper-dim); line-height:1.5; }
+.msj-greentick-journey-status{ flex-shrink:0; font-size:11px; font-weight:700; padding:4px 11px; border-radius:100px; white-space:nowrap; margin-top:2px; }
+.msj-greentick-journey-status.done{ background:rgba(141,198,63,.14); color:var(--teal-deep); }
+.msj-greentick-journey-status.current{ background:rgba(201,148,44,.14); color:#8a6d1a; }
+.msj-greentick-journey-status.upcoming{ background:var(--paper-dim); color:var(--text-on-paper-dim); }
 
 /* ===== Green Tick badge (used everywhere a masjid name appears) ===== */
 .msj-card-title-row{ display:flex; align-items:center; gap:6px; min-width:0; flex:1; flex-wrap:wrap; }

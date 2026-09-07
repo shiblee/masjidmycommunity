@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
+import axios from "axios";
 import { Icon } from "../../components/Icons.jsx";
 import masjidApi from "../../services/masjidApi.js";
+import { API_BASE } from "../../config.js";
 import { WizardShell, WizardStepper } from "../../components/wizard/WizardShell.jsx";
+import { ContactPersonForm } from "../../components/masjid/ContactPersonForm.jsx";
 
 const STEPS = [
-  { key: "info", label: "Masjid Information", icon: "mosque" },
   { key: "representatives", label: "Representatives", icon: "people" },
   { key: "identity", label: "Verify Identities", icon: "shieldCheck" },
   { key: "masjid-docs", label: "Masjid Documents", icon: "fileText" },
@@ -17,6 +19,22 @@ const STEPS = [
 const STATUS_LABEL = {
   pending: "Pending Review", approved: "Approved", rejected: "Rejected", replacement_requested: "Replacement Requested",
 };
+
+// The full journey, shown on the wizard's introductory overview screen — not
+// just the 6 form-filling steps above, but the whole path through to
+// certification, so an owner sees the complete picture (including what
+// happens after they submit) before starting. `checklistKeys` points at the
+// matching entries in the backend's own progress.checklist (the single
+// source of truth for "done"), so this never drifts out of sync with it.
+const JOURNEY_STAGES = [
+  { key: "representatives", label: "Add Representatives", desc: "Add at least 3 verified office bearers who can represent your masjid.", checklistKeys: ["representatives_added"] },
+  { key: "identity", label: "Verify Identities & Authorization", desc: "Each representative's identity document is reviewed, and their authority to represent the masjid is separately confirmed.", checklistKeys: ["identity_verified", "authorization_verified"] },
+  { key: "masjid-docs", label: "Masjid Documents", desc: "Upload your masjid's registration, trust/committee, or authorization documents.", checklistKeys: ["masjid_documents"] },
+  { key: "property-docs", label: "Property Documents", desc: "Upload property or land ownership documents relevant to the masjid.", checklistKeys: ["property_documents"] },
+  { key: "submitted", label: "Submit for Verification", desc: "Send your completed application to Masjid My Community for review.", checklistKeys: ["submitted"] },
+  { key: "reviewed", label: "Admin Review", desc: "Our team reviews every representative and document you've submitted.", checklistKeys: ["reviewed"] },
+  { key: "issued", label: "Green Tick Issued", desc: "Once everything checks out, your Green Tick is issued and shown publicly on your masjid's page.", checklistKeys: ["issued"] },
+];
 
 function DocRow({ doc, onDelete, editable, busy }) {
   return (
@@ -64,16 +82,24 @@ function DocUploader({ type, existing, onUpload, onDelete, editable, busy, repre
   );
 }
 
-function GreenTickWizard() {
+function GreenTickWizard({ embedded }) {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [step, setStep] = useState(1);
+  // Step 0 is the introductory journey overview — outside STEPS/the visible
+  // stepper, since it's not a form to fill in. 1..STEPS.length are the real
+  // form steps, same as before.
+  const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState(null);
   const [masjid, setMasjid] = useState(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [designations, setDesignations] = useState([]);
+  // Adding a brand-new representative (rather than picking an already
+  // verified contact) reuses the exact same name/designation/mobile + OTP
+  // form as the masjid's own Contact & Verification step.
+  const [addingNew, setAddingNew] = useState(false);
 
   const load = () => {
     masjidApi
@@ -87,6 +113,7 @@ function GreenTickWizard() {
     setLoading(true);
     load();
     masjidApi.get(`/${id}`).then(({ data }) => setMasjid(data.masjid)).catch(() => {});
+    axios.get(`${API_BASE}/masjids/public/contact-designations`).then(({ data }) => setDesignations(data.designations || [])).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
@@ -104,6 +131,14 @@ function GreenTickWizard() {
   };
 
   const addRepresentative = withBusy((contactPersonId) => masjidApi.post(`/${id}/green-tick/representatives`, { contactPersonId }));
+  const handleNewContactSaved = async (contact) => {
+    if (!contact.verified) {
+      setError("Please verify this person's mobile number before adding them as a representative.");
+      return;
+    }
+    setAddingNew(false);
+    await addRepresentative(contact.id);
+  };
   const removeRepresentative = withBusy((repId) => masjidApi.delete(`/${id}/green-tick/representatives/${repId}`));
   const deleteDocument = withBusy((docId) => masjidApi.delete(`/${id}/green-tick/documents/${docId}`));
   const uploadDocument = withBusy((file, { documentTypeId, representativeId, documentNumber }) => {
@@ -130,12 +165,12 @@ function GreenTickWizard() {
   };
 
   const goNext = () => setStep((s) => Math.min(s + 1, STEPS.length));
-  const goBack = () => setStep((s) => Math.max(s - 1, 1));
+  const goBack = () => setStep((s) => Math.max(s - 1, 0));
 
-  if (loading) return <WizardShell><p>Loading…</p></WizardShell>;
+  if (loading) return <WizardShell embedded={embedded}><p>Loading…</p></WizardShell>;
   if (!data) {
     return (
-      <WizardShell>
+      <WizardShell embedded={embedded}>
         <Link to={`/account/my-masjids/${id}`} className="msj-back-link"><Icon name="chevronLeft" size={16} /> Back</Link>
         <div className="auth-alert" style={{ marginTop: 20 }}><Icon name="info" size={17} />{error || "Couldn't load this application."}</div>
       </WizardShell>
@@ -150,7 +185,7 @@ function GreenTickWizard() {
   if (submitted || !data.editable) {
     const { application, progress } = data;
     return (
-      <WizardShell>
+      <WizardShell embedded={embedded}>
         <Link to={`/account/my-masjids/${id}`} className="msj-back-link"><Icon name="chevronLeft" size={16} /> Back to My Masjid</Link>
         <div className="msj-wizard-center">
           <div className="msj-confirm">
@@ -174,14 +209,39 @@ function GreenTickWizard() {
   const representativeDocTypes = documentTypes.filter((t) => t.category === "representative");
   const docsFor = (typeId, repId = null) => documents.filter((d) => d.documentTypeId === typeId && d.representativeId === repId);
 
+  const checklistDone = Object.fromEntries(progress.checklist.map((c) => [c.key, c.done]));
+  const journeyDone = JOURNEY_STAGES.map((s) => s.checklistKeys.every((k) => checklistDone[k]));
+  const journeyCurrentIndex = journeyDone.findIndex((done) => !done);
+
+  // The Representatives step (1) is the one place a user can click Next
+  // without actually meeting the requirement yet — every other step just
+  // collects optional/required documents with nothing to gate here. Blocking
+  // it with a clear message beats silently advancing to a step that then
+  // looks broken, or silently doing nothing.
+  const handleNext = () => {
+    if (step === 1 && !checklistDone.representatives_added) {
+      setError("Please add at least 3 representatives before continuing.");
+      return;
+    }
+    setError("");
+    goNext();
+  };
+
   return (
-    <WizardShell>
+    <WizardShell embedded={embedded}>
       <Link to={`/account/my-masjids/${id}`} className="msj-back-link"><Icon name="chevronLeft" size={16} /> Back to My Masjid</Link>
 
       <div className="msj-wizard-center">
-        <div className="section-head" style={{ marginTop: 16, maxWidth: "none" }}>
+        <div className="section-head" style={{ marginTop: 16, marginBottom: 20, maxWidth: "none" }}>
           <span className="eyebrow">Green Tick Application</span>
           <h2>{masjid?.name || "Apply for the Green Tick"}</h2>
+          {masjid && (
+            <p className="msj-greentick-header-sub">
+              {[masjid.category, [masjid.address, masjid.city, masjid.state, masjid.country].filter(Boolean).join(", ")]
+                .filter(Boolean)
+                .join(" · ")}
+            </p>
+          )}
         </div>
 
         <div className="msj-greentick-progress">
@@ -189,32 +249,51 @@ function GreenTickWizard() {
           <span>Verification Progress: {progress.completed} of {progress.total} requirements completed</span>
         </div>
 
-        <WizardStepper steps={STEPS} current={step} />
-        <p className="msj-stepper-current">Step {step} of {STEPS.length} — {STEPS[step - 1].label}</p>
+        {step > 0 && (
+          <>
+            <WizardStepper steps={STEPS} current={step} />
+            <p className="msj-stepper-current">Step {step} of {STEPS.length} — {STEPS[step - 1].label}</p>
+          </>
+        )}
 
         {error && <div className="auth-alert" style={{ marginBottom: 20 }}><Icon name="info" size={17} />{error}</div>}
 
         <div className="card msj-step-card msj-step-card-wide">
-          {step === 1 && masjid && (
+          {step === 0 && (
             <>
-              <h3>Masjid Information</h3>
-              <p className="msj-greentick-info-row"><strong>Name:</strong> {masjid.name}</p>
-              <p className="msj-greentick-info-row"><strong>Category:</strong> {masjid.category || "—"}</p>
-              <p className="msj-greentick-info-row"><strong>Address:</strong> {[masjid.address, masjid.city, masjid.state, masjid.country].filter(Boolean).join(", ")}</p>
-              <p className="msj-greentick-info-row"><strong>Tagline:</strong> {masjid.tagline || "—"}</p>
-              <p className="amx-panel-sub" style={{ marginTop: 16 }}>
-                This is the information Masjid My Community already has on file for your masjid. If anything here is
-                incorrect, update it from your masjid's registration page before continuing.
+              <h3>Your Green Tick Verification Journey</h3>
+              <p className="amx-panel-sub" style={{ marginBottom: 20 }}>
+                Here's the complete process from start to certification, and exactly where your application stands
+                right now. Complete each requirement, then submit for review.
               </p>
+              <div className="msj-greentick-journey">
+                {JOURNEY_STAGES.map((s, i) => {
+                  const done = journeyDone[i];
+                  const isCurrent = !done && i === journeyCurrentIndex;
+                  const state = done ? "done" : isCurrent ? "current" : "upcoming";
+                  return (
+                    <div key={s.key} className={`msj-greentick-journey-row ${state}`}>
+                      <span className="msj-greentick-journey-marker">{done ? <Icon name="check" size={14} /> : i + 1}</span>
+                      <div className="msj-greentick-journey-body">
+                        <strong>{s.label}</strong>
+                        <span>{s.desc}</span>
+                      </div>
+                      <span className={`msj-greentick-journey-status ${state}`}>
+                        {done ? "Done" : isCurrent ? "Up Next" : "Pending"}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
             </>
           )}
 
-          {step === 2 && (
+          {step === 1 && (
             <>
               <h3>Add Representatives</h3>
               <p className="amx-panel-sub" style={{ marginBottom: 16 }}>
-                At least 3 verified office bearers must be added as representatives. Only contact people whose mobile
-                number is already verified can be added — verify them first from Contact &amp; Verification if needed.
+                At least 3 verified office bearers must be added as representatives — pick from your masjid's already
+                verified contacts, or add someone new below (their mobile number will need to be verified first).
               </p>
               {representatives.length > 0 && (
                 <div className="msj-greentick-rep-list">
@@ -249,16 +328,24 @@ function GreenTickWizard() {
                   ))}
                 </div>
               )}
-              {editable && eligibleContacts.length === 0 && representatives.length < 3 && (
-                <p className="amx-panel-sub">
-                  No more verified contacts available. Add and verify more office bearers from Contact &amp;
-                  Verification, then come back here.
-                </p>
+              {editable && !addingNew && (
+                <button type="button" className="btn btn-outline-ink" onClick={() => setAddingNew(true)} style={{ marginTop: 8 }}>
+                  <Icon name="plus" size={15} /> Add Someone Else
+                </button>
+              )}
+              {editable && addingNew && (
+                <ContactPersonForm
+                  masjidId={id}
+                  designations={designations}
+                  onCancel={() => setAddingNew(false)}
+                  onSaved={handleNewContactSaved}
+                  onRemoved={() => setAddingNew(false)}
+                />
               )}
             </>
           )}
 
-          {step === 3 && (
+          {step === 2 && (
             <>
               <h3>Verify Representative Identities</h3>
               <p className="amx-panel-sub" style={{ marginBottom: 16 }}>Upload an identity document for each representative — Masjid My Community will review it.</p>
@@ -283,7 +370,7 @@ function GreenTickWizard() {
             </>
           )}
 
-          {step === 4 && (
+          {step === 3 && (
             <>
               <h3>Upload Masjid Documents</h3>
               <p className="amx-panel-sub" style={{ marginBottom: 16 }}>Registration, trust/committee, and authorization documents for the masjid itself.</p>
@@ -293,7 +380,7 @@ function GreenTickWizard() {
             </>
           )}
 
-          {step === 5 && (
+          {step === 4 && (
             <>
               <h3>Upload Property/Supporting Documents</h3>
               <p className="amx-panel-sub" style={{ marginBottom: 16 }}>Property or land ownership documents relevant to the masjid.</p>
@@ -303,7 +390,7 @@ function GreenTickWizard() {
             </>
           )}
 
-          {step === 6 && (
+          {step === 5 && (
             <>
               <h3>Review Application</h3>
               <div className="msj-greentick-checklist">
@@ -332,8 +419,14 @@ function GreenTickWizard() {
         </div>
 
         <div className="msj-step-actions">
-          <div>{step > 1 && <button className="btn btn-outline-ink" onClick={goBack} type="button"><Icon name="chevronLeft" size={16} /> Back</button>}</div>
-          <div>{step < STEPS.length && <button className="btn btn-gold" onClick={goNext} type="button">Next <span className="btn-arrow">→</span></button>}</div>
+          <div>{step > 0 && <button className="btn btn-outline-ink" onClick={goBack} type="button"><Icon name="chevronLeft" size={16} /> Back</button>}</div>
+          <div>
+            {step < STEPS.length && (
+              <button className="btn btn-gold" onClick={handleNext} type="button">
+                {step === 0 ? "Get Started" : "Next"} <span className="btn-arrow">→</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </WizardShell>
