@@ -247,16 +247,6 @@ function MasjidProfile() {
             </div>
 
             <div className="card msj-hub-snapshot">
-              <h3>Quick Actions</h3>
-              <div className="msj-hub-quick-actions">
-                <button type="button" onClick={toggleFavorite} disabled={favBusy}><Icon name="heart" size={15} /> {favorited ? "Unlike" : "Like"}</button>
-                {dirUrl && <a href={dirUrl} target="_blank" rel="noopener noreferrer"><Icon name="compass" size={15} /> Get Directions</a>}
-                <button type="button" onClick={handleShare}><Icon name="link" size={15} /> {shareLabel}</button>
-                {loggedIn && <button type="button" onClick={() => setShowSuggest(true)}><Icon name="edit" size={15} /> Suggest a Correction</button>}
-              </div>
-            </div>
-
-            <div className="card msj-hub-snapshot">
               <h3>Grow the Community</h3>
               <div className="msj-hub-quick-actions">
                 <Link to="/account/my-masjids/new"><Icon name="plus" size={15} /> Add a Masjid</Link>
