@@ -3664,6 +3664,7 @@ footer{
 }
 .msj-modal{
   position:relative; background:#fff; border-radius:16px; padding:32px; width:100%; max-width:420px;
+  max-height:calc(100vh - 40px); overflow-y:auto;
   box-shadow:0 40px 80px -30px rgba(11,31,30,.4);
 }
 .msj-modal-wide{ max-width:640px; }
