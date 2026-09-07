@@ -42,10 +42,13 @@ jobs:
           set -e
           CONF=/etc/nginx/sites-available/masjidmycommunity
           BACKUP="${CONF}.bak-$(date +%Y%m%d%H%M%S)"
-          SUDO=""
-          if [ ! -w "$CONF" ]; then SUDO="sudo"; fi
 
-          $SUDO cp "$CONF" "$BACKUP"
+          # /etc/nginx/sites-available/ is root-owned (drwxr-xr-x) — creating
+          # the backup (a new file) needs sudo even though the config file
+          # itself is owner-writable by this user. Confirmed passwordless
+          # (sudo -n true) via the separate nginx-diag.yml workflow first;
+          # using sudo unconditionally throughout for consistency.
+          sudo cp "$CONF" "$BACKUP"
           echo "Backed up current config to $BACKUP"
 
           if grep -q "location = /sitemap.xml" "$CONF"; then
@@ -59,19 +62,19 @@ jobs:
               }
               { print }
             ' "$CONF" > /tmp/masjidmycommunity.new
-            $SUDO cp /tmp/masjidmycommunity.new "$CONF"
+            sudo cp /tmp/masjidmycommunity.new "$CONF"
             rm -f /tmp/masjidmycommunity.new
             echo "Inserted new location blocks."
           fi
 
           echo "===== nginx -t ====="
-          if $SUDO nginx -t; then
+          if sudo nginx -t; then
             echo "Syntax OK -- reloading nginx."
-            $SUDO systemctl reload nginx || $SUDO nginx -s reload
+            sudo systemctl reload nginx
             echo "Reloaded successfully."
           else
             echo "SYNTAX ERROR -- restoring backup, NOT reloading."
-            $SUDO cp "$BACKUP" "$CONF"
+            sudo cp "$BACKUP" "$CONF"
             exit 1
           fi
           SCRIPT
