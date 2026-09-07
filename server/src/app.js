@@ -63,6 +63,7 @@ import publicSuccessStoryRoutes from "./routes/publicSuccessStoryRoutes.js";
 import adminSuccessStoryRoutes from "./routes/adminSuccessStoryRoutes.js";
 import publicSitemapRoutes from "./routes/publicSitemapRoutes.js";
 import publicUserRoutes from "./routes/publicUserRoutes.js";
+import { renderMasjidSharePage } from "./controllers/publicShareMetaController.js";
 
 const app = express();
 
@@ -97,6 +98,12 @@ app.get("/", (req, res) => {
 // this server, add one more proxy rule for /sitemap.xml so it reaches here
 // instead of falling through to the SPA.
 app.use("/sitemap.xml", publicSitemapRoutes);
+
+// Same "needs one more Nginx proxy rule to actually be reached" situation as
+// /sitemap.xml above — see publicShareMetaController.js for what this does
+// and why (per-masjid Open Graph tags for link previews on WhatsApp/
+// Facebook/etc, which currently all show the same generic site-wide image).
+app.get("/masjid/:id", renderMasjidSharePage);
 
 app.use("/api/users/public", publicUserRoutes);
 app.use("/api/users", userRoutes);
