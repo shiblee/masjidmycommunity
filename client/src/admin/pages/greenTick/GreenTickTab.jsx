@@ -111,16 +111,55 @@ function DocumentViewerModal({ doc, blobUrl, onClose, onDownload }) {
   );
 }
 
-function DocumentCard({ doc, typeName, onDecide, onOpenViewer }) {
+// Fetches and shows the actual uploaded image as a real thumbnail — an
+// admin reviewing documents needs to see the document, not just its
+// (often meaningless, camera-generated) filename. Only images get a live
+// preview; PDFs/DOC/DOCX fall back to a plain type icon since there's no
+// cheap way to rasterize those client-side.
+function DocumentThumb({ doc, masjidId, onOpenViewer }) {
+  const [src, setSrc] = useState(null);
+  const isImage = doc.mimeType?.startsWith("image/");
+
+  useEffect(() => {
+    if (!isImage) return;
+    let active = true;
+    let objectUrl;
+    adminApi
+      .get(`/masjids/${masjidId}/green-tick/documents/${doc.id}/file`, { responseType: "blob" })
+      .then((res) => {
+        if (!active) return;
+        objectUrl = window.URL.createObjectURL(res.data);
+        setSrc(objectUrl);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+      if (objectUrl) window.URL.revokeObjectURL(objectUrl);
+    };
+  }, [doc.id, doc.mimeType, isImage, masjidId]);
+
+  return (
+    <button type="button" className="amx-doc-preview" onClick={() => onOpenViewer(doc)} aria-label={`View ${doc.fileName}`}>
+      {isImage && src ? (
+        <img src={src} alt={doc.fileName} />
+      ) : (
+        <div className="amx-doc-icon">
+          <Icon name={docIconFor(doc.mimeType)} size={22} />
+        </div>
+      )}
+    </button>
+  );
+}
+
+function DocumentCard({ doc, typeName, masjidId, onDecide, onOpenViewer }) {
   return (
     <div className="amx-doc-card">
+      <DocumentThumb doc={doc} masjidId={masjidId} onOpenViewer={onOpenViewer} />
+
       <div className="amx-doc-card-top">
-        <div className="amx-doc-icon" style={{ background: "var(--a-bg)", color: "var(--a-navy-soft)" }}>
-          <Icon name={docIconFor(doc.mimeType)} size={18} />
-        </div>
         <div className="amx-doc-card-title">
-          <button type="button" onClick={() => onOpenViewer(doc)}>{doc.fileName}</button>
-          <div className="amx-doc-card-type">{typeName}</div>
+          <strong>{typeName}</strong>
+          <span className="amx-doc-card-filename">{doc.fileName}</span>
         </div>
         <StatusBadge status={DOC_STATUS_BADGE_CLASS[doc.status] || "neutral"} label={DOC_STATUS_LABEL[doc.status] || doc.status} />
       </div>
@@ -148,7 +187,7 @@ function DocumentCard({ doc, typeName, onDecide, onOpenViewer }) {
   );
 }
 
-function DocGrid({ title, docs, documentTypes, onDecide, onOpenViewer }) {
+function DocGrid({ title, docs, documentTypes, masjidId, onDecide, onOpenViewer }) {
   const typeName = (id) => documentTypes.find((t) => t.id === id)?.name || "Document";
   return (
     <>
@@ -158,7 +197,7 @@ function DocGrid({ title, docs, documentTypes, onDecide, onOpenViewer }) {
       ) : (
         <div className="amx-doc-grid">
           {docs.map((d) => (
-            <DocumentCard key={d.id} doc={d} typeName={typeName(d.documentTypeId)} onDecide={onDecide} onOpenViewer={onOpenViewer} />
+            <DocumentCard key={d.id} doc={d} typeName={typeName(d.documentTypeId)} masjidId={masjidId} onDecide={onDecide} onOpenViewer={onOpenViewer} />
           ))}
         </div>
       )}
@@ -371,7 +410,7 @@ function GreenTickTab({ masjidId, showToast }) {
                   </div>
                 </div>
                 {r.reviewerRemarks && <div className="amx-rep-remark">"{r.reviewerRemarks}"</div>}
-                <DocGrid docs={repDocs} documentTypes={documentTypes} onDecide={openDocDecision} onOpenViewer={openViewer} />
+                <DocGrid docs={repDocs} documentTypes={documentTypes} masjidId={masjidId} onDecide={openDocDecision} onOpenViewer={openViewer} />
               </div>
             );
           })
@@ -379,10 +418,10 @@ function GreenTickTab({ masjidId, showToast }) {
       </div>
 
       <div className="amx-card amx-panel" style={{ marginBottom: 20 }}>
-        <DocGrid title="Masjid Documents" docs={masjidDocs} documentTypes={documentTypes} onDecide={openDocDecision} onOpenViewer={openViewer} />
+        <DocGrid title="Masjid Documents" docs={masjidDocs} documentTypes={documentTypes} masjidId={masjidId} onDecide={openDocDecision} onOpenViewer={openViewer} />
       </div>
       <div className="amx-card amx-panel" style={{ marginBottom: 20 }}>
-        <DocGrid title="Property Verification" docs={propertyDocs} documentTypes={documentTypes} onDecide={openDocDecision} onOpenViewer={openViewer} />
+        <DocGrid title="Property Verification" docs={propertyDocs} documentTypes={documentTypes} masjidId={masjidId} onDecide={openDocDecision} onOpenViewer={openViewer} />
       </div>
 
       <div className="amx-card amx-panel">
