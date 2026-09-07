@@ -231,6 +231,9 @@ function Navbar() {
                     <Link to="/account/my-masjids" onClick={() => setMenuOpen(false)}>
                       {t("nav.myMasjids", "My Masjids")}
                     </Link>
+                    <Link to="/account/liked-masjids" onClick={() => setMenuOpen(false)}>
+                      {t("nav.likedMasjids", "Liked Masjids")}
+                    </Link>
                     <Link to="/account/my-campaigns" onClick={() => setMenuOpen(false)}>
                       {t("nav.myCampaigns", "My Campaigns")}
                     </Link>
@@ -279,6 +282,11 @@ function Navbar() {
         {user && (
           <Link to="/account/my-masjids" onClick={() => setOpen(false)}>
             {t("nav.myMasjids", "My Masjids")}
+          </Link>
+        )}
+        {user && (
+          <Link to="/account/liked-masjids" onClick={() => setOpen(false)}>
+            {t("nav.likedMasjids", "Liked Masjids")}
           </Link>
         )}
         {user && (

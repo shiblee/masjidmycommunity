@@ -19,6 +19,7 @@ const DEFAULTS = [
   ["nav", "nav.markAllRead", "Mark all as read", "सभी को पढ़ा हुआ चिह्नित करें", "سب کو پڑھا ہوا نشان زد کریں", "تحديد الكل كمقروء"],
   ["nav", "nav.noNotifications", "You're all caught up — no notifications yet.", "आप पूरी तरह अपडेट हैं — अभी कोई सूचना नहीं है।", "آپ بالکل اپ ٹو ڈیٹ ہیں — ابھی تک کوئی اطلاع نہیں۔", "أنت على اطلاع كامل — لا توجد إشعارات بعد."],
   ["nav", "nav.myMasjids", "My Masjids", "मेरी मस्जिदें", "میری مساجد", "مساجدي"],
+  ["nav", "nav.likedMasjids", "Liked Masjids", "पसंदीदा मस्जिदें", "پسندیدہ مساجد", "المساجد المفضلة"],
   ["nav", "nav.myCampaigns", "My Campaigns", "मेरे अभियान", "میری مہمات", "حملاتي"],
   ["nav", "nav.editProfile", "Edit Profile", "प्रोफ़ाइल संपादित करें", "پروفائل میں ترمیم کریں", "تعديل الملف الشخصي"],
   ["nav", "nav.logOut", "Log Out", "लॉग आउट करें", "لاگ آؤٹ کریں", "تسجيل الخروج"],

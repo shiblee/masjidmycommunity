@@ -9,6 +9,8 @@ import MediaThumb from "../../components/MediaThumb.jsx";
 import { API_ORIGIN } from "../../config.js";
 import { loadClusterPlugin } from "../../utils/loadMarkerCluster.js";
 import { STATUS_LABEL, locationOf, EDITABLE } from "./myMasjidsShared.jsx";
+import EngagementRow from "../../components/masjid/EngagementRow.jsx";
+import { formatCompactNumber } from "../../utils/formatCompactNumber.js";
 
 const DEFAULT_CENTER = [20.5937, 78.9629];
 const DEFAULT_ZOOM = 4;
@@ -20,8 +22,23 @@ const pinIcon = L.divIcon({
   iconAnchor: [11, 25],
 });
 
+// Same shapes as Icons.jsx's "heart" and the star used elsewhere — hand-
+// embedded because this popup is raw HTML (a Leaflet popup, outside React).
+const HEART_SVG =
+  '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 21s-6.7-4.35-9.3-8.1C.8 10.1 1.4 6.8 4 5.2c2-1.2 4.4-.6 5.7 1 .7.8 1.4 1.8 2.3 1.8s1.6-1 2.3-1.8c1.3-1.6 3.7-2.2 5.7-1 2.6 1.6 3.2 4.9 1.3 7.7C18.7 16.65 12 21 12 21z"></path></svg>';
+const STAR_SVG_FILLED =
+  '<svg width="11" height="11" viewBox="0 0 24 24" fill="#F5A623" stroke="none"><path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"></path></svg>';
+
 function popupHtml(m) {
   const cover = m.coverPhotoUrl ? `${API_ORIGIN}${m.coverPhotoUrl}` : null;
+  const engagementParts = [];
+  if (m.status === "approved") {
+    if (m.likeCount) engagementParts.push(`${HEART_SVG} ${formatCompactNumber(m.likeCount)}`);
+    if (m.reviewCount) engagementParts.push(`${STAR_SVG_FILLED} ${Number(m.avgRating).toFixed(1)}`);
+  }
+  const engagementHtml = engagementParts.length
+    ? `<p class="msj-map-popup-engagement">${engagementParts.join('<span class="msj-map-popup-engagement-dot">·</span>')}</p>`
+    : "";
   return `
     <div class="msj-map-popup">
       ${cover ? `<img src="${cover}" alt="" class="msj-map-popup-thumb" />` : ""}
@@ -32,6 +49,7 @@ function popupHtml(m) {
           <span class="acct-status-pill ${m.status}">${STATUS_LABEL[m.status]}</span>
         </div>
         <p>${locationOf(m)}</p>
+        ${engagementHtml}
         <a href="/account/my-masjids/${m.id}">${EDITABLE.has(m.status) ? "Edit" : "View Details"} →</a>
       </div>
     </div>
@@ -133,6 +151,7 @@ function MyMasjidsMap({ masjids, selectedId, onSelect }) {
               <p><Icon name="mapPin" size={12} /> {locationOf(m)}</p>
               <span className={`acct-status-pill ${m.status}`}>{STATUS_LABEL[m.status]}</span>
               {(m.latitude == null || m.longitude == null) && <span className="msj-explore-map-item-flag">Not mapped yet</span>}
+              {m.status === "approved" && <EngagementRow masjid={m} variant="map" />}
             </div>
             <Link to={`/account/my-masjids/${m.id}`} onClick={(e) => e.stopPropagation()} className="msj-explore-map-item-link">
               {EDITABLE.has(m.status) ? "Edit" : "View Details"}

@@ -23,6 +23,7 @@ import AccountRedirect from "./components/AccountRedirect.jsx";
 import ExploreMasjids from "./pages/ExploreMasjids.jsx";
 import MasjidProfile from "./pages/MasjidProfile.jsx";
 import MyMasjids from "./pages/masjid/MyMasjids.jsx";
+import LikedMasjids from "./pages/masjid/LikedMasjids.jsx";
 import MyCampaigns from "./pages/campaign/MyCampaigns.jsx";
 import CampaignProfile from "./pages/CampaignProfile.jsx";
 import RequireUserAuth from "./components/RequireUserAuth.jsx";
@@ -105,6 +106,14 @@ function App() {
           />
           <Route path="/account/my-masjids/new" element={<Community />} />
           <Route path="/account/my-masjids/:id" element={<Community />} />
+          <Route
+            path="/account/liked-masjids"
+            element={
+              <RequireUserAuth>
+                <LikedMasjids />
+              </RequireUserAuth>
+            }
+          />
           <Route
             path="/account/my-campaigns"
             element={

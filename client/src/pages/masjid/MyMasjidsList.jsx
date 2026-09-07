@@ -7,6 +7,7 @@ import {
   STATUS_LABEL, locationOf, MasjidActions, MediaCountBadge, CampaignsLink,
   VerifiedTick, ActiveCampaignBadge, excerpt,
 } from "./myMasjidsShared.jsx";
+import EngagementRow from "../../components/masjid/EngagementRow.jsx";
 
 function MyMasjidsList({ masjids, onDelete, onViewOnMap }) {
   return (
@@ -31,6 +32,7 @@ function MyMasjidsList({ masjids, onDelete, onViewOnMap }) {
               <span>Registered {formatDate(m.createdAt)}</span>
               <CampaignsLink m={m} />
               <ActiveCampaignBadge m={m} />
+              {m.status === "approved" && <EngagementRow masjid={m} variant="list" />}
             </div>
           </div>
           <div className="msj-explore-row-actions-col">

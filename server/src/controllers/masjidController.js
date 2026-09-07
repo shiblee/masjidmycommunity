@@ -13,6 +13,7 @@ import { sendMasjidSubmittedAdminEmail, sendMasjidSubmittedUserEmail } from "../
 import { mediaTypeOf, IMAGE_MAX_BYTES } from "../middleware/upload.js";
 import { firstRestrictedField, RESTRICTED_CONTENT_MESSAGE } from "../utils/contentModeration.js";
 import { classifyContent } from "../services/aiProviderService.js";
+import { getEngagementFor, getEngagementForMany } from "../services/masjidEngagementService.js";
 
 // Second-layer contextual check (Layer 2 of the Common Content Moderation
 // Engine) — run only on fields the rule-based filter above did NOT already
@@ -54,13 +55,15 @@ async function findOwnedMasjid(req, res) {
 }
 
 async function serializeMasjid(masjid) {
-  const [photos, donationAccount, contacts] = await Promise.all([
+  const [photos, donationAccount, contacts, engagement] = await Promise.all([
     MasjidPhoto.findAll({ where: { masjidId: masjid.id }, order: [["sortOrder", "ASC"]] }),
     MasjidDonationAccount.findOne({ where: { masjidId: masjid.id } }),
     MasjidContactPerson.findAll({ where: { masjidId: masjid.id }, order: [["sortOrder", "ASC"]] }),
+    getEngagementFor(masjid.id),
   ]);
   return {
     ...masjid.toJSON(),
+    ...engagement,
     photos,
     donationAccount: donationAccount ? maskDonationAccount(donationAccount) : null,
     contacts: contacts.map((c) => ({ ...c.toJSON(), otpCode: undefined })),
@@ -83,6 +86,7 @@ export const listMine = async (req, res) => {
       where: { userId: req.user.id, status: { [Op.ne]: "deleted" } },
       order: [["createdAt", "DESC"]],
     });
+    const engagementMap = await getEngagementForMany(masjids.map((m) => m.id));
     const withCounts = await Promise.all(
       masjids.map(async (m) => {
         const [coverPhoto, campaignCount, activeCampaignCount, mediaCounts, imam] = await Promise.all([
@@ -108,6 +112,7 @@ export const listMine = async (req, res) => {
           photoCount,
           videoCount,
           imamName: imam?.name || null,
+          ...(engagementMap.get(m.id) || { likeCount: 0, avgRating: 0, reviewCount: 0, likedByMe: false }),
         };
       })
     );

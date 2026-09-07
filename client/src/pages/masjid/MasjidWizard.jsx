@@ -9,6 +9,7 @@ import LocationMap from "../../components/LocationMap.jsx";
 import MediaThumb from "../../components/MediaThumb.jsx";
 import MicButton from "../../components/MicButton.jsx";
 import PrayerRosterSection from "./PrayerRosterSection.jsx";
+import EngagementRow from "../../components/masjid/EngagementRow.jsx";
 
 // Must match server/src/utils/contentModeration.js's RESTRICTED_CONTENT_MESSAGE
 // exactly — used to tell "this field is currently flagged" apart from any
@@ -488,6 +489,7 @@ function MasjidWizard({ embedded = false }) {
   const [masjidId, setMasjidId] = useState(id || null);
   const [status, setStatus] = useState("draft");
   const [adminFeedback, setAdminFeedback] = useState(null);
+  const [engagement, setEngagement] = useState(null);
   const [form, setForm] = useState(emptyForm());
   const [categories, setCategories] = useState([]);
   const [designations, setDesignations] = useState([]);
@@ -574,6 +576,7 @@ function MasjidWizard({ embedded = false }) {
         setMasjidId(m.id);
         setStatus(m.status);
         setAdminFeedback(m.adminFeedback);
+        setEngagement({ id: m.id, likeCount: m.likeCount, likedByMe: m.likedByMe, avgRating: m.avgRating, reviewCount: m.reviewCount });
         setForm({
           name: m.name || "", tagline: m.tagline || "", about: m.about || "", category: m.category || "",
           address: m.address || "", area: m.area || "", city: m.city || "", district: m.district || "", state: m.state || "", country: m.country || "",
@@ -789,6 +792,9 @@ function MasjidWizard({ embedded = false }) {
               <span className={`acct-status-pill ${status}`}>{STATUS_LABEL[status]}</span>
             </div>
             <h2>Registration Details</h2>
+            {status === "approved" && engagement && (
+              <EngagementRow masjid={engagement} variant="detail" className="msj-wizard-engagement" />
+            )}
           </div>
           {adminFeedback && (
             <div className="msj-feedback-banner">

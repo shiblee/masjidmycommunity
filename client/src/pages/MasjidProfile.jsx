@@ -12,6 +12,8 @@ import NearbyMasjidPanel from "./masjidHub/NearbyMasjidPanel.jsx";
 import ReviewsTab from "./masjidHub/ReviewsTab.jsx";
 import CommunityWallTab from "./masjidHub/CommunityWallTab.jsx";
 import PrayerTimesTab from "./masjidHub/PrayerTimesTab.jsx";
+import PeopleWhoLikedTab from "./masjidHub/PeopleWhoLikedTab.jsx";
+import { useMasjidLike } from "../hooks/useMasjidLike.js";
 
 const API = `${API_BASE}/masjids/public`;
 
@@ -73,8 +75,10 @@ function MasjidProfile() {
   const [notFound, setNotFound] = useState(false);
   const tab = TAB_KEYS.has(tabParam) ? tabParam : DEFAULT_TAB;
   const setTab = (key) => navigate(`/masjid/${id}/${key}`);
-  const [favorited, setFavorited] = useState(false);
-  const [favBusy, setFavBusy] = useState(false);
+  const { liked: favorited, likeCount, toggle: toggleLike, busy: favBusy } = useMasjidLike(id, {
+    liked: !!masjid?.likedByMe,
+    likeCount: masjid?.likeCount || 0,
+  });
   const [shareLabel, setShareLabel] = useState("Share");
   const [showSuggest, setShowSuggest] = useState(false);
   const [suggestSent, setSuggestSent] = useState(false);
@@ -92,33 +96,9 @@ function MasjidProfile() {
 
   useEffect(() => { load(); }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => {
-    if (!loggedIn) return;
-    const token = getUserToken();
-    axios.get(`${API}/${id}/favorite`, { headers: { Authorization: `Bearer ${token}` } })
-      .then(({ data }) => setFavorited(data.favorited))
-      .catch(() => {});
-  }, [id, loggedIn]);
-
   const toggleFavorite = async () => {
-    if (!loggedIn) { navigate("/auth"); return; }
-    setFavBusy(true);
-    const token = getUserToken();
-    try {
-      if (favorited) {
-        await axios.delete(`${API}/${id}/favorite`, { headers: { Authorization: `Bearer ${token}` } });
-        setFavorited(false);
-        setMasjid((m) => ({ ...m, likeCount: Math.max(0, m.likeCount - 1) }));
-      } else {
-        await axios.post(`${API}/${id}/favorite`, {}, { headers: { Authorization: `Bearer ${token}` } });
-        setFavorited(true);
-        setMasjid((m) => ({ ...m, likeCount: m.likeCount + 1 }));
-      }
-    } catch {
-      // no-op — button state simply won't change, safe to retry
-    } finally {
-      setFavBusy(false);
-    }
+    const result = await toggleLike();
+    if (result?.needsLogin) navigate("/auth");
   };
 
   const handleShare = async () => {
@@ -174,10 +154,10 @@ function MasjidProfile() {
             </div>
           </div>
 
-          {masjid.likeCount > 0 && (
+          {likeCount > 0 && (
             <div className="msj-hub-likes-row">
-              <span className="msj-hub-likes-count"><Icon name="heart" size={15} /> {masjid.likeCount.toLocaleString()} people like this</span>
-              <LikeAvatarStack topLikers={masjid.topLikers} likeCount={masjid.likeCount} onClick={() => setTab("people")} />
+              <span className="msj-hub-likes-count"><Icon name="heart" size={15} /> {likeCount.toLocaleString()} people like this</span>
+              <LikeAvatarStack topLikers={masjid.topLikers} likeCount={likeCount} onClick={() => setTab("people")} />
             </div>
           )}
 
@@ -240,7 +220,7 @@ function MasjidProfile() {
             )}
             {tab === "prayer-times" && <PrayerTimesTab masjidId={id} />}
             {tab === "community-wall" && <CommunityWallTab masjidId={id} masjidName={masjid.name} />}
-            {tab === "people" && <ComingSoonPanel label="People" />}
+            {tab === "people" && <PeopleWhoLikedTab masjidId={id} totalLikes={likeCount} />}
             {tab === "campaigns" && <ComingSoonPanel label="Campaigns" />}
             {tab === "media" && <MediaGallery photos={photos} />}
             {tab === "reviews" && <ReviewsTab masjidId={id} />}
@@ -254,7 +234,7 @@ function MasjidProfile() {
               <div className="msj-hub-snapshot-row"><span>Verification</span><strong>Verified</strong></div>
               {masjid.category && <div className="msj-hub-snapshot-row"><span>Category</span><strong>{masjid.category}</strong></div>}
               <div className="msj-hub-snapshot-row"><span>Location</span><strong>{[masjid.city, masjid.country].filter(Boolean).join(", ") || "—"}</strong></div>
-              <div className="msj-hub-snapshot-row"><span>Likes</span><strong>{masjid.likeCount.toLocaleString()}</strong></div>
+              <div className="msj-hub-snapshot-row"><span>Likes</span><strong>{likeCount.toLocaleString()}</strong></div>
               <div className="msj-hub-snapshot-row">
                 <span>Rating</span>
                 <strong className="msj-hub-snapshot-rating"><StarRating value={masjid.avgRating} size={13} /> {masjid.reviewCount > 0 ? masjid.avgRating.toFixed(1) : "—"}</strong>
