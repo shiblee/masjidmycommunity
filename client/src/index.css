@@ -3603,7 +3603,10 @@ footer{
 .msj-hub-media-tile:hover img, .msj-hub-media-tile:hover video{ transform:scale(1.05); }
 .msj-hub-media-tile img, .msj-hub-media-tile video{ transition:transform .3s var(--ease); }
 .msj-hub-media-play{
-  position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(11,31,30,.28); color:#fff;
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(11,31,30,.08); color:#fff;
+}
+.msj-hub-media-play svg{
+  background:rgba(11,31,30,.55); border-radius:50%; padding:12px; box-shadow:0 4px 14px -4px rgba(11,31,30,.5);
 }
 
 .msj-lightbox-overlay{
@@ -3621,9 +3624,16 @@ footer{
 .msj-lightbox-nav:hover{ background:rgba(255,255,255,.2); }
 .msj-lightbox-nav.prev{ left:20px; }
 .msj-lightbox-nav.next{ right:20px; }
-.msj-lightbox-stage{ max-width:min(90vw,1000px); max-height:88vh; display:flex; flex-direction:column; align-items:center; gap:12px; }
-.msj-lightbox-media{ max-width:100%; max-height:80vh; border-radius:8px; object-fit:contain; }
-.msj-lightbox-caption{ color:var(--text-on-ink-dim); font-size:13.5px; text-align:center; }
+/* width/height (not just max-width/max-height) on the stage, and flex:1 on
+   the media itself — max-width alone only ever shrinks a large source down,
+   it never grows a modest-resolution photo or video poster up to fill the
+   available space. object-fit:contain still preserves aspect ratio and
+   never crops, just at a properly large size now. The optional caption
+   below keeps its own natural height (flex:0 0 auto on it, further down)
+   so the media only claims what's left, never pushing the caption out. */
+.msj-lightbox-stage{ width:min(92vw,1280px); height:min(88vh,760px); display:flex; flex-direction:column; align-items:center; gap:12px; }
+.msj-lightbox-media{ width:100%; flex:1 1 auto; min-height:0; border-radius:8px; object-fit:contain; }
+.msj-lightbox-caption{ flex:0 0 auto; color:var(--text-on-ink-dim); font-size:13.5px; text-align:center; }
 
 .msj-hub-side{ position:sticky; top:76px; display:flex; flex-direction:column; gap:18px; }
 .msj-hub-snapshot h3{ font-size:15px; color:var(--text-on-paper); margin-bottom:12px; }
