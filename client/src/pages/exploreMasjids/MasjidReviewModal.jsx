@@ -12,6 +12,7 @@ import ReviewRow from "./ReviewRow.jsx";
 import { useTranslation } from "../../i18n/LanguageContext.jsx";
 import { useMasjidLike } from "../../hooks/useMasjidLike.js";
 import { formatCompactNumber } from "../../utils/formatCompactNumber.js";
+import GreenTickBadge from "../../components/masjid/GreenTickBadge.jsx";
 
 const API = `${API_BASE}/masjids/public`;
 
@@ -131,7 +132,10 @@ function MasjidReviewModal({ masjid, initialTab = "overview", onClose }) {
           <div className="msj-review-modal-header">
             <MediaThumb src={masjid.coverPhotoUrl ? `${API_ORIGIN}${masjid.coverPhotoUrl}` : null} className="msj-review-modal-cover" />
             <div>
-              <h3>{masjid.name}</h3>
+              <span className="msj-card-title-row">
+                <h3>{masjid.name}</h3>
+                <GreenTickBadge masjid={masjid} variant="list" />
+              </span>
               <div className="msj-review-modal-rating">
                 <StarRating value={data?.average || 0} size={16} />
                 {data && <span>{data.average.toFixed(1)} ({data.count} review{data.count === 1 ? "" : "s"})</span>}
@@ -143,7 +147,10 @@ function MasjidReviewModal({ masjid, initialTab = "overview", onClose }) {
 
         {tab === "overview" && (
           <div className="msj-review-modal-titleblock">
-            <h3>{masjid.name}</h3>
+            <span className="msj-card-title-row">
+              <h3>{masjid.name}</h3>
+              <GreenTickBadge masjid={masjid} variant="list" />
+            </span>
             <div className="msj-review-modal-rating">
               <StarRating value={data?.average || 0} size={16} />
               {data && <span>{data.average.toFixed(1)} ({data.count} review{data.count === 1 ? "" : "s"})</span>}

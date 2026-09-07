@@ -3163,7 +3163,7 @@ footer{
    so it actually reads as a badge at a glance next to a masjid's name. */
 .msj-greentick-badge-icon{
   display:inline-flex; align-items:center; justify-content:center; flex-shrink:0;
-  width:16px; height:16px; border-radius:50%; color:#fff;
+  width:19px; height:19px; border-radius:50%; color:#fff;
   background:linear-gradient(135deg, #A3D65C 0%, var(--teal-deep) 100%);
   box-shadow:0 1px 3px rgba(94,154,44,.45);
   transition:transform .15s var(--ease);
@@ -3171,7 +3171,7 @@ footer{
 .msj-greentick-badge-trigger:hover .msj-greentick-badge-icon{ transform:scale(1.14); }
 .msj-greentick-badge-text{ font-size:13px; font-weight:700; color:var(--teal-deep); white-space:nowrap; }
 
-.msj-greentick-badge-detail .msj-greentick-badge-icon{ width:24px; height:24px; box-shadow:0 2px 6px rgba(94,154,44,.5); }
+.msj-greentick-badge-detail .msj-greentick-badge-icon{ width:27px; height:27px; box-shadow:0 2px 6px rgba(94,154,44,.5); }
 .msj-greentick-badge-detail .msj-greentick-badge-text{ font-size:14px; }
 
 .msj-greentick-badge-popover{
@@ -3375,7 +3375,6 @@ footer{
 }
 .msj-explore-card:hover{ transform:translateY(-4px); box-shadow:0 24px 44px -28px rgba(11,31,30,.25); }
 .msj-explore-card-top{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
-.msj-explore-card-top h3{ flex:1; min-width:0; }
 
 .msj-directions-btn{
   display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px; border-radius:50%;

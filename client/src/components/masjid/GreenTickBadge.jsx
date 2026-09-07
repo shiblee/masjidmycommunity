@@ -22,7 +22,7 @@ function GreenTickBadge({ masjid, variant = "list", className = "" }) {
 
   if (!masjid?.isGreenTick) return null;
 
-  const iconSize = variant === "detail" ? 14 : 10;
+  const iconSize = variant === "detail" ? 15 : 11;
   const verbose = variant === "detail";
 
   return (
