@@ -5,6 +5,9 @@ import GreenTickRepresentative from "../models/GreenTickRepresentative.js";
 import GreenTickDocument from "../models/GreenTickDocument.js";
 import GreenTickStatusLog from "../models/GreenTickStatusLog.js";
 import VerificationDocumentType from "../models/VerificationDocumentType.js";
+import Masjid from "../models/Masjid.js";
+import { notifyUser } from "./notificationService.js";
+import { sendGreenTickStatusEmail } from "./emailService.js";
 
 // Green Tick is a central Masjid attribute — every controller that needs
 // its state (owner wizard, admin dashboard, or any of the public display
@@ -186,4 +189,50 @@ export async function getGreenTickBadgeInfoForMany(masjidIds) {
   const byMasjid = new Map(applications.map((a) => [a.masjidId, a]));
   for (const id of masjidIds) result.set(id, badgeInfoFrom(byMasjid.get(id)));
   return result;
+}
+
+export const STATUS_LABEL = {
+  draft: "Draft",
+  submitted: "Submitted",
+  under_review: "Under Review",
+  documents_required: "Documents Required",
+  clarification_required: "Clarification Required",
+  partially_verified: "Partially Verified",
+  verification_failed: "Verification Failed",
+  approved: "Approved",
+  green_tick_issued: "Green Tick Issued",
+  suspended: "Suspended",
+  revoked: "Revoked",
+};
+
+/**
+ * One call site for both notification channels on every Green Tick status
+ * transition — reuses the existing bell (notifyUser) and email
+ * (sendGreenTickStatusEmail, one shared template) systems exactly as they
+ * already work elsewhere, per the spec's "use the existing Notification/
+ * Email Template system" instruction. Fire-and-forget, like every other
+ * notification call site in this codebase — a delivery failure must never
+ * fail the admin action that triggered it.
+ */
+export async function notifyApplicationStatus(application, { title, body, remarks } = {}) {
+  try {
+    const masjid = await Masjid.findByPk(application.masjidId);
+    if (!masjid) return;
+    const owner = await User.findByPk(masjid.userId);
+    if (!owner) return;
+
+    const statusLabel = STATUS_LABEL[application.status] || application.status;
+    notifyUser({
+      userId: owner.id,
+      type: application.status.startsWith("green_tick") ? application.status : `green_tick_${application.status}`,
+      title: title || `Green Tick: ${statusLabel}`,
+      body: body || `Your Green Tick application for "${masjid.name}" is now: ${statusLabel}.`,
+      link: `/account/my-masjids/${masjid.id}/green-tick`,
+      relatedMasjidId: masjid.id,
+    }).catch(() => {});
+
+    await sendGreenTickStatusEmail(masjid, owner, { verificationId: application.verificationId, statusLabel, remarks }).catch(() => {});
+  } catch {
+    // Never let a notification failure break the admin action that triggered it.
+  }
 }

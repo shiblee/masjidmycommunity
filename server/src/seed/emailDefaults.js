@@ -438,6 +438,25 @@ const DEFAULT_TEMPLATES = [
     status: "active",
     availableVariables: ["user_name", "old_email", "new_email", "changed_at", "ip_address", "platform_name", "current_year"],
   },
+  {
+    key: "green_tick_status_update",
+    name: "Green Tick Application – Status Update",
+    purpose: "Sent to the masjid owner whenever their Green Tick verification application's status changes (submitted, documents required, approved, issued, rejected, suspended, revoked, etc.).",
+    subject: "Green Tick update for {{masjid_name}}: {{status_label}}",
+    heading: "Green Tick Application Update",
+    message:
+      "Your masjid's Green Tick verification application has a new status.\n\nMasjid Name: {{masjid_name}}\nVerification ID: {{verification_id}}\nNew Status: {{status_label}}\n\n{{remarks}}",
+    ctaText: "View Application",
+    ctaLink: "http://localhost:5173/account/my-masjids/{{masjid_id}}/green-tick",
+    footerText:
+      "{{platform_name}} — Empowering Masjids. Strengthening Communities.\nNeed help? Contact us at hello@masjidmycommunity.org\n© {{current_year}} {{platform_name}}. All rights reserved.",
+    quoteEnabled: false,
+    quoteTransliteration: null,
+    quoteTranslation: null,
+    quoteSource: null,
+    status: "active",
+    availableVariables: ["user_name", "masjid_name", "masjid_id", "verification_id", "status_label", "remarks", "platform_name", "current_year"],
+  },
 ];
 
 export async function ensureEmailDefaults() {

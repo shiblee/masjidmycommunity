@@ -15,6 +15,7 @@ import adminReviewRestrictedWordRoutes from "./routes/adminReviewRestrictedWordR
 import adminMasjidContactDesignationRoutes from "./routes/adminMasjidContactDesignationRoutes.js";
 import adminPrayerRoutes from "./routes/adminPrayerRoutes.js";
 import adminVerificationDocumentTypeRoutes from "./routes/adminVerificationDocumentTypeRoutes.js";
+import adminGreenTickRoutes from "./routes/adminGreenTickRoutes.js";
 import campaignRoutes from "./routes/campaignRoutes.js";
 import adminCampaignRoutes from "./routes/adminCampaignRoutes.js";
 import publicCampaignRoutes from "./routes/publicCampaignRoutes.js";
@@ -111,6 +112,7 @@ app.use("/api/admin/review-restricted-words", adminReviewRestrictedWordRoutes);
 app.use("/api/admin/masjid-contact-designations", adminMasjidContactDesignationRoutes);
 app.use("/api/admin/prayers", adminPrayerRoutes);
 app.use("/api/admin/verification-document-types", adminVerificationDocumentTypeRoutes);
+app.use("/api/admin/green-tick-applications", adminGreenTickRoutes);
 app.use("/api/community", publicCommunityRoutes);
 app.use("/api/campaigns/public", publicCampaignRoutes);
 app.use("/api/campaigns", campaignRoutes);

@@ -34,6 +34,21 @@ import {
   getHistory as getPrayerHistory,
   getChangeDates as getPrayerChangeDates,
 } from "../controllers/adminMasjidPrayerController.js";
+import {
+  getApplication as getGreenTickApplication,
+  setRepresentativeIdentity,
+  setRepresentativeAuthorization,
+  setDocumentStatus,
+  downloadDocument as downloadGreenTickDocument,
+  markUnderReview,
+  requestMoreDocuments,
+  requestClarification,
+  markVerificationFailed,
+  approveApplication,
+  issueGreenTick,
+  suspendApplication,
+  revokeApplication,
+} from "../controllers/adminGreenTickController.js";
 
 const router = Router();
 
@@ -66,5 +81,18 @@ router.get("/:id/prayer-times", getPrayerRoster);
 router.put("/:id/prayer-times", savePrayerRoster);
 router.get("/:id/prayer-times/history", getPrayerHistory);
 router.get("/:id/prayer-times/changes", getPrayerChangeDates);
+router.get("/:id/green-tick", getGreenTickApplication);
+router.patch("/:id/green-tick/representatives/:repId/identity", setRepresentativeIdentity);
+router.patch("/:id/green-tick/representatives/:repId/authorization", setRepresentativeAuthorization);
+router.patch("/:id/green-tick/documents/:docId", setDocumentStatus);
+router.get("/:id/green-tick/documents/:docId/file", downloadGreenTickDocument);
+router.post("/:id/green-tick/under-review", markUnderReview);
+router.post("/:id/green-tick/request-documents", requestMoreDocuments);
+router.post("/:id/green-tick/request-clarification", requestClarification);
+router.post("/:id/green-tick/verification-failed", markVerificationFailed);
+router.post("/:id/green-tick/approve", approveApplication);
+router.post("/:id/green-tick/issue", issueGreenTick);
+router.post("/:id/green-tick/suspend", suspendApplication);
+router.post("/:id/green-tick/revoke", revokeApplication);
 
 export default router;

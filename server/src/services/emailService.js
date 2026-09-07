@@ -293,6 +293,26 @@ export async function sendMasjidChangesRequestedEmail(masjid, user) {
   });
 }
 
+/** One shared template for every Green Tick transition (submitted,
+ * documents required, approved, issued, rejected, suspended, revoked, ...)
+ * rather than a near-identical template per status — `statusLabel`/
+ * `remarks` carry what's actually different each time. */
+export async function sendGreenTickStatusEmail(masjid, user, { verificationId, statusLabel, remarks }) {
+  if (!user.email) return { sent: false, skipped: true };
+  return sendNotification("green_tick_status_update", {
+    to: user.email,
+    variables: {
+      user_name: user.fullName,
+      masjid_name: masjid.name,
+      masjid_id: String(masjid.id),
+      verification_id: verificationId || "Pending",
+      status_label: statusLabel,
+      remarks: remarks || "",
+    },
+    userMeta: { userId: user.id, userName: user.fullName, userEmail: user.email },
+  });
+}
+
 function money(amount) {
   return `₹${Number(amount || 0).toLocaleString("en-IN")}`;
 }
