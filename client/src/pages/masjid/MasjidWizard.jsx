@@ -647,22 +647,6 @@ function MasjidWizard({ embedded = false }) {
                   placeholder="e.g. Jama Masjid, Delhi"
                 />
               </Field>
-              <div className="msj-field-row">
-                <Field label="City" error={errors.city}>
-                  <input value={form.city} onChange={setField("city")} placeholder="e.g. Delhi" maxLength={255} />
-                </Field>
-                <Field label="State / Province" error={errors.state}>
-                  <input value={form.state} onChange={setField("state")} placeholder="e.g. Delhi" maxLength={255} />
-                </Field>
-              </div>
-              <div className="msj-field-row">
-                <Field label="Country" error={errors.country}>
-                  <input value={form.country} onChange={setField("country")} placeholder="e.g. India" maxLength={255} />
-                </Field>
-                <Field label="Postal / ZIP Code" error={errors.postalCode}>
-                  <input value={form.postalCode} onChange={setField("postalCode")} placeholder="e.g. 110006" maxLength={255} />
-                </Field>
-              </div>
               <LocationMap
                 latitude={form.latitude}
                 longitude={form.longitude}
