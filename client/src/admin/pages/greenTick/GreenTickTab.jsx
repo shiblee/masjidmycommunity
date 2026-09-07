@@ -304,6 +304,22 @@ function GreenTickTab({ masjidId, showToast }) {
     }
   };
 
+  const [downloadingAll, setDownloadingAll] = useState(false);
+  const downloadAllDocuments = async () => {
+    setDownloadingAll(true);
+    try {
+      const res = await adminApi.get(`/masjids/${masjidId}/green-tick/documents/download-all`, { responseType: "blob" });
+      const url = window.URL.createObjectURL(res.data);
+      const a = document.createElement("a");
+      a.href = url; a.download = `${data.masjid.name.replace(/[^a-z0-9]+/gi, "_")}-green-tick-documents.zip`; a.click();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      showToast?.("Couldn't download the documents.");
+    } finally {
+      setDownloadingAll(false);
+    }
+  };
+
   const [viewerDoc, setViewerDoc] = useState(null); // { doc, blobUrl } | null
   const openViewer = async (doc) => {
     try {
@@ -363,6 +379,14 @@ function GreenTickTab({ masjidId, showToast }) {
           <div className="msj-greentick-progress-bar"><div className="msj-greentick-progress-fill" style={{ width: `${(progress.completed / progress.total) * 100}%` }} /></div>
           <span>{progress.completed} of {progress.total} requirements completed</span>
         </div>
+
+        {documents.length > 0 && (
+          <div style={{ marginBottom: 14 }}>
+            <button className="amx-btn amx-btn-outline amx-btn-sm" onClick={downloadAllDocuments} disabled={downloadingAll}>
+              <Icon name="download" size={14} /> {downloadingAll ? "Preparing…" : `Download All Documents (${documents.length})`}
+            </button>
+          </div>
+        )}
 
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           {application.status === "submitted" && <button className="amx-btn amx-btn-outline amx-btn-sm" onClick={() => openRemarks("under-review")}>Mark Under Review</button>}

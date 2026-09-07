@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import { ZipArchive } from "archiver";
 import { Op } from "sequelize";
 import Masjid from "../models/Masjid.js";
 import MasjidContactPerson from "../models/MasjidContactPerson.js";
@@ -210,6 +211,69 @@ export const downloadDocument = async (req, res) => {
     res.download(path.resolve(doc.storedPath), doc.fileName);
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+};
+
+/**
+ * Every document for this application, zipped — for an admin who wants the
+ * whole file set at once instead of downloading one at a time. Entries are
+ * named by what they actually are ("<Representative Name> - <Document
+ * Type>.ext", or just "<Document Type>.ext" for masjid/property docs)
+ * rather than the original often-meaningless upload filename, with a
+ * numeric suffix if two documents would otherwise collide. Streamed
+ * straight to the response — never buffers the whole archive in memory —
+ * through the same authenticated, admin-only route as every other
+ * document access; still never a public URL.
+ */
+export const downloadAllDocuments = async (req, res) => {
+  try {
+    const ctx = await requireApplication(req, res);
+    if (!ctx) return;
+
+    const documents = await GreenTickDocument.findAll({ where: { applicationId: ctx.application.id } });
+    const existing = documents.filter((d) => fs.existsSync(d.storedPath));
+    if (!existing.length) return res.status(404).json({ message: "No documents to download." });
+
+    const [types, representatives] = await Promise.all([
+      VerificationDocumentType.findAll(),
+      GreenTickRepresentative.findAll({ where: { applicationId: ctx.application.id } }),
+    ]);
+    const typeById = new Map(types.map((t) => [t.id, t]));
+    const repById = new Map(representatives.map((r) => [r.id, r]));
+    const contacts = await MasjidContactPerson.findAll({ where: { id: representatives.map((r) => r.contactPersonId) } });
+    const contactById = new Map(contacts.map((c) => [c.id, c]));
+
+    const zipFileName = `${ctx.masjid.name.replace(/[^a-z0-9]+/gi, "_")}-green-tick-documents.zip`;
+    res.setHeader("Content-Type", "application/zip");
+    res.setHeader("Content-Disposition", `attachment; filename="${zipFileName}"`);
+
+    const archive = new ZipArchive({ zlib: { level: 9 } });
+    archive.on("error", (err) => res.status(500).end(err.message));
+    archive.pipe(res);
+
+    const usedNames = new Set();
+    for (const doc of existing) {
+      const typeName = typeById.get(doc.documentTypeId)?.name || "Document";
+      let label = typeName;
+      if (doc.representativeId) {
+        const rep = repById.get(doc.representativeId);
+        const contactName = rep && contactById.get(rep.contactPersonId)?.name;
+        if (contactName) label = `${contactName} - ${typeName}`;
+      }
+      const ext = path.extname(doc.fileName);
+      let entryName = `${label}${ext}`;
+      let attempt = 1;
+      while (usedNames.has(entryName)) {
+        entryName = `${label} (${attempt})${ext}`;
+        attempt += 1;
+      }
+      usedNames.add(entryName);
+      archive.file(path.resolve(doc.storedPath), { name: entryName });
+    }
+
+    await archive.finalize();
+  } catch (error) {
+    if (!res.headersSent) res.status(500).json({ message: error.message });
   }
 };
 

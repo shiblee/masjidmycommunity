@@ -40,6 +40,7 @@ import {
   setRepresentativeAuthorization,
   setDocumentStatus,
   downloadDocument as downloadGreenTickDocument,
+  downloadAllDocuments as downloadAllGreenTickDocuments,
   markUnderReview,
   requestMoreDocuments,
   requestClarification,
@@ -86,6 +87,7 @@ router.patch("/:id/green-tick/representatives/:repId/identity", setRepresentativ
 router.patch("/:id/green-tick/representatives/:repId/authorization", setRepresentativeAuthorization);
 router.patch("/:id/green-tick/documents/:docId", setDocumentStatus);
 router.get("/:id/green-tick/documents/:docId/file", downloadGreenTickDocument);
+router.get("/:id/green-tick/documents/download-all", downloadAllGreenTickDocuments);
 router.post("/:id/green-tick/under-review", markUnderReview);
 router.post("/:id/green-tick/request-documents", requestMoreDocuments);
 router.post("/:id/green-tick/request-clarification", requestClarification);
