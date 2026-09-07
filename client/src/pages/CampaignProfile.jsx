@@ -6,6 +6,7 @@ import axios from "axios";
 import { API_BASE, API_ORIGIN } from "../config.js";
 import { formatDate } from "../utils/formatDateTime.js";
 import EngagementRow from "../components/masjid/EngagementRow.jsx";
+import GreenTickBadge from "../components/masjid/GreenTickBadge.jsx";
 
 const API = `${API_BASE}/campaigns/public`;
 
@@ -57,6 +58,7 @@ function CampaignProfile() {
           <p className="msj-list-loc">
             <Icon name="mosque" size={15} />{" "}
             {masjid?.id ? <Link to={`/masjid/${masjid.id}`} className="msj-campaign-masjid-link">{masjid.name}</Link> : masjid?.name}
+            {masjid?.id && <GreenTickBadge masjid={masjid} variant="list" />}
             {" · "}{[masjid?.city, masjid?.country].filter(Boolean).join(", ")}
           </p>
           {masjid?.id && <EngagementRow masjid={masjid} variant="list" className="msj-campaign-masjid-engagement" />}

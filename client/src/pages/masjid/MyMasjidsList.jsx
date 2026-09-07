@@ -8,6 +8,7 @@ import {
   ActiveCampaignBadge, excerpt,
 } from "./myMasjidsShared.jsx";
 import EngagementRow from "../../components/masjid/EngagementRow.jsx";
+import GreenTickBadge from "../../components/masjid/GreenTickBadge.jsx";
 
 function MyMasjidsList({ masjids, onDelete, onViewOnMap }) {
   return (
@@ -21,6 +22,7 @@ function MyMasjidsList({ masjids, onDelete, onViewOnMap }) {
           <div className="msj-explore-row-body">
             <div className="msj-explore-row-top">
               <h3>{m.name}</h3>
+              <GreenTickBadge masjid={m} variant="list" />
               <span className={`acct-status-pill ${m.status}`}>{STATUS_LABEL[m.status]}</span>
               {m.category && <span className="msj-category-badge">{m.category}</span>}
             </div>

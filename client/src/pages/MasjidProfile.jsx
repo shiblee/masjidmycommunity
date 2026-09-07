@@ -14,6 +14,7 @@ import CommunityWallTab from "./masjidHub/CommunityWallTab.jsx";
 import PrayerTimesTab from "./masjidHub/PrayerTimesTab.jsx";
 import PeopleWhoLikedTab from "./masjidHub/PeopleWhoLikedTab.jsx";
 import { useMasjidLike } from "../hooks/useMasjidLike.js";
+import GreenTickBadge from "../components/masjid/GreenTickBadge.jsx";
 
 const API = `${API_BASE}/masjids/public`;
 
@@ -145,7 +146,10 @@ function MasjidProfile() {
           <div className="msj-hub-header-top">
             {cover && <MediaThumb src={`${API_ORIGIN}${cover.url}`} className="msj-hub-logo" />}
             <div>
-              <h1>{masjid.name}</h1>
+              <span className="msj-card-title-row">
+                <h1>{masjid.name}</h1>
+                <GreenTickBadge masjid={masjid} variant="detail" />
+              </span>
               <p className="msj-hub-header-meta">
                 {[masjid.category, [masjid.city, masjid.country].filter(Boolean).join(", ")].filter(Boolean).join(" • ")}
               </p>

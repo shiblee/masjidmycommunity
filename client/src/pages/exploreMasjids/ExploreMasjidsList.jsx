@@ -5,6 +5,7 @@ import MediaCountBadge from "../../components/MediaCountBadge.jsx";
 import { API_ORIGIN } from "../../config.js";
 import { locationOf, ActiveCampaignBadge, DistanceBadge, GetDirectionsButton, excerpt } from "./exploreMasjidsShared.jsx";
 import EngagementRow from "../../components/masjid/EngagementRow.jsx";
+import GreenTickBadge from "../../components/masjid/GreenTickBadge.jsx";
 
 function ExploreMasjidsList({ masjids, onViewOnMap, userLocation, onOpenReviews }) {
   return (
@@ -18,6 +19,7 @@ function ExploreMasjidsList({ masjids, onViewOnMap, userLocation, onOpenReviews 
           <div className="msj-explore-row-body">
             <div className="msj-explore-row-top">
               <h3>{m.name}</h3>
+              <GreenTickBadge masjid={m} variant="list" />
               {m.category && <span className="msj-category-badge">{m.category}</span>}
             </div>
             <p className="msj-list-loc"><Icon name="mapPin" size={14} /> {locationOf(m)}{m.address ? ` — ${m.address}` : ""}</p>

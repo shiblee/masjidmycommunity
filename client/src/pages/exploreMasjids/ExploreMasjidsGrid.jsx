@@ -5,6 +5,7 @@ import MediaCountBadge from "../../components/MediaCountBadge.jsx";
 import { API_ORIGIN } from "../../config.js";
 import { locationOf, ActiveCampaignBadge, DistanceBadge, GetDirectionsButton } from "./exploreMasjidsShared.jsx";
 import EngagementRow from "../../components/masjid/EngagementRow.jsx";
+import GreenTickBadge from "../../components/masjid/GreenTickBadge.jsx";
 
 function ExploreMasjidsGrid({ masjids, userLocation, onOpenReviews }) {
   return (
@@ -19,7 +20,10 @@ function ExploreMasjidsGrid({ masjids, userLocation, onOpenReviews }) {
           </div>
           <div className="msj-explore-body">
             <div className="msj-explore-card-top">
-              <h3>{m.name}</h3>
+              <span className="msj-card-title-row">
+                <h3>{m.name}</h3>
+                <GreenTickBadge masjid={m} variant="grid" />
+              </span>
               <GetDirectionsButton m={m} />
             </div>
             {m.category && <span className="msj-category-badge">{m.category}</span>}

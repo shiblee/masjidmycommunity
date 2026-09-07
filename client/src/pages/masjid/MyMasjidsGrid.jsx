@@ -5,6 +5,7 @@ import { formatDate } from "../../utils/formatDateTime.js";
 import MediaThumb from "../../components/MediaThumb.jsx";
 import { STATUS_LABEL, locationOf, MasjidActions, MediaCountBadge, CampaignsLink } from "./myMasjidsShared.jsx";
 import EngagementRow from "../../components/masjid/EngagementRow.jsx";
+import GreenTickBadge from "../../components/masjid/GreenTickBadge.jsx";
 
 function MyMasjidsGrid({ masjids, onDelete }) {
   return (
@@ -17,7 +18,10 @@ function MyMasjidsGrid({ masjids, onDelete }) {
           </div>
           <div className="msj-list-body">
             <div className="msj-list-top">
-              <h3>{m.name}</h3>
+              <span className="msj-card-title-row">
+                <h3>{m.name}</h3>
+                <GreenTickBadge masjid={m} variant="grid" />
+              </span>
               <span className={`acct-status-pill ${m.status}`}>{STATUS_LABEL[m.status]}</span>
             </div>
             {m.category && <span className="msj-category-badge">{m.category}</span>}

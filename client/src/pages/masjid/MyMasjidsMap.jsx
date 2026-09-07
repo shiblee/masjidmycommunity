@@ -10,6 +10,7 @@ import { API_ORIGIN } from "../../config.js";
 import { loadClusterPlugin } from "../../utils/loadMarkerCluster.js";
 import { STATUS_LABEL, locationOf, EDITABLE } from "./myMasjidsShared.jsx";
 import EngagementRow from "../../components/masjid/EngagementRow.jsx";
+import GreenTickBadge from "../../components/masjid/GreenTickBadge.jsx";
 import { formatCompactNumber } from "../../utils/formatCompactNumber.js";
 
 const DEFAULT_CENTER = [20.5937, 78.9629];
@@ -28,6 +29,10 @@ const HEART_SVG =
   '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 21s-6.7-4.35-9.3-8.1C.8 10.1 1.4 6.8 4 5.2c2-1.2 4.4-.6 5.7 1 .7.8 1.4 1.8 2.3 1.8s1.6-1 2.3-1.8c1.3-1.6 3.7-2.2 5.7-1 2.6 1.6 3.2 4.9 1.3 7.7C18.7 16.65 12 21 12 21z"></path></svg>';
 const STAR_SVG_FILLED =
   '<svg width="11" height="11" viewBox="0 0 24 24" fill="#F5A623" stroke="none"><path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"></path></svg>';
+// Same path data as Icons.jsx's "shieldCheck" — a plain, non-interactive
+// mark here (this popup is raw HTML, not React).
+const SHIELD_SVG =
+  '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z"></path><path d="M9 12l2 2 4-4"></path></svg>';
 
 function popupHtml(m) {
   const cover = m.coverPhotoUrl ? `${API_ORIGIN}${m.coverPhotoUrl}` : null;
@@ -43,7 +48,7 @@ function popupHtml(m) {
     <div class="msj-map-popup">
       ${cover ? `<img src="${cover}" alt="" class="msj-map-popup-thumb" />` : ""}
       <div class="msj-map-popup-body">
-        <h4>${m.name}</h4>
+        <h4>${m.name}${m.isGreenTick ? ` <span class="msj-map-popup-greentick" title="Green Tick Verified">${SHIELD_SVG}</span>` : ""}</h4>
         <div class="msj-map-popup-meta">
           ${m.category ? `<span class="msj-category-badge">${m.category}</span>` : ""}
           <span class="acct-status-pill ${m.status}">${STATUS_LABEL[m.status]}</span>
@@ -147,7 +152,10 @@ function MyMasjidsMap({ masjids, selectedId, onSelect }) {
               <MediaThumb src={m.coverPhotoUrl ? `${API_ORIGIN}${m.coverPhotoUrl}` : null} />
             </div>
             <div className="msj-explore-map-item-body">
-              <h4>{m.name}</h4>
+              <span className="msj-card-title-row">
+                <h4>{m.name}</h4>
+                <GreenTickBadge masjid={m} variant="map" />
+              </span>
               <p><Icon name="mapPin" size={12} /> {locationOf(m)}</p>
               <span className={`acct-status-pill ${m.status}`}>{STATUS_LABEL[m.status]}</span>
               {(m.latitude == null || m.longitude == null) && <span className="msj-explore-map-item-flag">Not mapped yet</span>}

@@ -5,6 +5,7 @@ import MediaThumb from "../../components/MediaThumb.jsx";
 import MicButton from "../../components/MicButton.jsx";
 import { API_BASE, API_ORIGIN } from "../../config.js";
 import EngagementRow from "../../components/masjid/EngagementRow.jsx";
+import GreenTickBadge from "../../components/masjid/GreenTickBadge.jsx";
 
 const API = `${API_BASE}/masjids/public`;
 const PAGE_SIZE = 20;
@@ -74,7 +75,10 @@ function NearbyMasjidPanel({ activeId, onSelect }) {
           >
             <MediaThumb src={m.coverPhotoUrl ? `${API_ORIGIN}${m.coverPhotoUrl}` : null} className="msj-nearby-thumb" />
             <span className="msj-nearby-item-body">
-              <strong>{m.name}</strong>
+              <span className="msj-card-title-row">
+                <strong>{m.name}</strong>
+                <GreenTickBadge masjid={m} variant="map" />
+              </span>
               <span className="msj-nearby-item-meta">
                 {[m.category, [m.city, m.country].filter(Boolean).join(", ")].filter(Boolean).join(" • ")}
               </span>

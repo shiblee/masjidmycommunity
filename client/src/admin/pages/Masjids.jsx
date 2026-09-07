@@ -8,6 +8,7 @@ import SortHeader from "../components/SortHeader.jsx";
 import adminApi from "../services/adminApi.js";
 import { formatDate } from "../../utils/formatDateTime.js";
 import { formatCompactNumber } from "../../utils/formatCompactNumber.js";
+import GreenTickBadge from "../../components/masjid/GreenTickBadge.jsx";
 
 const TABS = [
   { key: "all", label: "All Masjids" },
@@ -218,7 +219,10 @@ function Masjids() {
                         {m.coverPhotoUrl ? <img src={`${API_ORIGIN}${m.coverPhotoUrl}`} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 8 }} /> : <Icon name="mosque" size={16} />}
                       </div>
                       <div>
-                        <strong>{m.name}</strong>
+                        <span className="msj-card-title-row">
+                          <strong>{m.name}</strong>
+                          <GreenTickBadge masjid={m} variant="grid" />
+                        </span>
                         <div className="amx-cell-sub">ID {m.id}{m.category ? ` · ${m.category}` : ""}</div>
                       </div>
                     </div>

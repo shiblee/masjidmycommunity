@@ -13,6 +13,7 @@ import { formatDateTime } from "../../utils/formatDateTime.js";
 import { formatCompactNumber } from "../../utils/formatCompactNumber.js";
 import PrayerRosterSection from "../../pages/masjid/PrayerRosterSection.jsx";
 import GreenTickTab from "./greenTick/GreenTickTab.jsx";
+import GreenTickBadge from "../../components/masjid/GreenTickBadge.jsx";
 
 const TABS = [
   { key: "overview", label: "Overview" },
@@ -978,6 +979,7 @@ function MasjidReview() {
             <div>
               <h1 style={{ margin: 0, display: "flex", alignItems: "center", gap: 10 }}>
                 {masjid.name}
+                <GreenTickBadge masjid={masjid} variant="grid" />
                 <button className="amx-icon-action" title="Edit Basic Information" onClick={() => goToTab("basic")}><Icon name="edit" size={15} /></button>
               </h1>
               <p style={{ margin: "2px 0 0" }}>ID {masjid.id} · {masjid.category || "Uncategorized"} · {[masjid.city, masjid.country].filter(Boolean).join(", ") || "No location"}</p>
