@@ -7,12 +7,22 @@ import { Icon } from "../../components/Icons.jsx";
 import MediaThumb from "../../components/MediaThumb.jsx";
 import { API_ORIGIN } from "../../config.js";
 import { loadClusterPlugin } from "../../utils/loadMarkerCluster.js";
-import { locationOf, distanceToMasjid, formatDistance, directionsUrl, GetDirectionsButton, RatingChip } from "./exploreMasjidsShared.jsx";
+import { locationOf, distanceToMasjid, formatDistance, directionsUrl, GetDirectionsButton } from "./exploreMasjidsShared.jsx";
+import EngagementRow from "../../components/masjid/EngagementRow.jsx";
+import { formatCompactNumber } from "../../utils/formatCompactNumber.js";
 
 // Same path data as Icons.jsx's "compass" — hand-embedded because this
 // popup is raw HTML (a Leaflet popup, outside the React tree).
 const COMPASS_SVG =
   '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M15.5 8.5l-2 5-5 2 2-5z"></path></svg>';
+// Same shapes as Icons.jsx's "heart" and exploreMasjidsShared.jsx's star —
+// hand-embedded for the same reason: this popup is raw HTML, not React, so
+// it can't mount either component (and isn't interactive — clicking through
+// to the masjid's own page/modal is how you actually like it or see reviews).
+const HEART_SVG =
+  '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 21s-6.7-4.35-9.3-8.1C.8 10.1 1.4 6.8 4 5.2c2-1.2 4.4-.6 5.7 1 .7.8 1.4 1.8 2.3 1.8s1.6-1 2.3-1.8c1.3-1.6 3.7-2.2 5.7-1 2.6 1.6 3.2 4.9 1.3 7.7C18.7 16.65 12 21 12 21z"></path></svg>';
+const STAR_SVG_FILLED =
+  '<svg width="11" height="11" viewBox="0 0 24 24" fill="#F5A623" stroke="none"><path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"></path></svg>';
 
 const DEFAULT_CENTER = [20.5937, 78.9629];
 const DEFAULT_ZOOM = 4;
@@ -34,6 +44,12 @@ const userIcon = L.divIcon({
 function popupHtml(m, distanceLabel) {
   const cover = m.coverPhotoUrl ? `${API_ORIGIN}${m.coverPhotoUrl}` : null;
   const url = directionsUrl(m);
+  const engagementParts = [];
+  if (m.likeCount) engagementParts.push(`${HEART_SVG} ${formatCompactNumber(m.likeCount)}`);
+  if (m.reviewCount) engagementParts.push(`${STAR_SVG_FILLED} ${Number(m.avgRating).toFixed(1)}`);
+  const engagementHtml = engagementParts.length
+    ? `<p class="msj-map-popup-engagement">${engagementParts.join('<span class="msj-map-popup-engagement-dot">·</span>')}</p>`
+    : "";
   // Two sibling <a> tags, not nested — an <a> can't validly contain another <a>,
   // and since this is raw HTML (a Leaflet popup, outside React) the browser would
   // silently mangle the nesting rather than React catching it.
@@ -48,6 +64,7 @@ function popupHtml(m, distanceLabel) {
           </div>
           <p>${locationOf(m)}</p>
           ${distanceLabel ? `<p class="msj-map-popup-distance">📍 ${distanceLabel} from you</p>` : ""}
+          ${engagementHtml}
         </div>
       </a>
       ${url ? `<a href="${url}" target="_blank" rel="noopener noreferrer" class="msj-directions-btn msj-map-popup-directions">${COMPASS_SVG} Get Directions</a>` : ""}
@@ -175,7 +192,7 @@ function ExploreMasjidsMap({ masjids, selectedId, onSelect, userLocation, onLoca
                 const d = distanceToMasjid(userLocation, m);
                 return d != null && <span className="msj-explore-map-item-distance">{formatDistance(d)}</span>;
               })()}
-              <RatingChip m={m} onClick={() => onOpenReviews?.(m, "reviews")} />
+              <EngagementRow masjid={m} variant="map" onOpenReviews={() => onOpenReviews?.(m, "reviews")} />
             </div>
             <GetDirectionsButton m={m} className="msj-explore-map-item-link" />
           </button>

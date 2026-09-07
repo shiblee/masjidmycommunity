@@ -3,7 +3,8 @@ import { Icon } from "../../components/Icons.jsx";
 import MediaThumb from "../../components/MediaThumb.jsx";
 import MediaCountBadge from "../../components/MediaCountBadge.jsx";
 import { API_ORIGIN } from "../../config.js";
-import { locationOf, VerifiedTick, ActiveCampaignBadge, DistanceBadge, GetDirectionsButton, RatingChip } from "./exploreMasjidsShared.jsx";
+import { locationOf, VerifiedTick, ActiveCampaignBadge, DistanceBadge, GetDirectionsButton } from "./exploreMasjidsShared.jsx";
+import EngagementRow from "../../components/masjid/EngagementRow.jsx";
 
 function ExploreMasjidsGrid({ masjids, userLocation, onOpenReviews }) {
   return (
@@ -26,7 +27,7 @@ function ExploreMasjidsGrid({ masjids, userLocation, onOpenReviews }) {
             {m.tagline && <p className="msj-explore-tagline">{m.tagline}</p>}
             <p className="msj-list-loc"><Icon name="mapPin" size={14} /> {locationOf(m)}</p>
             <div className="msj-explore-row-meta">
-              <RatingChip m={m} onClick={() => onOpenReviews(m, "reviews")} />
+              <EngagementRow masjid={m} variant="grid" onOpenReviews={() => onOpenReviews(m, "reviews")} />
               <ActiveCampaignBadge m={m} />
               <DistanceBadge userLocation={userLocation} m={m} />
             </div>

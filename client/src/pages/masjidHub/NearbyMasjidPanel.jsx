@@ -4,7 +4,7 @@ import { Icon } from "../../components/Icons.jsx";
 import MediaThumb from "../../components/MediaThumb.jsx";
 import MicButton from "../../components/MicButton.jsx";
 import { API_BASE, API_ORIGIN } from "../../config.js";
-import { StarRating } from "../exploreMasjids/exploreMasjidsShared.jsx";
+import EngagementRow from "../../components/masjid/EngagementRow.jsx";
 
 const API = `${API_BASE}/masjids/public`;
 const PAGE_SIZE = 20;
@@ -78,11 +78,7 @@ function NearbyMasjidPanel({ activeId, onSelect }) {
               <span className="msj-nearby-item-meta">
                 {[m.category, [m.city, m.country].filter(Boolean).join(", ")].filter(Boolean).join(" • ")}
               </span>
-              {m.reviewCount > 0 && (
-                <span className="msj-nearby-item-rating">
-                  <StarRating value={m.avgRating} size={11} /> {m.avgRating.toFixed(1)} ({m.reviewCount})
-                </span>
-              )}
+              <EngagementRow masjid={m} variant="map" className="msj-nearby-item-engagement" />
             </span>
             {formatDistanceKm(m.distanceKm) && <span className="msj-nearby-distance">{formatDistanceKm(m.distanceKm)}</span>}
           </button>

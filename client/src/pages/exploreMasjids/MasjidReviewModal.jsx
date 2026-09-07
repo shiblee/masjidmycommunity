@@ -10,6 +10,8 @@ import SuggestEditForm from "./SuggestEditForm.jsx";
 import ReviewForm from "./ReviewForm.jsx";
 import ReviewRow from "./ReviewRow.jsx";
 import { useTranslation } from "../../i18n/LanguageContext.jsx";
+import { useMasjidLike } from "../../hooks/useMasjidLike.js";
+import { formatCompactNumber } from "../../utils/formatCompactNumber.js";
 
 const API = `${API_BASE}/masjids/public`;
 
@@ -41,8 +43,10 @@ function MasjidReviewModal({ masjid, initialTab = "overview", onClose }) {
   const [data, setData] = useState(null);
   const [myReview, setMyReview] = useState(null);
   const [showForm, setShowForm] = useState(false);
-  const [favorited, setFavorited] = useState(false);
-  const [favBusy, setFavBusy] = useState(false);
+  const { liked: favorited, likeCount, toggle: toggleLike, busy: favBusy } = useMasjidLike(masjid.id, {
+    liked: !!masjid.likedByMe,
+    likeCount: masjid.likeCount || 0,
+  });
   const [shareLabel, setShareLabel] = useState("Share");
   const [showSuggest, setShowSuggest] = useState(false);
   const [suggestSent, setSuggestSent] = useState(false);
@@ -74,10 +78,6 @@ function MasjidReviewModal({ masjid, initialTab = "overview", onClose }) {
         .get(`${API}/${masjid.id}/reviews/mine`, { headers: { Authorization: `Bearer ${token}` } })
         .then(({ data }) => setMyReview(data.review))
         .catch(() => {});
-      axios
-        .get(`${API}/${masjid.id}/favorite`, { headers: { Authorization: `Bearer ${token}` } })
-        .then(({ data }) => setFavorited(data.favorited))
-        .catch(() => {});
     }
   };
 
@@ -93,22 +93,8 @@ function MasjidReviewModal({ masjid, initialTab = "overview", onClose }) {
   };
 
   const toggleFavorite = async () => {
-    if (!loggedIn) { navigate("/auth"); return; }
-    setFavBusy(true);
-    const token = getUserToken();
-    try {
-      if (favorited) {
-        await axios.delete(`${API}/${masjid.id}/favorite`, { headers: { Authorization: `Bearer ${token}` } });
-        setFavorited(false);
-      } else {
-        await axios.post(`${API}/${masjid.id}/favorite`, {}, { headers: { Authorization: `Bearer ${token}` } });
-        setFavorited(true);
-      }
-    } catch {
-      // no-op — the button simply won't change state, safe to retry
-    } finally {
-      setFavBusy(false);
-    }
+    const result = await toggleLike();
+    if (result?.needsLogin) navigate("/auth");
   };
 
   const handleShare = async () => {
@@ -188,7 +174,7 @@ function MasjidReviewModal({ masjid, initialTab = "overview", onClose }) {
               )}
               <button type="button" className={`msj-review-action-btn ${favorited ? "active" : ""}`} onClick={toggleFavorite} disabled={favBusy}>
                 <span className="msj-review-action-icon"><HeartIcon filled={favorited} /></span>
-                {favorited ? "Liked" : "Like"}
+                {favorited ? "Liked" : "Like"}{likeCount > 0 ? ` · ${formatCompactNumber(likeCount)}` : ""}
               </button>
               <button type="button" className="msj-review-action-btn" onClick={handleShare}>
                 <span className="msj-review-action-icon"><ShareIcon /></span>

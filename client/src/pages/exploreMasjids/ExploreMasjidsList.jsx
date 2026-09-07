@@ -3,7 +3,8 @@ import { Icon } from "../../components/Icons.jsx";
 import MediaThumb from "../../components/MediaThumb.jsx";
 import MediaCountBadge from "../../components/MediaCountBadge.jsx";
 import { API_ORIGIN } from "../../config.js";
-import { locationOf, VerifiedTick, ActiveCampaignBadge, DistanceBadge, GetDirectionsButton, RatingChip, excerpt } from "./exploreMasjidsShared.jsx";
+import { locationOf, VerifiedTick, ActiveCampaignBadge, DistanceBadge, GetDirectionsButton, excerpt } from "./exploreMasjidsShared.jsx";
+import EngagementRow from "../../components/masjid/EngagementRow.jsx";
 
 function ExploreMasjidsList({ masjids, onViewOnMap, userLocation, onOpenReviews }) {
   return (
@@ -24,7 +25,7 @@ function ExploreMasjidsList({ masjids, onViewOnMap, userLocation, onOpenReviews 
             {m.imamName && <p className="msj-explore-row-imam">Imam: {m.imamName}</p>}
             {excerpt(m.about) && <p className="msj-explore-row-about">{excerpt(m.about)}</p>}
             <div className="msj-explore-row-meta">
-              <RatingChip m={m} onClick={() => onOpenReviews(m, "reviews")} />
+              <EngagementRow masjid={m} variant="list" onOpenReviews={() => onOpenReviews(m, "reviews")} />
               <ActiveCampaignBadge m={m} />
               <DistanceBadge userLocation={userLocation} m={m} />
             </div>
