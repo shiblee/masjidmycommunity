@@ -998,6 +998,12 @@ const DEFAULTS = [
   ["prayer", "prayer.jumu'ah", "Jumu'ah", "जुमा", "جمعہ", "الجمعة"],
   ["prayer", "prayer.witr", "Witr", "वित्र", "وتر", "الوتر"],
   ["prayer", "prayer.rosterHeading", "Today's Prayer Times", "आज के नमाज़ के समय", "آج کے نماز کے اوقات", "مواقيت الصلاة اليوم"],
+
+  ["engagement", "engagement.like", "Like this masjid", "इस मस्जिद को लाइक करें", "اس مسجد کو پسند کریں", "أعجبني هذا المسجد"],
+  ["engagement", "engagement.unlike", "Unlike this masjid", "लाइक हटाएं", "پسندیدگی ختم کریں", "إلغاء الإعجاب"],
+  ["engagement", "engagement.likes", "Likes", "लाइक", "پسندیدگیاں", "إعجابات"],
+  ["engagement", "engagement.reviews", "Reviews", "समीक्षाएं", "جائزے", "المراجعات"],
+  ["engagement", "engagement.peopleWhoLiked", "People Who Liked This Masjid", "इसे पसंद करने वाले लोग", "اس مسجد کو پسند کرنے والے افراد", "الأشخاص الذين أعجبوا بهذا المسجد"],
 ];
 
 // Additive, not "seed once": every deploy that adds new keys to DEFAULTS
