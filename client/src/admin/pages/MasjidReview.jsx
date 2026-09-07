@@ -591,7 +591,7 @@ function PhotosTab({ id, photos, setPhotos, showToast }) {
       <div className="msj-photo-grid msj-photo-grid-lg">
         {photos.map((p, i) => (
           <div className="msj-photo-card" key={p.id}>
-            <MediaThumb src={`${API_ORIGIN}${p.url}`} mediaType={p.mediaType} videoProps={{ controls: true }} />
+            <MediaThumb src={`${API_ORIGIN}${p.url}`} poster={p.posterUrl ? `${API_ORIGIN}${p.posterUrl}` : undefined} mediaType={p.mediaType} videoProps={{ controls: true }} />
             {p.isCover && <span className="msj-cover-badge"><Icon name="check" size={12} /> Cover</span>}
             <div className="msj-photo-actions">
               {!p.isCover && p.mediaType !== "video" && <button type="button" onClick={() => setCover(p.id)} title="Set as cover"><Icon name="star" size={14} /></button>}
@@ -977,7 +977,7 @@ function MasjidReview() {
           </button>
           <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 12 }}>
             <div style={{ width: 64, height: 64, borderRadius: 12, overflow: "hidden", flexShrink: 0 }}>
-              <MediaThumb src={cover ? `${API_ORIGIN}${cover.url}` : null} mediaType={cover?.mediaType} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              <MediaThumb src={cover ? `${API_ORIGIN}${cover.url}` : null} poster={cover?.posterUrl ? `${API_ORIGIN}${cover.posterUrl}` : undefined} mediaType={cover?.mediaType} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             </div>
             <div>
               <h1 style={{ margin: 0, display: "flex", alignItems: "center", gap: 10 }}>
@@ -1070,7 +1070,7 @@ function MasjidReview() {
               <div className="msj-photo-grid">
                 {photos.map((p) => (
                   <div className="msj-photo-card" key={p.id}>
-                    <MediaThumb src={`${API_ORIGIN}${p.url}`} mediaType={p.mediaType} videoProps={{ controls: true }} />
+                    <MediaThumb src={`${API_ORIGIN}${p.url}`} poster={p.posterUrl ? `${API_ORIGIN}${p.posterUrl}` : undefined} mediaType={p.mediaType} videoProps={{ controls: true }} />
                     {p.isCover && <span className="msj-cover-badge"><Icon name="check" size={12} /> Cover</span>}
                   </div>
                 ))}

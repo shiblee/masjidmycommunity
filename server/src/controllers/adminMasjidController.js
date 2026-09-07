@@ -1,4 +1,5 @@
 import fs from "fs";
+import path from "path";
 import { Op } from "sequelize";
 import Masjid from "../models/Masjid.js";
 import MasjidPhoto from "../models/MasjidPhoto.js";
@@ -13,6 +14,7 @@ import { recordMasjidApprovedActivity } from "../services/communityActivityServi
 import { sendMasjidChangesRequestedEmail, sendMasjidApprovedEmail, sendMasjidRejectedEmail } from "../services/emailService.js";
 import { notifyUser } from "../services/notificationService.js";
 import { mediaTypeOf, IMAGE_MAX_BYTES } from "../middleware/upload.js";
+import { generateVideoThumbnail } from "../utils/videoThumbnail.js";
 import { firstRestrictedField, RESTRICTED_CONTENT_MESSAGE } from "../utils/contentModeration.js";
 import { classifyContent } from "../services/aiProviderService.js";
 import { getEngagementFor, getEngagementForMany, getRatingDistribution } from "../services/masjidEngagementService.js";
@@ -323,14 +325,20 @@ export const uploadPhotos = async (req, res) => {
     let coverAssigned = hasCover;
 
     const created = await Promise.all(
-      req.files.map((file, i) => {
+      req.files.map(async (file, i) => {
         const mediaType = mediaTypeOf(file.mimetype);
         const isCover = !coverAssigned && mediaType === "photo";
         if (isCover) coverAssigned = true;
+        let posterUrl = null;
+        if (mediaType === "video") {
+          const posterFileName = await generateVideoThumbnail(file.path, path.dirname(file.path));
+          if (posterFileName) posterUrl = `/uploads/masjid-photos/${posterFileName}`;
+        }
         return MasjidPhoto.create({
           masjidId: masjid.id,
           url: `/uploads/masjid-photos/${file.filename}`,
           mediaType,
+          posterUrl,
           category: req.body.category || "other",
           isCover,
           sortOrder: existingCount + i,
@@ -375,8 +383,10 @@ export const deletePhoto = async (req, res) => {
 
     const wasCover = photo.isCover;
     const localPath = `.${photo.url}`;
+    const posterLocalPath = photo.posterUrl ? `.${photo.posterUrl}` : null;
     await photo.destroy();
     fs.unlink(localPath, () => {});
+    if (posterLocalPath) fs.unlink(posterLocalPath, () => {});
 
     // The owner-side deletePhoto doesn't reassign a cover when the cover
     // itself is removed — fixed here so the admin path doesn't leave a

@@ -7,6 +7,9 @@ const MasjidPhoto = sequelize.define(
     masjidId: { type: DataTypes.INTEGER, allowNull: false },
     url: { type: DataTypes.STRING, allowNull: false },
     mediaType: { type: DataTypes.ENUM("photo", "video"), allowNull: false, defaultValue: "photo" },
+    // A real extracted frame (see utils/videoThumbnail.js), null for photos
+    // and for videos uploaded before this existed.
+    posterUrl: { type: DataTypes.STRING, allowNull: true },
     category: {
       type: DataTypes.ENUM("exterior", "interior", "prayer_hall", "community", "facilities", "other"),
       allowNull: false,

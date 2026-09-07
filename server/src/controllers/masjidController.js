@@ -1,4 +1,5 @@
 import fs from "fs";
+import path from "path";
 import { Op, fn, col } from "sequelize";
 import Masjid from "../models/Masjid.js";
 import MasjidPhoto from "../models/MasjidPhoto.js";
@@ -12,6 +13,7 @@ import User from "../models/User.js";
 import { sendMasjidSubmittedAdminEmail, sendMasjidSubmittedUserEmail } from "../services/emailService.js";
 import { notifyAdmins } from "../services/adminAlertService.js";
 import { mediaTypeOf, IMAGE_MAX_BYTES } from "../middleware/upload.js";
+import { generateVideoThumbnail } from "../utils/videoThumbnail.js";
 import { firstRestrictedField, RESTRICTED_CONTENT_MESSAGE } from "../utils/contentModeration.js";
 import { classifyContent } from "../services/aiProviderService.js";
 import { getEngagementFor, getEngagementForMany } from "../services/masjidEngagementService.js";
@@ -335,16 +337,22 @@ export const uploadPhotos = async (req, res) => {
     let coverAssigned = hasCover;
 
     const created = await Promise.all(
-      req.files.map((file, i) => {
+      req.files.map(async (file, i) => {
         const mediaType = mediaTypeOf(file.mimetype);
         // The cover shows as a still image across the site (explore cards,
         // profile hero), so only a photo is ever auto-picked as the default.
         const isCover = !coverAssigned && mediaType === "photo";
         if (isCover) coverAssigned = true;
+        let posterUrl = null;
+        if (mediaType === "video") {
+          const posterFileName = await generateVideoThumbnail(file.path, path.dirname(file.path));
+          if (posterFileName) posterUrl = `/uploads/masjid-photos/${posterFileName}`;
+        }
         return MasjidPhoto.create({
           masjidId: masjid.id,
           url: `/uploads/masjid-photos/${file.filename}`,
           mediaType,
+          posterUrl,
           category: req.body.category || "other",
           isCover,
           sortOrder: existingCount + i,

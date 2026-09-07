@@ -8,7 +8,7 @@ import GeometricPattern from "./GeometricPattern.jsx";
  * (the same girih lattice used on the auth page) instead of the browser's
  * broken-image glyph.
  */
-function MediaThumb({ src, mediaType = "photo", alt = "", className, style, videoProps }) {
+function MediaThumb({ src, poster, mediaType = "photo", alt = "", className, style, videoProps }) {
   const [failed, setFailed] = useState(false);
 
   if (failed || !src) {
@@ -21,25 +21,30 @@ function MediaThumb({ src, mediaType = "photo", alt = "", className, style, vide
   }
 
   if (mediaType === "video") {
-    // Without a poster image (none is generated at upload time), a <video>
-    // paints as a blank black frame until playback starts. preload="auto"
-    // (not just "metadata") makes the browser actually fetch frame data up
-    // front, and nudging currentTime forward a hair once that data has
-    // loaded forces it to decode and paint that frame as a resting
-    // thumbnail — still paused, nothing autoplays.
+    // `poster` is a real frame extracted server-side at upload time (see
+    // server/src/utils/videoThumbnail.js) — pass it whenever the caller has
+    // one and the browser shows it immediately, no decoding required. Only
+    // videos uploaded before that existed have no poster; for those, fall
+    // back to nudging currentTime forward once a frame has loaded, which
+    // works in most (not all) browsers.
     return (
       <video
         src={src}
-        preload="auto"
+        poster={poster || undefined}
+        preload={poster ? "metadata" : "auto"}
         className={className}
         style={style}
         onError={() => setFailed(true)}
-        onLoadedData={(e) => {
-          const el = e.currentTarget;
-          if (el.currentTime === 0) {
-            try { el.currentTime = 0.1; } catch {}
-          }
-        }}
+        onLoadedData={
+          poster
+            ? undefined
+            : (e) => {
+                const el = e.currentTarget;
+                if (el.currentTime === 0) {
+                  try { el.currentTime = 0.1; } catch {}
+                }
+              }
+        }
         {...videoProps}
       />
     );

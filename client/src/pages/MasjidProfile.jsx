@@ -140,7 +140,7 @@ function MasjidProfile() {
   return (
     <main className="msj-page msj-hub">
       <section className="msj-hub-header on-ink">
-        <MediaThumb src={cover ? `${API_ORIGIN}${cover.url}` : null} mediaType={cover?.mediaType} className="msj-hub-cover" />
+        <MediaThumb src={cover ? `${API_ORIGIN}${cover.url}` : null} poster={cover?.posterUrl ? `${API_ORIGIN}${cover.posterUrl}` : undefined} mediaType={cover?.mediaType} className="msj-hub-cover" />
         <div className="msj-hub-header-overlay" />
         <div className="wrap msj-hub-header-content">
           <div className="msj-hub-header-top">

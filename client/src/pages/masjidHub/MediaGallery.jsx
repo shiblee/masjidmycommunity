@@ -34,7 +34,7 @@ function Lightbox({ items, index, onClose, onPrev, onNext }) {
       )}
       <div className="msj-lightbox-stage" onClick={(e) => e.stopPropagation()}>
         {item.mediaType === "video" ? (
-          <video src={`${API_ORIGIN}${item.url}`} controls autoPlay className="msj-lightbox-media" />
+          <video src={`${API_ORIGIN}${item.url}`} poster={item.posterUrl ? `${API_ORIGIN}${item.posterUrl}` : undefined} controls autoPlay className="msj-lightbox-media" />
         ) : (
           <img src={`${API_ORIGIN}${item.url}`} alt={item.caption || ""} className="msj-lightbox-media" />
         )}
@@ -85,7 +85,7 @@ function MediaGallery({ photos }) {
         <div className="msj-hub-media-grid">
           {filtered.map((p, i) => (
             <button type="button" key={p.id} className="msj-hub-media-tile" onClick={() => setOpenIndex(i)}>
-              <MediaThumb src={`${API_ORIGIN}${p.url}`} mediaType={p.mediaType} />
+              <MediaThumb src={`${API_ORIGIN}${p.url}`} poster={p.posterUrl ? `${API_ORIGIN}${p.posterUrl}` : undefined} mediaType={p.mediaType} />
               {p.mediaType === "video" && <span className="msj-hub-media-play"><Icon name="play" size={18} /></span>}
             </button>
           ))}

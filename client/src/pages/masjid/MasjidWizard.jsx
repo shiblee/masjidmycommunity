@@ -689,7 +689,7 @@ function MasjidWizard({ embedded = false }) {
               <div className="msj-photo-grid msj-photo-grid-lg">
                 {photos.map((p, i) => (
                   <div className="msj-photo-card" key={p.id}>
-                    <MediaThumb src={`${API_ORIGIN}${p.url}`} mediaType={p.mediaType} videoProps={{ controls: true }} />
+                    <MediaThumb src={`${API_ORIGIN}${p.url}`} poster={p.posterUrl ? `${API_ORIGIN}${p.posterUrl}` : undefined} mediaType={p.mediaType} videoProps={{ controls: true }} />
                     {p.isCover && <span className="msj-cover-badge"><Icon name="star" size={12} /> Cover</span>}
                     <span className="msj-photo-cat">{PHOTO_CATEGORIES.find((c) => c.key === p.category)?.label || p.category}</span>
                     <div className="msj-photo-actions">
@@ -765,7 +765,7 @@ function MasjidSummary({ form, photos, contacts, onEdit }) {
         <div className="msj-summary-head"><h4>Photographs</h4>{onEdit && <button type="button" onClick={() => onEdit(3)}>Edit</button>}</div>
         <div className="msj-photo-grid msj-photo-grid-lg">
           {photos.map((p) => (
-            <MediaThumb key={p.id} src={`${API_ORIGIN}${p.url}`} mediaType={p.mediaType} className="msj-summary-thumb" videoProps={{ controls: true }} />
+            <MediaThumb key={p.id} src={`${API_ORIGIN}${p.url}`} poster={p.posterUrl ? `${API_ORIGIN}${p.posterUrl}` : undefined} mediaType={p.mediaType} className="msj-summary-thumb" videoProps={{ controls: true }} />
           ))}
           {photos.length === 0 && <p>No photographs uploaded.</p>}
         </div>
