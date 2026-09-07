@@ -1,0 +1,92 @@
+name: Nginx - Add /masjid/:id and /sitemap.xml proxy rules
+
+# Manual-only — this edits live nginx config on the production server. It
+# backs up the current file, validates the new config with `nginx -t`
+# before ever reloading, and restores the backup + fails loudly if the
+# syntax check doesn't pass, so a mistake here can never take the site down.
+# The insertion itself (awk, reading a second file line-by-line and
+# printing it right before the matched line) was verified locally against
+# an exact copy of the real /etc/nginx/sites-available/masjidmycommunity
+# content before this workflow was ever run against the real server.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  patch-nginx:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Write remote patch script
+        run: |
+          cat > insertion.txt <<'BLOCK'
+              location = /sitemap.xml {
+                  proxy_pass http://127.0.0.1:5050;
+                  proxy_http_version 1.1;
+                  proxy_set_header Host $host;
+                  proxy_set_header X-Real-IP $remote_addr;
+                  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                  proxy_set_header X-Forwarded-Proto $scheme;
+              }
+
+              location ~ ^/masjid/[0-9]+$ {
+                  proxy_pass http://127.0.0.1:5050;
+                  proxy_http_version 1.1;
+                  proxy_set_header Host $host;
+                  proxy_set_header X-Real-IP $remote_addr;
+                  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                  proxy_set_header X-Forwarded-Proto $scheme;
+              }
+          BLOCK
+
+          cat > remote_patch.sh <<'SCRIPT'
+          #!/bin/bash
+          set -e
+          CONF=/etc/nginx/sites-available/masjidmycommunity
+          BACKUP="${CONF}.bak-$(date +%Y%m%d%H%M%S)"
+          SUDO=""
+          if [ ! -w "$CONF" ]; then SUDO="sudo"; fi
+
+          $SUDO cp "$CONF" "$BACKUP"
+          echo "Backed up current config to $BACKUP"
+
+          if grep -q "location = /sitemap.xml" "$CONF"; then
+            echo "Rule already present -- no changes made."
+          else
+            awk '
+              /^[[:space:]]*location \/ \{/ {
+                while ((getline line < "/tmp/insertion.txt") > 0) print line
+                close("/tmp/insertion.txt")
+                print ""
+              }
+              { print }
+            ' "$CONF" > /tmp/masjidmycommunity.new
+            $SUDO cp /tmp/masjidmycommunity.new "$CONF"
+            rm -f /tmp/masjidmycommunity.new
+            echo "Inserted new location blocks."
+          fi
+
+          echo "===== nginx -t ====="
+          if $SUDO nginx -t; then
+            echo "Syntax OK -- reloading nginx."
+            $SUDO systemctl reload nginx || $SUDO nginx -s reload
+            echo "Reloaded successfully."
+          else
+            echo "SYNTAX ERROR -- restoring backup, NOT reloading."
+            $SUDO cp "$BACKUP" "$CONF"
+            exit 1
+          fi
+          SCRIPT
+
+      - name: Copy scripts and run patch over SSH
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+
+          scp -i ~/.ssh/deploy_key insertion.txt remote_patch.sh "$DEPLOY_USER@$DEPLOY_HOST:/tmp/"
+          ssh -i ~/.ssh/deploy_key "$DEPLOY_USER@$DEPLOY_HOST" '
+            chmod +x /tmp/remote_patch.sh && /tmp/remote_patch.sh && rm -f /tmp/insertion.txt /tmp/remote_patch.sh
+          '
