@@ -128,6 +128,110 @@ function DocUploader({ type, existing, onUpload, onDelete, onView, editable, bus
   );
 }
 
+// A representative's identity can be proven by any one of several accepted
+// document types (Aadhaar, PAN, Voter ID, Passport, ...) — this is a
+// pick-one-then-upload flow, not a fixed checklist of documents you'd need
+// all of (that's what DocUploader/the masjid & property steps are for).
+function RepresentativeDocUploader({ types, existing, onUpload, onDelete, onView, editable, busy, representativeId }) {
+  const [adding, setAdding] = useState(false);
+  const [selectedTypeId, setSelectedTypeId] = useState("");
+  const [documentNumber, setDocumentNumber] = useState("");
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState("");
+
+  const selectedType = types.find((t) => t.id === Number(selectedTypeId));
+  const allowedFormats = selectedType?.allowedFormats ? selectedType.allowedFormats.split(",").map((f) => f.trim().toLowerCase()) : null;
+
+  const reset = () => {
+    setAdding(false);
+    setSelectedTypeId("");
+    setDocumentNumber("");
+    setError("");
+  };
+
+  const openEditor = () => {
+    if (!selectedType) {
+      setError("Select a document type first.");
+      return;
+    }
+    if (selectedType.documentNumberRequired && !documentNumber.trim()) {
+      setError("Enter the document number before uploading.");
+      return;
+    }
+    setError("");
+    setEditorOpen(true);
+  };
+
+  const handleSave = async (file) => {
+    setUploading(true);
+    try {
+      await onUpload(file, { documentTypeId: selectedType.id, representativeId, documentNumber });
+      reset();
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <div>
+      {existing.map((doc) => <DocRow key={doc.id} doc={doc} onDelete={onDelete} onView={onView} editable={editable} busy={busy} />)}
+
+      {editable && !adding && (
+        <button type="button" className="btn btn-outline-ink" onClick={() => setAdding(true)}>
+          <Icon name="plus" size={15} /> Add Document
+        </button>
+      )}
+
+      {editable && adding && (
+        <div className="msj-greentick-doctype">
+          <div className="auth-field">
+            <label>Document Type<span className="msj-required">*</span></label>
+            <select value={selectedTypeId} onChange={(e) => { setSelectedTypeId(e.target.value); setError(""); }}>
+              <option value="">Select Document Type</option>
+              {types.map((t) => <option key={t.id} value={t.id}>{t.name}{t.isRequired ? " *" : ""}</option>)}
+            </select>
+          </div>
+          {selectedType?.description && <p className="msj-greentick-doctype-desc">{selectedType.description}</p>}
+
+          {selectedType && (
+            <div className="msj-greentick-upload-row">
+              <div className="msj-greentick-number-field">
+                <input
+                  type="text"
+                  placeholder={selectedType.documentNumberRequired ? "Document number (required)" : "Document number (optional)"}
+                  value={documentNumber}
+                  onChange={(e) => { setDocumentNumber(e.target.value); setError(""); }}
+                />
+                {documentNumber.trim() && (
+                  <span className="msj-greentick-number-hint">
+                    Please ensure that the document number entered above exactly matches the number shown on your uploaded document.
+                  </span>
+                )}
+              </div>
+              <button type="button" className="btn btn-outline-ink" onClick={openEditor} disabled={busy}>
+                <Icon name="upload" size={15} /> Upload Document
+              </button>
+            </div>
+          )}
+
+          {error && <span className="auth-field-error">{error}</span>}
+          <button type="button" className="msj-resend-link" style={{ marginTop: 10 }} onClick={reset}>Cancel</button>
+        </div>
+      )}
+
+      {editorOpen && selectedType && (
+        <DocumentEditorModal
+          allowedFormats={allowedFormats}
+          saving={uploading}
+          onClose={() => setEditorOpen(false)}
+          onSave={handleSave}
+        />
+      )}
+    </div>
+  );
+}
+
 function GreenTickWizard({ embedded }) {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -265,6 +369,7 @@ function GreenTickWizard({ embedded }) {
   const propertyDocTypes = documentTypes.filter((t) => t.category === "property");
   const representativeDocTypes = documentTypes.filter((t) => t.category === "representative");
   const docsFor = (typeId, repId = null) => documents.filter((d) => d.documentTypeId === typeId && d.representativeId === repId);
+  const docsForRep = (repId) => documents.filter((d) => d.representativeId === repId);
 
   const checklistDone = Object.fromEntries(progress.checklist.map((c) => [c.key, c.done]));
   const journeyDone = JOURNEY_STAGES.map((s) => s.checklistKeys.every((k) => checklistDone[k]));
@@ -410,19 +515,16 @@ function GreenTickWizard({ embedded }) {
               {representatives.map((r) => (
                 <div key={r.id} className="msj-greentick-rep-block">
                   <h4>{r.contact?.name} <span className="amx-cell-sub">({r.contact?.designation})</span></h4>
-                  {representativeDocTypes.map((type) => (
-                    <DocUploader
-                      key={type.id}
-                      type={type}
-                      existing={docsFor(type.id, r.id)}
-                      onUpload={uploadDocument}
-                      onDelete={deleteDocument}
-                      onView={viewDocument}
-                      editable={editable}
-                      busy={busy}
-                      representativeId={r.id}
-                    />
-                  ))}
+                  <RepresentativeDocUploader
+                    types={representativeDocTypes}
+                    existing={docsForRep(r.id)}
+                    onUpload={uploadDocument}
+                    onDelete={deleteDocument}
+                    onView={viewDocument}
+                    editable={editable}
+                    busy={busy}
+                    representativeId={r.id}
+                  />
                 </div>
               ))}
             </>
