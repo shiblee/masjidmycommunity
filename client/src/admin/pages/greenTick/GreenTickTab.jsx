@@ -23,16 +23,26 @@ const DOC_STATUS_BADGE_CLASS = {
 const DOC_STATUS_LABEL = {
   pending: "Pending Review", under_review: "Under Review", approved: "Verified", rejected: "Rejected", replacement_requested: "Re-upload Required",
 };
+// Icon + tint for each document's preview tile — no live thumbnail is
+// fetched just to render a grid (that's a lot of blob requests up front);
+// the file type is enough to tell PDFs, images, and Office docs apart at a
+// glance, and clicking the card still opens the real preview.
+const DOC_ICON = { "application/pdf": "fileText", "application/msword": "fileText" };
+function docIconFor(mimeType) {
+  if (mimeType?.startsWith("image/")) return "imageIcon";
+  return DOC_ICON[mimeType] || "fileText";
+}
 
-function RemarksModal({ title, placeholder, required, onCancel, onSubmit, busy }) {
+function RemarksModal({ title, sub, placeholder, required, onCancel, onSubmit, busy }) {
   const [text, setText] = useState("");
   return (
     <div className="amx-modal-overlay" onClick={busy ? undefined : onCancel}>
       <div className="amx-modal" onClick={(e) => e.stopPropagation()}>
         <button className="amx-modal-close" onClick={onCancel} aria-label="Close" disabled={busy}><Icon name="x" size={16} /></button>
         <h3>{title}</h3>
+        {sub && <p className="amx-panel-sub" style={{ marginTop: 4, marginBottom: 4 }}>{sub}</p>}
         <div className="amx-form-group" style={{ marginTop: 16 }}>
-          <textarea rows={4} value={text} onChange={(e) => setText(e.target.value)} placeholder={placeholder || "Remarks (visible to the masjid)"} />
+          <textarea rows={4} value={text} onChange={(e) => setText(e.target.value)} placeholder={placeholder || "Remarks (visible to the masjid)"} autoFocus />
         </div>
         <button className="amx-btn amx-btn-accent" style={{ width: "100%" }} disabled={busy || (required && !text.trim())} onClick={() => onSubmit(text.trim())}>
           {busy ? "Please wait…" : "Confirm"}
@@ -46,7 +56,7 @@ function DocumentNumber({ value }) {
   const [revealed, setRevealed] = useState(false);
   if (!value) return null;
   return (
-    <span className="amx-cell-sub" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontFamily: "var(--a-mono, monospace)" }}>
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontFamily: "var(--mono)" }}>
       #{revealed ? value : maskDocumentNumber(value)}
       <button type="button" className="amx-icon-action" style={{ width: 20, height: 20 }} onClick={() => setRevealed((r) => !r)} title={revealed ? "Hide number" : "Show full number"}>
         <Icon name={revealed ? "eyeOff" : "eye"} size={12} />
@@ -94,53 +104,86 @@ function DocumentViewerModal({ doc, blobUrl, onClose, onDownload }) {
         )}
 
         <button type="button" className="amx-btn amx-btn-primary" style={{ width: "100%", marginTop: 16 }} onClick={() => onDownload(doc.id, doc.fileName)}>
-          <Icon name="upload" size={15} style={{ transform: "rotate(180deg)" }} /> Download
+          <Icon name="download" size={15} /> Download
         </button>
       </div>
     </div>
   );
 }
 
-function DocList({ title, docs, representatives, onDecide, onDownload, onOpenViewer }) {
-  if (!docs.length) return (
-    <div className="amx-panel-head"><h3>{title}</h3><span className="amx-panel-sub">None uploaded yet</span></div>
+function DocumentCard({ doc, typeName, onDecide, onOpenViewer }) {
+  return (
+    <div className="amx-doc-card">
+      <div className="amx-doc-card-top">
+        <div className="amx-doc-icon" style={{ background: "var(--a-bg)", color: "var(--a-navy-soft)" }}>
+          <Icon name={docIconFor(doc.mimeType)} size={18} />
+        </div>
+        <div className="amx-doc-card-title">
+          <button type="button" onClick={() => onOpenViewer(doc)}>{doc.fileName}</button>
+          <div className="amx-doc-card-type">{typeName}</div>
+        </div>
+        <StatusBadge status={DOC_STATUS_BADGE_CLASS[doc.status] || "neutral"} label={DOC_STATUS_LABEL[doc.status] || doc.status} />
+      </div>
+
+      <div className="amx-doc-meta">
+        {doc.documentNumber && <DocumentNumber value={doc.documentNumber} />}
+        <span>Uploaded {formatDateTime(doc.createdAt)}</span>
+      </div>
+
+      {doc.reviewerRemarks && <div className="amx-doc-remark">"{doc.reviewerRemarks}"</div>}
+
+      <div className="amx-doc-actions">
+        <div className="amx-doc-actions-row">
+          <button type="button" className="amx-btn amx-btn-accent amx-btn-sm" onClick={() => onDecide(doc, "approved")}>Verify</button>
+          <button type="button" className="amx-btn amx-btn-danger amx-btn-sm" onClick={() => onDecide(doc, "rejected")}>Reject</button>
+        </div>
+        <div className="amx-doc-actions-row">
+          {doc.status !== "under_review" && (
+            <button type="button" className="amx-btn amx-btn-outline amx-btn-sm" onClick={() => onDecide(doc, "under_review")}>Under Review</button>
+          )}
+          <button type="button" className="amx-btn amx-btn-outline amx-btn-sm" onClick={() => onDecide(doc, "replacement_requested")}>Request Re-upload</button>
+        </div>
+      </div>
+    </div>
   );
+}
+
+function DocGrid({ title, docs, documentTypes, onDecide, onOpenViewer }) {
+  const typeName = (id) => documentTypes.find((t) => t.id === id)?.name || "Document";
   return (
     <>
-      <div className="amx-panel-head"><h3>{title}</h3></div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 20 }}>
-        {docs.map((d) => {
-          const rep = representatives?.find((r) => r.id === d.representativeId);
-          return (
-            <div key={d.id} style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", padding: "10px 14px", border: "1px solid var(--a-border)", borderRadius: 10 }}>
-              <Icon name="fileText" size={16} />
-              <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                <button type="button" className="amx-btn amx-btn-outline amx-btn-sm" onClick={() => onOpenViewer(d)}>{d.fileName}</button>
-                {rep?.contact && <span className="amx-cell-sub">{rep.contact.name} · {rep.contact.designation}</span>}
-              </div>
-              <DocumentNumber value={d.documentNumber} />
-              <span className="amx-cell-sub">Uploaded {formatDateTime(d.createdAt)}</span>
-              <StatusBadge status={DOC_STATUS_BADGE_CLASS[d.status] || "neutral"} label={DOC_STATUS_LABEL[d.status] || d.status} />
-              {d.reviewerRemarks && <span className="amx-cell-sub" style={{ fontStyle: "italic" }}>"{d.reviewerRemarks}"</span>}
-              <div style={{ marginLeft: "auto", display: "flex", gap: 6, flexWrap: "wrap" }}>
-                {d.status !== "under_review" && <button type="button" className="amx-btn amx-btn-outline amx-btn-sm" onClick={() => onDecide(d.id, "under_review")}>Mark Under Review</button>}
-                <button type="button" className="amx-btn amx-btn-outline amx-btn-sm" onClick={() => onDecide(d.id, "approved")}>Verify</button>
-                <button type="button" className="amx-btn amx-btn-outline amx-btn-sm" onClick={() => onDecide(d.id, "rejected")}>Reject</button>
-                <button type="button" className="amx-btn amx-btn-outline amx-btn-sm" onClick={() => onDecide(d.id, "replacement_requested")}>Request Re-upload</button>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      {title && <div className="amx-panel-head"><h3>{title}</h3></div>}
+      {docs.length === 0 ? (
+        <div className="amx-panel-sub">None uploaded yet.</div>
+      ) : (
+        <div className="amx-doc-grid">
+          {docs.map((d) => (
+            <DocumentCard key={d.id} doc={d} typeName={typeName(d.documentTypeId)} onDecide={onDecide} onOpenViewer={onOpenViewer} />
+          ))}
+        </div>
+      )}
     </>
   );
+}
+
+// Every timeline entry's action string is matched by keyword to a feed
+// color/icon — new action names (a future admin action, a new document
+// status) fall back to the neutral look with no code change needed.
+function feedStyleFor(action) {
+  if (/reject|failed|revoked/.test(action)) return { bg: "var(--a-danger-bg)", fg: "var(--a-danger)", icon: "x" };
+  if (/approved|verified|issued/.test(action)) return { bg: "var(--a-ok-bg)", fg: "var(--a-green-deep)", icon: "check" };
+  if (/requested|review|clarification|suspended/.test(action)) return { bg: "var(--a-warn-bg)", fg: "var(--a-warn)", icon: "clock" };
+  if (/uploaded/.test(action)) return { bg: "var(--a-bg)", fg: "var(--a-navy-soft)", icon: "upload" };
+  if (/added|confirmed|submitted/.test(action)) return { bg: "var(--a-bg)", fg: "var(--a-navy-soft)", icon: "info" };
+  return { bg: "var(--a-bg)", fg: "var(--a-navy-soft)", icon: "activity" };
 }
 
 function GreenTickTab({ masjidId, showToast }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
-  const [remarksModal, setRemarksModal] = useState(null); // { title, action } | null
+  const [remarksModal, setRemarksModal] = useState(null); // application-level: { key, title, success }
+  const [decisionModal, setDecisionModal] = useState(null); // document/representative-level: { kind, id, field?, decision, title, sub }
 
   const load = () => {
     setLoading(true);
@@ -165,14 +208,50 @@ function GreenTickTab({ masjidId, showToast }) {
     }
   };
 
-  const decideRepresentative = (repId, field, decision) =>
+  const decideRepresentative = (repId, field, decision, remarks) =>
     runAction(
-      () => adminApi.patch(`/masjids/${masjidId}/green-tick/representatives/${repId}/${field}`, { decision }),
+      () => adminApi.patch(`/masjids/${masjidId}/green-tick/representatives/${repId}/${field}`, { decision, remarks }),
       `Representative ${field} ${decision}.`
     );
 
-  const decideDocument = (docId, decision) =>
-    runAction(() => adminApi.patch(`/masjids/${masjidId}/green-tick/documents/${docId}`, { decision }), `Document ${decision.replaceAll("_", " ")}.`);
+  const decideDocument = (docId, decision, remarks) =>
+    runAction(() => adminApi.patch(`/masjids/${masjidId}/green-tick/documents/${docId}`, { decision, remarks }), `Document ${decision.replaceAll("_", " ")}.`);
+
+  // Rejecting or asking for a re-upload always needs a reason — that's the
+  // one thing the masjid actually needs from the admin to fix anything.
+  // Verifying or just marking something under review doesn't.
+  const REMARKS_REQUIRED_DECISIONS = new Set(["rejected", "replacement_requested"]);
+
+  const openDocDecision = (doc, decision) => {
+    if (REMARKS_REQUIRED_DECISIONS.has(decision)) {
+      setDecisionModal({
+        kind: "document", id: doc.id, decision,
+        title: decision === "rejected" ? "Reject Document" : "Request Re-upload",
+        sub: "Tell the masjid exactly what's wrong — this is emailed to them automatically.",
+      });
+      return;
+    }
+    decideDocument(doc.id, decision);
+  };
+
+  const openRepDecision = (rep, field, decision) => {
+    if (decision === "rejected") {
+      setDecisionModal({
+        kind: "representative", id: rep.id, field, decision,
+        title: `Reject ${field === "identity" ? "Identity" : "Authorization"}`,
+        sub: `Tell ${rep.contact?.name || "the representative"}'s masjid what needs to be corrected.`,
+      });
+      return;
+    }
+    decideRepresentative(rep.id, field, decision);
+  };
+
+  const submitDecisionModal = (remarks) => {
+    const m = decisionModal;
+    setDecisionModal(null);
+    if (m.kind === "document") decideDocument(m.id, m.decision, remarks);
+    else decideRepresentative(m.id, m.field, m.decision, remarks);
+  };
 
   const downloadDocument = async (docId, fileName) => {
     try {
@@ -221,26 +300,31 @@ function GreenTickTab({ masjidId, showToast }) {
   if (loading) return <div className="amx-card amx-panel"><div className="amx-empty"><Icon name="shieldCheck" /><strong>Loading Green Tick application…</strong></div></div>;
   if (!data) return <div className="amx-card amx-panel"><div className="amx-empty"><Icon name="shieldCheck" /><strong>Couldn't load this application</strong></div></div>;
 
-  const { masjid, application, progress, representatives, documents, timeline } = data;
-  const repDocs = documents.filter((d) => d.representativeId != null);
-  const masjidDocs = documents.filter((d) => d.representativeId == null && data.documentTypes.find((t) => t.id === d.documentTypeId)?.category === "masjid");
-  const propertyDocs = documents.filter((d) => d.representativeId == null && data.documentTypes.find((t) => t.id === d.documentTypeId)?.category === "property");
+  const { masjid, application, progress, representatives, documents, timeline, documentTypes } = data;
+  const masjidDocs = documents.filter((d) => d.representativeId == null && documentTypes.find((t) => t.id === d.documentTypeId)?.category === "masjid");
+  const propertyDocs = documents.filter((d) => d.representativeId == null && documentTypes.find((t) => t.id === d.documentTypeId)?.category === "property");
 
   return (
     <>
       <div className="amx-card amx-panel" style={{ marginBottom: 20 }}>
-        <div className="amx-panel-head" style={{ alignItems: "center" }}>
+        <div className="amx-panel-head" style={{ alignItems: "flex-start" }}>
           <div>
             <h3>Green Tick Application</h3>
             <div className="amx-panel-sub">
-              {masjid.name} · {masjid.category || "—"} · {masjid.address || "—"} · Masjid status: {masjid.status}
+              {masjid.name} · {masjid.category || "—"} · {masjid.address || "—"}
+            </div>
+            <div className="amx-panel-sub" style={{ marginTop: 6 }}>
+              Verification ID: <strong style={{ color: "var(--a-text)" }}>{application.verificationId || "Not yet generated"}</strong>
             </div>
           </div>
           <StatusBadge status={STATUS_BADGE_CLASS[application.status]} label={application.statusLabel} />
         </div>
-        <p className="amx-panel-sub" style={{ marginBottom: 12 }}>
-          Verification ID: <strong>{application.verificationId || "Not yet generated"}</strong> · Progress: {progress.completed} of {progress.total} requirements
-        </p>
+
+        <div className="msj-greentick-progress" style={{ margin: "0 0 18px" }}>
+          <div className="msj-greentick-progress-bar"><div className="msj-greentick-progress-fill" style={{ width: `${(progress.completed / progress.total) * 100}%` }} /></div>
+          <span>{progress.completed} of {progress.total} requirements completed</span>
+        </div>
+
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           {application.status === "submitted" && <button className="amx-btn amx-btn-outline amx-btn-sm" onClick={() => openRemarks("under-review")}>Mark Under Review</button>}
           {["submitted", "under_review", "partially_verified"].includes(application.status) && (
@@ -262,44 +346,43 @@ function GreenTickTab({ masjidId, showToast }) {
         {representatives.length === 0 ? (
           <p className="amx-panel-sub">No representatives added yet.</p>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {representatives.map((r) => (
-              <div key={r.id} style={{ padding: "12px 14px", border: "1px solid var(--a-border)", borderRadius: 10 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
+          representatives.map((r) => {
+            const repDocs = documents.filter((d) => d.representativeId === r.id);
+            return (
+              <div key={r.id} className="amx-rep-card">
+                <div className="amx-rep-head">
                   <div>
-                    <strong>{r.contact?.name}</strong>
-                    <div className="amx-cell-sub">{r.contact?.designation} · {r.contact?.mobile}</div>
+                    <div className="amx-rep-name">{r.contact?.name}</div>
+                    <div className="amx-panel-sub">{r.contact?.designation} · {r.contact?.mobile}</div>
                   </div>
-                  <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
-                    <div>
-                      <span className="amx-cell-sub">Identity: </span>
+                  <div className="amx-rep-checks">
+                    <div className="amx-rep-check-row">
+                      <span className="amx-rep-check-label">Identity</span>
                       <StatusBadge status={r.identityVerificationStatus === "approved" ? "active" : r.identityVerificationStatus === "rejected" ? "inactive" : "pending"} label={r.identityVerificationStatus} />
-                      {" "}
-                      <button className="amx-btn amx-btn-outline amx-btn-sm" onClick={() => decideRepresentative(r.id, "identity", "approved")}>Approve</button>
-                      <button className="amx-btn amx-btn-outline amx-btn-sm" onClick={() => decideRepresentative(r.id, "identity", "rejected")}>Reject</button>
+                      <button className="amx-btn amx-btn-outline amx-btn-sm" onClick={() => openRepDecision(r, "identity", "approved")}>Approve</button>
+                      <button className="amx-btn amx-btn-outline amx-btn-sm" onClick={() => openRepDecision(r, "identity", "rejected")}>Reject</button>
                     </div>
-                    <div>
-                      <span className="amx-cell-sub">Authorization: </span>
+                    <div className="amx-rep-check-row">
+                      <span className="amx-rep-check-label">Authorization</span>
                       <StatusBadge status={r.authorizationStatus === "approved" ? "active" : r.authorizationStatus === "rejected" ? "inactive" : "pending"} label={r.authorizationStatus} />
-                      {" "}
-                      <button className="amx-btn amx-btn-outline amx-btn-sm" onClick={() => decideRepresentative(r.id, "authorization", "approved")}>Approve</button>
-                      <button className="amx-btn amx-btn-outline amx-btn-sm" onClick={() => decideRepresentative(r.id, "authorization", "rejected")}>Reject</button>
+                      <button className="amx-btn amx-btn-outline amx-btn-sm" onClick={() => openRepDecision(r, "authorization", "approved")}>Approve</button>
+                      <button className="amx-btn amx-btn-outline amx-btn-sm" onClick={() => openRepDecision(r, "authorization", "rejected")}>Reject</button>
                     </div>
                   </div>
                 </div>
-                {r.reviewerRemarks && <p className="amx-cell-sub" style={{ marginTop: 8, fontStyle: "italic" }}>"{r.reviewerRemarks}"</p>}
+                {r.reviewerRemarks && <div className="amx-rep-remark">"{r.reviewerRemarks}"</div>}
+                <DocGrid docs={repDocs} documentTypes={documentTypes} onDecide={openDocDecision} onOpenViewer={openViewer} />
               </div>
-            ))}
-          </div>
+            );
+          })
         )}
-        <div style={{ marginTop: 20 }}>
-          <DocList title="Identity Documents" docs={repDocs} representatives={representatives} onDecide={decideDocument} onDownload={downloadDocument} onOpenViewer={openViewer} />
-        </div>
       </div>
 
       <div className="amx-card amx-panel" style={{ marginBottom: 20 }}>
-        <DocList title="Masjid Documents" docs={masjidDocs} onDecide={decideDocument} onDownload={downloadDocument} onOpenViewer={openViewer} />
-        <DocList title="Property Verification" docs={propertyDocs} onDecide={decideDocument} onDownload={downloadDocument} onOpenViewer={openViewer} />
+        <DocGrid title="Masjid Documents" docs={masjidDocs} documentTypes={documentTypes} onDecide={openDocDecision} onOpenViewer={openViewer} />
+      </div>
+      <div className="amx-card amx-panel" style={{ marginBottom: 20 }}>
+        <DocGrid title="Property Verification" docs={propertyDocs} documentTypes={documentTypes} onDecide={openDocDecision} onOpenViewer={openViewer} />
       </div>
 
       <div className="amx-card amx-panel">
@@ -307,15 +390,25 @@ function GreenTickTab({ masjidId, showToast }) {
         {timeline.length === 0 ? (
           <p className="amx-panel-sub">No activity recorded yet.</p>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {timeline.map((t) => (
-              <div key={t.id} style={{ fontSize: 13, color: "var(--a-text)", borderBottom: "1px solid var(--a-border)", paddingBottom: 8 }}>
-                <strong>{t.action.replaceAll("_", " ")}</strong>
-                {t.previousStatus && t.newStatus && <span className="amx-cell-sub"> — {t.previousStatus} → {t.newStatus}</span>}
-                {t.remarks && <span> "{t.remarks}"</span>}
-                <div className="amx-cell-sub">{t.actorName} ({t.actorType}) · {formatDateTime(t.createdAt)}</div>
-              </div>
-            ))}
+          <div className="amx-feed">
+            {timeline.map((t) => {
+              const s = feedStyleFor(t.action);
+              return (
+                <div className="amx-feed-item" key={t.id}>
+                  <div className="amx-feed-icon" style={{ background: s.bg, color: s.fg }}>
+                    <Icon name={s.icon} />
+                  </div>
+                  <div>
+                    <p>
+                      <strong>{t.action.replaceAll("_", " ")}</strong>
+                      {t.previousStatus && t.newStatus && ` — ${t.previousStatus} → ${t.newStatus}`}
+                      {t.remarks && ` "${t.remarks}"`}
+                    </p>
+                    <time>{t.actorName} ({t.actorType}) · {formatDateTime(t.createdAt)}</time>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
@@ -327,6 +420,17 @@ function GreenTickTab({ masjidId, showToast }) {
           busy={busy}
           onCancel={() => setRemarksModal(null)}
           onSubmit={submitRemarks}
+        />
+      )}
+
+      {decisionModal && (
+        <RemarksModal
+          title={decisionModal.title}
+          sub={decisionModal.sub}
+          required
+          busy={busy}
+          onCancel={() => setDecisionModal(null)}
+          onSubmit={submitDecisionModal}
         />
       )}
 
