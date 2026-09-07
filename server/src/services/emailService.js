@@ -313,6 +313,24 @@ export async function sendGreenTickStatusEmail(masjid, user, { verificationId, s
   });
 }
 
+/** Document-level status email — deliberately never carries the document
+ * file itself, only its type name and new status. */
+export async function sendGreenTickDocumentEmail(masjid, user, { documentType, statusLabel, remarks }) {
+  if (!user.email) return { sent: false, skipped: true };
+  return sendNotification("green_tick_document_status", {
+    to: user.email,
+    variables: {
+      user_name: user.fullName,
+      masjid_name: masjid.name,
+      masjid_id: String(masjid.id),
+      document_type: documentType,
+      status_label: statusLabel,
+      remarks: remarks || "",
+    },
+    userMeta: { userId: user.id, userName: user.fullName, userEmail: user.email },
+  });
+}
+
 function money(amount) {
   return `₹${Number(amount || 0).toLocaleString("en-IN")}`;
 }

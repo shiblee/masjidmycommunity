@@ -15,6 +15,7 @@ import {
   computeProgress,
   meetsIssuanceRequirements,
   notifyApplicationStatus,
+  notifyDocumentStatus,
   STATUS_LABEL,
 } from "../services/greenTickService.js";
 
@@ -190,6 +191,8 @@ export const setDocumentStatus = async (req, res) => {
       applicationId: ctx.application.id, masjidId: ctx.masjid.id, documentId: doc.id,
       action: `document_${decision}`, actor, remarks,
     });
+
+    await notifyDocumentStatus(doc, { remarks });
 
     res.json({ document: withoutStoredPath(doc) });
   } catch (error) {

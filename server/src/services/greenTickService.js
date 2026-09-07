@@ -7,7 +7,7 @@ import GreenTickStatusLog from "../models/GreenTickStatusLog.js";
 import VerificationDocumentType from "../models/VerificationDocumentType.js";
 import Masjid from "../models/Masjid.js";
 import { notifyUser } from "./notificationService.js";
-import { sendGreenTickStatusEmail } from "./emailService.js";
+import { sendGreenTickStatusEmail, sendGreenTickDocumentEmail } from "./emailService.js";
 
 // Green Tick is a central Masjid attribute — every controller that needs
 // its state (owner wizard, admin dashboard, or any of the public display
@@ -233,6 +233,46 @@ export async function notifyApplicationStatus(application, { title, body, remark
     }).catch(() => {});
 
     await sendGreenTickStatusEmail(masjid, owner, { verificationId: application.verificationId, statusLabel, remarks }).catch(() => {});
+  } catch {
+    // Never let a notification failure break the admin action that triggered it.
+  }
+}
+
+const DOC_STATUS_LABEL = {
+  pending: "Pending Review", under_review: "Under Review", approved: "Verified", rejected: "Rejected", replacement_requested: "Re-upload Required",
+};
+
+/**
+ * Document-level notification — a bell notice on every decision, plus an
+ * email specifically for "replacement_requested" (the one status that
+ * actually needs the owner to go do something). Never attaches the document
+ * itself, per the spec's explicit instruction — only its type name and
+ * status.
+ */
+export async function notifyDocumentStatus(document, { remarks } = {}) {
+  try {
+    const application = await GreenTickApplication.findByPk(document.applicationId);
+    if (!application) return;
+    const masjid = await Masjid.findByPk(application.masjidId);
+    if (!masjid) return;
+    const owner = await User.findByPk(masjid.userId);
+    if (!owner) return;
+    const type = await VerificationDocumentType.findByPk(document.documentTypeId);
+    const typeName = type?.name || "Verification document";
+    const statusLabel = DOC_STATUS_LABEL[document.status] || document.status;
+
+    notifyUser({
+      userId: owner.id,
+      type: `green_tick_document_${document.status}`,
+      title: `Verification Document: ${statusLabel}`,
+      body: `${typeName} for "${masjid.name}" is now: ${statusLabel}.`,
+      link: `/account/my-masjids/${masjid.id}/green-tick`,
+      relatedMasjidId: masjid.id,
+    }).catch(() => {});
+
+    if (document.status === "replacement_requested") {
+      await sendGreenTickDocumentEmail(masjid, owner, { documentType: typeName, statusLabel, remarks }).catch(() => {});
+    }
   } catch {
     // Never let a notification failure break the admin action that triggered it.
   }
