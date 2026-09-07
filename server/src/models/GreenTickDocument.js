@@ -22,7 +22,7 @@ const GreenTickDocument = sequelize.define(
     documentNumber: { type: DataTypes.STRING, allowNull: true },
     issueDate: { type: DataTypes.DATEONLY, allowNull: true },
     expiryDate: { type: DataTypes.DATEONLY, allowNull: true },
-    status: { type: DataTypes.ENUM("pending", "approved", "rejected", "replacement_requested"), allowNull: false, defaultValue: "pending" },
+    status: { type: DataTypes.ENUM("pending", "under_review", "approved", "rejected", "replacement_requested"), allowNull: false, defaultValue: "pending" },
     reviewerRemarks: { type: DataTypes.TEXT, allowNull: true },
     uploadedBy: { type: DataTypes.INTEGER, allowNull: false },
   },

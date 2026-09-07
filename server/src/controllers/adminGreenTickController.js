@@ -174,8 +174,8 @@ export const setDocumentStatus = async (req, res) => {
     const ctx = await requireApplication(req, res);
     if (!ctx) return;
     const { decision, remarks } = req.body;
-    if (!["approved", "rejected", "replacement_requested"].includes(decision)) {
-      return res.status(400).json({ message: "Decision must be approved, rejected, or replacement_requested." });
+    if (!["under_review", "approved", "rejected", "replacement_requested"].includes(decision)) {
+      return res.status(400).json({ message: "Decision must be under_review, approved, rejected, or replacement_requested." });
     }
 
     const doc = await GreenTickDocument.findOne({ where: { id: req.params.docId, applicationId: ctx.application.id } });
