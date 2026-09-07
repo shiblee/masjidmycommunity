@@ -1,0 +1,30 @@
+name: Diagnose SSH permissions (read-only)
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+
+          ssh -i ~/.ssh/deploy_key "$DEPLOY_USER@$DEPLOY_HOST" '
+            echo "whoami: $(whoami)"
+            echo "id: $(id)"
+            echo "file: $(ls -la /etc/nginx/sites-available/masjidmycommunity)"
+            echo "dir: $(ls -lad /etc/nginx/sites-available/)"
+            echo "--- sudo -n true ---"
+            sudo -n true 2>&1 && echo "sudo -n: OK (passwordless)" || echo "sudo -n: FAILED"
+            echo "--- sudo -n cp test ---"
+            sudo -n cp /etc/nginx/sites-available/masjidmycommunity /tmp/perm_test_copy 2>&1 && echo "sudo cp: OK" || echo "sudo cp: FAILED"
+            rm -f /tmp/perm_test_copy 2>/dev/null
+          '
