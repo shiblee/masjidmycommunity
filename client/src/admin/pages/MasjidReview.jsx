@@ -1046,8 +1046,6 @@ function MasjidReview() {
                         <th>Name</th>
                         <th>Mobile</th>
                         <th>Status</th>
-                        <th>Added</th>
-                        <th>Updated</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1057,8 +1055,6 @@ function MasjidReview() {
                           <td>{c.name}</td>
                           <td style={{ whiteSpace: "nowrap" }}>{c.mobile}</td>
                           <td style={{ whiteSpace: "nowrap" }}><StatusBadge status={c.verified ? "verified" : "pending"} label={c.verified ? "Verified" : "Not Verified"} /></td>
-                          <td style={{ whiteSpace: "nowrap" }}>{formatDateTime(c.createdAt)}</td>
-                          <td style={{ whiteSpace: "nowrap" }}>{formatDateTime(c.updatedAt)}</td>
                         </tr>
                       ))}
                     </tbody>
