@@ -3,7 +3,7 @@ import { Icon } from "../../components/Icons.jsx";
 import MediaThumb from "../../components/MediaThumb.jsx";
 import MediaCountBadge from "../../components/MediaCountBadge.jsx";
 import { API_ORIGIN } from "../../config.js";
-import { locationOf, VerifiedTick, ActiveCampaignBadge, DistanceBadge, GetDirectionsButton } from "./exploreMasjidsShared.jsx";
+import { locationOf, ActiveCampaignBadge, DistanceBadge, GetDirectionsButton } from "./exploreMasjidsShared.jsx";
 import EngagementRow from "../../components/masjid/EngagementRow.jsx";
 
 function ExploreMasjidsGrid({ masjids, userLocation, onOpenReviews }) {
@@ -15,7 +15,6 @@ function ExploreMasjidsGrid({ masjids, userLocation, onOpenReviews }) {
         <div className="msj-explore-card" key={m.id} onClick={() => onOpenReviews(m)} role="link" tabIndex={0}>
           <div className="msj-explore-thumb">
             <MediaThumb src={m.coverPhotoUrl ? `${API_ORIGIN}${m.coverPhotoUrl}` : null} />
-            <VerifiedTick />
             <MediaCountBadge photoCount={m.photoCount} videoCount={m.videoCount} />
           </div>
           <div className="msj-explore-body">

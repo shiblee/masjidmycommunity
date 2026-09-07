@@ -5,7 +5,7 @@ import { formatDate } from "../../utils/formatDateTime.js";
 import MediaThumb from "../../components/MediaThumb.jsx";
 import {
   STATUS_LABEL, locationOf, MasjidActions, MediaCountBadge, CampaignsLink,
-  VerifiedTick, ActiveCampaignBadge, excerpt,
+  ActiveCampaignBadge, excerpt,
 } from "./myMasjidsShared.jsx";
 import EngagementRow from "../../components/masjid/EngagementRow.jsx";
 
@@ -21,7 +21,6 @@ function MyMasjidsList({ masjids, onDelete, onViewOnMap }) {
           <div className="msj-explore-row-body">
             <div className="msj-explore-row-top">
               <h3>{m.name}</h3>
-              {m.status === "approved" && <VerifiedTick inline />}
               <span className={`acct-status-pill ${m.status}`}>{STATUS_LABEL[m.status]}</span>
               {m.category && <span className="msj-category-badge">{m.category}</span>}
             </div>

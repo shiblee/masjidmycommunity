@@ -2,7 +2,7 @@ import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 export { default as MediaCountBadge } from "../../components/MediaCountBadge.jsx";
-export { VerifiedTick, ActiveCampaignBadge, excerpt } from "../exploreMasjids/exploreMasjidsShared.jsx";
+export { ActiveCampaignBadge, excerpt } from "../exploreMasjids/exploreMasjidsShared.jsx";
 
 export const STATUS_LABEL = {
   draft: "Draft", submitted: "Submitted", under_review: "Under Review",

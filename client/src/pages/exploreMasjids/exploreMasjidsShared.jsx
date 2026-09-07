@@ -35,14 +35,6 @@ export function distanceToMasjid(coords, m) {
   return distanceKm(coords.lat, coords.lng, Number(m.latitude), Number(m.longitude));
 }
 
-export function VerifiedTick({ inline = false }) {
-  return (
-    <span className={`msj-verified-badge ${inline ? "inline" : ""}`}>
-      <Icon name="shieldCheck" size={13} /> Verified
-    </span>
-  );
-}
-
 export function ActiveCampaignBadge({ m }) {
   if (!m.activeCampaignCount) return null;
   return (

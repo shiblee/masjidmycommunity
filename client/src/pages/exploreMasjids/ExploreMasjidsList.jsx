@@ -3,7 +3,7 @@ import { Icon } from "../../components/Icons.jsx";
 import MediaThumb from "../../components/MediaThumb.jsx";
 import MediaCountBadge from "../../components/MediaCountBadge.jsx";
 import { API_ORIGIN } from "../../config.js";
-import { locationOf, VerifiedTick, ActiveCampaignBadge, DistanceBadge, GetDirectionsButton, excerpt } from "./exploreMasjidsShared.jsx";
+import { locationOf, ActiveCampaignBadge, DistanceBadge, GetDirectionsButton, excerpt } from "./exploreMasjidsShared.jsx";
 import EngagementRow from "../../components/masjid/EngagementRow.jsx";
 
 function ExploreMasjidsList({ masjids, onViewOnMap, userLocation, onOpenReviews }) {
@@ -18,7 +18,6 @@ function ExploreMasjidsList({ masjids, onViewOnMap, userLocation, onOpenReviews 
           <div className="msj-explore-row-body">
             <div className="msj-explore-row-top">
               <h3>{m.name}</h3>
-              <VerifiedTick inline />
               {m.category && <span className="msj-category-badge">{m.category}</span>}
             </div>
             <p className="msj-list-loc"><Icon name="mapPin" size={14} /> {locationOf(m)}{m.address ? ` — ${m.address}` : ""}</p>

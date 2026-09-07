@@ -145,7 +145,6 @@ function MasjidProfile() {
           <div className="msj-hub-header-top">
             {cover && <MediaThumb src={`${API_ORIGIN}${cover.url}`} className="msj-hub-logo" />}
             <div>
-              <span className="msj-verified-badge"><Icon name="shieldCheck" size={13} /> Verified Masjid</span>
               <h1>{masjid.name}</h1>
               <p className="msj-hub-header-meta">
                 {[masjid.category, [masjid.city, masjid.country].filter(Boolean).join(", ")].filter(Boolean).join(" • ")}
@@ -214,7 +213,6 @@ function MasjidProfile() {
                   <InfoCard icon="mapPin" label="Address">{address}</InfoCard>
                   <InfoCard icon="sun" label="Established">{masjid.yearEstablished}</InfoCard>
                   <InfoCard icon="people" label="Imam">{masjid.imamName}</InfoCard>
-                  <InfoCard icon="shieldCheck" label="Verification">Verified &amp; Approved</InfoCard>
                 </div>
               </>
             )}
@@ -231,7 +229,6 @@ function MasjidProfile() {
           <aside className="msj-hub-side">
             <div className="card msj-hub-snapshot">
               <h3>Masjid Snapshot</h3>
-              <div className="msj-hub-snapshot-row"><span>Verification</span><strong>Verified</strong></div>
               {masjid.category && <div className="msj-hub-snapshot-row"><span>Category</span><strong>{masjid.category}</strong></div>}
               <div className="msj-hub-snapshot-row"><span>Location</span><strong>{[masjid.city, masjid.country].filter(Boolean).join(", ") || "—"}</strong></div>
               <div className="msj-hub-snapshot-row"><span>Likes</span><strong>{likeCount.toLocaleString()}</strong></div>
