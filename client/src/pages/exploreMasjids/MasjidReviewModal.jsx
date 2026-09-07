@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
 import { Icon } from "../../components/Icons.jsx";
 import MediaThumb from "../../components/MediaThumb.jsx";
+import ShareMenu from "../../components/ShareMenu.jsx";
 import { API_BASE, API_ORIGIN } from "../../config.js";
 import { getUserToken } from "../../utils/userAuthStorage.js";
 import { locationOf, StarRating, directionsUrl } from "./exploreMasjidsShared.jsx";
@@ -49,7 +50,8 @@ function MasjidReviewModal({ masjid, initialTab = "overview", onClose }) {
     liked: !!masjid.likedByMe,
     likeCount: masjid.likeCount || 0,
   });
-  const [shareLabel, setShareLabel] = useState("Share");
+  const [shareOpen, setShareOpen] = useState(false);
+  const shareBtnRef = useRef(null);
   const [showSuggest, setShowSuggest] = useState(false);
   const [suggestSent, setSuggestSent] = useState(false);
   const [reviewSettings, setReviewSettings] = useState(null);
@@ -98,22 +100,6 @@ function MasjidReviewModal({ masjid, initialTab = "overview", onClose }) {
   const toggleFavorite = async () => {
     const result = await toggleLike();
     if (result?.needsLogin) navigate("/auth");
-  };
-
-  const handleShare = async () => {
-    const url = `${window.location.origin}/masjid/${masjid.id}`;
-    if (navigator.share) {
-      navigator.share({ title: masjid.name, url }).catch(() => {});
-      return;
-    }
-    try {
-      await navigator.clipboard.writeText(url);
-      setShareLabel("Link Copied!");
-      setTimeout(() => setShareLabel("Share"), 2000);
-    } catch {
-      setShareLabel("Couldn't copy");
-      setTimeout(() => setShareLabel("Share"), 2000);
-    }
   };
 
   return (
@@ -188,10 +174,17 @@ function MasjidReviewModal({ masjid, initialTab = "overview", onClose }) {
                 <span className="msj-review-action-icon"><HeartIcon filled={favorited} /></span>
                 {favorited ? "Liked" : "Like"}{likeCount > 0 ? ` · ${formatCompactNumber(likeCount)}` : ""}
               </button>
-              <button type="button" className="msj-review-action-btn" onClick={handleShare}>
+              <button type="button" ref={shareBtnRef} className="msj-review-action-btn" onClick={() => setShareOpen((v) => !v)}>
                 <span className="msj-review-action-icon"><ShareIcon /></span>
-                {shareLabel}
+                Share
               </button>
+              <ShareMenu
+                open={shareOpen}
+                onClose={() => setShareOpen(false)}
+                anchorRef={shareBtnRef}
+                url={`${window.location.origin}/masjid/${masjid.id}`}
+                title={masjid.name}
+              />
             </div>
 
             {(masjid.formattedAddress || masjid.address) && (

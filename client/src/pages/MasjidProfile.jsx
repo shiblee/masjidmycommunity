@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Icon } from "../components/Icons.jsx";
 import MediaThumb from "../components/MediaThumb.jsx";
+import ShareMenu from "../components/ShareMenu.jsx";
 import { API_BASE, API_ORIGIN } from "../config.js";
 import { getUserToken } from "../utils/userAuthStorage.js";
 import { StarRating, directionsUrl } from "./exploreMasjids/exploreMasjidsShared.jsx";
@@ -81,7 +82,8 @@ function MasjidProfile() {
     liked: !!masjid?.likedByMe,
     likeCount: masjid?.likeCount || 0,
   });
-  const [shareLabel, setShareLabel] = useState("Share");
+  const [shareOpen, setShareOpen] = useState(false);
+  const shareBtnRef = useRef(null);
   const [showSuggest, setShowSuggest] = useState(false);
   const [suggestSent, setSuggestSent] = useState(false);
   const loggedIn = !!getUserToken();
@@ -101,22 +103,6 @@ function MasjidProfile() {
   const toggleFavorite = async () => {
     const result = await toggleLike();
     if (result?.needsLogin) navigate("/auth");
-  };
-
-  const handleShare = async () => {
-    const url = `${window.location.origin}/masjid/${id}`;
-    if (navigator.share) {
-      navigator.share({ title: masjid.name, url }).catch(() => {});
-      return;
-    }
-    try {
-      await navigator.clipboard.writeText(url);
-      setShareLabel("Link Copied!");
-      setTimeout(() => setShareLabel("Share"), 2000);
-    } catch {
-      setShareLabel("Couldn't copy");
-      setTimeout(() => setShareLabel("Share"), 2000);
-    }
   };
 
   if (notFound) {
@@ -169,9 +155,16 @@ function MasjidProfile() {
             <button type="button" className={`msj-hub-action-btn ${favorited ? "active" : ""}`} onClick={toggleFavorite} disabled={favBusy}>
               <Icon name="heart" size={16} /> {favorited ? "Liked" : "Like"}
             </button>
-            <button type="button" className="msj-hub-action-btn" onClick={handleShare}>
-              <Icon name="link" size={16} /> {shareLabel}
+            <button type="button" ref={shareBtnRef} className="msj-hub-action-btn" onClick={() => setShareOpen((v) => !v)}>
+              <Icon name="link" size={16} /> Share
             </button>
+            <ShareMenu
+              open={shareOpen}
+              onClose={() => setShareOpen(false)}
+              anchorRef={shareBtnRef}
+              url={`${window.location.origin}/masjid/${id}`}
+              title={masjid.name}
+            />
             {dirUrl ? (
               <a href={dirUrl} target="_blank" rel="noopener noreferrer" className="msj-hub-action-btn">
                 <Icon name="compass" size={16} /> Get Directions
