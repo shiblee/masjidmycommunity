@@ -4,6 +4,7 @@ import StatusBadge from "../../components/StatusBadge.jsx";
 import adminApi from "../../services/adminApi.js";
 import { formatDateTime } from "../../../utils/formatDateTime.js";
 import { maskDocumentNumber } from "../../../utils/mask.js";
+import MicButton from "../../../components/MicButton.jsx";
 
 // Values here must be real StatusBadge MAP keys (not literal "danger"/"ok"
 // class-name suffixes) — StatusBadge looks the `status` prop up directly,
@@ -42,7 +43,10 @@ function RemarksModal({ title, sub, placeholder, required, onCancel, onSubmit, b
         <h3>{title}</h3>
         {sub && <p className="amx-panel-sub" style={{ marginTop: 4, marginBottom: 4 }}>{sub}</p>}
         <div className="amx-form-group" style={{ marginTop: 16 }}>
-          <textarea rows={4} value={text} onChange={(e) => setText(e.target.value)} placeholder={placeholder || "Remarks (visible to the masjid)"} autoFocus />
+          <div className="amx-textarea-mic-wrap">
+            <textarea rows={4} value={text} onChange={(e) => setText(e.target.value)} placeholder={placeholder || "Remarks (visible to the masjid)"} autoFocus />
+            <MicButton onTranscript={(t) => setText(t)} />
+          </div>
         </div>
         <button className="amx-btn amx-btn-accent" style={{ width: "100%" }} disabled={busy || (required && !text.trim())} onClick={() => onSubmit(text.trim())}>
           {busy ? "Please wait…" : "Confirm"}

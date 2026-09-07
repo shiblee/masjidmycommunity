@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import Icon from "../components/Icons.jsx";
 import adminApi from "../services/adminApi.js";
 import { updateStoredUser } from "../authStorage.js";
+import MicButton from "../../components/MicButton.jsx";
 
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
 const ALLOWED_AVATAR_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif"];
@@ -598,7 +599,10 @@ function Settings() {
               </div>
               <div className="amx-form-group">
                 <label>Bio</label>
-                <textarea rows={3} value={profile.bio} onChange={(e) => setProfile((p) => ({ ...p, bio: e.target.value }))} />
+                <div className="amx-textarea-mic-wrap">
+                  <textarea rows={3} value={profile.bio} onChange={(e) => setProfile((p) => ({ ...p, bio: e.target.value }))} />
+                  <MicButton onTranscript={(t) => setProfile((p) => ({ ...p, bio: t }))} />
+                </div>
               </div>
 
               <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 26, paddingTop: 20, borderTop: "1px solid var(--a-border)" }}>

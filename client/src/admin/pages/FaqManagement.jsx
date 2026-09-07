@@ -7,6 +7,7 @@ import Pagination from "../components/Pagination.jsx";
 import TranslateFieldsModal from "../components/TranslateFieldsModal.jsx";
 import adminApi from "../services/adminApi.js";
 import { formatDate } from "../../utils/formatDateTime.js";
+import MicButton from "../../components/MicButton.jsx";
 
 const PAGE_SIZE = 100;
 
@@ -71,7 +72,10 @@ function FaqFormModal({ faq, categories, onCancel, onSaved }) {
           </div>
           <div className="amx-form-group">
             <label htmlFor="faq-answer">Answer (English)</label>
-            <textarea id="faq-answer" rows={4} value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder="A clear, direct answer…" />
+            <div className="amx-textarea-mic-wrap">
+              <textarea id="faq-answer" rows={4} value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder="A clear, direct answer…" />
+              <MicButton onTranscript={(t) => setAnswer(t)} />
+            </div>
           </div>
           <div className="amx-form-group">
             <label htmlFor="faq-icon">Icon</label>

@@ -4,6 +4,7 @@ import StatusBadge from "../components/StatusBadge.jsx";
 import Pagination from "../components/Pagination.jsx";
 import adminApi from "../services/adminApi.js";
 import { formatDateTime } from "../../utils/formatDateTime.js";
+import MicButton from "../../components/MicButton.jsx";
 
 const TYPES = [
   { key: "all", label: "All Types" },
@@ -37,7 +38,10 @@ function EditModal({ activity, onCancel, onSave }) {
         </div>
         <div className="amx-form-group">
           <label>Body</label>
-          <textarea rows={4} value={body} onChange={(e) => setBody(e.target.value)} />
+          <div className="amx-textarea-mic-wrap">
+            <textarea rows={4} value={body} onChange={(e) => setBody(e.target.value)} />
+            <MicButton onTranscript={(t) => setBody(t)} />
+          </div>
         </div>
         <button className="amx-btn amx-btn-accent" style={{ width: "100%" }} onClick={() => onSave({ title, body })}>Save</button>
       </div>

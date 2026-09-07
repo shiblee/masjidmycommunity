@@ -5,6 +5,7 @@ import StatusBadge from "../components/StatusBadge.jsx";
 import adminApi from "../services/adminApi.js";
 import { formatDateTime } from "../../utils/formatDateTime.js";
 import { API_ORIGIN } from "../../config.js";
+import MicButton from "../../components/MicButton.jsx";
 
 const FIELD_LABEL = { name: "Name", category: "Category", location: "Location", photos: "Photos", contact: "Contact Details", other: "Other" };
 const REQUEST_STATUS_LABEL = { pending: "Pending Review", partially_approved: "Partially Approved", approved: "Approved", rejected: "Rejected" };
@@ -61,7 +62,12 @@ function EditDraftInputs({ fieldKey, draft, setDraft }) {
   if (fieldKey === "photos") {
     return <input value={draft.caption || ""} onChange={(e) => setDraft({ ...draft, caption: e.target.value })} placeholder="Caption" />;
   }
-  return <textarea rows={2} value={draft.text || ""} onChange={(e) => setDraft({ ...draft, text: e.target.value })} />;
+  return (
+    <div className="amx-textarea-mic-wrap">
+      <textarea rows={2} value={draft.text || ""} onChange={(e) => setDraft({ ...draft, text: e.target.value })} />
+      <MicButton onTranscript={(t) => setDraft({ ...draft, text: t })} />
+    </div>
+  );
 }
 
 function FieldCard({ field, requestId, onDecided }) {

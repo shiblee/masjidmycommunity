@@ -4,6 +4,7 @@ import Icon from "../components/Icons.jsx";
 import StatusBadge from "../components/StatusBadge.jsx";
 import adminApi from "../services/adminApi.js";
 import { formatDateTime } from "../../utils/formatDateTime.js";
+import MicButton from "../../components/MicButton.jsx";
 
 function Section({ title, children }) {
   return (
@@ -33,7 +34,10 @@ function ReplyModal({ onCancel, onSubmit }) {
         <p className="amx-modal-sub">This is emailed directly to the sender's address, and moves an open inquiry to In Progress.</p>
         <div className="amx-form-group" style={{ marginTop: 16 }}>
           <label htmlFor="reply-message">Your reply</label>
-          <textarea id="reply-message" rows={5} value={text} onChange={(e) => setText(e.target.value)} placeholder="Write your reply…" />
+          <div className="amx-textarea-mic-wrap">
+            <textarea id="reply-message" rows={5} value={text} onChange={(e) => setText(e.target.value)} placeholder="Write your reply…" />
+            <MicButton onTranscript={(t) => setText(t)} />
+          </div>
         </div>
         <button className="amx-btn amx-btn-accent" style={{ width: "100%" }} disabled={!text.trim()} onClick={() => onSubmit(text.trim())}>
           <Icon name="mail" size={16} /> Send Reply
@@ -53,7 +57,10 @@ function CloseModal({ onCancel, onSubmit }) {
         <p className="amx-modal-sub">The sender will automatically receive a closing email with these notes, if any.</p>
         <div className="amx-form-group" style={{ marginTop: 16 }}>
           <label htmlFor="close-remarks">Closing notes (optional)</label>
-          <textarea id="close-remarks" rows={4} value={remarks} onChange={(e) => setRemarks(e.target.value)} placeholder="What was resolved, or why this is being closed…" />
+          <div className="amx-textarea-mic-wrap">
+            <textarea id="close-remarks" rows={4} value={remarks} onChange={(e) => setRemarks(e.target.value)} placeholder="What was resolved, or why this is being closed…" />
+            <MicButton onTranscript={(t) => setRemarks(t)} />
+          </div>
         </div>
         <button className="amx-btn amx-btn-accent" style={{ width: "100%" }} onClick={() => onSubmit(remarks.trim())}>
           <Icon name="check" size={16} /> Close Inquiry
@@ -71,7 +78,10 @@ function NoteModal({ title, placeholder, onCancel, onSubmit }) {
         <button className="amx-modal-close" onClick={onCancel} aria-label="Close"><Icon name="x" size={16} /></button>
         <h3>{title}</h3>
         <div className="amx-form-group" style={{ marginTop: 16 }}>
-          <textarea rows={4} value={text} onChange={(e) => setText(e.target.value)} placeholder={placeholder} />
+          <div className="amx-textarea-mic-wrap">
+            <textarea rows={4} value={text} onChange={(e) => setText(e.target.value)} placeholder={placeholder} />
+            <MicButton onTranscript={(t) => setText(t)} />
+          </div>
         </div>
         <button className="amx-btn amx-btn-accent" style={{ width: "100%" }} disabled={!text.trim()} onClick={() => onSubmit(text.trim())}>
           Submit

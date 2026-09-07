@@ -4,6 +4,7 @@ import Icon from "../components/Icons.jsx";
 import StatusBadge from "../components/StatusBadge.jsx";
 import adminApi from "../services/adminApi.js";
 import { formatDateTime } from "../../utils/formatDateTime.js";
+import MicButton from "../../components/MicButton.jsx";
 
 function Section({ title, children }) {
   return (
@@ -33,7 +34,10 @@ function ResolveModal({ onCancel, onSubmit }) {
         <p className="amx-modal-sub">The submitter will automatically receive a closure email with these remarks, if any.</p>
         <div className="amx-form-group" style={{ marginTop: 16 }}>
           <label htmlFor="resolve-remarks">Resolution remarks (optional)</label>
-          <textarea id="resolve-remarks" rows={4} value={remarks} onChange={(e) => setRemarks(e.target.value)} placeholder="What was found, and how it was resolved…" />
+          <div className="amx-textarea-mic-wrap">
+            <textarea id="resolve-remarks" rows={4} value={remarks} onChange={(e) => setRemarks(e.target.value)} placeholder="What was found, and how it was resolved…" />
+            <MicButton onTranscript={(t) => setRemarks(t)} />
+          </div>
         </div>
         <button className="amx-btn amx-btn-accent" style={{ width: "100%" }} onClick={() => onSubmit(remarks.trim())}>
           <Icon name="check" size={16} /> Mark as Resolved
@@ -51,7 +55,10 @@ function NoteModal({ title, placeholder, onCancel, onSubmit }) {
         <button className="amx-modal-close" onClick={onCancel} aria-label="Close"><Icon name="x" size={16} /></button>
         <h3>{title}</h3>
         <div className="amx-form-group" style={{ marginTop: 16 }}>
-          <textarea rows={4} value={text} onChange={(e) => setText(e.target.value)} placeholder={placeholder} />
+          <div className="amx-textarea-mic-wrap">
+            <textarea rows={4} value={text} onChange={(e) => setText(e.target.value)} placeholder={placeholder} />
+            <MicButton onTranscript={(t) => setText(t)} />
+          </div>
         </div>
         <button className="amx-btn amx-btn-accent" style={{ width: "100%" }} disabled={!text.trim()} onClick={() => onSubmit(text.trim())}>
           Submit

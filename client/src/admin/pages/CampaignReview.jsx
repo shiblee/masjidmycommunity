@@ -6,6 +6,7 @@ import StatusBadge from "../components/StatusBadge.jsx";
 import adminApi from "../services/adminApi.js";
 import MediaThumb from "../../components/MediaThumb.jsx";
 import { formatDateTime } from "../../utils/formatDateTime.js";
+import MicButton from "../../components/MicButton.jsx";
 
 function ReasonModal({ title, placeholder, extraFields, onCancel, onSubmit }) {
   const [text, setText] = useState("");
@@ -16,7 +17,10 @@ function ReasonModal({ title, placeholder, extraFields, onCancel, onSubmit }) {
         <h3>{title}</h3>
         {extraFields}
         <div className="amx-form-group" style={{ marginTop: 16 }}>
-          <textarea rows={4} value={text} onChange={(e) => setText(e.target.value)} placeholder={placeholder} />
+          <div className="amx-textarea-mic-wrap">
+            <textarea rows={4} value={text} onChange={(e) => setText(e.target.value)} placeholder={placeholder} />
+            <MicButton onTranscript={(t) => setText(t)} />
+          </div>
         </div>
         <button className="amx-btn amx-btn-accent" style={{ width: "100%" }} disabled={!text.trim()} onClick={() => onSubmit(text.trim())}>
           Submit
@@ -59,7 +63,10 @@ function DonationModal({ onCancel, onSubmit }) {
         </div>
         <div className="amx-form-group">
           <label>Notes (optional)</label>
-          <textarea rows={2} value={form.notes} onChange={set("notes")} />
+          <div className="amx-textarea-mic-wrap">
+            <textarea rows={2} value={form.notes} onChange={set("notes")} />
+            <MicButton onTranscript={(t) => setForm((f) => ({ ...f, notes: t }))} />
+          </div>
         </div>
         <button className="amx-btn amx-btn-accent" style={{ width: "100%" }} disabled={!(Number(form.amount) > 0)} onClick={() => onSubmit(form)}>
           Record Donation

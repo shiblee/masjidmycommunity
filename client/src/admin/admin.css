@@ -630,6 +630,15 @@ table.amx-table{ width:100%; border-collapse:collapse; font-size:13.5px; }
   outline:none; border-color:var(--a-green); box-shadow:0 0 0 4px rgba(141,198,63,.14);
 }
 .amx-form-hint{ font-size:12px; color:var(--a-text-faint); margin-top:6px; }
+
+/* Same embedded-mic-tab pattern as .msj-about-wrap on the public site
+   (MicButton/.mic-btn-wrap itself is unstyled here — it reads the same
+   global :root tokens everywhere) — a small circular mic button pinned to
+   a textarea's top-right corner, with room made so typed text never runs
+   under it. */
+.amx-textarea-mic-wrap{ position:relative; }
+.amx-textarea-mic-wrap textarea{ padding-inline-end:46px; }
+.amx-textarea-mic-wrap .mic-btn-wrap{ position:absolute; inset-inline-end:6px; top:6px; bottom:auto; height:auto; z-index:2; }
 .amx-settings-row{ display:flex; align-items:flex-start; justify-content:space-between; gap:20px; padding:16px 0; border-bottom:1px solid var(--a-border); }
 .amx-settings-row:last-child{ border-bottom:none; padding-bottom:0; }
 .amx-settings-row:first-child{ padding-top:0; }

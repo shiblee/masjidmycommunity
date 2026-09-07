@@ -5,6 +5,7 @@ import SortHeader from "../../components/SortHeader.jsx";
 import Pagination from "../../components/Pagination.jsx";
 import adminApi from "../../services/adminApi.js";
 import { formatDate } from "../../../utils/formatDateTime.js";
+import MicButton from "../../../components/MicButton.jsx";
 
 const PAGE_SIZE = 100;
 const CATEGORIES = ["Vulgar/Abusive", "Sexual/Explicit", "Hate/Harassment", "Threatening", "Offensive", "Other"];
@@ -257,7 +258,10 @@ function BulkImportForm({ onCancel, onDone }) {
       <form onSubmit={submit} style={{ maxWidth: 560 }}>
         <div className="amx-form-group">
           <label htmlFor="bulk-terms">Terms (one per line)</label>
-          <textarea id="bulk-terms" rows={10} value={text} onChange={(e) => setText(e.target.value)} placeholder={"term one\nterm two\nphrase three"} />
+          <div className="amx-textarea-mic-wrap">
+            <textarea id="bulk-terms" rows={10} value={text} onChange={(e) => setText(e.target.value)} placeholder={"term one\nterm two\nphrase three"} />
+            <MicButton onTranscript={(t) => setText(t)} />
+          </div>
         </div>
         <div className="amx-form-group">
           <label htmlFor="bulk-language">Language (applied to all)</label>

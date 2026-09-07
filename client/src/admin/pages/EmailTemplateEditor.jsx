@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import Icon from "../components/Icons.jsx";
 import StatusBadge from "../components/StatusBadge.jsx";
 import adminApi from "../services/adminApi.js";
+import MicButton from "../../components/MicButton.jsx";
 
 function Toggle({ on, onClick, disabled }) {
   return <button type="button" className={`amx-toggle${on ? " on" : ""}`} onClick={onClick} disabled={disabled} aria-pressed={on} />;
@@ -189,7 +190,10 @@ function EmailTemplateEditor() {
 
           <div className="amx-form-group">
             <label>Main Message</label>
-            <textarea ref={messageRef} rows={6} value={form.message} onChange={update("message")} />
+            <div className="amx-textarea-mic-wrap">
+              <textarea ref={messageRef} rows={6} value={form.message} onChange={update("message")} />
+              <MicButton onTranscript={(t) => setForm((f) => ({ ...f, message: t }))} />
+            </div>
           </div>
 
           <div className="amx-var-palette">
@@ -214,7 +218,10 @@ function EmailTemplateEditor() {
 
           <div className="amx-form-group">
             <label>Footer Content</label>
-            <textarea rows={3} value={form.footerText || ""} onChange={update("footerText")} />
+            <div className="amx-textarea-mic-wrap">
+              <textarea rows={3} value={form.footerText || ""} onChange={update("footerText")} />
+              <MicButton onTranscript={(t) => setForm((f) => ({ ...f, footerText: t }))} />
+            </div>
           </div>
 
           <div className="amx-settings-row">

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Icon from "../components/Icons.jsx";
 import adminApi from "../services/adminApi.js";
+import MicButton from "../../components/MicButton.jsx";
 
 // Friendly display names for the raw `category` values stored on each
 // Translation row (and used to filter). New categories work with no code
@@ -63,14 +64,17 @@ function TranslationRow({ row, languages, onSaved }) {
       </td>
       {languages.map((l) => (
         <td key={l.code}>
-          <textarea
-            className="amx-textarea"
-            rows={2}
-            dir={l.direction}
-            value={values[l.code] || ""}
-            onChange={(e) => setValues((v) => ({ ...v, [l.code]: e.target.value }))}
-            placeholder={l.code === "en" ? "" : "Not translated"}
-          />
+          <div className="amx-textarea-mic-wrap">
+            <textarea
+              className="amx-textarea"
+              rows={2}
+              dir={l.direction}
+              value={values[l.code] || ""}
+              onChange={(e) => setValues((v) => ({ ...v, [l.code]: e.target.value }))}
+              placeholder={l.code === "en" ? "" : "Not translated"}
+            />
+            <MicButton onTranscript={(t) => setValues((v) => ({ ...v, [l.code]: t }))} />
+          </div>
         </td>
       ))}
       <td>

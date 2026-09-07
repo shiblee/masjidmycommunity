@@ -6,6 +6,7 @@ import Pagination from "../components/Pagination.jsx";
 import TranslateFieldsModal from "../components/TranslateFieldsModal.jsx";
 import adminApi from "../services/adminApi.js";
 import { API_ORIGIN } from "../../config.js";
+import MicButton from "../../components/MicButton.jsx";
 import { formatDate } from "../../utils/formatDateTime.js";
 import TestimonialCard from "../../components/TestimonialCard.jsx";
 
@@ -132,7 +133,10 @@ function TestimonialFormModal({ testimonial, onCancel, onSaved }) {
           </div>
           <div className="amx-form-group">
             <label htmlFor="t-quote">Testimonial (English)</label>
-            <textarea id="t-quote" rows={4} value={quote} onChange={(e) => setQuote(e.target.value)} placeholder="What they said…" />
+            <div className="amx-textarea-mic-wrap">
+              <textarea id="t-quote" rows={4} value={quote} onChange={(e) => setQuote(e.target.value)} placeholder="What they said…" />
+              <MicButton onTranscript={(t) => setQuote(t)} />
+            </div>
           </div>
           <div className="amx-form-group">
             <label>Rating</label>

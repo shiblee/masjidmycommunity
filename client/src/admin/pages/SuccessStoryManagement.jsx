@@ -7,6 +7,7 @@ import TranslateFieldsModal from "../components/TranslateFieldsModal.jsx";
 import adminApi from "../services/adminApi.js";
 import { API_ORIGIN } from "../../config.js";
 import SuccessStoryCard from "../../components/SuccessStoryCard.jsx";
+import MicButton from "../../components/MicButton.jsx";
 
 const PAGE_SIZE = 100;
 
@@ -112,15 +113,24 @@ function StoryFormModal({ story, onCancel, onSaved }) {
           </div>
           <div className="amx-form-group">
             <label htmlFor="ss-summary">Summary (English)</label>
-            <textarea id="ss-summary" rows={2} value={summary} onChange={(e) => setSummary(e.target.value)} placeholder="A short one or two sentence summary shown on the card…" />
+            <div className="amx-textarea-mic-wrap">
+              <textarea id="ss-summary" rows={2} value={summary} onChange={(e) => setSummary(e.target.value)} placeholder="A short one or two sentence summary shown on the card…" />
+              <MicButton onTranscript={(t) => setSummary(t)} />
+            </div>
           </div>
           <div className="amx-form-group">
             <label htmlFor="ss-story">Detailed Story (English)</label>
-            <textarea id="ss-story" rows={6} value={body} onChange={(e) => setBody(e.target.value)} placeholder="The full story, shown on the story's own page…" />
+            <div className="amx-textarea-mic-wrap">
+              <textarea id="ss-story" rows={6} value={body} onChange={(e) => setBody(e.target.value)} placeholder="The full story, shown on the story's own page…" />
+              <MicButton onTranscript={(t) => setBody(t)} />
+            </div>
           </div>
           <div className="amx-form-group">
             <label htmlFor="ss-highlights">Key Highlights <span className="amx-panel-sub" style={{ display: "inline" }}>(one per line)</span></label>
-            <textarea id="ss-highlights" rows={3} value={highlights} onChange={(e) => setHighlights(e.target.value)} placeholder={"640 donors across 22 countries\n1,200 people served\nCompleted in 10 weeks"} />
+            <div className="amx-textarea-mic-wrap">
+              <textarea id="ss-highlights" rows={3} value={highlights} onChange={(e) => setHighlights(e.target.value)} placeholder={"640 donors across 22 countries\n1,200 people served\nCompleted in 10 weeks"} />
+              <MicButton onTranscript={(t) => setHighlights(t)} />
+            </div>
           </div>
           {error && (
             <div className="amx-field-error">
