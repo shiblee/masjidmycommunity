@@ -14,6 +14,11 @@ fs.mkdirSync(CAMPAIGN_UPLOAD_ROOT, { recursive: true });
 const DOCUMENT_UPLOAD_ROOT = path.resolve("private_uploads", "campaign-documents");
 fs.mkdirSync(DOCUMENT_UPLOAD_ROOT, { recursive: true });
 
+// Same reasoning — identity/property documents are the most sensitive files
+// this app stores, never reachable by a guessable URL.
+const GREEN_TICK_UPLOAD_ROOT = path.resolve("private_uploads", "green-tick-documents");
+fs.mkdirSync(GREEN_TICK_UPLOAD_ROOT, { recursive: true });
+
 const WALL_POST_UPLOAD_ROOT = path.resolve("uploads", "wall-post-media");
 fs.mkdirSync(WALL_POST_UPLOAD_ROOT, { recursive: true });
 
@@ -117,6 +122,25 @@ const campaignDocumentUpload = multer({
 
 export function uploadCampaignDocuments(req, res, next) {
   campaignDocumentUpload.array("documents", 5)(req, res, (err) => {
+    if (!err) return next();
+    if (err.code === "LIMIT_FILE_SIZE") {
+      return res.status(400).json({ message: `Each document must be under ${DOCUMENT_MAX_BYTES / (1024 * 1024)}MB.` });
+    }
+    res.status(400).json({ message: err.message || "Couldn't upload that file." });
+  });
+}
+
+const greenTickDocumentUpload = multer({
+  storage: diskStorageFor(GREEN_TICK_UPLOAD_ROOT),
+  limits: { fileSize: DOCUMENT_MAX_BYTES, files: 5 },
+  fileFilter: (req, file, cb) => {
+    if (!DOCUMENT_TYPES.has(file.mimetype)) return cb(new Error("Only PDF, JPG, PNG, DOC or DOCX files are allowed."));
+    cb(null, true);
+  },
+});
+
+export function uploadGreenTickDocuments(req, res, next) {
+  greenTickDocumentUpload.array("documents", 5)(req, res, (err) => {
     if (!err) return next();
     if (err.code === "LIMIT_FILE_SIZE") {
       return res.status(400).json({ message: `Each document must be under ${DOCUMENT_MAX_BYTES / (1024 * 1024)}MB.` });

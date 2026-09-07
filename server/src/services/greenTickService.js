@@ -101,6 +101,46 @@ export async function computeProgress(applicationId) {
   return { completed: checklist.filter((c) => c.done).length, total: checklist.length, checklist };
 }
 
+/**
+ * The owner's gate for hitting Submit — deliberately NOT the same bar as
+ * issuance: identity/authorization approval is admin's job to review AFTER
+ * submission, so submitting only requires the paperwork to exist (>=3
+ * representatives, each with an identity document uploaded, every required
+ * masjid/property document type has an upload), not that admin has already
+ * approved any of it.
+ */
+export async function meetsSubmissionRequirements(applicationId) {
+  const [representatives, documents, types] = await Promise.all([
+    GreenTickRepresentative.findAll({ where: { applicationId } }),
+    GreenTickDocument.findAll({ where: { applicationId } }),
+    VerificationDocumentType.findAll({ where: { isActive: true } }),
+  ]);
+
+  if (representatives.length < MIN_REPRESENTATIVES) {
+    return { ok: false, reason: `At least ${MIN_REPRESENTATIVES} representatives are required.` };
+  }
+
+  const docsByRep = new Map();
+  for (const doc of documents) {
+    if (!doc.representativeId) continue;
+    if (!docsByRep.has(doc.representativeId)) docsByRep.set(doc.representativeId, []);
+    docsByRep.get(doc.representativeId).push(doc);
+  }
+  const repMissingDoc = representatives.find((r) => !(docsByRep.get(r.id) || []).length);
+  if (repMissingDoc) return { ok: false, reason: "Every representative needs at least one identity document uploaded." };
+
+  const docsByType = new Map();
+  for (const doc of documents) {
+    if (!docsByType.has(doc.documentTypeId)) docsByType.set(doc.documentTypeId, []);
+    docsByType.get(doc.documentTypeId).push(doc);
+  }
+  const requiredTypes = types.filter((t) => t.isRequired && t.category !== "representative");
+  const missingType = requiredTypes.find((t) => !(docsByType.get(t.id) || []).length);
+  if (missingType) return { ok: false, reason: `"${missingType.name}" is required before submitting.` };
+
+  return { ok: true };
+}
+
 // Only the substantive, checkable requirements — "submitted"/"reviewed"/
 // "issued" on the checklist are workflow-status markers (consequences of
 // the admin's own actions), not independent conditions to re-verify here.
