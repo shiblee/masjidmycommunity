@@ -3178,8 +3178,12 @@ footer{
 .msj-greentick-badge-detail .msj-greentick-badge-icon{ width:27px; height:27px; box-shadow:0 2px 6px rgba(94,154,44,.5); }
 .msj-greentick-badge-detail .msj-greentick-badge-text{ font-size:14px; }
 
+/* position:fixed + portaled to <body> (see GreenTickBadge.jsx) — the cards
+   this badge sits inside clip an absolutely-positioned popover with their
+   own overflow:hidden, so it's placed from the trigger's real screen
+   coordinates instead of relative to its clipped ancestor. */
 .msj-greentick-badge-popover{
-  position:absolute; top:calc(100% + 10px); left:0; z-index:40; width:270px; background:#fff;
+  position:fixed; z-index:200; width:270px; background:#fff;
   border:1px solid var(--line); border-radius:14px; padding:18px; box-shadow:0 18px 38px -16px rgba(11,31,30,.32);
   text-align:left; cursor:default;
 }
@@ -3194,7 +3198,6 @@ footer{
 .msj-greentick-badge-popover-meta strong{ color:var(--text-on-paper); font-family:var(--mono); }
 .msj-greentick-badge-popover a{ font-size:12.5px; font-weight:700; color:var(--teal-deep); }
 .on-ink .msj-greentick-badge-text{ color:#fff; }
-.on-ink .msj-greentick-badge-popover{ color:var(--text-on-paper); }
 
 /* ===== Public Green Tick verification page ===== */
 .msj-verify-page{ max-width:640px; margin:0 auto; display:flex; flex-direction:column; gap:24px; }
