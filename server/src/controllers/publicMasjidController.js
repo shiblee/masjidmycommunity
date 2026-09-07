@@ -15,6 +15,7 @@ import MapSettings from "../models/MapSettings.js";
 import { getEffectivePrayerTimes, isValidDateStr } from "../services/prayerTimeService.js";
 import { getEngagementFor, getEngagementForMany } from "../services/masjidEngagementService.js";
 import { getGreenTickBadgeInfo, getGreenTickBadgeInfoForMany } from "../services/greenTickService.js";
+import GreenTickApplication from "../models/GreenTickApplication.js";
 
 const PUBLIC_STATUS = "approved";
 const MAP_POINTS_CAP = 500;
@@ -303,6 +304,34 @@ export const getPublicPrayerTimes = async (req, res) => {
 
     const roster = await getEffectivePrayerTimes(masjid.id, dateStr);
     res.json({ date: dateStr, roster: roster.filter((r) => r.time) });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+/**
+ * Public Green Tick lookup — deliberately the minimum needed to establish
+ * verification (masjid identity + status + when), never documents or
+ * representative details, per the spec's security section. Works for any
+ * status a verification ID was ever generated for (not just currently
+ * issued), so a suspended/revoked certificate's QR code still resolves to
+ * an honest "not currently valid" answer instead of a dead link.
+ */
+export const verifyGreenTick = async (req, res) => {
+  try {
+    const application = await GreenTickApplication.findOne({ where: { verificationId: req.params.verificationId } });
+    if (!application) return res.status(404).json({ message: "No masjid found with this verification ID." });
+
+    const masjid = await Masjid.findByPk(application.masjidId, { attributes: ["id", "name", "category", "city", "country"] });
+    if (!masjid) return res.status(404).json({ message: "Masjid not found." });
+
+    res.json({
+      verificationId: application.verificationId,
+      status: application.status,
+      isGreenTick: application.status === "green_tick_issued",
+      issuedAt: application.issuedAt,
+      masjid: { id: masjid.id, name: masjid.name, category: masjid.category, city: masjid.city, country: masjid.country },
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

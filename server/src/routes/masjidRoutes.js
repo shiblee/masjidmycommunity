@@ -36,6 +36,7 @@ import {
   deleteDocument as deleteGreenTickDocument,
   downloadDocument as downloadGreenTickDocument,
   submitApplication as submitGreenTickApplication,
+  getCertificate as getGreenTickCertificate,
 } from "../controllers/greenTickController.js";
 
 const router = Router();
@@ -70,5 +71,6 @@ router.post("/:id/green-tick/documents", uploadGreenTickDocuments, uploadGreenTi
 router.delete("/:id/green-tick/documents/:docId", deleteGreenTickDocument);
 router.get("/:id/green-tick/documents/:docId/file", downloadGreenTickDocument);
 router.post("/:id/green-tick/submit", submitGreenTickApplication);
+router.get("/:id/green-tick/certificate", getGreenTickCertificate);
 
 export default router;

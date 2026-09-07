@@ -25,6 +25,7 @@ import MasjidProfile from "./pages/MasjidProfile.jsx";
 import MyMasjids from "./pages/masjid/MyMasjids.jsx";
 import LikedMasjids from "./pages/masjid/LikedMasjids.jsx";
 import GreenTickWizard from "./pages/masjid/GreenTickWizard.jsx";
+import VerifyMasjid from "./pages/VerifyMasjid.jsx";
 import MyCampaigns from "./pages/campaign/MyCampaigns.jsx";
 import CampaignProfile from "./pages/CampaignProfile.jsx";
 import RequireUserAuth from "./components/RequireUserAuth.jsx";
@@ -79,6 +80,7 @@ function App() {
           <Route path="/success-stories/:slug" element={<SuccessStoryDetail />} />
           <Route path="/explore-campaigns" element={<ExploreCampaigns />} />
           <Route path="/verified-masjid" element={<VerifiedMasjid />} />
+          <Route path="/verify-masjid/:verificationId" element={<VerifyMasjid />} />
           <Route path="/sitemap" element={<Sitemap />} />
           <Route path="/cookie-policy" element={<LegalPage slug="cookie-policy" />} />
           <Route path="/pages/:slug" element={<LegalPage />} />

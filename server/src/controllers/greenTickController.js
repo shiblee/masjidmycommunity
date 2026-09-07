@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import QRCode from "qrcode";
 import Masjid from "../models/Masjid.js";
 import MasjidContactPerson from "../models/MasjidContactPerson.js";
 import GreenTickApplication from "../models/GreenTickApplication.js";
@@ -247,6 +248,38 @@ export const submitApplication = async (req, res) => {
     });
 
     res.json({ application });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+/**
+ * The Green Tick certificate — only ever available once the tick is
+ * actually issued. Generates a QR code (server-side, via the `qrcode`
+ * package) pointing at the public verification page rather than shipping a
+ * downloadable PDF/image file, per the agreed scope — the certificate is a
+ * page the masjid can view/print/share, not a generated binary artifact.
+ */
+export const getCertificate = async (req, res) => {
+  try {
+    const masjid = await findOwnedMasjid(req, res);
+    if (!masjid) return;
+    const application = await GreenTickApplication.findOne({ where: { masjidId: masjid.id } });
+    if (!application || application.status !== "green_tick_issued") {
+      return res.status(400).json({ message: "This masjid doesn't have an active Green Tick certificate." });
+    }
+
+    const verifyUrl = `http://localhost:5173/verify-masjid/${application.verificationId}`;
+    const qrDataUrl = await QRCode.toDataURL(verifyUrl, { margin: 1, width: 240 });
+
+    res.json({
+      masjidName: masjid.name,
+      masjidCategory: masjid.category,
+      verificationId: application.verificationId,
+      issuedAt: application.issuedAt,
+      verifyUrl,
+      qrDataUrl,
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

@@ -3114,6 +3114,35 @@ footer{
 .msj-greentick-checklist-row svg{ color:var(--text-on-paper-dim); flex-shrink:0; }
 .msj-greentick-checklist-row.done svg{ color:var(--teal-deep); }
 
+/* ===== Public Green Tick verification page ===== */
+.msj-verify-page{ max-width:640px; margin:0 auto; display:flex; flex-direction:column; gap:24px; }
+.msj-verify-certificate{
+  background:#fff; border:1px solid var(--line); border-radius:18px; padding:40px 32px; text-align:center;
+  box-shadow:0 12px 32px -16px rgba(11,31,30,.16);
+}
+.msj-verify-badge{
+  width:64px; height:64px; border-radius:50%; margin:0 auto 18px; display:flex; align-items:center; justify-content:center;
+  background:var(--paper-dim); color:var(--text-on-paper-dim);
+}
+.msj-verify-badge.active{ background:rgba(141,198,63,.14); color:var(--teal-deep); }
+.msj-verify-certificate h1{ font-size:24px; color:var(--text-on-paper); }
+.msj-verify-loc{ font-size:13.5px; color:var(--text-on-paper-dim); margin-top:6px; }
+.msj-verify-status-ok, .msj-verify-status-not-ok{
+  display:inline-flex; align-items:center; gap:7px; margin-top:18px; padding:7px 16px; border-radius:100px;
+  font-size:13px; font-weight:700;
+}
+.msj-verify-status-ok{ background:rgba(141,198,63,.14); color:var(--teal-deep); }
+.msj-verify-status-not-ok{ background:rgba(194,75,63,.1); color:#C24B3F; }
+.msj-verify-details{
+  margin-top:26px; padding-top:22px; border-top:1px solid var(--line); display:flex; flex-direction:column; gap:10px;
+}
+.msj-verify-details > div{ display:flex; justify-content:space-between; font-size:13.5px; }
+.msj-verify-details span{ color:var(--text-on-paper-dim); }
+.msj-verify-details strong{ color:var(--text-on-paper); font-family:var(--mono); font-weight:700; }
+.msj-verify-meaning{ background:var(--paper-dim); border-radius:14px; padding:24px 28px; }
+.msj-verify-meaning h3{ font-size:15px; color:var(--text-on-paper); margin-bottom:10px; }
+.msj-verify-meaning p{ font-size:13.5px; color:var(--text-on-paper-dim); line-height:1.7; }
+
 .msj-empty-state{
   text-align:center; padding:64px 20px; color:var(--text-on-paper-dim); display:flex; flex-direction:column; align-items:center; gap:12px;
 }

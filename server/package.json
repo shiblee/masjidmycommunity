@@ -20,6 +20,7 @@
     "multer": "^2.2.0",
     "mysql2": "^3.11.0",
     "nodemailer": "^9.0.5",
+    "qrcode": "^1.5.4",
     "sequelize": "^6.37.3",
     "ua-parser-js": "^2.0.10",
     "zod": "^4.5.4"
