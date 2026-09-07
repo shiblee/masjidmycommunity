@@ -6,6 +6,7 @@ import MasjidContactPerson from "../models/MasjidContactPerson.js";
 import GreenTickApplication from "../models/GreenTickApplication.js";
 import GreenTickRepresentative from "../models/GreenTickRepresentative.js";
 import GreenTickDocument from "../models/GreenTickDocument.js";
+import GreenTickStatusLog from "../models/GreenTickStatusLog.js";
 import VerificationDocumentType from "../models/VerificationDocumentType.js";
 import {
   getOrCreateApplication,
@@ -19,9 +20,12 @@ import {
 // Mirrors masjidController.js's own EDITABLE_STATUSES gate — the owner can
 // only add/remove representatives or upload/delete documents while the
 // application hasn't left their hands yet. Once submitted, only admin
-// actions (or an explicit "documents required"/"clarification required"
-// bounce-back) move it again.
-const EDITABLE_STATUSES = new Set(["draft", "documents_required", "clarification_required"]);
+// actions (or an explicit "documents required"/"clarification required"/
+// "verification failed" bounce-back) move it again. "verification_failed"
+// is included here — otherwise a failed application became a permanent
+// dead end: no admin action ever moves it forward again, and without this
+// the owner couldn't get back into the wizard to fix anything either.
+const EDITABLE_STATUSES = new Set(["draft", "documents_required", "clarification_required", "verification_failed"]);
 
 async function findOwnedMasjid(req, res) {
   const masjid = await Masjid.findOne({ where: { id: req.params.id, userId: req.user.id } });
@@ -51,12 +55,13 @@ export const getApplication = async (req, res) => {
       application = await getOrCreateApplication(masjid.id);
     }
 
-    const [representatives, documents, documentTypes, verifiedContacts, progress] = await Promise.all([
+    const [representatives, documents, documentTypes, verifiedContacts, progress, timeline] = await Promise.all([
       GreenTickRepresentative.findAll({ where: { applicationId: application.id } }),
       GreenTickDocument.findAll({ where: { applicationId: application.id } }),
       VerificationDocumentType.findAll({ where: { isActive: true }, order: [["sortOrder", "ASC"]] }),
       MasjidContactPerson.findAll({ where: { masjidId: masjid.id, verified: true } }),
       computeProgress(application.id),
+      GreenTickStatusLog.findAll({ where: { applicationId: application.id }, order: [["createdAt", "DESC"]] }),
     ]);
 
     const contactById = new Map(verifiedContacts.map((c) => [c.id, c]));
@@ -67,6 +72,7 @@ export const getApplication = async (req, res) => {
       editable: EDITABLE_STATUSES.has(application.status),
       application,
       progress,
+      timeline,
       documentTypes,
       representatives: representatives.map((r) => {
         const c = contactById.get(r.contactPersonId);

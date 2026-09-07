@@ -3055,8 +3055,15 @@ footer{
   width:64px; height:64px; border-radius:100px; background:rgba(141,198,63,.14); color:var(--teal-deep);
   display:flex; align-items:center; justify-content:center; margin:0 auto 20px;
 }
+.msj-confirm-icon.tone-warn{ background:rgba(201,148,44,.14); color:#8a6d1a; }
+.msj-confirm-icon.tone-danger{ background:rgba(194,75,63,.12); color:#C24B3F; }
 .msj-confirm h1{ font-size:26px; color:var(--text-on-paper); margin-bottom:14px; }
 .msj-confirm p{ color:var(--text-on-paper-dim); margin-bottom:28px; line-height:1.6; }
+.msj-confirm-note{
+  text-align:left; background:var(--paper-dim); border-radius:12px; padding:16px 18px; margin:-8px 0 24px;
+}
+.msj-confirm-note strong{ display:block; font-size:12.5px; color:var(--text-on-paper); margin-bottom:4px; }
+.msj-confirm-note p{ margin:0; font-size:13.5px; color:var(--text-on-paper-dim); line-height:1.6; }
 
 .msj-greentick-cta{
   display:flex; align-items:center; gap:16px; margin-top:24px; padding:22px 24px;

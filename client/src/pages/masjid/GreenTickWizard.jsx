@@ -22,6 +22,30 @@ const STATUS_LABEL = {
   pending: "Pending Review", under_review: "Under Review", approved: "Verified", rejected: "Rejected", replacement_requested: "Re-upload Required",
 };
 
+// Shown on the read-only status screen — reached only for statuses that
+// genuinely have nothing left for the owner to do right now (draft,
+// documents_required, clarification_required, and verification_failed all
+// route back into the editable wizard instead, per EDITABLE_STATUSES on
+// the backend).
+const APPLICATION_STATUS_LABEL = {
+  submitted: "Submitted", under_review: "Under Review", partially_verified: "Partially Verified",
+  approved: "Approved", green_tick_issued: "Green Tick Issued", suspended: "Suspended", revoked: "Revoked",
+};
+const APPLICATION_STATUS_DISPLAY = {
+  submitted: { icon: "clock", tone: "info", title: "Your application is with Masjid My Community" },
+  under_review: { icon: "clock", tone: "info", title: "Your application is currently under review" },
+  partially_verified: { icon: "flag", tone: "warn", title: "Your application is partially verified" },
+  approved: { icon: "check", tone: "info", title: "Your application has been approved" },
+  green_tick_issued: { icon: "check", tone: "info", title: "Your Green Tick has been issued!" },
+  suspended: { icon: "flag", tone: "warn", title: "Your Green Tick has been suspended" },
+  revoked: { icon: "x", tone: "danger", title: "Your Green Tick has been revoked" },
+};
+// Only show the latest admin remark for statuses where there's actually an
+// open concern to explain — a plain "submitted"/"under review" doesn't need
+// one, and showing a stale remark from a since-resolved earlier cycle would
+// be actively confusing.
+const STATUS_SHOW_REMARK = new Set(["partially_verified", "suspended", "revoked"]);
+
 // The full journey, shown on the wizard's introductory overview screen — not
 // just the 6 form-filling steps above, but the whole path through to
 // certification, so an owner sees the complete picture (including what
@@ -344,19 +368,27 @@ function GreenTickWizard({ embedded }) {
   // issued, etc.) — or was JUST submitted this visit — show a status
   // summary instead of step forms with nothing left to do.
   if (submitted || !data.editable) {
-    const { application, progress } = data;
+    const { application, progress, timeline } = data;
+    const display = APPLICATION_STATUS_DISPLAY[application.status] || APPLICATION_STATUS_DISPLAY.submitted;
+    const latestRemark = STATUS_SHOW_REMARK.has(application.status) ? (timeline || []).find((t) => t.remarks) : null;
     return (
       <WizardShell embedded={embedded}>
         <Link to={`/account/my-masjids/${id}`} className="msj-back-link"><Icon name="chevronLeft" size={16} /> Back to My Masjid</Link>
         <div className="msj-wizard-center">
           <div className="msj-confirm">
-            <div className="msj-confirm-icon"><Icon name="check" size={32} /></div>
-            <h1>Your Green Tick application is {application.status === "green_tick_issued" ? "issued!" : "with Masjid My Community"}</h1>
+            <div className={`msj-confirm-icon tone-${display.tone}`}><Icon name={display.icon} size={32} /></div>
+            <h1>{display.title}</h1>
             <p>
               Verification ID: <strong>{application.verificationId || "Pending"}</strong><br />
-              Current status: <strong>{application.status.replaceAll("_", " ")}</strong><br />
+              Current status: <strong>{APPLICATION_STATUS_LABEL[application.status] || application.status.replaceAll("_", " ")}</strong><br />
               Progress: {progress.completed} of {progress.total} requirements completed.
             </p>
+            {latestRemark && (
+              <div className="msj-confirm-note">
+                <strong>Note from Masjid My Community</strong>
+                <p>{latestRemark.remarks}</p>
+              </div>
+            )}
             <Link to={`/account/my-masjids/${id}`} className="btn btn-gold">Back to My Masjid <span className="btn-arrow">→</span></Link>
           </div>
         </div>
