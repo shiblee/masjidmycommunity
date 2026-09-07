@@ -3094,20 +3094,32 @@ footer{
 .msj-greentick-doctype-desc{ font-size:12.5px; color:var(--text-on-paper-dim); }
 
 .msj-greentick-doc-row{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:8px 12px; border:1px solid var(--line); border-radius:8px; background:#fff; margin-bottom:8px; }
-.msj-greentick-doc-name{ font-size:13px; color:var(--text-on-paper); flex:1; min-width:120px; }
+.msj-greentick-doc-card-body{ display:flex; flex-direction:column; gap:2px; flex:1; min-width:120px; }
+.msj-greentick-doc-name{ font-size:13px; color:var(--text-on-paper); }
+.msj-greentick-doc-number{ font-size:11.5px; color:var(--text-on-paper-dim); font-family:var(--mono); }
 .msj-greentick-doc-remarks{ font-size:12px; color:var(--text-on-paper-dim); font-style:italic; width:100%; }
+.msj-greentick-doc-view{ background:none; border:none; color:var(--teal-deep); cursor:pointer; padding:2px 4px; font-size:12.5px; font-weight:700; font-family:var(--sans); }
 .msj-greentick-doc-remove{ background:none; border:none; color:var(--text-on-paper-dim); cursor:pointer; padding:2px; }
 .msj-greentick-doc-remove:hover{ color:#C24B3F; }
 
 .msj-greentick-doc-status{ display:inline-flex; align-items:center; font-size:11px; font-weight:700; padding:3px 10px; border-radius:100px; white-space:nowrap; }
 .msj-greentick-doc-status-pending{ background:rgba(163,140,20,.12); color:#8a6d1a; }
+.msj-greentick-doc-status-under_review{ background:rgba(163,140,20,.12); color:#8a6d1a; }
 .msj-greentick-doc-status-approved{ background:rgba(141,198,63,.14); color:var(--teal-deep); }
 .msj-greentick-doc-status-rejected{ background:rgba(194,75,63,.12); color:#C24B3F; }
 .msj-greentick-doc-status-replacement_requested{ background:rgba(70,110,190,.12); color:#3a5cb0; }
 
-.msj-greentick-upload-row{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
-.msj-greentick-upload-row input[type="text"]{ border:1px solid var(--line); border-radius:8px; padding:7px 10px; font-size:13px; font-family:inherit; min-width:180px; }
-.msj-greentick-upload-row input[type="file"]{ font-size:12.5px; }
+.msj-greentick-upload-row{ display:flex; align-items:flex-start; gap:10px; flex-wrap:wrap; }
+.msj-greentick-number-field{ display:flex; flex-direction:column; gap:4px; flex:1; min-width:220px; }
+.msj-greentick-number-field input[type="text"]{ border:1px solid var(--line); border-radius:8px; padding:7px 10px; font-size:13px; font-family:inherit; }
+.msj-greentick-number-hint{ font-size:11.5px; color:var(--text-on-paper-dim); line-height:1.5; }
+
+.msj-greentick-confirm-row{
+  display:flex; align-items:flex-start; gap:10px; margin:6px 0 18px; padding:14px 16px; border:1px solid var(--line);
+  border-radius:10px; background:var(--paper-dim); cursor:pointer;
+}
+.msj-greentick-confirm-row input{ margin-top:3px; flex-shrink:0; }
+.msj-greentick-confirm-row span{ font-size:13px; color:var(--text-on-paper); line-height:1.6; }
 
 .msj-greentick-checklist{ display:flex; flex-direction:column; gap:10px; }
 .msj-greentick-checklist-row{ display:flex; align-items:center; gap:10px; font-size:14px; color:var(--text-on-paper-dim); }
@@ -3951,6 +3963,16 @@ footer{
 .photo-editor-actions-crop .profile-link-btn:hover{ color:var(--teal-deep); }
 
 .photo-crop-area{ position:relative; width:100%; height:320px; border-radius:14px; overflow:hidden; background:#1a1a1a; }
+
+.doc-editor-modal{ max-width:640px; }
+.doc-crop-area{ height:380px; }
+.doc-file-preview{
+  display:flex; align-items:center; gap:14px; padding:16px 18px; border:1px solid var(--line); border-radius:12px;
+  background:var(--paper-dim); color:var(--teal-deep); margin-top:8px;
+}
+.doc-file-preview div{ display:flex; flex-direction:column; gap:2px; color:var(--text-on-paper); }
+.doc-file-preview strong{ font-size:14px; word-break:break-all; }
+.doc-file-preview span{ font-size:12px; color:var(--text-on-paper-dim); }
 
 .photo-crop-control{ display:flex; align-items:center; gap:10px; margin-top:16px; }
 .photo-crop-control-label{ font-size:12.5px; font-weight:700; color:var(--text-on-paper-dim); width:44px; flex-shrink:0; }

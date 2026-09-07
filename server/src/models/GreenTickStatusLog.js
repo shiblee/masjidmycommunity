@@ -17,6 +17,7 @@ const GreenTickStatusLog = sequelize.define(
     newStatus: { type: DataTypes.STRING, allowNull: true },
     action: { type: DataTypes.STRING, allowNull: false },
     actorType: { type: DataTypes.ENUM("user", "admin"), allowNull: false },
+    actorId: { type: DataTypes.INTEGER, allowNull: true },
     actorName: { type: DataTypes.STRING, allowNull: true },
     remarks: { type: DataTypes.TEXT, allowNull: true },
   },

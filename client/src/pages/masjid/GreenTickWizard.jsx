@@ -6,6 +6,8 @@ import masjidApi from "../../services/masjidApi.js";
 import { API_BASE } from "../../config.js";
 import { WizardShell, WizardStepper } from "../../components/wizard/WizardShell.jsx";
 import { ContactPersonForm } from "../../components/masjid/ContactPersonForm.jsx";
+import DocumentEditorModal from "../../components/masjid/DocumentEditorModal.jsx";
+import { maskDocumentNumber } from "../../utils/mask.js";
 
 const STEPS = [
   { key: "representatives", label: "Representatives", icon: "people" },
@@ -17,7 +19,7 @@ const STEPS = [
 ];
 
 const STATUS_LABEL = {
-  pending: "Pending Review", approved: "Approved", rejected: "Rejected", replacement_requested: "Replacement Requested",
+  pending: "Pending Review", under_review: "Under Review", approved: "Verified", rejected: "Rejected", replacement_requested: "Re-upload Required",
 };
 
 // The full journey, shown on the wizard's introductory overview screen — not
@@ -36,13 +38,17 @@ const JOURNEY_STAGES = [
   { key: "issued", label: "Green Tick Issued", desc: "Once everything checks out, your Green Tick is issued and shown publicly on your masjid's page.", checklistKeys: ["issued"] },
 ];
 
-function DocRow({ doc, onDelete, editable, busy }) {
+function DocRow({ doc, onDelete, onView, editable, busy }) {
   return (
     <div className="msj-greentick-doc-row">
       <Icon name="fileText" size={15} />
-      <span className="msj-greentick-doc-name">{doc.fileName}</span>
+      <div className="msj-greentick-doc-card-body">
+        <span className="msj-greentick-doc-name">{doc.fileName}</span>
+        {doc.documentNumber && <span className="msj-greentick-doc-number">No. {maskDocumentNumber(doc.documentNumber)}</span>}
+      </div>
       <span className={`msj-greentick-doc-status msj-greentick-doc-status-${doc.status}`}>{STATUS_LABEL[doc.status]}</span>
       {doc.reviewerRemarks && <span className="msj-greentick-doc-remarks">"{doc.reviewerRemarks}"</span>}
+      <button type="button" className="msj-greentick-doc-view" onClick={() => onView(doc)}>View</button>
       {editable && (
         <button type="button" className="msj-greentick-doc-remove" onClick={() => onDelete(doc.id)} disabled={busy} aria-label="Remove document">
           <Icon name="trash" size={13} />
@@ -52,15 +58,33 @@ function DocRow({ doc, onDelete, editable, busy }) {
   );
 }
 
-function DocUploader({ type, existing, onUpload, onDelete, editable, busy, representativeId }) {
-  const [file, setFile] = useState(null);
+function DocUploader({ type, existing, onUpload, onDelete, onView, editable, busy, representativeId }) {
   const [documentNumber, setDocumentNumber] = useState("");
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [numberError, setNumberError] = useState("");
 
-  const handleUpload = async () => {
-    if (!file) return;
-    await onUpload(file, { documentTypeId: type.id, representativeId, documentNumber });
-    setFile(null);
-    setDocumentNumber("");
+  const numberMissing = type.documentNumberRequired && !documentNumber.trim();
+  const allowedFormats = type.allowedFormats ? type.allowedFormats.split(",").map((f) => f.trim().toLowerCase()) : null;
+
+  const openEditor = () => {
+    if (numberMissing) {
+      setNumberError("Enter the document number before uploading.");
+      return;
+    }
+    setNumberError("");
+    setEditorOpen(true);
+  };
+
+  const handleSave = async (file) => {
+    setUploading(true);
+    try {
+      await onUpload(file, { documentTypeId: type.id, representativeId, documentNumber });
+      setDocumentNumber("");
+      setEditorOpen(false);
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (
@@ -68,15 +92,37 @@ function DocUploader({ type, existing, onUpload, onDelete, editable, busy, repre
       <div className="msj-greentick-doctype-head">
         <strong>{type.name}</strong>
         {type.isRequired && <span className="msj-required">*</span>}
-        {type.description && <span className="msj-greentick-doctype-desc">{type.description}</span>}
       </div>
-      {existing.map((doc) => <DocRow key={doc.id} doc={doc} onDelete={onDelete} editable={editable} busy={busy} />)}
+      {type.description && <p className="msj-greentick-doctype-desc">{type.description}</p>}
+      {existing.map((doc) => <DocRow key={doc.id} doc={doc} onDelete={onDelete} onView={onView} editable={editable} busy={busy} />)}
       {editable && (
         <div className="msj-greentick-upload-row">
-          <input type="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" onChange={(e) => setFile(e.target.files?.[0] || null)} />
-          <input type="text" placeholder="Document number (optional)" value={documentNumber} onChange={(e) => setDocumentNumber(e.target.value)} />
-          <button type="button" className="btn btn-outline-ink" onClick={handleUpload} disabled={!file || busy}>Upload</button>
+          <div className="msj-greentick-number-field">
+            <input
+              type="text"
+              placeholder={type.documentNumberRequired ? "Document number (required)" : "Document number (optional)"}
+              value={documentNumber}
+              onChange={(e) => { setDocumentNumber(e.target.value); setNumberError(""); }}
+            />
+            {documentNumber.trim() && (
+              <span className="msj-greentick-number-hint">
+                Please ensure that the document number entered above exactly matches the number shown on your uploaded document.
+              </span>
+            )}
+            {numberError && <span className="auth-field-error">{numberError}</span>}
+          </div>
+          <button type="button" className="btn btn-outline-ink" onClick={openEditor} disabled={busy}>
+            <Icon name="upload" size={15} /> Upload Document
+          </button>
         </div>
+      )}
+      {editorOpen && (
+        <DocumentEditorModal
+          allowedFormats={allowedFormats}
+          saving={uploading}
+          onClose={() => setEditorOpen(false)}
+          onSave={handleSave}
+        />
       )}
     </div>
   );
@@ -100,6 +146,7 @@ function GreenTickWizard({ embedded }) {
   // verified contact) reuses the exact same name/designation/mobile + OTP
   // form as the masjid's own Contact & Verification step.
   const [addingNew, setAddingNew] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
 
   const load = () => {
     masjidApi
@@ -150,11 +197,21 @@ function GreenTickWizard({ embedded }) {
     return masjidApi.post(`/${id}/green-tick/documents`, fd);
   });
 
+  const viewDocument = async (doc) => {
+    try {
+      const res = await masjidApi.get(`/${id}/green-tick/documents/${doc.id}/file`, { responseType: "blob" });
+      const url = window.URL.createObjectURL(res.data);
+      window.open(url, "_blank", "noopener");
+    } catch {
+      setError("Couldn't open this document.");
+    }
+  };
+
   const doSubmit = async () => {
     setBusy(true);
     setError("");
     try {
-      await masjidApi.post(`/${id}/green-tick/submit`);
+      await masjidApi.post(`/${id}/green-tick/submit`, { confirmed: true });
       setSubmitted(true);
       load();
     } catch (err) {
@@ -360,6 +417,7 @@ function GreenTickWizard({ embedded }) {
                       existing={docsFor(type.id, r.id)}
                       onUpload={uploadDocument}
                       onDelete={deleteDocument}
+                      onView={viewDocument}
                       editable={editable}
                       busy={busy}
                       representativeId={r.id}
@@ -375,7 +433,7 @@ function GreenTickWizard({ embedded }) {
               <h3>Upload Masjid Documents</h3>
               <p className="amx-panel-sub" style={{ marginBottom: 16 }}>Registration, trust/committee, and authorization documents for the masjid itself.</p>
               {masjidDocTypes.map((type) => (
-                <DocUploader key={type.id} type={type} existing={docsFor(type.id, null)} onUpload={uploadDocument} onDelete={deleteDocument} editable={editable} busy={busy} representativeId={null} />
+                <DocUploader key={type.id} type={type} existing={docsFor(type.id, null)} onUpload={uploadDocument} onDelete={deleteDocument} onView={viewDocument} editable={editable} busy={busy} representativeId={null} />
               ))}
             </>
           )}
@@ -385,7 +443,7 @@ function GreenTickWizard({ embedded }) {
               <h3>Upload Property/Supporting Documents</h3>
               <p className="amx-panel-sub" style={{ marginBottom: 16 }}>Property or land ownership documents relevant to the masjid.</p>
               {propertyDocTypes.map((type) => (
-                <DocUploader key={type.id} type={type} existing={docsFor(type.id, null)} onUpload={uploadDocument} onDelete={deleteDocument} editable={editable} busy={busy} representativeId={null} />
+                <DocUploader key={type.id} type={type} existing={docsFor(type.id, null)} onUpload={uploadDocument} onDelete={deleteDocument} onView={viewDocument} editable={editable} busy={busy} representativeId={null} />
               ))}
             </>
           )}
@@ -411,7 +469,15 @@ function GreenTickWizard({ embedded }) {
                 Once submitted, your application will be reviewed by Masjid My Community. You won't be able to add or
                 remove representatives or documents while it's under review.
               </p>
-              <button type="button" className="btn btn-gold" onClick={doSubmit} disabled={busy}>
+              <label className="msj-greentick-confirm-row">
+                <input type="checkbox" checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)} />
+                <span>
+                  I confirm that the documents uploaded above are my valid and genuine documents, the information
+                  provided is accurate, and every document number entered matches the document. I authorize Masjid My
+                  Community to use these documents solely for the purpose of Green Tick verification.
+                </span>
+              </label>
+              <button type="button" className="btn btn-gold" onClick={doSubmit} disabled={busy || !confirmed}>
                 {busy ? "Submitting…" : "Submit for Verification"} <span className="btn-arrow">→</span>
               </button>
             </>

@@ -31,10 +31,10 @@ export function formatVerificationId(applicationId) {
 export async function greenTickActorFrom(req) {
   if (req.user.type === "admin") {
     const admin = await AdminUser.findByPk(req.user.id, { attributes: ["name"] });
-    return { type: "admin", name: admin?.name || "Admin" };
+    return { type: "admin", id: req.user.id, name: admin?.name || "Admin" };
   }
   const user = await User.findByPk(req.user.id, { attributes: ["fullName"] });
-  return { type: "user", name: user?.fullName || "Masjid Owner" };
+  return { type: "user", id: req.user.id, name: user?.fullName || "Masjid Owner" };
 }
 
 export async function logStatusChange({
@@ -45,6 +45,7 @@ export async function logStatusChange({
     applicationId, masjidId, representativeId, documentId,
     previousStatus, newStatus, action,
     actorType: actor?.type || "user",
+    actorId: actor?.id || null,
     actorName: actor?.name || null,
     remarks,
   });

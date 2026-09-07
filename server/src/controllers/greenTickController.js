@@ -265,6 +265,10 @@ export const submitApplication = async (req, res) => {
     const check = await meetsSubmissionRequirements(application.id);
     if (!check.ok) return res.status(400).json({ message: check.reason });
 
+    if (req.body.confirmed !== true) {
+      return res.status(400).json({ message: "You must confirm the documents you've uploaded before submitting." });
+    }
+
     const previousStatus = application.status;
     application.status = "submitted";
     application.submittedAt = new Date();
@@ -272,9 +276,17 @@ export const submitApplication = async (req, res) => {
     await application.save();
 
     const actor = await greenTickActorFrom(req);
+    // Two log rows on purpose: the status transition itself, and a separate,
+    // explicitly named audit entry for the confirmation checkbox — "recorded
+    // with date/time [createdAt] and user ID [actor.id]" per the spec.
     await logStatusChange({
       applicationId: application.id, masjidId: masjid.id,
       previousStatus, newStatus: "submitted", action: "submitted", actor,
+    });
+    await logStatusChange({
+      applicationId: application.id, masjidId: masjid.id,
+      action: "submission_confirmed", actor,
+      remarks: "Owner confirmed the uploaded documents are genuine and accurate before submitting.",
     });
 
     res.json({ application });
