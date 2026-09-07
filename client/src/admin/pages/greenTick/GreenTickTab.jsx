@@ -151,10 +151,20 @@ function DocumentThumb({ doc, masjidId, onOpenViewer }) {
   );
 }
 
-function DocumentCard({ doc, typeName, masjidId, onDecide, onOpenViewer }) {
+function DocumentCard({ doc, typeName, masjidId, onDecide, onOpenViewer, onDownload }) {
   return (
     <div className="amx-doc-card">
-      <DocumentThumb doc={doc} masjidId={masjidId} onOpenViewer={onOpenViewer} />
+      <div style={{ position: "relative" }}>
+        <DocumentThumb doc={doc} masjidId={masjidId} onOpenViewer={onOpenViewer} />
+        <button
+          type="button"
+          className="amx-doc-download-btn"
+          title="Download this document"
+          onClick={(e) => { e.stopPropagation(); onDownload(doc.id, doc.fileName); }}
+        >
+          <Icon name="download" size={14} />
+        </button>
+      </div>
 
       <div className="amx-doc-card-top">
         <div className="amx-doc-card-title">
@@ -187,7 +197,7 @@ function DocumentCard({ doc, typeName, masjidId, onDecide, onOpenViewer }) {
   );
 }
 
-function DocGrid({ title, docs, documentTypes, masjidId, onDecide, onOpenViewer }) {
+function DocGrid({ title, docs, documentTypes, masjidId, onDecide, onOpenViewer, onDownload }) {
   const typeName = (id) => documentTypes.find((t) => t.id === id)?.name || "Document";
   return (
     <>
@@ -197,7 +207,7 @@ function DocGrid({ title, docs, documentTypes, masjidId, onDecide, onOpenViewer 
       ) : (
         <div className="amx-doc-grid">
           {docs.map((d) => (
-            <DocumentCard key={d.id} doc={d} typeName={typeName(d.documentTypeId)} masjidId={masjidId} onDecide={onDecide} onOpenViewer={onOpenViewer} />
+            <DocumentCard key={d.id} doc={d} typeName={typeName(d.documentTypeId)} masjidId={masjidId} onDecide={onDecide} onOpenViewer={onOpenViewer} onDownload={onDownload} />
           ))}
         </div>
       )}
@@ -375,9 +385,17 @@ function GreenTickTab({ masjidId, showToast }) {
           <StatusBadge status={STATUS_BADGE_CLASS[application.status]} label={application.statusLabel} />
         </div>
 
-        <div className="msj-greentick-progress" style={{ margin: "0 0 18px" }}>
+        <div className="msj-greentick-progress" style={{ margin: "0 0 10px" }}>
           <div className="msj-greentick-progress-bar"><div className="msj-greentick-progress-fill" style={{ width: `${(progress.completed / progress.total) * 100}%` }} /></div>
           <span>{progress.completed} of {progress.total} requirements completed</span>
+        </div>
+        <div className="msj-greentick-checklist" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: "4px 16px", marginBottom: 18 }}>
+          {progress.checklist.map((c) => (
+            <div key={c.key} className={`msj-greentick-checklist-row${c.done ? " done" : ""}`} style={{ fontSize: 12.5 }}>
+              <Icon name={c.done ? "check" : "x"} size={13} />
+              <span>{c.label}</span>
+            </div>
+          ))}
         </div>
 
         {documents.length > 0 && (
@@ -395,8 +413,15 @@ function GreenTickTab({ masjidId, showToast }) {
               <button className="amx-btn amx-btn-outline amx-btn-sm" onClick={() => openRemarks("request-documents")}>Request More Documents</button>
               <button className="amx-btn amx-btn-outline amx-btn-sm" onClick={() => openRemarks("request-clarification")}>Request Clarification</button>
               <button className="amx-btn amx-btn-outline amx-btn-sm" onClick={() => openRemarks("verification-failed")}>Mark Verification Failed</button>
-              <button className="amx-btn amx-btn-primary amx-btn-sm" onClick={() => openRemarks("approve")}>Approve Application</button>
             </>
+          )}
+          {/* Representatives/documents can be verified individually at any
+              time, independent of the application's own bounce-back status —
+              so Approve stays available from documents_required/
+              clarification_required too, once everything actually checks
+              out, matching the backend's own allowedFrom list. */}
+          {["submitted", "under_review", "partially_verified", "documents_required", "clarification_required"].includes(application.status) && (
+            <button className="amx-btn amx-btn-primary amx-btn-sm" onClick={() => openRemarks("approve")}>Approve Application</button>
           )}
           {application.status === "approved" && <button className="amx-btn amx-btn-primary amx-btn-sm" onClick={() => openRemarks("issue")}>Issue Green Tick</button>}
           {application.status === "green_tick_issued" && <button className="amx-btn amx-btn-outline amx-btn-sm" onClick={() => openRemarks("suspend")}>Suspend Green Tick</button>}
@@ -434,7 +459,7 @@ function GreenTickTab({ masjidId, showToast }) {
                   </div>
                 </div>
                 {r.reviewerRemarks && <div className="amx-rep-remark">"{r.reviewerRemarks}"</div>}
-                <DocGrid docs={repDocs} documentTypes={documentTypes} masjidId={masjidId} onDecide={openDocDecision} onOpenViewer={openViewer} />
+                <DocGrid docs={repDocs} documentTypes={documentTypes} masjidId={masjidId} onDecide={openDocDecision} onOpenViewer={openViewer} onDownload={downloadDocument} />
               </div>
             );
           })
@@ -442,10 +467,10 @@ function GreenTickTab({ masjidId, showToast }) {
       </div>
 
       <div className="amx-card amx-panel" style={{ marginBottom: 20 }}>
-        <DocGrid title="Masjid Documents" docs={masjidDocs} documentTypes={documentTypes} masjidId={masjidId} onDecide={openDocDecision} onOpenViewer={openViewer} />
+        <DocGrid title="Masjid Documents" docs={masjidDocs} documentTypes={documentTypes} masjidId={masjidId} onDecide={openDocDecision} onOpenViewer={openViewer} onDownload={downloadDocument} />
       </div>
       <div className="amx-card amx-panel" style={{ marginBottom: 20 }}>
-        <DocGrid title="Property Verification" docs={propertyDocs} documentTypes={documentTypes} masjidId={masjidId} onDecide={openDocDecision} onOpenViewer={openViewer} />
+        <DocGrid title="Property Verification" docs={propertyDocs} documentTypes={documentTypes} masjidId={masjidId} onDecide={openDocDecision} onOpenViewer={openViewer} onDownload={downloadDocument} />
       </div>
 
       <div className="amx-card amx-panel">

@@ -331,8 +331,14 @@ export const approveApplication = async (req, res) => {
   if (!ctx) return;
   const ok = await meetsIssuanceRequirements(ctx.application.id);
   if (!ok) return res.status(400).json({ message: "Not all mandatory requirements are met yet — check representatives and documents." });
+  // Representatives/documents can be individually verified by an admin at
+  // any point, independent of the application's own bounce-back status —
+  // so an application sitting in documents_required/clarification_required
+  // (the owner hasn't formally resubmitted yet) can still be approved
+  // directly once everything actually checks out, instead of forcing a
+  // pointless resubmit-then-approve round trip.
   return transition(req, res, {
-    allowedFrom: ["submitted", "under_review", "partially_verified"], newStatus: "approved", action: "approved", notify: true,
+    allowedFrom: ["submitted", "under_review", "partially_verified", "documents_required", "clarification_required"], newStatus: "approved", action: "approved", notify: true,
   });
 };
 
