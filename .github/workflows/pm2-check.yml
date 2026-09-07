@@ -17,8 +17,14 @@ jobs:
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
           ssh -i ~/.ssh/deploy_key "$DEPLOY_USER@$DEPLOY_HOST" '
-            echo "===== pm2 list ====="
-            pm2 list
-            echo "===== pm2 logs (last 100 lines, no stream) ====="
-            pm2 logs masjidmycommunity-api --lines 100 --nostream
+            echo "===== pm2 describe ====="
+            pm2 describe masjidmycommunity-api
+            echo "===== error log tail ====="
+            tail -n 200 ~/.pm2/logs/masjidmycommunity-api-error.log
+            echo "===== out log tail ====="
+            tail -n 40 ~/.pm2/logs/masjidmycommunity-api-out.log
+            echo "===== node version ====="
+            node -v
+            echo "===== package.json start script ====="
+            cat /var/www/masjidmycommunity/server/package.json | grep -A3 "\"scripts\""
           '
