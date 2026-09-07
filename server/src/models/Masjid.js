@@ -10,7 +10,14 @@ const Masjid = sequelize.define(
     // auto-regenerated on a later name edit, so a shared/indexed URL stays
     // stable. Nullable only so existing rows can be backfilled once by
     // ensureMasjidSlugs() on server start; every masjid has one in practice.
-    slug: { type: DataTypes.STRING, allowNull: true, unique: true },
+    // The unique constraint is declared in the named `indexes` array below,
+    // not inline here (`unique: true` on the column) — inline column-level
+    // uniqueness isn't tracked by name across sequelize.sync({alter:true})
+    // runs, so MySQL silently gained a fresh duplicate unique index on every
+    // dev-server restart until it hit MySQL's 64-index-per-table ceiling
+    // (fixed and cleaned up once; a named index in `indexes` is recognized
+    // as already existing and never recreated).
+    slug: { type: DataTypes.STRING, allowNull: true },
 
     name: { type: DataTypes.STRING, allowNull: false },
     tagline: { type: DataTypes.STRING, allowNull: true },
@@ -78,6 +85,7 @@ const Masjid = sequelize.define(
     indexes: [
       { fields: ["userId"], name: "masjids_user_id_idx" },
       { fields: ["status"], name: "masjids_status_idx" },
+      { unique: true, fields: ["slug"], name: "masjids_slug_unique" },
     ],
   }
 );

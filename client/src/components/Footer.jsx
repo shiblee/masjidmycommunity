@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 import { useTranslation } from "../i18n/LanguageContext.jsx";
 import { getStoredUser } from "../utils/userAuthStorage.js";
+import { getPublicVisitorCount, subscribeToVisitorCount } from "../utils/visitorTracking.js";
 
 // Native script alone reads fine once you know the language, but a visitor
 // who can't yet read Urdu/Arabic/Hindi script has no way to tell the options
@@ -73,7 +74,16 @@ function VisitorCounter() {
   const ref = useRef(null);
   const [count, setCount] = useState(0);
   const [settled, setSettled] = useState(false);
-  const BASE = 1248392;
+  const [total, setTotal] = useState(null);
+  const [visible, setVisible] = useState(false);
+
+  // Real tracked count (server/src/services/visitorStatsService.js) —
+  // replaces what used to be a hardcoded base number entirely.
+  useEffect(() => {
+    getPublicVisitorCount()
+      .then(setTotal)
+      .catch(() => setTotal(0));
+  }, []);
 
   useEffect(() => {
     const el = ref.current;
@@ -82,16 +92,7 @@ function VisitorCounter() {
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            const dur = 1800;
-            const start = performance.now();
-            function tick(now) {
-              const p = Math.min(1, (now - start) / dur);
-              const eased = 1 - Math.pow(1 - p, 3);
-              setCount(Math.round(BASE * eased));
-              if (p < 1) requestAnimationFrame(tick);
-              else setSettled(true);
-            }
-            requestAnimationFrame(tick);
+            setVisible(true);
             io.unobserve(el);
           }
         });
@@ -102,12 +103,30 @@ function VisitorCounter() {
     return () => io.disconnect();
   }, []);
 
+  // Same eased count-up as before, just waiting on the real total to have
+  // arrived (usually already has, by the time this scrolls into view).
+  useEffect(() => {
+    if (!visible || total == null) return;
+    const dur = 1800;
+    const start = performance.now();
+    let raf;
+    function tick(now) {
+      const p = Math.min(1, (now - start) / dur);
+      const eased = 1 - Math.pow(1 - p, 3);
+      setCount(Math.round(total * eased));
+      if (p < 1) raf = requestAnimationFrame(tick);
+      else setSettled(true);
+    }
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [visible, total]);
+
+  // Live updates via SSE (server/src/services/visitorRealtimeService.js) —
+  // replaces what used to be a random setInterval increment. Falls back to
+  // polling automatically if the stream drops (see subscribeToVisitorCount).
   useEffect(() => {
     if (!settled) return;
-    const id = setInterval(() => {
-      setCount((c) => c + Math.floor(Math.random() * 5) + 1);
-    }, 3500);
-    return () => clearInterval(id);
+    return subscribeToVisitorCount(setCount);
   }, [settled]);
 
   return (

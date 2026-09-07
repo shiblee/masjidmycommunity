@@ -7,6 +7,8 @@ import { ensurePlatformUserDefaults } from "./seed/platformUserDefaults.js";
 import { ensureMasjidCategoryDefaults } from "./seed/masjidCategoryDefaults.js";
 import { ensureMasjidSlugs } from "./seed/masjidSlugBackfill.js";
 import { ensureMasjidSeoMeta } from "./seed/masjidSeoBackfill.js";
+import { ensureVisitorSettings } from "./seed/visitorSettingsDefaults.js";
+import { startVisitorMaintenance } from "./services/visitorMaintenanceService.js";
 import { ensureReviewRestrictedWordDefaults } from "./seed/reviewRestrictedWordDefaults.js";
 import { ensureMasjidContactDesignationDefaults } from "./seed/masjidContactDesignationDefaults.js";
 import { ensurePrayerDefaults } from "./seed/prayerDefaults.js";
@@ -46,6 +48,7 @@ connectDB()
       ensureMasjidCategoryDefaults(),
       ensureMasjidSlugs(),
       ensureMasjidSeoMeta(),
+      ensureVisitorSettings(),
       ensureReviewRestrictedWordDefaults(),
       ensureMasjidContactDesignationDefaults(),
       ensurePrayerDefaults(),
@@ -80,5 +83,6 @@ connectDB()
   .finally(() => {
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
+      startVisitorMaintenance();
     });
   });

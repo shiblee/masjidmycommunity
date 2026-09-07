@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 import path from "path";
 import userRoutes from "./routes/userRoutes.js";
 import adminAuthRoutes from "./routes/adminAuthRoutes.js";
@@ -64,6 +65,7 @@ import adminSuccessStoryRoutes from "./routes/adminSuccessStoryRoutes.js";
 import publicSitemapRoutes from "./routes/publicSitemapRoutes.js";
 import publicUserRoutes from "./routes/publicUserRoutes.js";
 import { renderMasjidSharePage } from "./controllers/publicShareMetaController.js";
+import publicVisitorRoutes from "./routes/publicVisitorRoutes.js";
 
 const app = express();
 
@@ -83,7 +85,12 @@ function parseTrustProxy(value) {
 }
 app.set("trust proxy", parseTrustProxy(process.env.TRUST_PROXY));
 
-app.use(cors());
+// credentials: true + a reflected origin (not "*") is required for the
+// visitor-tracking cookie to actually be set/sent cross-origin in local dev
+// (client on :5174, API on :5050); in production the two are same-origin so
+// this has no effect either way.
+app.use(cors({ origin: true, credentials: true }));
+app.use(cookieParser());
 app.use(express.json({ limit: "5mb" }));
 app.use("/uploads", express.static(path.resolve("uploads")));
 
@@ -110,6 +117,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/admin/auth", adminAuthRoutes);
 app.use("/api/admin/users", adminUserRoutes);
 app.use("/api/admin/notifications", adminNotificationRoutes);
+app.use("/api/visitors", publicVisitorRoutes);
 app.use("/api/masjids/public", publicMasjidRoutes);
 app.use("/api/masjids", masjidRoutes);
 app.use("/api/admin/masjids", adminMasjidRoutes);
