@@ -3203,17 +3203,21 @@ footer{
    unfiltered OS sheet) — position:fixed + portaled to <body>, same
    clipping fix as the Green Tick badge popover above. ===== */
 .msj-share-menu{
-  position:fixed; z-index:1400; width:236px; background:#fff;
+  position:fixed; z-index:1400; width:216px; background:#fff;
   border:1px solid var(--line); border-radius:14px; padding:14px; box-shadow:0 18px 38px -16px rgba(11,31,30,.32);
   text-align:left; cursor:default;
 }
 .msj-share-menu-title{ font-size:12px; font-weight:700; color:var(--text-on-paper-dim); text-transform:uppercase; letter-spacing:.03em; margin-bottom:10px; }
-.msj-share-menu-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; }
+/* A single-column list, not a 2-up grid — a grid forced "X (Twitter)" onto
+   two lines while its row-mates stayed on one, stretching every cell in
+   that row to match and throwing the whole menu out of alignment. A list
+   has no such column-width constraint, so it stays even at any width. */
+.msj-share-menu-grid{ display:flex; flex-direction:column; gap:4px; margin-bottom:10px; }
 .msj-share-menu-item{
-  display:flex; align-items:center; gap:8px; padding:8px; border-radius:10px; border:none; background:var(--paper-dim);
-  font-family:var(--sans); font-size:12.5px; font-weight:600; color:var(--text-on-paper); cursor:pointer; transition:background .15s;
+  display:flex; align-items:center; gap:10px; padding:8px; border-radius:10px; border:none; background:none;
+  font-family:var(--sans); font-size:13px; font-weight:600; color:var(--text-on-paper); cursor:pointer; transition:background .15s; white-space:nowrap;
 }
-.msj-share-menu-item:hover{ background:var(--line); }
+.msj-share-menu-item:hover{ background:var(--paper-dim); }
 .msj-share-menu-icon{ display:flex; align-items:center; justify-content:center; width:28px; height:28px; border-radius:50%; flex-shrink:0; }
 .msj-share-menu-copy{
   display:flex; align-items:center; justify-content:center; gap:6px; width:100%; padding:9px; border-radius:10px;
