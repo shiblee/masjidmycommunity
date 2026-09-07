@@ -38,13 +38,13 @@ function RemarksModal({ title, sub, placeholder, required, onCancel, onSubmit, b
   const [text, setText] = useState("");
   return (
     <div className="amx-modal-overlay" onClick={busy ? undefined : onCancel}>
-      <div className="amx-modal" onClick={(e) => e.stopPropagation()}>
+      <div className="amx-modal" style={{ maxWidth: 540 }} onClick={(e) => e.stopPropagation()}>
         <button className="amx-modal-close" onClick={onCancel} aria-label="Close" disabled={busy}><Icon name="x" size={16} /></button>
         <h3>{title}</h3>
         {sub && <p className="amx-panel-sub" style={{ marginTop: 4, marginBottom: 4 }}>{sub}</p>}
         <div className="amx-form-group" style={{ marginTop: 16 }}>
           <div className="amx-textarea-mic-wrap">
-            <textarea rows={4} value={text} onChange={(e) => setText(e.target.value)} placeholder={placeholder || "Remarks (visible to the masjid)"} autoFocus />
+            <textarea rows={8} value={text} onChange={(e) => setText(e.target.value)} placeholder={placeholder || "Remarks (visible to the masjid)"} autoFocus />
             <MicButton onTranscript={(t) => setText(t)} />
           </div>
         </div>

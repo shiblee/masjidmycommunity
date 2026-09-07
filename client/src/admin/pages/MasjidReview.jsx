@@ -43,12 +43,12 @@ function ReasonModal({ title, placeholder, onCancel, onSubmit }) {
   const [text, setText] = useState("");
   return (
     <div className="amx-modal-overlay" onClick={onCancel}>
-      <div className="amx-modal" onClick={(e) => e.stopPropagation()}>
+      <div className="amx-modal" style={{ maxWidth: 540 }} onClick={(e) => e.stopPropagation()}>
         <button className="amx-modal-close" onClick={onCancel} aria-label="Close"><Icon name="x" size={16} /></button>
         <h3>{title}</h3>
         <div className="amx-form-group" style={{ marginTop: 16 }}>
           <div className="amx-textarea-mic-wrap">
-            <textarea rows={4} value={text} onChange={(e) => setText(e.target.value)} placeholder={placeholder} />
+            <textarea rows={8} value={text} onChange={(e) => setText(e.target.value)} placeholder={placeholder} />
             <MicButton onTranscript={(t) => setText(t)} />
           </div>
         </div>
@@ -1031,8 +1031,8 @@ function MasjidReview() {
               )}
               <StaticLocationMap latitude={masjid.latitude} longitude={masjid.longitude} height={240} />
               {masjid.mapLink && (
-                <a href={masjid.mapLink} target="_blank" rel="noreferrer" style={{ display: "inline-block", marginTop: 12 }}>
-                  Open in Google Maps
+                <a href={masjid.mapLink} target="_blank" rel="noreferrer" className="amx-btn amx-btn-outline amx-btn-sm" style={{ marginTop: 14 }}>
+                  <Icon name="globe" size={15} /> Open in Google Maps
                 </a>
               )}
             </Section>

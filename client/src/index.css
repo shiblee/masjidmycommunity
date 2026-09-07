@@ -2798,7 +2798,11 @@ footer{
 }
 .msj-map-locate-btn:hover:not(:disabled){ background:rgba(141,198,63,.14); border-color:var(--teal); }
 .msj-map-locate-btn:disabled{ opacity:.6; cursor:default; }
-.msj-map-canvas-wrap{ position:relative; border-radius:12px; overflow:hidden; border:1px solid var(--line); }
+/* isolation:isolate caps Leaflet's own internal pane/control z-indexes
+   (200-1000+) inside this box's own stacking context — without it, those
+   values are compared directly against page chrome like a sticky header,
+   and win, so the map visibly floats above the nav bar while scrolling. */
+.msj-map-canvas-wrap{ position:relative; border-radius:12px; overflow:hidden; border:1px solid var(--line); isolation:isolate; }
 .msj-map-canvas{ height:320px; width:100%; background:var(--paper-dim); }
 .msj-map-canvas .leaflet-control-attribution{ font-size:9.5px; }
 .msj-map-busy{

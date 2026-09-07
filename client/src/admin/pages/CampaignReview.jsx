@@ -12,13 +12,13 @@ function ReasonModal({ title, placeholder, extraFields, onCancel, onSubmit }) {
   const [text, setText] = useState("");
   return (
     <div className="amx-modal-overlay" onClick={onCancel}>
-      <div className="amx-modal" onClick={(e) => e.stopPropagation()}>
+      <div className="amx-modal" style={{ maxWidth: 540 }} onClick={(e) => e.stopPropagation()}>
         <button className="amx-modal-close" onClick={onCancel} aria-label="Close"><Icon name="x" size={16} /></button>
         <h3>{title}</h3>
         {extraFields}
         <div className="amx-form-group" style={{ marginTop: 16 }}>
           <div className="amx-textarea-mic-wrap">
-            <textarea rows={4} value={text} onChange={(e) => setText(e.target.value)} placeholder={placeholder} />
+            <textarea rows={8} value={text} onChange={(e) => setText(e.target.value)} placeholder={placeholder} />
             <MicButton onTranscript={(t) => setText(t)} />
           </div>
         </div>

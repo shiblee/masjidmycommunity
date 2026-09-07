@@ -21,7 +21,24 @@ function MediaThumb({ src, mediaType = "photo", alt = "", className, style, vide
   }
 
   if (mediaType === "video") {
-    return <video src={src} className={className} style={style} onError={() => setFailed(true)} {...videoProps} />;
+    // Without a poster image (none is generated at upload time), most
+    // browsers paint the player as a blank black frame until playback
+    // starts — nudging currentTime forward a hair once metadata is loaded
+    // forces the browser to decode and display that frame as a resting
+    // thumbnail, still paused.
+    return (
+      <video
+        src={src}
+        preload="metadata"
+        className={className}
+        style={style}
+        onError={() => setFailed(true)}
+        onLoadedMetadata={(e) => {
+          try { e.currentTarget.currentTime = 0.1; } catch {}
+        }}
+        {...videoProps}
+      />
+    );
   }
 
   return <img src={src} alt={alt} className={className} style={style} onError={() => setFailed(true)} />;
