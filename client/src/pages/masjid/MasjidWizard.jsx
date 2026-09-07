@@ -742,15 +742,6 @@ function MasjidWizard({ embedded = false }) {
             </div>
           </div>
         </div>
-
-        {/* Available at any registration status once the masjid record
-            exists — prayer times are ongoing operational data, not part of
-            the registration steps, so they shouldn't wait on approval. */}
-        {masjidId && (
-          <div className="card" style={{ marginTop: 24 }}>
-            <PrayerRosterSection basePath={`/${masjidId}`} api={masjidApi} />
-          </div>
-        )}
         </div>
     </WizardShell>
   );
