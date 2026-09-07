@@ -10,7 +10,7 @@ import MasjidReview from "../models/MasjidReview.js";
 import MasjidFavorite from "../models/MasjidFavorite.js";
 import User from "../models/User.js";
 import { recordMasjidApprovedActivity } from "../services/communityActivityService.js";
-import { sendMasjidChangesRequestedEmail } from "../services/emailService.js";
+import { sendMasjidChangesRequestedEmail, sendMasjidApprovedEmail, sendMasjidRejectedEmail } from "../services/emailService.js";
 import { notifyUser } from "../services/notificationService.js";
 import { mediaTypeOf, IMAGE_MAX_BYTES } from "../middleware/upload.js";
 import { firstRestrictedField, RESTRICTED_CONTENT_MESSAGE } from "../utils/contentModeration.js";
@@ -413,6 +413,19 @@ export const approve = async (req, res) => {
     const cover = await MasjidPhoto.findOne({ where: { masjidId: masjid.id, isCover: true } });
     await recordMasjidApprovedActivity(masjid, cover?.url || null);
 
+    const owner = await User.findByPk(masjid.userId);
+    if (owner) {
+      sendMasjidApprovedEmail(masjid, owner).catch(() => {});
+      notifyUser({
+        userId: owner.id,
+        type: "masjid_approved",
+        title: "Your masjid is now live",
+        body: `"${masjid.name}" has been approved and is now listed.`,
+        link: `/account/my-masjids/${masjid.id}`,
+        relatedMasjidId: masjid.id,
+      }).catch(() => {});
+    }
+
     res.json({ masjid: masjid.toJSON() });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -432,6 +445,19 @@ export const reject = async (req, res) => {
     masjid.reviewedAt = new Date();
     await masjid.save();
     await logHistory(masjid.id, "rejected", reason.trim(), req.user.email);
+
+    const owner = await User.findByPk(masjid.userId);
+    if (owner) {
+      sendMasjidRejectedEmail(masjid, owner).catch(() => {});
+      notifyUser({
+        userId: owner.id,
+        type: "masjid_rejected",
+        title: "Your masjid was not approved",
+        body: `"${masjid.name}" was rejected: ${reason.trim()}`,
+        link: `/account/my-masjids/${masjid.id}`,
+        relatedMasjidId: masjid.id,
+      }).catch(() => {});
+    }
 
     res.json({ masjid: masjid.toJSON() });
   } catch (error) {

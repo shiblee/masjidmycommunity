@@ -278,6 +278,35 @@ export async function sendMasjidSubmittedUserEmail(masjid, user) {
   });
 }
 
+export async function sendMasjidApprovedEmail(masjid, user) {
+  if (!user.email) return { sent: false, skipped: true };
+  return sendNotification("masjid_approved_user", {
+    to: user.email,
+    variables: {
+      user_name: user.fullName,
+      masjid_name: masjid.name,
+      masjid_id: String(masjid.id),
+      approval_date: new Date(masjid.approvedAt || Date.now()).toLocaleString("en-GB"),
+    },
+    userMeta: { userId: user.id, userName: user.fullName, userEmail: user.email },
+  });
+}
+
+export async function sendMasjidRejectedEmail(masjid, user) {
+  if (!user.email) return { sent: false, skipped: true };
+  return sendNotification("masjid_rejected_user", {
+    to: user.email,
+    variables: {
+      user_name: user.fullName,
+      masjid_name: masjid.name,
+      masjid_id: String(masjid.id),
+      rejection_reason: masjid.adminFeedback || "",
+      rejection_date: new Date(masjid.reviewedAt || Date.now()).toLocaleString("en-GB"),
+    },
+    userMeta: { userId: user.id, userName: user.fullName, userEmail: user.email },
+  });
+}
+
 export async function sendMasjidChangesRequestedEmail(masjid, user) {
   if (!user.email) return { sent: false, skipped: true };
   return sendNotification("masjid_changes_requested_user", {
