@@ -3718,13 +3718,18 @@ footer{
 }
 .msj-review-see-photos:hover{ background:rgba(11,31,30,.9); }
 .msj-review-modal-titleblock{ padding-top:20px; }
-.msj-review-modal-titleblock h3{ font-size:22px; color:var(--text-on-paper); margin-bottom:8px; }
+.msj-review-modal-titleblock h3{ font-size:22px; color:var(--text-on-paper); margin:0; }
+/* The name's own margin-bottom moves to the title row wrapper — keeping it
+   on the h3 itself (asymmetric, no margin-top) shifted its flex centering
+   relative to the badge sitting next to it with zero margin. */
+.msj-review-modal-titleblock .msj-card-title-row{ margin-bottom:8px; }
 .msj-review-modal-titleblock .msj-review-modal-rating{ margin-bottom:8px; }
 
 /* Reviews tab keeps the original compact header. */
 .msj-review-modal-header{ display:flex; gap:16px; align-items:flex-start; margin-bottom:4px; }
 .msj-review-modal-cover{ width:96px; height:96px; border-radius:12px; object-fit:cover; flex-shrink:0; background:var(--paper-dim); }
-.msj-review-modal-header h3{ font-size:19px; color:var(--text-on-paper); margin-bottom:6px; padding-right:30px; }
+.msj-review-modal-header h3{ font-size:19px; color:var(--text-on-paper); margin:0; padding-right:30px; }
+.msj-review-modal-header .msj-card-title-row{ margin-bottom:6px; }
 .msj-review-modal-rating{ display:flex; align-items:center; gap:8px; font-size:13px; color:var(--text-on-paper-dim); margin-bottom:6px; }
 
 .msj-review-tabs{ display:flex; gap:22px; border-bottom:1px solid var(--line); margin:18px 0 18px; }
