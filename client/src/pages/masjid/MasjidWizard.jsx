@@ -10,6 +10,7 @@ import MediaThumb from "../../components/MediaThumb.jsx";
 import MicButton from "../../components/MicButton.jsx";
 import PrayerRosterSection from "./PrayerRosterSection.jsx";
 import EngagementRow from "../../components/masjid/EngagementRow.jsx";
+import { WizardShell, WizardStepper } from "../../components/wizard/WizardShell.jsx";
 
 // Must match server/src/utils/contentModeration.js's RESTRICTED_CONTENT_MESSAGE
 // exactly — used to tell "this field is currently flagged" apart from any
@@ -62,36 +63,6 @@ function Field({ label, children, hint, error, required, labelExtra }) {
       )}
       {children}
       {error ? <span className="auth-field-error">{error}</span> : hint ? <span className="msj-field-hint">{hint}</span> : null}
-    </div>
-  );
-}
-
-function WizardShell({ embedded, children }) {
-  if (embedded) return <div className="cw-wizard-embed">{children}</div>;
-  return (
-    <main className="msj-page">
-      <div className="wrap py-lg">{children}</div>
-    </main>
-  );
-}
-
-// Connected-line progress stepper. Labels hide on narrow screens in favour of
-// the compact "Step X of N" line rendered alongside it (see msj-stepper-current).
-function WizardStepper({ steps, current }) {
-  return (
-    <div className="msj-stepper" role="list" aria-label="Registration progress">
-      {steps.map((s, i) => {
-        const num = i + 1;
-        const state = num < current ? "done" : num === current ? "active" : "upcoming";
-        return (
-          <div className={`msj-stepper-item ${state}`} role="listitem" key={s.key}>
-            <span className="msj-stepper-dot">
-              {state === "done" ? <Icon name="check" size={14} /> : <Icon name={s.icon} size={15} />}
-            </span>
-            <span className="msj-stepper-label">{s.label}</span>
-          </div>
-        );
-      })}
     </div>
   );
 }
@@ -490,6 +461,7 @@ function MasjidWizard({ embedded = false }) {
   const [status, setStatus] = useState("draft");
   const [adminFeedback, setAdminFeedback] = useState(null);
   const [engagement, setEngagement] = useState(null);
+  const [greenTick, setGreenTick] = useState(null);
   const [form, setForm] = useState(emptyForm());
   const [categories, setCategories] = useState([]);
   const [designations, setDesignations] = useState([]);
@@ -577,6 +549,7 @@ function MasjidWizard({ embedded = false }) {
         setStatus(m.status);
         setAdminFeedback(m.adminFeedback);
         setEngagement({ id: m.id, likeCount: m.likeCount, likedByMe: m.likedByMe, avgRating: m.avgRating, reviewCount: m.reviewCount });
+        setGreenTick({ status: m.greenTickStatus, verificationId: m.verificationId, isGreenTick: m.isGreenTick });
         setForm({
           name: m.name || "", tagline: m.tagline || "", about: m.about || "", category: m.category || "",
           address: m.address || "", area: m.area || "", city: m.city || "", district: m.district || "", state: m.state || "", country: m.country || "",
@@ -804,6 +777,36 @@ function MasjidWizard({ embedded = false }) {
           )}
           <MasjidSummary form={form} photos={photos} contacts={contacts} />
           <PrayerRosterSection basePath={`/${masjidId}`} api={masjidApi} />
+
+          {status === "approved" && greenTick && (
+            <div className="card msj-greentick-cta">
+              {greenTick.isGreenTick ? (
+                <>
+                  <div className="msj-greentick-cta-icon"><Icon name="shieldCheck" size={22} /></div>
+                  <div>
+                    <h4>Green Tick Issued</h4>
+                    <p className="amx-panel-sub">Verification ID: {greenTick.verificationId}</p>
+                  </div>
+                  <Link to={`/account/my-masjids/${masjidId}/green-tick`} className="btn btn-outline-ink">View Application</Link>
+                </>
+              ) : (
+                <>
+                  <div className="msj-greentick-cta-icon"><Icon name="shieldCheck" size={22} /></div>
+                  <div>
+                    <h4>Green Tick Verification</h4>
+                    <p className="amx-panel-sub">
+                      {greenTick.status && greenTick.status !== "draft"
+                        ? `Application status: ${greenTick.status.replaceAll("_", " ")}`
+                        : "Get your masjid formally verified by Masjid My Community."}
+                    </p>
+                  </div>
+                  <Link to={`/account/my-masjids/${masjidId}/green-tick`} className="btn btn-gold">
+                    {greenTick.status && greenTick.status !== "draft" ? "View Application" : "Apply for Green Tick"} <span className="btn-arrow">→</span>
+                  </Link>
+                </>
+              )}
+            </div>
+          )}
         </div>
       </WizardShell>
     );
