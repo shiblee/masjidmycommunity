@@ -18,6 +18,7 @@ import {
   verifyDonationAccount,
   setReviewVisibility,
   listMasjidReviews,
+  listMasjidLikers,
 } from "../controllers/adminMasjidController.js";
 import {
   list as listContacts,
@@ -42,6 +43,7 @@ router.get("/", listAll);
 router.post("/", createMasjid);
 router.get("/:id", getOne);
 router.get("/:id/reviews", listMasjidReviews);
+router.get("/:id/likers", listMasjidLikers);
 router.patch("/:id", updateBasicInfo);
 router.post("/:id/photos", uploadMasjidPhotos, uploadPhotos);
 router.patch("/:id/photos/:photoId", updatePhoto);

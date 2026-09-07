@@ -1,5 +1,5 @@
 import fs from "fs";
-import { Op, fn, col } from "sequelize";
+import { Op } from "sequelize";
 import Masjid from "../models/Masjid.js";
 import MasjidPhoto from "../models/MasjidPhoto.js";
 import MasjidDonationAccount from "../models/MasjidDonationAccount.js";
@@ -7,6 +7,7 @@ import MasjidHistory from "../models/MasjidHistory.js";
 import MasjidContactDesignation from "../models/MasjidContactDesignation.js";
 import MasjidContactPerson from "../models/MasjidContactPerson.js";
 import MasjidReview from "../models/MasjidReview.js";
+import MasjidFavorite from "../models/MasjidFavorite.js";
 import User from "../models/User.js";
 import { recordMasjidApprovedActivity } from "../services/communityActivityService.js";
 import { sendMasjidChangesRequestedEmail } from "../services/emailService.js";
@@ -14,7 +15,7 @@ import { notifyUser } from "../services/notificationService.js";
 import { mediaTypeOf, IMAGE_MAX_BYTES } from "../middleware/upload.js";
 import { firstRestrictedField, RESTRICTED_CONTENT_MESSAGE } from "../utils/contentModeration.js";
 import { classifyContent } from "../services/aiProviderService.js";
-import { ratingSummary } from "./publicMasjidController.js";
+import { getEngagementFor, getEngagementForMany, getRatingDistribution } from "../services/masjidEngagementService.js";
 import { withReviewers } from "./masjidReviewController.js";
 import { PLATFORM_EMAIL } from "../seed/platformUserDefaults.js";
 
@@ -180,18 +181,10 @@ export const listAll = async (req, res) => {
     const owners = await User.findAll({ where: { id: ownerIds }, attributes: ["id", "fullName", "email", "mobile"] });
     const ownerById = Object.fromEntries(owners.map((u) => [u.id, u]));
 
-    // One grouped query for the whole page, not one per row — same pattern
-    // publicMasjidController.js's own list endpoint already uses.
+    // One shared-service batch call for the whole page, not one query per
+    // row — the same masjidEngagementService every other surface uses.
     const masjidIds = rows.map((m) => m.id);
-    const ratingRows = masjidIds.length
-      ? await MasjidReview.findAll({
-          where: { masjidId: masjidIds, status: "visible" },
-          attributes: ["masjidId", [fn("AVG", col("rating")), "avg"], [fn("COUNT", col("id")), "count"]],
-          group: ["masjidId"],
-          raw: true,
-        })
-      : [];
-    const ratingByMasjid = new Map(ratingRows.map((r) => [r.masjidId, { avgRating: Number(r.avg), reviewCount: Number(r.count) }]));
+    const engagementMap = await getEngagementForMany(masjidIds);
 
     const masjids = await Promise.all(
       rows.map(async (m) => {
@@ -204,7 +197,7 @@ export const listAll = async (req, res) => {
           ownerName: owner?.fullName || null,
           ownerEmail: owner?.email || null,
           ownerMobile: owner?.mobile || null,
-          ...(ratingByMasjid.get(m.id) || { avgRating: 0, reviewCount: 0 }),
+          ...(engagementMap.get(m.id) || { likeCount: 0, avgRating: 0, reviewCount: 0, likedByMe: false }),
         };
       })
     );
@@ -225,12 +218,12 @@ export const getOne = async (req, res) => {
     const masjid = await Masjid.findByPk(req.params.id);
     if (!masjid) return res.status(404).json({ message: "Masjid not found." });
 
-    const [photos, donationAccount, history, contacts, rating] = await Promise.all([
+    const [photos, donationAccount, history, contacts, engagement] = await Promise.all([
       MasjidPhoto.findAll({ where: { masjidId: masjid.id }, order: [["sortOrder", "ASC"]] }),
       MasjidDonationAccount.findOne({ where: { masjidId: masjid.id } }),
       MasjidHistory.findAll({ where: { masjidId: masjid.id }, order: [["createdAt", "DESC"]] }),
       MasjidContactPerson.findAll({ where: { masjidId: masjid.id }, order: [["sortOrder", "ASC"]] }),
-      ratingSummary(masjid.id),
+      getEngagementFor(masjid.id),
     ]);
 
     let donationAccountJson = null;
@@ -241,7 +234,7 @@ export const getOne = async (req, res) => {
     }
 
     res.json({
-      masjid: { ...masjid.toJSON(), completion: await computeMasjidCompletion(masjid, contacts, photos.length), ...rating },
+      masjid: { ...masjid.toJSON(), completion: await computeMasjidCompletion(masjid, contacts, photos.length), ...engagement },
       photos,
       donationAccount: donationAccountJson,
       history,
@@ -550,11 +543,41 @@ export const listMasjidReviews = async (req, res) => {
   try {
     const masjidId = req.params.id;
     const reviews = await MasjidReview.findAll({ where: { masjidId }, order: [["createdAt", "DESC"]] });
-    const [reviewsWithReviewers, rating] = await Promise.all([
+    const [reviewsWithReviewers, engagement, distribution] = await Promise.all([
       withReviewers(reviews, null),
-      ratingSummary(masjidId),
+      getEngagementFor(masjidId),
+      getRatingDistribution(masjidId),
     ]);
-    res.json({ reviews: reviewsWithReviewers, ...rating });
+    res.json({ reviews: reviewsWithReviewers, ...engagement, distribution });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+/** Paginated People-Who-Liked, for the admin Engagement tab — admin has
+ * full authority so this is never gated on approval status, unlike the
+ * public /likers endpoint. Reuses the exact same query shape. */
+export const listMasjidLikers = async (req, res) => {
+  try {
+    const masjid = await Masjid.findByPk(req.params.id);
+    if (!masjid) return res.status(404).json({ message: "Masjid not found." });
+
+    const page = Math.max(Number(req.query.page) || 1, 1);
+    const pageSize = 24;
+    const { rows, count } = await MasjidFavorite.findAndCountAll({
+      where: { masjidId: masjid.id },
+      order: [["createdAt", "DESC"]],
+      limit: pageSize,
+      offset: (page - 1) * pageSize,
+    });
+    const users = await User.findAll({ where: { id: rows.map((f) => f.userId) }, attributes: ["id", "fullName", "username", "profilePhoto"] });
+    const userById = new Map(users.map((u) => [u.id, u]));
+    res.json({
+      likers: rows.map((f) => ({ ...userById.get(f.userId)?.toJSON(), likedAt: f.createdAt })).filter((u) => u.id),
+      total: count,
+      page,
+      pageSize,
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

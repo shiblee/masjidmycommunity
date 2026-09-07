@@ -13,6 +13,7 @@ import MasjidFavorite from "../models/MasjidFavorite.js";
 import User from "../models/User.js";
 import MapSettings from "../models/MapSettings.js";
 import { getEffectivePrayerTimes, isValidDateStr } from "../services/prayerTimeService.js";
+import { getEngagementFor, getEngagementForMany } from "../services/masjidEngagementService.js";
 
 const PUBLIC_STATUS = "approved";
 const MAP_POINTS_CAP = 500;
@@ -69,27 +70,16 @@ function rankByQuery(rows, q) {
   return fuse.search(q).map((r) => r.item);
 }
 
-export async function ratingSummary(masjidId) {
-  const rows = await MasjidReview.findAll({
-    where: { masjidId, status: "visible" },
-    attributes: [[fn("AVG", col("rating")), "avg"], [fn("COUNT", col("id")), "count"]],
-    raw: true,
-  });
-  const reviewCount = Number(rows[0]?.count || 0);
-  return { avgRating: reviewCount > 0 ? Number(rows[0].avg) : 0, reviewCount };
-}
-
-async function withCover(masjid) {
-  const [cover, photoCount, rating] = await Promise.all([
+async function withCover(masjid, engagement) {
+  const [cover, photoCount] = await Promise.all([
     MasjidPhoto.findOne({ where: { masjidId: masjid.id, isCover: true } }),
     MasjidPhoto.count({ where: { masjidId: masjid.id, mediaType: "photo" } }),
-    ratingSummary(masjid.id),
   ]);
-  return { ...masjid.toJSON(), coverPhotoUrl: cover?.url || null, photoCount, ...rating };
+  return { ...masjid.toJSON(), coverPhotoUrl: cover?.url || null, photoCount, ...engagement };
 }
 
-async function withCoverAndCampaigns(masjid) {
-  const [cover, activeCampaignCount, mediaCounts, imam, rating] = await Promise.all([
+async function withCoverAndCampaigns(masjid, engagement) {
+  const [cover, activeCampaignCount, mediaCounts, imam] = await Promise.all([
     MasjidPhoto.findOne({ where: { masjidId: masjid.id, isCover: true } }),
     Campaign.count({ where: { masjidId: masjid.id, status: "active" } }),
     MasjidPhoto.findAll({
@@ -99,15 +89,15 @@ async function withCoverAndCampaigns(masjid) {
       raw: true,
     }),
     MasjidContactPerson.findOne({ where: { masjidId: masjid.id, designation: "Imam" } }),
-    ratingSummary(masjid.id),
   ]);
   const photoCount = Number(mediaCounts.find((r) => r.mediaType === "photo")?.count || 0);
   const videoCount = Number(mediaCounts.find((r) => r.mediaType === "video")?.count || 0);
-  return { ...masjid.toJSON(), coverPhotoUrl: cover?.url || null, activeCampaignCount, photoCount, videoCount, imamName: imam?.name || null, ...rating };
+  return { ...masjid.toJSON(), coverPhotoUrl: cover?.url || null, activeCampaignCount, photoCount, videoCount, imamName: imam?.name || null, ...engagement };
 }
 
 export const listPublic = async (req, res) => {
   try {
+    const userId = req.user?.id;
     const { q, city, country, category, activeOnly, lat, lng, page = 1, pageSize = 12 } = req.query;
     const where = await baseWhere({ city, country, category, activeOnly, lat, lng });
     const limit = Math.min(Number(pageSize) || 12, 48);
@@ -121,7 +111,8 @@ export const listPublic = async (req, res) => {
       const pageIds = ranked.slice((pageNum - 1) * limit, pageNum * limit).map((m) => m.id);
       const rows = await Masjid.findAll({ where: { id: pageIds } });
       const byId = new Map(rows.map((r) => [r.id, r]));
-      masjids = await Promise.all(pageIds.map((id) => withCoverAndCampaigns(byId.get(id))));
+      const engagementMap = await getEngagementForMany(pageIds, userId);
+      masjids = await Promise.all(pageIds.map((id) => withCoverAndCampaigns(byId.get(id), engagementMap.get(id))));
     } else {
       const { rows, count } = await Masjid.findAndCountAll({
         where,
@@ -130,7 +121,8 @@ export const listPublic = async (req, res) => {
         offset: (pageNum - 1) * limit,
       });
       total = count;
-      masjids = await Promise.all(rows.map(withCoverAndCampaigns));
+      const engagementMap = await getEngagementForMany(rows.map((r) => r.id), userId);
+      masjids = await Promise.all(rows.map((m) => withCoverAndCampaigns(m, engagementMap.get(m.id))));
     }
 
     res.json({ masjids, total, page: pageNum, pageSize: limit });
@@ -142,6 +134,7 @@ export const listPublic = async (req, res) => {
 /** Full (unpaginated, capped) point list for Map view — the left panel and markers need the complete filtered set, not one page of it. */
 export const listMapPoints = async (req, res) => {
   try {
+    const userId = req.user?.id;
     const { q, city, country, category, activeOnly, lat, lng } = req.query;
     const where = await baseWhere({ city, country, category, activeOnly, lat, lng });
     const rows = await Masjid.findAll({
@@ -151,7 +144,8 @@ export const listMapPoints = async (req, res) => {
     const ranked = rankByQuery(rows, q);
     const truncated = ranked.length > MAP_POINTS_CAP;
     const page = truncated ? ranked.slice(0, MAP_POINTS_CAP) : ranked;
-    const masjids = await Promise.all(page.map(withCover));
+    const engagementMap = await getEngagementForMany(page.map((r) => r.id), userId);
+    const masjids = await Promise.all(page.map((m) => withCover(m, engagementMap.get(m.id))));
     res.json({ masjids, truncated });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -160,17 +154,17 @@ export const listMapPoints = async (req, res) => {
 
 export const getPublicOne = async (req, res) => {
   try {
+    const userId = req.user?.id;
     const masjid = await Masjid.findOne({ where: { id: req.params.id, status: PUBLIC_STATUS, moderationStatus: "active" } });
     if (!masjid) return res.status(404).json({ message: "Masjid not found." });
 
-    const [photos, imam, likeCount, topLikerFavorites, rating, campaignCount] = await Promise.all([
+    const [photos, imam, topLikerFavorites, engagement, campaignCount] = await Promise.all([
       MasjidPhoto.findAll({ where: { masjidId: masjid.id }, order: [["sortOrder", "ASC"]] }),
       // The public profile still shows an "Imam" line — sourced from the
       // office-bearers list now rather than a single column on Masjid.
       MasjidContactPerson.findOne({ where: { masjidId: masjid.id, designation: "Imam" } }),
-      MasjidFavorite.count({ where: { masjidId: masjid.id } }),
       MasjidFavorite.findAll({ where: { masjidId: masjid.id }, order: [["createdAt", "DESC"]], limit: 6 }),
-      ratingSummary(masjid.id),
+      getEngagementFor(masjid.id, userId),
       Campaign.count({ where: { masjidId: masjid.id, status: "active" } }),
     ]);
     const topLikerUsers = await User.findAll({
@@ -186,9 +180,8 @@ export const getPublicOne = async (req, res) => {
       masjid: {
         ...masjid.toJSON(),
         imamName: imam?.name || null,
-        likeCount,
         topLikers,
-        ...rating,
+        ...engagement,
         campaignCount,
         photoCount,
         videoCount,
@@ -225,6 +218,34 @@ export const listLikers = async (req, res) => {
       page,
       pageSize,
     });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+/** The current user's liked masjids, most-recently-liked first — powers
+ * the Liked Masjids page. Filters out any masjid that's no longer public
+ * (e.g. deactivated after being liked) before paginating, so `total` always
+ * matches what's actually shown. */
+export const listMyLiked = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const page = Math.max(Number(req.query.page) || 1, 1);
+    const limit = Math.min(Number(req.query.pageSize) || 12, 48);
+
+    const favorites = await MasjidFavorite.findAll({ where: { userId }, order: [["createdAt", "DESC"]] });
+    const masjids = favorites.length
+      ? await Masjid.findAll({ where: { id: favorites.map((f) => f.masjidId), status: PUBLIC_STATUS, moderationStatus: "active" } })
+      : [];
+    const byId = new Map(masjids.map((m) => [m.id, m]));
+    const ordered = favorites.map((f) => byId.get(f.masjidId)).filter(Boolean);
+
+    const total = ordered.length;
+    const pageRows = ordered.slice((page - 1) * limit, page * limit);
+    const engagementMap = await getEngagementForMany(pageRows.map((m) => m.id), userId);
+    const cards = await Promise.all(pageRows.map((m) => withCoverAndCampaigns(m, engagementMap.get(m.id))));
+
+    res.json({ masjids: cards, total, page, pageSize: limit });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -277,6 +298,7 @@ export const getPublicPrayerTimes = async (req, res) => {
  * report `distanceKm: null` rather than a fabricated number. */
 export const listNearbyAll = async (req, res) => {
   try {
+    const userId = req.user?.id;
     const masjid = await Masjid.findOne({ where: { id: req.params.id, status: PUBLIC_STATUS, moderationStatus: "active" } });
     if (!masjid) return res.status(404).json({ message: "Masjid not found." });
 
@@ -310,19 +332,11 @@ export const listNearbyAll = async (req, res) => {
     });
 
     const masjidIds = rows.map((r) => r.id);
-    const [covers, ratingRows] = await Promise.all([
+    const [covers, engagementMap] = await Promise.all([
       MasjidPhoto.findAll({ where: { masjidId: masjidIds, isCover: true } }),
-      masjidIds.length
-        ? MasjidReview.findAll({
-            where: { masjidId: masjidIds, status: "visible" },
-            attributes: ["masjidId", [fn("AVG", col("rating")), "avg"], [fn("COUNT", col("id")), "count"]],
-            group: ["masjidId"],
-            raw: true,
-          })
-        : [],
+      getEngagementForMany(masjidIds, userId),
     ]);
     const coverByMasjid = new Map(covers.map((c) => [c.masjidId, c.url]));
-    const ratingByMasjid = new Map(ratingRows.map((r) => [r.masjidId, { avgRating: Number(r.avg), reviewCount: Number(r.count) }]));
 
     res.json({
       masjids: rows.map((r) => ({
@@ -333,8 +347,7 @@ export const listNearbyAll = async (req, res) => {
         country: r.country,
         coverPhotoUrl: coverByMasjid.get(r.id) || null,
         distanceKm: r.get("distanceKm") != null ? Number(r.get("distanceKm")) : null,
-        avgRating: ratingByMasjid.get(r.id)?.avgRating || 0,
-        reviewCount: ratingByMasjid.get(r.id)?.reviewCount || 0,
+        ...(engagementMap.get(r.id) || { likeCount: 0, avgRating: 0, reviewCount: 0, likedByMe: false }),
       })),
       total: count,
       page,

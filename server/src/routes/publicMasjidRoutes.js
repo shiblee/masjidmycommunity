@@ -2,15 +2,16 @@ import { Router } from "express";
 import auth, { requireUser } from "../middleware/auth.js";
 import optionalAuth from "../middleware/optionalAuth.js";
 import { uploadReviewMedia, uploadCorrectionPhotos } from "../middleware/upload.js";
-import { listPublic, listMapPoints, listStats, getPublicOne, listLikers, listPublicContacts, listNearbyAll, listFilters, listCategories, listContactDesignations, listBanks, listDeletionReasons, getMapSettings, getPublicPrayerTimes } from "../controllers/publicMasjidController.js";
+import { listPublic, listMapPoints, listStats, getPublicOne, listLikers, listMyLiked, listPublicContacts, listNearbyAll, listFilters, listCategories, listContactDesignations, listBanks, listDeletionReasons, getMapSettings, getPublicPrayerTimes } from "../controllers/publicMasjidController.js";
 import { listReviews, getMyReview, upsertMyReview, deleteMyReview, getPublicReviewSettings, likeReview, unlikeReview } from "../controllers/masjidReviewController.js";
 import { getFavoriteStatus, addFavorite, removeFavorite } from "../controllers/masjidFavoriteController.js";
 import { submitCorrection } from "../controllers/masjidSuggestionController.js";
 
 const router = Router();
 
-router.get("/", listPublic);
-router.get("/map", listMapPoints);
+router.get("/", optionalAuth, listPublic);
+router.get("/map", optionalAuth, listMapPoints);
+router.get("/liked/mine", auth, requireUser, listMyLiked);
 router.get("/stats", listStats);
 router.get("/filters", listFilters);
 router.get("/categories", listCategories);
@@ -32,7 +33,7 @@ router.post("/:id/suggest-edit", auth, requireUser, uploadCorrectionPhotos, subm
 router.get("/:id/likers", listLikers);
 router.get("/:id/contacts", listPublicContacts);
 router.get("/:id/prayer-times", getPublicPrayerTimes);
-router.get("/:id/nearby-list", listNearbyAll);
-router.get("/:id", getPublicOne);
+router.get("/:id/nearby-list", optionalAuth, listNearbyAll);
+router.get("/:id", optionalAuth, getPublicOne);
 
 export default router;
