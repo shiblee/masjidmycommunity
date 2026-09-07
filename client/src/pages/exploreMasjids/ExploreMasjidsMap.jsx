@@ -24,6 +24,10 @@ const HEART_SVG =
   '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 21s-6.7-4.35-9.3-8.1C.8 10.1 1.4 6.8 4 5.2c2-1.2 4.4-.6 5.7 1 .7.8 1.4 1.8 2.3 1.8s1.6-1 2.3-1.8c1.3-1.6 3.7-2.2 5.7-1 2.6 1.6 3.2 4.9 1.3 7.7C18.7 16.65 12 21 12 21z"></path></svg>';
 const STAR_SVG_FILLED =
   '<svg width="11" height="11" viewBox="0 0 24 24" fill="#F5A623" stroke="none"><path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"></path></svg>';
+// Same shape as Icons.jsx's "eye" — hand-embedded for the same reason as
+// HEART_SVG/STAR_SVG_FILLED above.
+const EYE_SVG =
+  '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path></svg>';
 // Matches GreenTickBadge.jsx's own filled-checkmark-disc mark — a plain,
 // non-interactive version here since this popup is raw HTML; clicking
 // through to the masjid's own page is how you'd see the full Green Tick
@@ -54,6 +58,7 @@ function popupHtml(m, distanceLabel) {
   const engagementParts = [];
   if (m.likeCount) engagementParts.push(`${HEART_SVG} ${formatCompactNumber(m.likeCount)}`);
   if (m.reviewCount) engagementParts.push(`${STAR_SVG_FILLED} ${Number(m.avgRating).toFixed(1)}`);
+  if (m.viewCount) engagementParts.push(`${EYE_SVG} ${formatCompactNumber(m.viewCount)}`);
   const engagementHtml = engagementParts.length
     ? `<p class="msj-map-popup-engagement">${engagementParts.join('<span class="msj-map-popup-engagement-dot">·</span>')}</p>`
     : "";

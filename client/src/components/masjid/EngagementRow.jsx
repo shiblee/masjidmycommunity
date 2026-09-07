@@ -60,6 +60,13 @@ function EngagementRow({ masjid, variant = "list", onOpenReviews, className = ""
           </span>
         )
       )}
+
+      {masjid.viewCount > 0 && (
+        <span className="msj-view-chip-static">
+          <Icon name="eye" size={12} />
+          {formatCompactNumber(masjid.viewCount)}{verbose ? ` ${t("engagement.views", "Views")}` : ""}
+        </span>
+      )}
     </div>
   );
 }
