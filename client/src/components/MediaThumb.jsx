@@ -21,20 +21,24 @@ function MediaThumb({ src, mediaType = "photo", alt = "", className, style, vide
   }
 
   if (mediaType === "video") {
-    // Without a poster image (none is generated at upload time), most
-    // browsers paint the player as a blank black frame until playback
-    // starts — nudging currentTime forward a hair once metadata is loaded
-    // forces the browser to decode and display that frame as a resting
-    // thumbnail, still paused.
+    // Without a poster image (none is generated at upload time), a <video>
+    // paints as a blank black frame until playback starts. preload="auto"
+    // (not just "metadata") makes the browser actually fetch frame data up
+    // front, and nudging currentTime forward a hair once that data has
+    // loaded forces it to decode and paint that frame as a resting
+    // thumbnail — still paused, nothing autoplays.
     return (
       <video
         src={src}
-        preload="metadata"
+        preload="auto"
         className={className}
         style={style}
         onError={() => setFailed(true)}
-        onLoadedMetadata={(e) => {
-          try { e.currentTarget.currentTime = 0.1; } catch {}
+        onLoadedData={(e) => {
+          const el = e.currentTarget;
+          if (el.currentTime === 0) {
+            try { el.currentTime = 0.1; } catch {}
+          }
         }}
         {...videoProps}
       />
