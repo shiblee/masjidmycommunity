@@ -6,7 +6,7 @@ import adminApi from "../services/adminApi.js";
 import { formatDateTime } from "../../utils/formatDateTime.js";
 
 const STATUS_LABEL = { pending: "Pending Review", partially_approved: "Partially Approved", approved: "Approved", rejected: "Rejected" };
-const FIELD_LABEL = { name: "Name", category: "Category", location: "Location", photos: "Photos", contact: "Contact", other: "Other" };
+const FIELD_LABEL = { name: "Name", category: "Category", location: "Location", photos: "Photos", contact: "Contact", prayer_times: "Prayer Timings", other: "Other" };
 
 function MasjidCorrections() {
   const [requests, setRequests] = useState(null);

@@ -5,8 +5,9 @@ import MasjidContactPerson from "../models/MasjidContactPerson.js";
 import MasjidContactDesignation from "../models/MasjidContactDesignation.js";
 import MasjidCorrectionRequest from "../models/MasjidCorrectionRequest.js";
 import MasjidCorrectionField from "../models/MasjidCorrectionField.js";
+import { getEffectivePrayerTimes } from "../services/prayerTimeService.js";
 
-const FIELD_KEYS = new Set(["name", "category", "location", "photos", "contact", "other"]);
+const FIELD_KEYS = new Set(["name", "category", "location", "photos", "contact", "prayer_times", "other"]);
 const TEXT_MAX = 1000;
 
 function cleanupFiles(files) {
@@ -32,13 +33,19 @@ async function currentValueFor(fieldKey, masjid) {
       const cover = await MasjidPhoto.findOne({ where: { masjidId: masjid.id, isCover: true } });
       return { coverPhotoUrl: cover?.url || null, photoCount };
     }
+    case "prayer_times": {
+      const dateStr = new Date().toISOString().slice(0, 10);
+      const roster = await getEffectivePrayerTimes(masjid.id, dateStr);
+      const set = roster.filter((r) => r.time);
+      return { text: set.length ? set.map((r) => `${r.name}: ${r.time}`).join(", ") : "Not set" };
+    }
     default:
       return null;
   }
 }
 
 function validateSuggestedValue(fieldKey, raw, hasPhotoFiles) {
-  if (fieldKey === "name" || fieldKey === "category" || fieldKey === "location" || fieldKey === "other") {
+  if (fieldKey === "name" || fieldKey === "category" || fieldKey === "location" || fieldKey === "prayer_times" || fieldKey === "other") {
     const text = (raw?.text || "").trim();
     if (!text) return { ok: false, message: `Please enter a suggested value for ${fieldKey}.` };
     if (text.length > TEXT_MAX) return { ok: false, message: `Please keep each suggestion to ${TEXT_MAX} characters or fewer.` };

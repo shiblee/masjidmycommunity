@@ -14,7 +14,7 @@ const MasjidCorrectionField = sequelize.define(
   {
     requestId: { type: DataTypes.INTEGER, allowNull: false },
     fieldKey: {
-      type: DataTypes.ENUM("name", "category", "location", "photos", "contact", "other"),
+      type: DataTypes.ENUM("name", "category", "location", "photos", "contact", "prayer_times", "other"),
       allowNull: false,
     },
     currentValue: { type: DataTypes.JSON, allowNull: true },

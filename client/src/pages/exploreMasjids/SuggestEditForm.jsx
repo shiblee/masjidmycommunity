@@ -14,6 +14,7 @@ const CORRECTION_FIELDS = [
   { key: "location", label: "Location" },
   { key: "photos", label: "Photos" },
   { key: "contact", label: "Contact Details" },
+  { key: "prayer_times", label: "Prayer Timings" },
   { key: "other", label: "Other" },
 ];
 const CORRECTION_TEXT_MAX = 1000;
@@ -25,7 +26,7 @@ function emptyValueFor(fieldKey) {
   return { text: "" };
 }
 
-function CorrectionCard({ fieldKey, label, masjid, categories, designations, value, onChange, onRemove }) {
+function CorrectionCard({ fieldKey, label, masjid, categories, designations, prayerRoster, value, onChange, onRemove }) {
   const set = (patch) => onChange({ ...value, ...patch });
 
   const addPhotos = (fileList) => {
@@ -95,6 +96,17 @@ function CorrectionCard({ fieldKey, label, masjid, categories, designations, val
         <input type="text" value={value.caption} onChange={(e) => set({ caption: e.target.value })} placeholder="Caption (optional)" maxLength={CORRECTION_TEXT_MAX} style={{ marginTop: 10 }} />
       </div>
     );
+  } else if (fieldKey === "prayer_times") {
+    current = prayerRoster.length > 0 ? prayerRoster.map((p) => `${p.name}: ${p.time}`).join(" · ") : "Not set";
+    suggestedInput = (
+      <textarea
+        rows={3}
+        value={value.text}
+        onChange={(e) => set({ text: e.target.value })}
+        placeholder="Suggested prayer timings, e.g. Fajr 5:15 AM, Zuhr 1:30 PM, Asr 5:00 PM, Maghrib 6:45 PM, Isha 8:15 PM"
+        maxLength={CORRECTION_TEXT_MAX}
+      />
+    );
   } else {
     current = null;
     suggestedInput = <textarea rows={3} value={value.text} onChange={(e) => set({ text: e.target.value })} placeholder="Describe the correction…" maxLength={CORRECTION_TEXT_MAX} />;
@@ -126,12 +138,15 @@ function SuggestEditForm({ masjid, onDone, onCancel }) {
   const [values, setValues] = useState({});
   const [categories, setCategories] = useState([]);
   const [designations, setDesignations] = useState([]);
+  const [prayerRoster, setPrayerRoster] = useState([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
     axios.get(`${API}/categories`).then(({ data }) => setCategories(data.categories)).catch(() => {});
     axios.get(`${API}/contact-designations`).then(({ data }) => setDesignations(data.designations)).catch(() => {});
+    axios.get(`${API}/${masjidId}/prayer-times`).then(({ data }) => setPrayerRoster(data.roster || [])).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const toggleField = (key) => {
@@ -202,6 +217,7 @@ function SuggestEditForm({ masjid, onDone, onCancel }) {
             masjid={masjid}
             categories={categories}
             designations={designations}
+            prayerRoster={prayerRoster}
             value={values[key] || emptyValueFor(key)}
             onChange={(next) => setValues((v) => ({ ...v, [key]: next }))}
             onRemove={() => removeField(key)}

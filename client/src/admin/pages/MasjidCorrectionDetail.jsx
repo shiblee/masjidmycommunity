@@ -7,7 +7,7 @@ import { formatDateTime } from "../../utils/formatDateTime.js";
 import { API_ORIGIN } from "../../config.js";
 import MicButton from "../../components/MicButton.jsx";
 
-const FIELD_LABEL = { name: "Name", category: "Category", location: "Location", photos: "Photos", contact: "Contact Details", other: "Other" };
+const FIELD_LABEL = { name: "Name", category: "Category", location: "Location", photos: "Photos", contact: "Contact Details", prayer_times: "Prayer Timings", other: "Other" };
 const REQUEST_STATUS_LABEL = { pending: "Pending Review", partially_approved: "Partially Approved", approved: "Approved", rejected: "Rejected" };
 const FIELD_STATUS_LABEL = { pending: "Pending", approved: "Approved", rejected: "Rejected", modified_approved: "Modified & Approved" };
 
