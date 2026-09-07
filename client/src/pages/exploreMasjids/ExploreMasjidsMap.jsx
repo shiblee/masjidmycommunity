@@ -67,7 +67,7 @@ function popupHtml(m, distanceLabel) {
   // silently mangle the nesting rather than React catching it.
   return `
     <div class="msj-map-popup">
-      <a href="/masjid/${m.id}" class="msj-map-popup-linkarea">
+      <a href="/masjid/${m.slug || m.id}" class="msj-map-popup-linkarea">
         ${cover ? `<img src="${cover}" alt="" class="msj-map-popup-thumb" />` : ""}
         <div class="msj-map-popup-body">
           <h4>${m.name}${m.isGreenTick ? ` <span class="msj-map-popup-greentick" title="Verified">${SHIELD_SVG}</span>` : ""}</h4>

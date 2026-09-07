@@ -6,6 +6,12 @@ const Masjid = sequelize.define(
   {
     userId: { type: DataTypes.INTEGER, allowNull: false },
 
+    // Generated once at creation from `name` (see utils/slugify.js) — never
+    // auto-regenerated on a later name edit, so a shared/indexed URL stays
+    // stable. Nullable only so existing rows can be backfilled once by
+    // ensureMasjidSlugs() on server start; every masjid has one in practice.
+    slug: { type: DataTypes.STRING, allowNull: true, unique: true },
+
     name: { type: DataTypes.STRING, allowNull: false },
     tagline: { type: DataTypes.STRING, allowNull: true },
     about: { type: DataTypes.TEXT, allowNull: true },
@@ -41,6 +47,13 @@ const Masjid = sequelize.define(
       defaultValue: "draft",
     },
     adminFeedback: { type: DataTypes.TEXT, allowNull: true },
+
+    // Auto-filled by AI the moment a masjid is first approved (see
+    // adminMasjidController.js's `approve` + aiProviderService.js's
+    // generateSeoMeta) — only when still empty, so an admin's own edit via
+    // the SEO tab is never silently overwritten by a later approval.
+    metaTitle: { type: DataTypes.STRING(70), allowNull: true },
+    metaDescription: { type: DataTypes.STRING(200), allowNull: true },
 
     submittedAt: { type: DataTypes.DATE, allowNull: true },
     reviewedAt: { type: DataTypes.DATE, allowNull: true },

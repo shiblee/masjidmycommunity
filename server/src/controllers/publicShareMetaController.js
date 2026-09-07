@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
-import Masjid from "../models/Masjid.js";
 import MasjidPhoto from "../models/MasjidPhoto.js";
+import { findPublicMasjidByParam } from "../utils/findMasjidBySlugOrId.js";
 
 // The built SPA's index.html — used as a template for a specific masjid's
 // page, not replaced by it. Read once and cached; a stale cache after a
@@ -34,12 +34,12 @@ function escapeHtml(str) {
 // rule, this handler is dead code that nothing ever reaches.
 export const renderMasjidSharePage = async (req, res, next) => {
   try {
-    const masjid = await Masjid.findOne({ where: { id: req.params.id, status: "approved", moderationStatus: "active" } });
-    // Unknown/unapproved id — still serve the plain SPA shell (unmodified),
-    // never a raw Express 404. The React app's own MasjidProfile.jsx already
-    // renders a proper "This masjid isn't available" state for exactly this
-    // case; a bare 404 here would only replace that with an ugly plain-text
-    // error page for a real visitor.
+    const masjid = await findPublicMasjidByParam(req.params.id, { status: "approved", moderationStatus: "active" });
+    // Unknown/unapproved id or slug — still serve the plain SPA shell
+    // (unmodified), never a raw Express 404. The React app's own
+    // MasjidProfile.jsx already renders a proper "This masjid isn't
+    // available" state for exactly this case; a bare 404 here would only
+    // replace that with an ugly plain-text error page for a real visitor.
     if (!masjid) return res.set("Content-Type", "text/html").send(template());
 
     // Derived from the actual incoming request rather than a SITE_URL env
@@ -51,12 +51,22 @@ export const renderMasjidSharePage = async (req, res, next) => {
     const origin = `${req.protocol}://${req.get("host")}`;
     const cover = await MasjidPhoto.findOne({ where: { masjidId: masjid.id, isCover: true }, attributes: ["url"] });
     const imageUrl = cover ? `${origin}${cover.url}` : `${origin}/icons/icon-512.png`;
-    const title = `${masjid.name} — Masjid My Community`;
-    const description = (masjid.about || masjid.tagline || "View this masjid's profile, prayer times, and community on Masjid My Community.")
+    // Admin-set/AI-generated SEO fields (see the admin SEO tab and
+    // aiProviderService.js's generateSeoMeta) take priority when present;
+    // otherwise fall back to plain facts about the masjid.
+    const title = masjid.metaTitle || `${masjid.name} — Masjid My Community`;
+    const description = (
+      masjid.metaDescription ||
+      masjid.about ||
+      masjid.tagline ||
+      "View this masjid's profile, prayer times, and community on Masjid My Community."
+    )
       .replace(/\s+/g, " ")
       .trim()
       .slice(0, 200);
-    const pageUrl = `${origin}/masjid/${masjid.id}`;
+    // The canonical slug URL even when this request arrived via a legacy
+    // numeric-id link — so a crawler indexes/shares the one true URL.
+    const pageUrl = `${origin}/masjid/${masjid.slug || masjid.id}`;
 
     const metaTags = `
     <meta property="og:type" content="website" />

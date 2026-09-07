@@ -18,6 +18,7 @@ import { firstRestrictedField, RESTRICTED_CONTENT_MESSAGE } from "../utils/conte
 import { classifyContent } from "../services/aiProviderService.js";
 import { getEngagementFor, getEngagementForMany } from "../services/masjidEngagementService.js";
 import { getGreenTickBadgeInfo, getGreenTickBadgeInfoForMany } from "../services/greenTickService.js";
+import { generateUniqueSlug } from "../utils/slugify.js";
 
 // Second-layer contextual check (Layer 2 of the Common Content Moderation
 // Engine) — run only on fields the rule-based filter above did NOT already
@@ -165,7 +166,8 @@ export const createDraft = async (req, res) => {
       return res.status(400).json({ field: "name", message: RESTRICTED_CONTENT_MESSAGE });
     }
 
-    const masjid = await Masjid.create({ userId: req.user.id, name: name.trim(), status: "draft" });
+    const slug = await generateUniqueSlug(Masjid, name.trim(), { fallback: "masjid" });
+    const masjid = await Masjid.create({ userId: req.user.id, name: name.trim(), slug, status: "draft" });
     await logHistory(masjid.id, "draft_created", null, null);
     res.status(201).json({ masjid: await serializeMasjid(masjid) });
   } catch (error) {

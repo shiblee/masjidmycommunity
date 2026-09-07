@@ -2,10 +2,6 @@ import Masjid from "../models/Masjid.js";
 import Campaign from "../models/Campaign.js";
 import SuccessStory from "../models/SuccessStory.js";
 
-// Same domain used across the seed data (admin email, etc.) — override via
-// SITE_URL once the real production domain is confirmed.
-const SITE_URL = (process.env.SITE_URL || "https://masjidmycommunity.org").replace(/\/$/, "");
-
 const CAMPAIGN_PUBLIC_STATUSES = ["active", "paused", "goal_reached", "completed"];
 
 // [path, changefreq, priority] — every static, non-parameterized public page.
@@ -34,8 +30,8 @@ function escapeXml(s) {
   return String(s).replace(/[<>&'"]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", "'": "&apos;", '"': "&quot;" }[c]));
 }
 
-function urlEntry(path, { changefreq, priority, lastmod } = {}) {
-  const loc = `${SITE_URL}${path}`;
+function urlEntry(origin, path, { changefreq, priority, lastmod } = {}) {
+  const loc = `${origin}${path}`;
   return [
     "  <url>",
     `    <loc>${escapeXml(loc)}</loc>`,
@@ -50,17 +46,23 @@ function urlEntry(path, { changefreq, priority, lastmod } = {}) {
 
 export const getSitemapXml = async (req, res) => {
   try {
+    // Derived from the actual incoming request rather than a separately-
+    // configured SITE_URL env var, same reasoning as publicShareMetaController.js
+    // — a stale/unset env var previously left this sitemap listing the
+    // wrong domain (masjidmycommunity.org) for a site actually served from
+    // .com, with no way to notice short of reading the generated XML.
+    const origin = `${req.protocol}://${req.get("host")}`;
     const [masjids, campaigns, stories] = await Promise.all([
-      Masjid.findAll({ where: { status: "approved", moderationStatus: "active" }, attributes: ["id", "updatedAt"] }),
+      Masjid.findAll({ where: { status: "approved", moderationStatus: "active" }, attributes: ["id", "slug", "updatedAt"] }),
       Campaign.findAll({ where: { status: CAMPAIGN_PUBLIC_STATUSES, moderationStatus: "active" }, attributes: ["slug", "updatedAt"] }),
       SuccessStory.findAll({ where: { isActive: true }, attributes: ["slug", "updatedAt"] }),
     ]);
 
     const entries = [
-      ...STATIC_PAGES.map(([path, changefreq, priority]) => urlEntry(path, { changefreq, priority })),
-      ...masjids.map((m) => urlEntry(`/masjid/${m.id}`, { changefreq: "weekly", priority: "0.6", lastmod: m.updatedAt })),
-      ...campaigns.map((c) => urlEntry(`/campaign/${c.slug}`, { changefreq: "daily", priority: "0.7", lastmod: c.updatedAt })),
-      ...stories.map((s) => urlEntry(`/success-stories/${s.slug}`, { changefreq: "monthly", priority: "0.6", lastmod: s.updatedAt })),
+      ...STATIC_PAGES.map(([path, changefreq, priority]) => urlEntry(origin, path, { changefreq, priority })),
+      ...masjids.map((m) => urlEntry(origin, `/masjid/${m.slug || m.id}`, { changefreq: "weekly", priority: "0.6", lastmod: m.updatedAt })),
+      ...campaigns.map((c) => urlEntry(origin, `/campaign/${c.slug}`, { changefreq: "daily", priority: "0.7", lastmod: c.updatedAt })),
+      ...stories.map((s) => urlEntry(origin, `/success-stories/${s.slug}`, { changefreq: "monthly", priority: "0.6", lastmod: s.updatedAt })),
     ];
 
     const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${entries.join("\n")}\n</urlset>\n`;

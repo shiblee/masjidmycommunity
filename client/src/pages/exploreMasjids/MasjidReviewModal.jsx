@@ -111,7 +111,7 @@ function MasjidReviewModal({ masjid, initialTab = "overview", onClose }) {
           <div className="msj-review-photo-wrap">
             <MediaThumb src={masjid.coverPhotoUrl ? `${API_ORIGIN}${masjid.coverPhotoUrl}` : null} className="msj-review-modal-photo" />
             {masjid.photoCount > 0 && (
-              <Link to={`/masjid/${masjid.id}`} className="msj-review-see-photos">
+              <Link to={`/masjid/${masjid.slug || masjid.id}`} className="msj-review-see-photos">
                 <Icon name="imageIcon" size={14} /> See Photos
               </Link>
             )}
@@ -182,7 +182,7 @@ function MasjidReviewModal({ masjid, initialTab = "overview", onClose }) {
                 open={shareOpen}
                 onClose={() => setShareOpen(false)}
                 anchorRef={shareBtnRef}
-                url={`${window.location.origin}/masjid/${masjid.id}`}
+                url={`${window.location.origin}/masjid/${masjid.slug || masjid.id}`}
                 title={masjid.name}
               />
             </div>
@@ -191,7 +191,7 @@ function MasjidReviewModal({ masjid, initialTab = "overview", onClose }) {
               <p className="msj-review-address"><Icon name="mapPin" size={15} /> {masjid.formattedAddress || masjid.address}</p>
             )}
 
-            <Link to={`/masjid/${masjid.id}`} className="btn btn-outline-ink msj-review-view-profile">View Full Profile</Link>
+            <Link to={`/masjid/${masjid.slug || masjid.id}`} className="btn btn-outline-ink msj-review-view-profile">View Full Profile</Link>
 
             <div className="msj-suggest-edit">
               {suggestSent ? (

@@ -6,6 +6,8 @@ import {
   getOne,
   createMasjid,
   updateBasicInfo,
+  updateSeo,
+  suggestSeoMeta,
   uploadPhotos,
   updatePhoto,
   deletePhoto,
@@ -61,6 +63,8 @@ router.get("/:id", getOne);
 router.get("/:id/reviews", listMasjidReviews);
 router.get("/:id/likers", listMasjidLikers);
 router.patch("/:id", updateBasicInfo);
+router.patch("/:id/seo", updateSeo);
+router.post("/:id/seo/suggest", suggestSeoMeta);
 router.post("/:id/photos", uploadMasjidPhotos, uploadPhotos);
 router.patch("/:id/photos/:photoId", updatePhoto);
 router.delete("/:id/photos/:photoId", deletePhoto);

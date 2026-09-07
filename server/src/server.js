@@ -5,6 +5,7 @@ import connectDB from "./config/db.js";
 import { ensureEmailDefaults } from "./seed/emailDefaults.js";
 import { ensurePlatformUserDefaults } from "./seed/platformUserDefaults.js";
 import { ensureMasjidCategoryDefaults } from "./seed/masjidCategoryDefaults.js";
+import { ensureMasjidSlugs } from "./seed/masjidSlugBackfill.js";
 import { ensureReviewRestrictedWordDefaults } from "./seed/reviewRestrictedWordDefaults.js";
 import { ensureMasjidContactDesignationDefaults } from "./seed/masjidContactDesignationDefaults.js";
 import { ensurePrayerDefaults } from "./seed/prayerDefaults.js";
@@ -42,6 +43,7 @@ connectDB()
       ensureEmailDefaults(),
       ensurePlatformUserDefaults(),
       ensureMasjidCategoryDefaults(),
+      ensureMasjidSlugs(),
       ensureReviewRestrictedWordDefaults(),
       ensureMasjidContactDesignationDefaults(),
       ensurePrayerDefaults(),

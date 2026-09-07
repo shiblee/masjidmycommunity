@@ -315,6 +315,99 @@ export async function generateEducationEnhancement({ level, degree, institution,
   }
 }
 
+const SEO_TITLE_MAX = 70;
+const SEO_DESCRIPTION_MAX = 200;
+
+const SeoMetaSchema = z.object({
+  metaTitle: z.string(),
+  metaDescription: z.string(),
+});
+
+function seoMetaSystemPrompt() {
+  return [
+    "You write search-engine meta title/description tags for a masjid's public profile page on Masjid My Community, a platform connecting verified masjids with donors and the community.",
+    "Use ONLY the masjid information given below — never invent facilities, history, or claims not present in it.",
+    `'metaTitle': at most ${SEO_TITLE_MAX} characters, includes the masjid's name and, where it fits, its city — written to be clicked on in a Google search result, not just descriptive.`,
+    `'metaDescription': at most ${SEO_DESCRIPTION_MAX} characters, one or two plain sentences summarizing what the masjid is and where it is, written to make someone want to click through — no marketing hype, no emoji, no quotation marks.`,
+    "Output plain text only for both fields.",
+  ].join(" ");
+}
+
+// Belt-and-suspenders trim, same shape as clampBio above — cuts at the last
+// sentence/word boundary within the limit rather than mid-word.
+function clampAt(text, max) {
+  const trimmed = (text || "").trim();
+  if (trimmed.length <= max) return trimmed;
+  const slice = trimmed.slice(0, max);
+  const sentenceEnd = Math.max(slice.lastIndexOf(". "), slice.lastIndexOf("! "), slice.lastIndexOf("? "));
+  if (sentenceEnd > max * 0.5) return slice.slice(0, sentenceEnd + 1).trim();
+  const wordEnd = slice.lastIndexOf(" ");
+  return (wordEnd > max * 0.5 ? slice.slice(0, wordEnd) : slice).trim();
+}
+
+async function callClaudeSeoMeta({ name, category, city, country, tagline, about }) {
+  const response = await anthropic.messages.parse({
+    model: AI_MODEL,
+    max_tokens: 300,
+    system: [{ type: "text", text: seoMetaSystemPrompt(), cache_control: { type: "ephemeral" } }],
+    output_config: { format: zodOutputFormat(SeoMetaSchema), effort: AI_EFFORT },
+    messages: [{
+      role: "user",
+      content: `Masjid Name: ${name}\nCategory: ${category || "(not given)"}\nCity: ${city || "(not given)"}\nCountry: ${country || "(not given)"}\nTagline: ${tagline || "(not given)"}\nAbout: ${about || "(not given)"}`,
+    }],
+  });
+  return response.parsed_output;
+}
+
+async function callGeminiSeoMeta({ name, category, city, country, tagline, about }) {
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${AI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
+    {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: seoMetaSystemPrompt() }] },
+        contents: [{
+          role: "user",
+          parts: [{ text: `Masjid Name: ${name}\nCategory: ${category || "(not given)"}\nCity: ${city || "(not given)"}\nCountry: ${country || "(not given)"}\nTagline: ${tagline || "(not given)"}\nAbout: ${about || "(not given)"}` }],
+        }],
+        generationConfig: {
+          responseMimeType: "application/json",
+          responseSchema: { type: "object", properties: { metaTitle: { type: "string" }, metaDescription: { type: "string" } }, required: ["metaTitle", "metaDescription"] },
+        },
+      }),
+    }
+  );
+  if (!res.ok) throw new Error(`Gemini API error: ${res.status}`);
+  const data = await res.json();
+  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  return text ? JSON.parse(text) : null;
+}
+
+// Same null-on-failure contract as generateBio/generateWorkExperienceEnhancement.
+// Called once, automatically, the moment an admin approves a masjid (see
+// adminMasjidController.js's `approve`) — and on demand from the admin SEO
+// tab's "Regenerate with AI" action. Never overwrites fields an admin has
+// already set by hand; the caller is responsible for that check, this
+// function only ever generates.
+export async function generateSeoMeta({ name, category, city, country, tagline, about }) {
+  if (!aiProviderConfigured) return null;
+  try {
+    const parsed =
+      AI_PROVIDER === "claude"
+        ? await callClaudeSeoMeta({ name, category, city, country, tagline, about })
+        : await callGeminiSeoMeta({ name, category, city, country, tagline, about });
+    if (!parsed?.metaTitle || !parsed?.metaDescription) return null;
+    return {
+      metaTitle: clampAt(parsed.metaTitle, SEO_TITLE_MAX),
+      metaDescription: clampAt(parsed.metaDescription, SEO_DESCRIPTION_MAX),
+    };
+  } catch (error) {
+    console.error("AI provider SEO meta generation failed:", error.message);
+    return null;
+  }
+}
+
 const ReviewClassificationSchema = z.object({
   classification: z.enum(["vulgar", "sexual", "harassment", "hate", "threat", "safe"]),
   confidence: z.number(),

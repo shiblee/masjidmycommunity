@@ -71,13 +71,17 @@ function InfoCard({ icon, label, children }) {
 }
 
 function MasjidProfile() {
-  const { id, tab: tabParam } = useParams();
+  const { slug: slugParam, tab: tabParam } = useParams();
   const navigate = useNavigate();
   const [masjid, setMasjid] = useState(null);
   const [photos, setPhotos] = useState([]);
   const [notFound, setNotFound] = useState(false);
   const tab = TAB_KEYS.has(tabParam) ? tabParam : DEFAULT_TAB;
-  const setTab = (key) => navigate(`/masjid/${id}/${key}`);
+  // The numeric id (once loaded) — every internal API call (likes, reviews,
+  // prayer times, nearby list...) still uses this, exactly as before; only
+  // the visible URL and outbound share links use the slug.
+  const id = masjid?.id;
+  const setTab = (key) => navigate(`/masjid/${masjid.slug || slugParam}/${key}`);
   const { liked: favorited, likeCount, toggle: toggleLike, busy: favBusy } = useMasjidLike(id, {
     liked: !!masjid?.likedByMe,
     likeCount: masjid?.likeCount || 0,
@@ -90,15 +94,26 @@ function MasjidProfile() {
 
   const load = () => {
     axios
-      .get(`${API}/${id}`)
+      .get(`${API}/${slugParam}`)
       .then(({ data }) => {
         setMasjid(data.masjid);
         setPhotos(data.photos);
+        trackMasjidView(data.masjid.id, "detail");
       })
       .catch(() => setNotFound(true));
   };
 
-  useEffect(() => { load(); trackMasjidView(id, "detail"); }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { load(); }, [slugParam]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // A link built before this masjid had a slug, or a legacy numeric-id link
+  // (still fully supported server-side) — once loaded, settle the address
+  // bar on the one canonical URL rather than leaving it showing the id.
+  useEffect(() => {
+    if (masjid?.slug && slugParam !== masjid.slug) {
+      navigate(`/masjid/${masjid.slug}${tabParam ? `/${tabParam}` : ""}`, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [masjid?.slug, slugParam]);
 
   const toggleFavorite = async () => {
     const result = await toggleLike();
@@ -162,7 +177,7 @@ function MasjidProfile() {
               open={shareOpen}
               onClose={() => setShareOpen(false)}
               anchorRef={shareBtnRef}
-              url={`${window.location.origin}/masjid/${id}`}
+              url={`${window.location.origin}/masjid/${masjid.slug || id}`}
               title={masjid.name}
             />
             {dirUrl ? (
@@ -195,7 +210,7 @@ function MasjidProfile() {
       <section className="py-md msj-hub-content">
         <div className="wrap msj-hub-layout">
           <div className="msj-hub-left">
-            <NearbyMasjidPanel activeId={id} onSelect={(newId) => navigate(`/masjid/${newId}/${tab}`)} />
+            <NearbyMasjidPanel activeId={id} onSelect={(newSlug) => navigate(`/masjid/${newSlug}/${tab}`)} />
           </div>
           <div className="msj-hub-main">
             {tab === "about" && (

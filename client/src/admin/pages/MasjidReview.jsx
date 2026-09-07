@@ -25,6 +25,7 @@ const TABS = [
   { key: "donation", label: "Donation Account" },
   { key: "prayer", label: "Prayer Times" },
   { key: "greentick", label: "Green Tick" },
+  { key: "seo", label: "SEO" },
 ];
 
 const CORRECTION_STATUS_LABEL = { pending: "Pending Review", partially_approved: "Partially Approved", approved: "Approved", rejected: "Rejected" };
@@ -211,6 +212,107 @@ function BasicInfoTab({ id, masjid, categories, onSaved }) {
         <AField label="Postal / ZIP Code" error={errors.postalCode}><input value={form.postalCode} onChange={setField("postalCode")} /></AField>
       </div>
       {form.latitude != null && <StaticLocationMap latitude={form.latitude} longitude={form.longitude} height={220} />}
+
+      <button className="amx-btn amx-btn-accent" onClick={save} disabled={saving} style={{ marginTop: 16 }}>
+        {saving ? "Saving…" : "Save Changes"}
+      </button>
+    </div>
+  );
+}
+
+// The URL slug, meta title, and meta description that control how this
+// masjid's page appears in a Google result and in a WhatsApp/Facebook/etc.
+// share preview. Meta title/description are auto-filled by AI the moment a
+// masjid is first approved (see the server's `approve` handler) — this tab
+// just lets an admin review, override, or regenerate them.
+function SeoTab({ id, masjid, onSaved, showToast }) {
+  const [form, setForm] = useState({
+    slug: masjid.slug || "",
+    metaTitle: masjid.metaTitle || "",
+    metaDescription: masjid.metaDescription || "",
+  });
+  const [errors, setErrors] = useState({});
+  const [saving, setSaving] = useState(false);
+  const [suggesting, setSuggesting] = useState(false);
+
+  const setField = (key) => (e) => {
+    setForm((f) => ({ ...f, [key]: e.target.value }));
+    setErrors((er) => ({ ...er, [key]: null }));
+  };
+
+  // Fills the (still unsaved) form fields — the admin reviews/edits, then
+  // explicitly clicks Save Changes below, same "AI assists, human confirms"
+  // shape as this app's other AI-assist actions.
+  const suggestWithAi = async () => {
+    setSuggesting(true);
+    setErrors({});
+    try {
+      const { data } = await adminApi.post(`/masjids/${id}/seo/suggest`);
+      setForm((f) => ({ ...f, metaTitle: data.metaTitle, metaDescription: data.metaDescription }));
+    } catch (err) {
+      setErrors({ form: err.response?.data?.message || "Couldn't get an AI suggestion." });
+    } finally {
+      setSuggesting(false);
+    }
+  };
+
+  const save = async () => {
+    setSaving(true);
+    setErrors({});
+    try {
+      const { data } = await adminApi.patch(`/masjids/${id}/seo`, form);
+      onSaved(data.masjid);
+      showToast("SEO settings updated.");
+    } catch (err) {
+      const field = err.response?.data?.field;
+      const message = err.response?.data?.message || "Couldn't save changes.";
+      setErrors(field ? { [field]: message } : { form: message });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="amx-card amx-panel" style={{ maxWidth: 720 }}>
+      <div className="amx-panel-head" style={{ alignItems: "center" }}>
+        <h3>SEO</h3>
+        <button className="amx-btn amx-btn-outline amx-btn-sm" onClick={suggestWithAi} disabled={suggesting}>
+          <Icon name="sparkle" size={14} /> {suggesting ? "Generating…" : "Suggest with AI"}
+        </button>
+      </div>
+      <p className="amx-panel-sub" style={{ marginBottom: 16 }}>
+        Controls how this masjid's page appears in Google search results and when shared on WhatsApp, Facebook, X, and LinkedIn.
+      </p>
+      {errors.form && <div className="amx-form-error" style={{ marginBottom: 16 }}><Icon name="info" size={16} />{errors.form}</div>}
+
+      <AField label="URL Slug" required error={errors.slug} hint={!errors.slug ? `masjidmycommunity.com/masjid/${form.slug || "…"}` : undefined}>
+        <input value={form.slug} onChange={setField("slug")} maxLength={80} />
+      </AField>
+      <AField
+        label="Meta Title"
+        error={errors.metaTitle}
+        hint={!errors.metaTitle ? "Shown as the clickable headline in a Google search result. Falls back to the masjid's name if left blank." : undefined}
+        labelExtra={<span className="pf-char-counter">{form.metaTitle.length}/70</span>}
+      >
+        <input value={form.metaTitle} onChange={setField("metaTitle")} maxLength={70} />
+      </AField>
+      <AField
+        label="Meta Description"
+        error={errors.metaDescription}
+        hint={!errors.metaDescription ? "Shown under the title in search results and in social share previews. Falls back to the masjid's About text if left blank." : undefined}
+        labelExtra={<span className="pf-char-counter">{form.metaDescription.length}/200</span>}
+      >
+        <div className="msj-about-wrap">
+          <textarea rows={3} maxLength={200} value={form.metaDescription} onChange={setField("metaDescription")} />
+          <MicButton
+            onTranscript={(text) => {
+              setForm((f) => ({ ...f, metaDescription: text.slice(0, 200) }));
+              setErrors((er) => ({ ...er, metaDescription: null }));
+            }}
+            className="msj-about-mic"
+          />
+        </div>
+      </AField>
 
       <button className="amx-btn amx-btn-accent" onClick={save} disabled={saving} style={{ marginTop: 16 }}>
         {saving ? "Saving…" : "Save Changes"}
@@ -1180,6 +1282,15 @@ function MasjidReview() {
       )}
 
       {tab === "greentick" && <GreenTickTab masjidId={id} showToast={showToast} />}
+
+      {tab === "seo" && (
+        <SeoTab
+          id={id}
+          masjid={masjid}
+          onSaved={(m) => setMasjid(m)}
+          showToast={showToast}
+        />
+      )}
 
       {modal === "reject" && (
         <ReasonModal title="Reject Masjid" placeholder="Explain why this masjid is being rejected…" onCancel={() => setModal(null)} onSubmit={(reason) => act(() => adminApi.post(`/masjids/${id}/reject`, { reason }), "Masjid rejected.")} />

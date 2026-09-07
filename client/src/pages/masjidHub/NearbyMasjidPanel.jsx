@@ -71,7 +71,7 @@ function NearbyMasjidPanel({ activeId, onSelect }) {
             type="button"
             key={m.id}
             className={`msj-nearby-item ${m.id === Number(activeId) ? "active" : ""}`}
-            onClick={() => onSelect(m.id)}
+            onClick={() => onSelect(m.slug || m.id)}
           >
             <MediaThumb src={m.coverPhotoUrl ? `${API_ORIGIN}${m.coverPhotoUrl}` : null} className="msj-nearby-thumb" />
             <span className="msj-nearby-item-body">

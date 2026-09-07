@@ -17,6 +17,7 @@ import { getEffectivePrayerTimes, isValidDateStr } from "../services/prayerTimeS
 import { getEngagementFor, getEngagementForMany } from "../services/masjidEngagementService.js";
 import { getGreenTickBadgeInfo, getGreenTickBadgeInfoForMany } from "../services/greenTickService.js";
 import GreenTickApplication from "../models/GreenTickApplication.js";
+import { findPublicMasjidByParam } from "../utils/findMasjidBySlugOrId.js";
 
 const PUBLIC_STATUS = "approved";
 const MAP_POINTS_CAP = 500;
@@ -149,7 +150,7 @@ export const listMapPoints = async (req, res) => {
     const where = await baseWhere({ city, country, category, activeOnly, lat, lng });
     const rows = await Masjid.findAll({
       where,
-      attributes: ["id", "name", "category", "city", "country", "latitude", "longitude", "status"],
+      attributes: ["id", "slug", "name", "category", "city", "country", "latitude", "longitude", "status"],
     });
     const ranked = rankByQuery(rows, q);
     const truncated = ranked.length > MAP_POINTS_CAP;
@@ -169,7 +170,7 @@ export const listMapPoints = async (req, res) => {
 export const getPublicOne = async (req, res) => {
   try {
     const userId = req.user?.id;
-    const masjid = await Masjid.findOne({ where: { id: req.params.id, status: PUBLIC_STATUS, moderationStatus: "active" } });
+    const masjid = await findPublicMasjidByParam(req.params.id, { status: PUBLIC_STATUS, moderationStatus: "active" });
     if (!masjid) return res.status(404).json({ message: "Masjid not found." });
 
     const [photos, imam, topLikerFavorites, engagement, greenTick, campaignCount] = await Promise.all([
@@ -390,7 +391,7 @@ export const listNearbyAll = async (req, res) => {
     if (q) where.name = { [Op.like]: `%${q}%` };
 
     const hasCoords = masjid.latitude != null && masjid.longitude != null;
-    const attributes = ["id", "name", "category", "city", "country", "latitude", "longitude"];
+    const attributes = ["id", "slug", "name", "category", "city", "country", "latitude", "longitude"];
     let order;
     if (hasCoords) {
       const distanceExpr = literal(

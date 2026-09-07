@@ -21,6 +21,8 @@ import { getEngagementFor, getEngagementForMany, getRatingDistribution } from ".
 import { getGreenTickBadgeInfo, getGreenTickBadgeInfoForMany } from "../services/greenTickService.js";
 import { withReviewers } from "./masjidReviewController.js";
 import { PLATFORM_EMAIL } from "../seed/platformUserDefaults.js";
+import { generateUniqueSlug } from "../utils/slugify.js";
+import { generateSeoMeta } from "../services/aiProviderService.js";
 
 // Same second-layer AI check as masjidController.js's own write paths — see
 // that file for the full rationale. No-op until an AI provider is configured.
@@ -105,7 +107,8 @@ export const createMasjid = async (req, res) => {
     const platformUser = await User.findOne({ where: { email: PLATFORM_EMAIL } });
     if (!platformUser) return res.status(500).json({ message: "Platform account is not configured." });
 
-    const masjid = await Masjid.create({ userId: platformUser.id, name: name.trim(), status: "draft" });
+    const slug = await generateUniqueSlug(Masjid, name.trim(), { fallback: "masjid" });
+    const masjid = await Masjid.create({ userId: platformUser.id, name: name.trim(), slug, status: "draft" });
     await logHistory(masjid.id, "admin_created", null, req.user.email);
     res.status(201).json({ masjid: masjid.toJSON() });
   } catch (error) {
@@ -324,6 +327,62 @@ export const updateBasicInfo = async (req, res) => {
   }
 };
 
+const SEO_TITLE_MAX = 70;
+const SEO_DESCRIPTION_MAX = 200;
+
+export const updateSeo = async (req, res) => {
+  try {
+    const masjid = await Masjid.findByPk(req.params.id);
+    if (!masjid) return res.status(404).json({ message: "Masjid not found." });
+
+    if (req.body.slug !== undefined) {
+      const slug = req.body.slug.trim().toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, "");
+      if (!slug) return res.status(400).json({ field: "slug", message: "URL slug can't be empty." });
+      const existing = await Masjid.findOne({ where: { slug, id: { [Op.ne]: masjid.id } } });
+      if (existing) return res.status(400).json({ field: "slug", message: "That URL slug is already in use by another masjid." });
+      masjid.slug = slug;
+    }
+    if (req.body.metaTitle !== undefined) {
+      const metaTitle = req.body.metaTitle.trim();
+      if (metaTitle.length > SEO_TITLE_MAX) return res.status(400).json({ field: "metaTitle", message: `Meta title must be ${SEO_TITLE_MAX} characters or fewer.` });
+      masjid.metaTitle = metaTitle || null;
+    }
+    if (req.body.metaDescription !== undefined) {
+      const metaDescription = req.body.metaDescription.trim();
+      if (metaDescription.length > SEO_DESCRIPTION_MAX) return res.status(400).json({ field: "metaDescription", message: `Meta description must be ${SEO_DESCRIPTION_MAX} characters or fewer.` });
+      masjid.metaDescription = metaDescription || null;
+    }
+
+    await masjid.save();
+    await logHistory(masjid.id, "admin_updated_seo", null, req.user.email);
+    res.json({ masjid: masjid.toJSON() });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Generates a fresh suggestion but does NOT save it — the admin reviews it
+// in the SEO tab's (unsaved) form fields and explicitly saves via
+// updateSeo above, same "AI assists, human confirms" shape as this app's
+// other AI-assist actions (bio/work-experience suggestions on a profile).
+export const suggestSeoMeta = async (req, res) => {
+  try {
+    const masjid = await Masjid.findByPk(req.params.id);
+    if (!masjid) return res.status(404).json({ message: "Masjid not found." });
+
+    const seo = await generateSeoMeta({
+      name: masjid.name, category: masjid.category, city: masjid.city, country: masjid.country,
+      tagline: masjid.tagline, about: masjid.about,
+    });
+    if (!seo) {
+      return res.status(503).json({ message: "AI suggestions aren't available right now — the provider may not be configured, or the request failed. Please fill these in manually." });
+    }
+    res.json(seo);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 export const uploadPhotos = async (req, res) => {
   try {
     const masjid = await Masjid.findByPk(req.params.id);
@@ -433,6 +492,22 @@ export const approve = async (req, res) => {
     masjid.adminFeedback = null;
     masjid.reviewedAt = new Date();
     masjid.approvedAt = new Date();
+
+    // Auto-fill SEO meta on first approval only — never overwrites a value
+    // an admin already set by hand via the SEO tab. Best-effort: returns
+    // null (no-op) until an AI provider key is configured, or on any
+    // failure, so approval itself never blocks on this.
+    if (!masjid.metaTitle || !masjid.metaDescription) {
+      const seo = await generateSeoMeta({
+        name: masjid.name, category: masjid.category, city: masjid.city, country: masjid.country,
+        tagline: masjid.tagline, about: masjid.about,
+      });
+      if (seo) {
+        if (!masjid.metaTitle) masjid.metaTitle = seo.metaTitle;
+        if (!masjid.metaDescription) masjid.metaDescription = seo.metaDescription;
+      }
+    }
+
     await masjid.save();
     await logHistory(masjid.id, "approved", req.body.note, req.user.email);
 
