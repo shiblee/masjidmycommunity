@@ -205,6 +205,7 @@ function Masjids() {
                 <SortHeader label="Location" sortKey="location" activeKey={sortBy} direction={sortDir} onSort={toggleSort} />
                 <th>Rating</th>
                 <th>Likes</th>
+                <th>Views</th>
                 <SortHeader label="Registered" sortKey="createdAt" activeKey={sortBy} direction={sortDir} onSort={toggleSort} />
                 <SortHeader label="Status" sortKey="status" activeKey={sortBy} direction={sortDir} onSort={toggleSort} />
                 <th></th>
@@ -251,6 +252,16 @@ function Masjids() {
                       </span>
                     ) : (
                       <span className="amx-cell-sub">No likes yet</span>
+                    )}
+                  </td>
+                  <td>
+                    {m.viewCount > 0 ? (
+                      <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                        <Icon name="eye" size={14} style={{ color: "var(--a-navy)" }} />
+                        {formatCompactNumber(m.viewCount)}
+                      </span>
+                    ) : (
+                      <span className="amx-cell-sub">No views yet</span>
                     )}
                   </td>
                   <td>{formatDate(m.createdAt)}</td>

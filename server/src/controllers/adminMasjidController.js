@@ -203,7 +203,7 @@ export const listAll = async (req, res) => {
           ownerName: owner?.fullName || null,
           ownerEmail: owner?.email || null,
           ownerMobile: owner?.mobile || null,
-          ...(engagementMap.get(m.id) || { likeCount: 0, avgRating: 0, reviewCount: 0, likedByMe: false }),
+          ...(engagementMap.get(m.id) || { likeCount: 0, avgRating: 0, reviewCount: 0, likedByMe: false, viewCount: 0 }),
           ...(greenTickMap.get(m.id) || { greenTickStatus: null, verificationId: null, issuedAt: null, isGreenTick: false }),
         };
       })
