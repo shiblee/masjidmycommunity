@@ -359,7 +359,7 @@ function CampaignWizard({ embedded = false }) {
                 </div>
               ) : (
                 <>
-                  <Field label="Masjid" required hint="Only campaigns tied to an approved, verified masjid can be launched." error={errors.masjidId}>
+                  <Field label="Masjid" required error={errors.masjidId}>
                     <select
                       value={masjidId}
                       onChange={(e) => { setMasjidId(e.target.value); setErrors((er) => ({ ...er, masjidId: null })); }}
@@ -376,16 +376,16 @@ function CampaignWizard({ embedded = false }) {
                 </>
               )}
               <div style={{ marginTop: 24 }}>
-                <Field label="Campaign Title" required hint="A clear, specific title donors will recognize." error={errors.title}>
+                <Field label="Campaign Title" required error={errors.title}>
                   <input value={form.title} onChange={setField("title")} placeholder="e.g. Rebuild Our Flood-Damaged Prayer Hall" disabled={!!campaignId} />
                 </Field>
               </div>
 
               <h3 style={{ marginTop: 28 }}>Basic Information</h3>
-              <Field label="Short Description" required hint="One or two sentences shown on campaign cards.">
+              <Field label="Short Description" required>
                 <input value={form.shortDescription} onChange={setField("shortDescription")} placeholder="A brief summary of what this campaign funds" />
               </Field>
-              <Field label="Full Description" required hint={`${form.description.length} / ${DESC_MAX} characters. Explain the need, the plan, and the expected impact — no fabricated claims, hadith, or Qur'an citations.`}>
+              <Field label="Full Description" required>
                 <textarea rows={7} maxLength={DESC_MAX} value={form.description} onChange={setField("description")} placeholder="Describe the project in detail" />
               </Field>
               <Field label="Target End Date">
@@ -402,19 +402,19 @@ function CampaignWizard({ embedded = false }) {
                   {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
               </Field>
-              <Field label="Islamic Fundraising Classification" hint="This determines how the campaign is presented to donors.">
+              <Field label="Islamic Fundraising Classification">
                 <select value={form.donationType} onChange={setField("donationType")}>
                   {classifications.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
                 </select>
               </Field>
               {form.donationType === "Zakat" && (
-                <Field label="Zakat Eligibility Explanation" required hint="Explain, in your own words, why this specific need qualifies for Zakat funds." error={errors.zakatEligibilityNote}>
+                <Field label="Zakat Eligibility Explanation" required error={errors.zakatEligibilityNote}>
                   <textarea rows={4} value={form.zakatEligibilityNote} onChange={setField("zakatEligibilityNote")} placeholder="e.g. Funds go directly to eligible recipients defined under the Zakat categories (asnaf)." />
                 </Field>
               )}
 
               <h3 style={{ marginTop: 28 }}>Funding &amp; Budget</h3>
-              <Field label="Funding Goal (INR)" required hint="The total amount this campaign is trying to raise." error={errors.goalAmount}>
+              <Field label="Funding Goal (INR)" required error={errors.goalAmount}>
                 <input type="number" min="1" value={form.goalAmount} onChange={setField("goalAmount")} placeholder="e.g. 100000" />
               </Field>
 
