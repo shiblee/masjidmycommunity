@@ -1,10 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Icon } from "../Icons.jsx";
 import ShareMenu from "../ShareMenu.jsx";
 import DonateModal from "./DonateModal.jsx";
 import { getStoredUser } from "../../utils/userAuthStorage.js";
 
 function CampaignDonationPanel({ campaign, category, donationAccount, slug }) {
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [user, setUser] = useState(() => getStoredUser());
   const [donateOpen, setDonateOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
@@ -15,6 +18,31 @@ function CampaignDonationPanel({ campaign, category, donationAccount, slug }) {
     window.addEventListener("mmc-user-session-updated", onSessionUpdated);
     return () => window.removeEventListener("mmc-user-session-updated", onSessionUpdated);
   }, []);
+
+  // Round-trips through /auth: a logged-out "Donate" click sends the user to
+  // sign in with ?redirect=/campaign/<slug>?donate=1, and Auth.jsx sends them
+  // straight back here afterward — this effect notices the ?donate=1 marker,
+  // reopens the modal automatically, and strips the marker so a refresh or
+  // reshare of the URL doesn't keep reopening it.
+  useEffect(() => {
+    if (searchParams.get("donate") === "1" && user) {
+      setDonateOpen(true);
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete("donate");
+        return next;
+      }, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+  const openDonate = () => {
+    if (!user) {
+      navigate(`/auth?redirect=${encodeURIComponent(`/campaign/${slug}?donate=1`)}`);
+      return;
+    }
+    setDonateOpen(true);
+  };
   const pct = campaign.progressPercent ?? 0;
   const goal = campaign.goalAmount ? Number(campaign.goalAmount) : null;
   const raised = Number(campaign.amountRaised) || 0;
@@ -45,7 +73,7 @@ function CampaignDonationPanel({ campaign, category, donationAccount, slug }) {
       </div>
       <p className="msj-list-meta" style={{ marginTop: 4 }}>{campaign.donorCount ?? 0} contributions · {category?.name || campaign.donationType}</p>
 
-      <button type="button" className="btn btn-gold" style={{ width: "100%", justifyContent: "center", marginTop: 18 }} onClick={() => setDonateOpen(true)}>
+      <button type="button" className="btn btn-gold" style={{ width: "100%", justifyContent: "center", marginTop: 18 }} onClick={openDonate}>
         <Icon name="heart" size={16} /> Donate to This Campaign
       </button>
       <button

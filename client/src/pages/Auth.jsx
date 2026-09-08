@@ -224,7 +224,15 @@ function Auth({ defaultIntent } = {}) {
 
   const [verifySuccess, setVerifySuccess] = useState(false);
 
-  const goToAccount = () => navigate("/my-community");
+  // `?redirect=` lets a login-gated action (e.g. Donate on a campaign page)
+  // send the user back to exactly where they were after signing in, instead
+  // of always landing on the generic community wall. Restricted to a
+  // same-origin relative path (must start with a single "/", never "//..."
+  // which browsers treat as protocol-relative) so this can never be turned
+  // into an open redirect via a crafted link.
+  const redirectTarget = params.get("redirect");
+  const isSafeRedirect = (path) => typeof path === "string" && path.startsWith("/") && !path.startsWith("//");
+  const goToAccount = () => navigate(isSafeRedirect(redirectTarget) ? redirectTarget : "/my-community");
 
   const startOtpFlow = (data, purpose) => {
     setOtpCtx({ userId: data.userId, otpTarget: data.otpTarget, maskedTarget: data.maskedTarget, purpose });

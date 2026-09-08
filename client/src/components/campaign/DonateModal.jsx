@@ -71,7 +71,13 @@ function DonateModal({ campaign, donationAccount, slug, user, onClose }) {
           <p className="msj-modal-sub">
             Letting the masjid know you've sent ₹{effectiveAmount.toLocaleString("en-IN")} needs an account, so your claim is tied to someone real and not just anonymous text.
           </p>
-          <Link to="/auth" className="btn btn-gold" style={{ width: "100%", justifyContent: "center" }}>Sign In</Link>
+          <Link
+            to={`/auth?redirect=${encodeURIComponent(`/campaign/${slug}?donate=1`)}`}
+            className="btn btn-gold"
+            style={{ width: "100%", justifyContent: "center" }}
+          >
+            Sign In
+          </Link>
         </div>
       </div>
     );
