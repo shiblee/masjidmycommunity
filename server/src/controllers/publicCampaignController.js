@@ -63,13 +63,14 @@ export const getPublicOne = async (req, res) => {
     const campaign = await Campaign.findOne({ where: { slug: req.params.slug, status: { [Op.in]: PUBLIC_STATUSES }, moderationStatus: "active" } });
     if (!campaign) return res.status(404).json({ message: "Campaign not found." });
 
-    const [photos, budgetItems, updates, masjid, raised, category] = await Promise.all([
+    const [photos, budgetItems, updates, masjid, raised, category, donorCount] = await Promise.all([
       CampaignPhoto.findAll({ where: { campaignId: campaign.id }, order: [["sortOrder", "ASC"]] }),
       CampaignBudgetItem.findAll({ where: { campaignId: campaign.id }, order: [["sortOrder", "ASC"]] }),
       CampaignUpdate.findAll({ where: { campaignId: campaign.id }, order: [["createdAt", "DESC"]] }),
       Masjid.findByPk(campaign.masjidId, { attributes: ["id", "name", "city", "country", "tagline"] }),
       amountRaised(campaign.id),
       campaign.categoryId ? CampaignCategory.findByPk(campaign.categoryId, { attributes: ["id", "name"] }) : null,
+      Donation.count({ where: { campaignId: campaign.id, status: "recorded" } }),
     ]);
 
     const [donationAccount, masjidEngagement] = await Promise.all([
@@ -82,6 +83,7 @@ export const getPublicOne = async (req, res) => {
       campaign: {
         ...campaign.toJSON(),
         amountRaised: raised,
+        donorCount,
         progressPercent: goal ? Math.min(100, Math.round((raised / goal) * 1000) / 10) : null,
       },
       photos,
