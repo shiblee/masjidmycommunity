@@ -211,6 +211,8 @@ export const getVisitorInsights = async (req, res) => {
 };
 
 const SORT_COLUMNS = {
+  visitor: "visitorId",
+  source: "trafficType",
   visitTime: "startedAt",
   type: "visitorType",
   device: "deviceType",

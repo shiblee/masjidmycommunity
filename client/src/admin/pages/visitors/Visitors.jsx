@@ -268,8 +268,8 @@ function Visitors() {
             <table className="amx-table">
               <thead>
                 <tr>
-                  <th>Visitor</th>
-                  <th>Source</th>
+                  <SortHeader label="Visitor" sortKey="visitor" activeKey={sortKey} direction={sortDir} onSort={toggleSort} />
+                  <SortHeader label="Source" sortKey="source" activeKey={sortKey} direction={sortDir} onSort={toggleSort} />
                   <SortHeader label="Visit Time" sortKey="visitTime" activeKey={sortKey} direction={sortDir} onSort={toggleSort} />
                   <SortHeader label="Type" sortKey="type" activeKey={sortKey} direction={sortDir} onSort={toggleSort} />
                   <SortHeader label="Device" sortKey="device" activeKey={sortKey} direction={sortDir} onSort={toggleSort} />
