@@ -206,7 +206,11 @@ export async function generateSyntheticUser(settings, { skipAi = false } = {}) {
   const educationLevel = levelForDegree(degree);
 
   const username = await generateUniqueUsername(fullName);
-  const email = `${username}@syntheticuser.test`;
+  // A subdomain of the site's own real domain — not the bare domain, so a
+  // generated local-part can never collide with a real staff mailbox
+  // there, and not a third-party domain, so an email can never reach
+  // someone unaffiliated with this platform even in a misconfiguration.
+  const email = `${username}@synthetic.masjidmycommunity.com`;
   const password = await bcrypt.hash(crypto.randomUUID(), 10);
   const avatarPath = generateAndSaveAvatar(username);
 
