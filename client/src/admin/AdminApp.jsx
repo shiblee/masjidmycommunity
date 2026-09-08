@@ -89,7 +89,8 @@ function AdminApp() {
         <Route path="pending-reviews" element={<PendingReviews />} />
         <Route path="masjid-corrections" element={<MasjidCorrections />} />
         <Route path="masjid-corrections/:id" element={<MasjidCorrectionDetail />} />
-        <Route path="settings" element={<Settings />} />
+        <Route path="settings" element={<Navigate to="/admin/settings/profile" replace />} />
+        <Route path="settings/:sectionKey" element={<Settings />} />
       </Route>
 
       <Route index element={<Navigate to="login" replace />} />

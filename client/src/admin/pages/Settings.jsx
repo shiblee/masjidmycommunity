@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { NavLink, Navigate, useParams } from "react-router-dom";
 import Icon from "../components/Icons.jsx";
 import adminApi from "../services/adminApi.js";
 import { updateStoredUser } from "../authStorage.js";
@@ -35,7 +36,8 @@ function Toggle({ on, onClick, disabled }) {
 }
 
 function Settings() {
-  const [section, setSection] = useState("profile");
+  const { sectionKey } = useParams();
+  const section = sectionKey;
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [toast, setToast] = useState(null);
@@ -572,6 +574,10 @@ function Settings() {
     }
   };
 
+  if (!SECTIONS.some((s) => s.key === sectionKey)) {
+    return <Navigate to={`/admin/settings/${SECTIONS[0].key}`} replace />;
+  }
+
   if (loading) {
     return (
       <>
@@ -623,10 +629,10 @@ function Settings() {
       <div className="amx-settings-layout">
         <nav className="amx-settings-nav">
           {SECTIONS.map((s) => (
-            <button key={s.key} className={section === s.key ? "active" : ""} onClick={() => setSection(s.key)}>
+            <NavLink key={s.key} to={`/admin/settings/${s.key}`} className={({ isActive }) => (isActive ? "active" : "")}>
               <Icon name={s.icon} />
               {s.label}
-            </button>
+            </NavLink>
           ))}
         </nav>
 
