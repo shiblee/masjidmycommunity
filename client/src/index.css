@@ -3701,7 +3701,12 @@ footer{
   padding:20px; z-index:1000;
 }
 .msj-modal{
-  position:relative; background:#fff; border-radius:16px; padding:32px; width:100%; max-width:420px;
+  /* isolation:isolate forces its own compositing layer, separate from the
+     overlay's backdrop-filter:blur — without it, Chrome/WebKit sometimes
+     blend the blurred backdrop through this element's own text glyph edges
+     (anti-aliased pixels), showing a ghosted double-exposure of whatever
+     text sits behind the modal right through its heading. */
+  position:relative; isolation:isolate; background:#fff; border-radius:16px; padding:32px; width:100%; max-width:420px;
   max-height:calc(100vh - 40px); overflow-y:auto;
   box-shadow:0 40px 80px -30px rgba(11,31,30,.4);
 }
