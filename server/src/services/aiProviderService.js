@@ -541,3 +541,81 @@ export async function generateGroundedAnswer({ question, contextText, history, l
     return null;
   }
 }
+
+const MasjidDescriptionSchema = z.object({ description: z.string() });
+
+function masjidDescriptionSystemPrompt() {
+  return [
+    "You write a short, factual one-paragraph description of a mosque for a directory listing.",
+    "Use ONLY the name, city, state, and country given below. Never invent history, an imam's name, an establishment year, congregation size, architectural details, or any other fact not explicitly given.",
+    "If the given facts are sparse, write a brief, honest sentence using only what's given (e.g. just name and city) — do not pad with generic claims or invented specifics.",
+    "2-3 plain sentences, no markdown, no quotation marks.",
+  ].join(" ");
+}
+
+async function callClaudeMasjidDescription({ name, city, state, country, category }) {
+  const response = await anthropic.messages.parse({
+    model: AI_MODEL,
+    max_tokens: 300,
+    system: [{ type: "text", text: masjidDescriptionSystemPrompt(), cache_control: { type: "ephemeral" } }],
+    output_config: { format: zodOutputFormat(MasjidDescriptionSchema), effort: AI_EFFORT },
+    messages: [{ role: "user", content: `Name: ${name}\nCity: ${city || "(not given)"}\nState: ${state || "(not given)"}\nCountry: ${country || "(not given)"}\nCategory: ${category || "(not given)"}` }],
+  });
+  return response.parsed_output;
+}
+
+// Same null-on-failure contract as every other function here. The caller
+// (masjidDiscoveryService.js) always has a plain templated fallback ready
+// — this only ever polishes text on top of facts already confirmed by
+// Google Places, never supplies a fact of its own.
+export async function generateMasjidDescription({ name, city, state, country, category }) {
+  if (!aiProviderConfigured || AI_PROVIDER !== "claude") return null;
+  try {
+    const parsed = await callClaudeMasjidDescription({ name, city, state, country, category });
+    if (!parsed?.description) return null;
+    return { description: parsed.description.trim() };
+  } catch (error) {
+    console.error("AI provider masjid description failed:", error.message);
+    return null;
+  }
+}
+
+const TranslationSchema = z.object({ translated: z.string() });
+
+const LANGUAGE_NAMES = { hi: "Hindi", ur: "Urdu", ar: "Arabic" };
+
+function translationSystemPrompt(targetLanguageCode) {
+  const languageName = LANGUAGE_NAMES[targetLanguageCode] || targetLanguageCode;
+  return [
+    `You translate short pieces of text into ${languageName}, faithfully and literally.`,
+    "Translate ONLY what is given — never add, remove, embellish, or explain anything not present in the source text.",
+    "Output the translation only, no markdown, no quotation marks, no commentary.",
+  ].join(" ");
+}
+
+async function callClaudeTranslation({ text, targetLanguageCode }) {
+  const response = await anthropic.messages.parse({
+    model: AI_MODEL,
+    max_tokens: 500,
+    system: [{ type: "text", text: translationSystemPrompt(targetLanguageCode), cache_control: { type: "ephemeral" } }],
+    output_config: { format: zodOutputFormat(TranslationSchema), effort: AI_EFFORT },
+    messages: [{ role: "user", content: text }],
+  });
+  return response.parsed_output;
+}
+
+// Generic translate-only function — used by masjidDiscoveryService.js to
+// populate the existing Translation table (masjid.name.<id>/masjid.about.<id>)
+// for hi/ur/ar. Deliberately narrow prompt (translate, don't compose) so it
+// can never introduce a fact the source text didn't already state.
+export async function generateTranslation({ text, targetLanguageCode }) {
+  if (!aiProviderConfigured || AI_PROVIDER !== "claude" || !text) return null;
+  try {
+    const parsed = await callClaudeTranslation({ text, targetLanguageCode });
+    if (!parsed?.translated) return null;
+    return { translated: parsed.translated.trim() };
+  } catch (error) {
+    console.error("AI provider translation failed:", error.message);
+    return null;
+  }
+}

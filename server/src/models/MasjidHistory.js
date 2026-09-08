@@ -6,7 +6,7 @@ const MasjidHistory = sequelize.define(
   {
     masjidId: { type: DataTypes.INTEGER, allowNull: false },
     action: { type: DataTypes.STRING, allowNull: false },
-    actorType: { type: DataTypes.ENUM("user", "admin"), allowNull: false },
+    actorType: { type: DataTypes.ENUM("user", "admin", "bot"), allowNull: false },
     actorName: { type: DataTypes.STRING, allowNull: true },
     note: { type: DataTypes.TEXT, allowNull: true },
   },
