@@ -154,6 +154,35 @@ function AField({ label, children, required, error, hint, labelExtra }) {
   );
 }
 
+// Sits beside every edit tab (Basic Info / Category & Funding / Photos &
+// Media / Compliance) so the admin can always see what they're editing —
+// cover, title, masjid, status, funding progress — without switching back
+// to Overview.
+function CampaignSnapshot({ campaign, masjid, cover }) {
+  const pct = campaign.progressPercent ?? 0;
+  return (
+    <div className="amx-card amx-panel amx-review-actions">
+      <div className="amx-panel-head"><h3>Snapshot</h3></div>
+      <div style={{ borderRadius: 12, overflow: "hidden", aspectRatio: "16/10", marginBottom: 16 }}>
+        <MediaThumb src={cover ? `${API_ORIGIN}${cover.url}` : null} mediaType={cover?.mediaType} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+      </div>
+      <h4 style={{ margin: "0 0 2px" }}>{campaign.title}</h4>
+      <p className="amx-panel-sub" style={{ margin: "0 0 14px" }}>{masjid?.name}{masjid?.city ? ` · ${masjid.city}` : ""}</p>
+      <StatusBadge status={campaign.status} />
+      <div style={{ marginTop: 18 }}>
+        <div className="amx-progress"><span style={{ width: `${Math.min(pct, 100)}%` }} /></div>
+        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, fontSize: 13 }}>
+          <span>{currency(campaign.amountRaised)} raised</span>
+          <span className="amx-panel-sub">{pct}%</span>
+        </div>
+      </div>
+      <div className="amx-dropdown-sep" style={{ margin: "16px 0" }} />
+      <Row label="Funding Goal" value={campaign.goalAmount ? currency(campaign.goalAmount) : "Not set"} />
+      <Row label="Masjid Status" value={masjid?.status === "approved" && masjid?.isGreenTick ? "Approved · Green Tick" : masjid?.status} />
+    </div>
+  );
+}
+
 function BasicInfoTab({ id, campaign, onSaved }) {
   const [form, setForm] = useState({
     title: campaign.title || "", shortDescription: campaign.shortDescription || "",
@@ -186,7 +215,7 @@ function BasicInfoTab({ id, campaign, onSaved }) {
   };
 
   return (
-    <div className="amx-card amx-panel" style={{ maxWidth: 720 }}>
+    <div className="amx-card amx-panel">
       <div className="amx-panel-head"><h3>Basic Info</h3></div>
       {errors.form && <div className="amx-form-error" style={{ marginBottom: 16 }}><Icon name="info" size={16} />{errors.form}</div>}
 
@@ -268,7 +297,7 @@ function FundingTab({ id, campaign, categories, classifications, onSaved }) {
   };
 
   return (
-    <div className="amx-card amx-panel" style={{ maxWidth: 720 }}>
+    <div className="amx-card amx-panel">
       <div className="amx-panel-head"><h3>Category &amp; Funding</h3></div>
       {errors.form && <div className="amx-form-error" style={{ marginBottom: 16 }}><Icon name="info" size={16} />{errors.form}</div>}
 
@@ -551,10 +580,23 @@ function CampaignReview() {
           <button className="amx-back-link" onClick={() => navigate("/admin/campaigns")}>
             <Icon name="arrowRight" size={14} style={{ transform: "rotate(180deg)" }} /> Back to Campaigns
           </button>
-          <h1 style={{ marginTop: 10 }}>{campaign.title}</h1>
-          <p>{masjid?.name} · {[masjid?.city, masjid?.country].filter(Boolean).join(", ")}</p>
+          <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 12 }}>
+            <div style={{ width: 64, height: 64, borderRadius: 12, overflow: "hidden", flexShrink: 0 }}>
+              <MediaThumb src={cover ? `${API_ORIGIN}${cover.url}` : null} mediaType={cover?.mediaType} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            </div>
+            <div>
+              <h1 style={{ margin: 0, display: "flex", alignItems: "center", gap: 10 }}>
+                {campaign.title}
+                <button className="amx-icon-action" title="Edit Basic Info" onClick={() => goToTab("basic")}><Icon name="edit" size={15} /></button>
+              </h1>
+              <p style={{ margin: "2px 0 0" }}>{masjid?.name} · {[masjid?.city, masjid?.country].filter(Boolean).join(", ") || "No location"}</p>
+            </div>
+          </div>
         </div>
-        <div className="amx-page-actions" style={{ alignItems: "center" }}>
+        <div className="amx-page-actions" style={{ alignItems: "center", gap: 10 }}>
+          <span className="amx-badge amx-badge-neutral" title="Funding progress">
+            <span className="amx-badge-dot" /> {currency(campaign.amountRaised)}{campaign.goalAmount ? ` of ${currency(campaign.goalAmount)}` : ""}
+          </span>
           <StatusBadge status={campaign.status} />
         </div>
       </div>
@@ -586,8 +628,17 @@ function CampaignReview() {
             </Section>
 
             <Section title="Funding">
-              <Row label="Funding Goal" value={campaign.goalAmount ? currency(campaign.goalAmount) : "—"} />
-              <Row label="Amount Raised" value={currency(campaign.amountRaised)} />
+              {campaign.goalAmount ? (
+                <div style={{ marginBottom: 18 }}>
+                  <div className="amx-progress"><span style={{ width: `${Math.min(campaign.progressPercent ?? 0, 100)}%` }} /></div>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, fontSize: 13.5 }}>
+                    <span><strong>{currency(campaign.amountRaised)}</strong> raised of {currency(campaign.goalAmount)}</span>
+                    <span className="amx-panel-sub">{campaign.progressPercent ?? 0}%</span>
+                  </div>
+                </div>
+              ) : (
+                <Row label="Amount Raised" value={currency(campaign.amountRaised)} />
+              )}
               {budgetItems.length > 0 && (
                 <>
                   {budgetItems.map((b) => <Row key={b.id} label={b.label} value={currency(b.amount)} />)}
@@ -700,10 +751,15 @@ function CampaignReview() {
         </div>
       )}
 
-      {tab === "basic" && <BasicInfoTab id={id} campaign={campaign} onSaved={setCampaign} />}
-      {tab === "funding" && <FundingTab id={id} campaign={campaign} categories={categories} classifications={classifications} onSaved={setCampaign} />}
-      {tab === "photos" && <PhotosTab id={id} photos={photos} setPhotos={setPhotos} showToast={showToast} />}
-      {tab === "compliance" && <ComplianceTab id={id} documents={documents} setDocuments={setDocuments} showToast={showToast} />}
+      {tab !== "overview" && (
+        <div className="amx-editor-layout">
+          {tab === "basic" && <BasicInfoTab id={id} campaign={campaign} onSaved={setCampaign} />}
+          {tab === "funding" && <FundingTab id={id} campaign={campaign} categories={categories} classifications={classifications} onSaved={setCampaign} />}
+          {tab === "photos" && <PhotosTab id={id} photos={photos} setPhotos={setPhotos} showToast={showToast} />}
+          {tab === "compliance" && <ComplianceTab id={id} documents={documents} setDocuments={setDocuments} showToast={showToast} />}
+          <CampaignSnapshot campaign={campaign} masjid={masjid} cover={cover} />
+        </div>
+      )}
 
       {modal === "approve" && (
         <ReasonModal
