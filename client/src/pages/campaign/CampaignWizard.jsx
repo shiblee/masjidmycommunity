@@ -62,6 +62,10 @@ function CampaignWizard({ embedded = false }) {
   const [status, setStatus] = useState("draft");
   const [adminFeedback, setAdminFeedback] = useState(null);
   const [approvedMasjids, setApprovedMasjids] = useState(null);
+  // Only used to tell "no masjid at all" apart from "approved but not yet
+  // Green Tick verified" so the empty-state message/link can point the
+  // owner at the right next step instead of a generic one.
+  const [unverifiedApprovedMasjid, setUnverifiedApprovedMasjid] = useState(null);
   const [masjidId, setMasjidId] = useState(params.get("masjidId") || "");
   const [masjidInfo, setMasjidInfo] = useState(null);
   const [categories, setCategories] = useState([]);
@@ -92,10 +96,16 @@ function CampaignWizard({ embedded = false }) {
   useEffect(() => {
     if (id) return;
     masjidApi.get("/mine").then(({ data }) => {
-      const approved = data.masjids.filter((m) => m.status === "approved").sort((a, b) => a.name.localeCompare(b.name));
+      // Raising funds requires Green Tick verification, not just an
+      // approved (publicly listed) masjid — a real financial-trust bar
+      // above the site-listing bar.
+      const approved = data.masjids.filter((m) => m.status === "approved" && m.isGreenTick).sort((a, b) => a.name.localeCompare(b.name));
       setApprovedMasjids(approved);
+      if (approved.length === 0) {
+        setUnverifiedApprovedMasjid(data.masjids.find((m) => m.status === "approved" && !m.isGreenTick) || null);
+      }
       // If the wizard wasn't opened from a specific masjid's page and the
-      // owner only has one approved masjid, there's nothing to choose — skip
+      // owner only has one eligible masjid, there's nothing to choose — skip
       // the selection step for them instead of making them click through it.
       if (!params.get("masjidId") && approved.length === 1) setMasjidId(approved[0].id);
     }).catch(() => setApprovedMasjids([]));
@@ -293,9 +303,18 @@ function CampaignWizard({ embedded = false }) {
       <WizardShell embedded={embedded}>
         <div className="msj-empty-state">
           <Icon name="mosque" size={30} />
-          <h3>Complete your masjid's verification first</h3>
-          <p>Only an approved masjid can raise a campaign. Register or finish verifying your masjid, then come back to start a campaign.</p>
-          <Link to="/account/my-masjids" className="btn btn-gold">Go to My Masjids <span className="btn-arrow">→</span></Link>
+          <h3>Green Tick verification required</h3>
+          {unverifiedApprovedMasjid ? (
+            <>
+              <p>Only a Green Tick verified masjid can raise a campaign. "{unverifiedApprovedMasjid.name}" is approved but not yet Green Tick verified — apply for verification, then come back to start a campaign.</p>
+              <Link to={`/account/my-masjids/${unverifiedApprovedMasjid.id}/green-tick`} className="btn btn-gold">Apply for Green Tick <span className="btn-arrow">→</span></Link>
+            </>
+          ) : (
+            <>
+              <p>Only a Green Tick verified masjid can raise a campaign. Register your masjid and complete Green Tick verification, then come back to start a campaign.</p>
+              <Link to="/account/my-masjids" className="btn btn-gold">Go to My Masjids <span className="btn-arrow">→</span></Link>
+            </>
+          )}
         </div>
       </WizardShell>
     );

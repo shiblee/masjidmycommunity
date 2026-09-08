@@ -11,6 +11,7 @@ import User from "../models/User.js";
 import CampaignCategory from "../models/CampaignCategory.js";
 import { mediaTypeOf, IMAGE_MAX_BYTES } from "../middleware/upload.js";
 import { sendCampaignSubmittedAdminEmail, sendCampaignSubmittedUserEmail, sendCampaignChangeResponseAdminEmail } from "../services/emailService.js";
+import { getGreenTickBadgeInfo } from "../services/greenTickService.js";
 
 const EDITABLE_STATUSES = new Set(["draft", "changes_requested"]);
 // Editing these on a campaign that's already public pulls it back for re-review
@@ -119,6 +120,10 @@ export const createDraft = async (req, res) => {
     if (!masjid) return res.status(404).json({ message: "Masjid not found." });
     if (masjid.status !== "approved") {
       return res.status(400).json({ message: "Only an approved masjid can raise a campaign. Please complete your masjid's verification first." });
+    }
+    const { isGreenTick } = await getGreenTickBadgeInfo(masjid.id);
+    if (!isGreenTick) {
+      return res.status(400).json({ message: "Only a Green Tick verified masjid can raise a campaign. Please complete Green Tick verification first." });
     }
 
     const slug = await generateUniqueSlug(title);

@@ -31,7 +31,7 @@ export function MasjidActions({ m, onDelete }) {
       <Link to={`/account/my-masjids/${m.id}`}>{EDITABLE.has(m.status) ? "Edit" : "View Details"}</Link>
       {m.adminFeedback && <Link to={`/account/my-masjids/${m.id}`}>View Admin Feedback</Link>}
       {m.status === "approved" && <Link to={`/masjid/${m.id}`}>View Public Profile</Link>}
-      {m.status === "approved" && <Link to={`/account/my-campaigns/new?masjidId=${m.id}`}>Create a Campaign</Link>}
+      {m.status === "approved" && m.isGreenTick && <Link to={`/account/my-campaigns/new?masjidId=${m.id}`}>Create a Campaign</Link>}
       {m.status === "approved" && <Link to={`/account/my-campaigns?masjidId=${m.id}`}>Manage Campaigns</Link>}
       <button type="button" className="danger" onClick={() => onDelete(m)}>Delete</button>
     </div>
