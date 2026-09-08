@@ -9,8 +9,9 @@ function useNavLinks(t) {
   return [
     { href: "/explore-masjids", label: t("nav.exploreMasjids", "Explore Masjids") },
     { href: "/my-community", label: t("nav.myCommunity", "My Community") },
-    { href: "/our-impact", label: t("nav.impact", "Impact") },
+    { href: "/explore-campaigns", label: t("nav.campaign", "Campaign") },
     { href: "/about", label: t("nav.aboutUs", "About Us") },
+    { href: "/jobs", label: t("nav.jobs", "Jobs") },
   ];
 }
 
