@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { NavLink, Navigate, useParams } from "react-router-dom";
+import { NavLink, Navigate, Link, useParams } from "react-router-dom";
 import Icon from "../components/Icons.jsx";
 import Toggle from "../components/Toggle.jsx";
 import adminApi from "../services/adminApi.js";
@@ -229,7 +229,6 @@ function Settings() {
     maxMasjidsPerDay: data.maxMasjidsPerDay == null ? "" : String(data.maxMasjidsPerDay),
     maxTotalImportedMasjids: data.maxTotalImportedMasjids == null ? "" : String(data.maxTotalImportedMasjids),
     maxApiCallsPerHour: String(data.maxApiCallsPerHour),
-    placesApiServerKeyInput: "",
   });
 
   useEffect(() => {
@@ -721,9 +720,6 @@ function Settings() {
     parsed.activeHourEnd = masjidBotInput.activeHourEnd === "" || masjidBotInput.activeHourEnd == null ? null : Number(masjidBotInput.activeHourEnd);
     parsed.maxMasjidsPerDay = masjidBotInput.maxMasjidsPerDay === "" ? null : Number(masjidBotInput.maxMasjidsPerDay);
     parsed.maxTotalImportedMasjids = masjidBotInput.maxTotalImportedMasjids === "" ? null : Number(masjidBotInput.maxTotalImportedMasjids);
-    if (masjidBotInput.placesApiServerKeyInput.trim()) {
-      parsed.placesApiServerKey = masjidBotInput.placesApiServerKeyInput.trim();
-    }
     saveMasjidBotSettings(parsed);
   };
 
@@ -1757,23 +1753,12 @@ function Settings() {
                     <Toggle on={masjidBotSettings.enabled} onClick={toggleMasjidBotEnabled} disabled={savingMasjidBot} />
                   </div>
 
+                  <div className="amx-panel-sub" style={{ marginBottom: 18 }}>
+                    Uses the same Google Maps API key already configured under{" "}
+                    <Link to="/admin/settings/maps">Settings → Google Maps</Link> — no separate key needed.
+                  </div>
+
                   <form onSubmit={submitMasjidBotForm} className="amx-form-grid" noValidate>
-                    <div className="amx-form-group" style={{ gridColumn: "1 / -1" }}>
-                      <label htmlFor="masjidbot-api-key">Places API Server Key</label>
-                      <input
-                        id="masjidbot-api-key"
-                        type="password"
-                        autoComplete="off"
-                        placeholder={masjidBotSettings.placesApiServerKeySet ? "•••••••••••••••• (already set — enter a new key to replace it)" : "Paste a new, server-side Google Cloud API key"}
-                        value={masjidBotInput.placesApiServerKeyInput}
-                        onChange={(e) => setMasjidBotInput((s) => ({ ...s, placesApiServerKeyInput: e.target.value }))}
-                      />
-                      <div className="amx-field-hint">
-                        This must be a <strong>new, separate</strong> API key with Places API (New) enabled and billing
-                        turned on — never the existing public Google Maps key from the Google Maps settings tab, which
-                        is browser-restricted and unusable from the server. This key is never shown back once saved.
-                      </div>
-                    </div>
                     <div className="amx-form-group">
                       <label htmlFor="masjidbot-per-hour">Masjids per Hour</label>
                       <input
