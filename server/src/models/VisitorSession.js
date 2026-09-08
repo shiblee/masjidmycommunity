@@ -43,10 +43,17 @@ const VisitorSession = sequelize.define(
     timezone: { type: DataTypes.STRING(64), allowNull: true },
     country: { type: DataTypes.STRING(64), allowNull: true },
     countryCode: { type: DataTypes.STRING(2), allowNull: true },
+    // City-level label — only ever populated for synthetic sessions (see
+    // syntheticVisitorService.js); genuine sessions have no city signal
+    // today and leave this null.
+    city: { type: DataTypes.STRING(120), allowNull: true },
     countrySource: { type: DataTypes.ENUM("timezone", "header", "unknown"), allowNull: false, defaultValue: "unknown" },
 
     status: { type: DataTypes.ENUM("active", "idle", "ended"), allowNull: false, defaultValue: "active" },
     isBot: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
+    // See Visitor.js's trafficType for the genuine-vs-synthetic distinction
+    // this drives everywhere in visitorStatsService.js/visitorInsightsService.js.
+    trafficType: { type: DataTypes.ENUM("genuine", "synthetic"), allowNull: false, defaultValue: "genuine" },
     ipAddress: { type: DataTypes.STRING(64), allowNull: true },
   },
   {
@@ -60,6 +67,7 @@ const VisitorSession = sequelize.define(
       { fields: ["startedAt", "visitorType"], name: "visitor_sessions_started_type_idx" },
       { fields: ["deviceType"], name: "visitor_sessions_device_type_idx" },
       { fields: ["countryCode"], name: "visitor_sessions_country_code_idx" },
+      { fields: ["trafficType"], name: "visitor_sessions_traffic_type_idx" },
     ],
   }
 );

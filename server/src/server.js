@@ -8,6 +8,7 @@ import { ensureMasjidCategoryDefaults } from "./seed/masjidCategoryDefaults.js";
 import { ensureMasjidSlugs } from "./seed/masjidSlugBackfill.js";
 import { ensureMasjidSeoMeta } from "./seed/masjidSeoBackfill.js";
 import { ensureVisitorSettings } from "./seed/visitorSettingsDefaults.js";
+import { ensureVisitorBotSettings } from "./seed/visitorBotSettingsDefaults.js";
 import { startVisitorMaintenance } from "./services/visitorMaintenanceService.js";
 import { ensureReviewRestrictedWordDefaults } from "./seed/reviewRestrictedWordDefaults.js";
 import { ensureMasjidContactDesignationDefaults } from "./seed/masjidContactDesignationDefaults.js";
@@ -49,6 +50,7 @@ connectDB()
       ensureMasjidSlugs(),
       ensureMasjidSeoMeta(),
       ensureVisitorSettings(),
+      ensureVisitorBotSettings(),
       ensureReviewRestrictedWordDefaults(),
       ensureMasjidContactDesignationDefaults(),
       ensurePrayerDefaults(),

@@ -27,7 +27,8 @@ export const streamOnline = async (req, res) => {
   } catch {
     return res.status(401).json({ message: "Invalid or expired stream ticket." });
   }
-  addAdminClient(req, res, async () => ({ onlineCount: await getOnlineCount(), sessions: await getOnlineSessions() }));
+  const includeSynthetic = req.query.includeSynthetic === "true";
+  addAdminClient(req, res, async () => ({ onlineCount: await getOnlineCount(includeSynthetic), sessions: await getOnlineSessions(50, includeSynthetic) }));
 };
 
 function parseRange(req) {
@@ -39,7 +40,7 @@ function parseRange(req) {
 export const getSummary = async (req, res) => {
   try {
     const { from, to } = parseRange(req);
-    const summary = await getVisitorSummary({ from, to });
+    const summary = await getVisitorSummary({ from, to, includeSynthetic: req.query.includeSynthetic === "true" });
     res.json(summary);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -76,7 +77,8 @@ export const updateSettings = async (req, res) => {
 // Polling fallback for "Online Now" if the SSE stream can't connect.
 export const getOnline = async (req, res) => {
   try {
-    res.json({ onlineCount: await getOnlineCount(), sessions: await getOnlineSessions() });
+    const includeSynthetic = req.query.includeSynthetic === "true";
+    res.json({ onlineCount: await getOnlineCount(includeSynthetic), sessions: await getOnlineSessions(50, includeSynthetic) });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -85,7 +87,7 @@ export const getOnline = async (req, res) => {
 export const getVisitorInsights = async (req, res) => {
   try {
     const { from, to } = parseRange(req);
-    const insights = await getInsights({ from, to });
+    const insights = await getInsights({ from, to, includeSynthetic: req.query.includeSynthetic === "true" });
     res.json({ insights });
   } catch (error) {
     res.status(500).json({ message: error.message });

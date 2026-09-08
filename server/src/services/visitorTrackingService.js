@@ -30,15 +30,21 @@ function hostFromUrl(url) {
 /** Called on every page view (initial load + client-side route change).
  * Returns null when tracking is disabled or the request is a detected bot
  * with countBots off — the caller (controller) just responds 204 either way,
- * since a visitor never needs to know tracking happened or didn't. */
-export async function recordPageView({ visitorKey, path, title, referrer, utmSource, utmMedium, utmCampaign, screenWidth, timezone, language, requestContext, userId }) {
+ * since a visitor never needs to know tracking happened or didn't.
+ *
+ * `trafficType` and `now` are the two hooks syntheticVisitorService.js uses
+ * to reuse this exact function for demo/test traffic: "synthetic" skips the
+ * public-counter bump/broadcast below (a bot must never move the number
+ * real visitors see) and stamps every created row so it's excluded from
+ * genuine analytics by default; `now` lets a synthetic visit backdate its
+ * whole fabricated session in one pass instead of over real wall-clock time. */
+export async function recordPageView({ visitorKey, path, title, referrer, utmSource, utmMedium, utmCampaign, screenWidth, timezone, language, requestContext, userId, trafficType = "genuine", now = new Date() }) {
   const settings = await VisitorSettings.findByPk(1);
   if (!settings.trackingEnabled) return null;
 
   const isBot = BOT_UA_PATTERN.test(requestContext.userAgent || "");
   if (isBot && !settings.countBots) return null;
 
-  const now = new Date();
   let visitor = await Visitor.findOne({ where: { visitorKey } });
   const isNewVisitor = !visitor;
   const { country, countryCode } = countryFromTimezone(timezone);
@@ -46,7 +52,7 @@ export async function recordPageView({ visitorKey, path, title, referrer, utmSou
   if (!visitor) {
     visitor = await Visitor.create({
       visitorKey, firstSeenAt: now, lastSeenAt: now, sessionCount: 1, pageViewCount: 0,
-      lastDeviceType: requestContext.deviceType, lastCountry: country, lastUserId: userId || null, isBot,
+      lastDeviceType: requestContext.deviceType, lastCountry: country, lastUserId: userId || null, isBot, trafficType,
     });
   }
 
@@ -104,6 +110,7 @@ export async function recordPageView({ visitorKey, path, title, referrer, utmSou
       countrySource: country ? "timezone" : "unknown",
       status: "active",
       isBot,
+      trafficType,
       ipAddress: requestContext.ipAddress,
     });
     if (!isNewVisitor) visitor.sessionCount += 1;
@@ -117,10 +124,10 @@ export async function recordPageView({ visitorKey, path, title, referrer, utmSou
   await visitor.save();
 
   await VisitorPageView.create({
-    sessionId: session.id, visitorId: visitor.id, sequence: session.pageCount, path, title: title || null, viewedAt: now,
+    sessionId: session.id, visitorId: visitor.id, sequence: session.pageCount, path, title: title || null, viewedAt: now, trafficType,
   });
 
-  if (isNewVisitor) {
+  if (isNewVisitor && trafficType === "genuine") {
     bumpPublicTotal();
     schedulePublicBroadcast(getPublicTotal);
   }

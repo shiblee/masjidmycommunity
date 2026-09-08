@@ -5,16 +5,23 @@ import VisitorDailyStat from "../models/VisitorDailyStat.js";
 // Every insight here is a real aggregation over stored data, or omitted
 // entirely (never a fabricated/generic statement) — each function returns
 // null when there isn't enough data to say something meaningful, and the
-// caller filters those out.
+// caller filters those out. Every query is genuine-only by default (the
+// synthetic visitor bot's demo traffic must never skew a real insight)
+// unless the admin's explicit combined-view toggle passes includeSynthetic.
 
-async function trafficTrend(from, to) {
+function trafficFilter(includeSynthetic) {
+  return includeSynthetic ? {} : { trafficType: "genuine" };
+}
+
+async function trafficTrend(from, to, includeSynthetic) {
   const rangeMs = to.getTime() - from.getTime();
   const prevFrom = new Date(from.getTime() - rangeMs);
   const prevTo = new Date(from.getTime());
+  const filter = trafficFilter(includeSynthetic);
 
   const [current, previous] = await Promise.all([
-    VisitorSession.count({ where: { startedAt: { [Op.gte]: from, [Op.lte]: to } } }),
-    VisitorSession.count({ where: { startedAt: { [Op.gte]: prevFrom, [Op.lte]: prevTo } } }),
+    VisitorSession.count({ where: { startedAt: { [Op.gte]: from, [Op.lte]: to }, ...filter } }),
+    VisitorSession.count({ where: { startedAt: { [Op.gte]: prevFrom, [Op.lte]: prevTo }, ...filter } }),
   ]);
   if (previous < 20) return null;
 
@@ -28,9 +35,9 @@ async function trafficTrend(from, to) {
   };
 }
 
-async function largestDeviceSegment(from, to) {
+async function largestDeviceSegment(from, to, includeSynthetic) {
   const rows = await VisitorSession.findAll({
-    where: { startedAt: { [Op.gte]: from, [Op.lte]: to }, deviceType: { [Op.ne]: null } },
+    where: { startedAt: { [Op.gte]: from, [Op.lte]: to }, deviceType: { [Op.ne]: null }, ...trafficFilter(includeSynthetic) },
     attributes: ["deviceType", [fn("COUNT", col("id")), "count"]],
     group: ["deviceType"],
     raw: true,
@@ -52,9 +59,10 @@ async function largestDeviceSegment(from, to) {
   };
 }
 
-async function topExitPage(from, to) {
+async function topExitPage(from, to, includeSynthetic) {
+  const filter = trafficFilter(includeSynthetic);
   const rows = await VisitorSession.findAll({
-    where: { startedAt: { [Op.gte]: from, [Op.lte]: to }, exitPath: { [Op.ne]: null } },
+    where: { startedAt: { [Op.gte]: from, [Op.lte]: to }, exitPath: { [Op.ne]: null }, ...filter },
     attributes: ["exitPath", [fn("COUNT", col("id")), "count"]],
     group: ["exitPath"],
     order: [[fn("COUNT", col("id")), "DESC"]],
@@ -62,7 +70,7 @@ async function topExitPage(from, to) {
     raw: true,
   });
   if (!rows.length) return null;
-  const total = await VisitorSession.count({ where: { startedAt: { [Op.gte]: from, [Op.lte]: to } } });
+  const total = await VisitorSession.count({ where: { startedAt: { [Op.gte]: from, [Op.lte]: to }, ...filter } });
   const share = Math.round((Number(rows[0].count) / total) * 100);
   if (share < 10) return null;
 
@@ -74,6 +82,9 @@ async function topExitPage(from, to) {
   };
 }
 
+// VisitorDailyStat rows (rebuilt by visitorMaintenanceService.js) are always
+// genuine-only at the source — see rebuildDailyStat's own trafficType
+// filter — so this insight has no includeSynthetic parameter to thread.
 async function returningTrend() {
   const today = new Date();
   const days = [];
@@ -106,9 +117,9 @@ async function returningTrend() {
   };
 }
 
-async function topReferrer(from, to) {
+async function topReferrer(from, to, includeSynthetic) {
   const rows = await VisitorSession.findAll({
-    where: { startedAt: { [Op.gte]: from, [Op.lte]: to }, referrerHost: { [Op.ne]: null } },
+    where: { startedAt: { [Op.gte]: from, [Op.lte]: to }, referrerHost: { [Op.ne]: null }, ...trafficFilter(includeSynthetic) },
     attributes: ["referrerHost", [fn("COUNT", col("id")), "count"]],
     group: ["referrerHost"],
     order: [[fn("COUNT", col("id")), "DESC"]],
@@ -124,16 +135,17 @@ async function topReferrer(from, to) {
   };
 }
 
-async function peakHour(from, to) {
+async function peakHour(from, to, includeSynthetic) {
+  const filter = trafficFilter(includeSynthetic);
   const rows = await VisitorSession.findAll({
-    where: { startedAt: { [Op.gte]: from, [Op.lte]: to } },
+    where: { startedAt: { [Op.gte]: from, [Op.lte]: to }, ...filter },
     attributes: [[fn("HOUR", col("startedAt")), "hour"], [fn("COUNT", col("id")), "count"]],
     group: [fn("HOUR", col("startedAt"))],
     order: [[fn("COUNT", col("id")), "DESC"]],
     limit: 1,
     raw: true,
   });
-  const total = await VisitorSession.count({ where: { startedAt: { [Op.gte]: from, [Op.lte]: to } } });
+  const total = await VisitorSession.count({ where: { startedAt: { [Op.gte]: from, [Op.lte]: to }, ...filter } });
   if (!rows.length || total < 20) return null;
 
   const hour = Number(rows[0].hour);
@@ -146,14 +158,14 @@ async function peakHour(from, to) {
   };
 }
 
-export async function getInsights({ from, to }) {
+export async function getInsights({ from, to, includeSynthetic = false }) {
   const results = await Promise.all([
-    trafficTrend(from, to),
-    largestDeviceSegment(from, to),
-    topExitPage(from, to),
+    trafficTrend(from, to, includeSynthetic),
+    largestDeviceSegment(from, to, includeSynthetic),
+    topExitPage(from, to, includeSynthetic),
     returningTrend(),
-    topReferrer(from, to),
-    peakHour(from, to),
+    topReferrer(from, to, includeSynthetic),
+    peakHour(from, to, includeSynthetic),
   ]);
   return results.filter(Boolean);
 }

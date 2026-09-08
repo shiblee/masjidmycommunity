@@ -33,7 +33,10 @@ function dateOnlyUtc(date) {
 export async function rebuildDailyStat(dateStr) {
   const dayStart = new Date(`${dateStr}T00:00:00.000Z`);
   const dayEnd = new Date(`${dateStr}T23:59:59.999Z`);
-  const where = { startedAt: { [Op.gte]: dayStart, [Op.lte]: dayEnd } };
+  // Genuine-only, always — this rollup feeds visitorInsightsService.js's
+  // returning-visitor trend and is the kind of "important business
+  // analytics" the synthetic visitor bot must never contaminate.
+  const where = { startedAt: { [Op.gte]: dayStart, [Op.lte]: dayEnd }, trafficType: "genuine" };
 
   const [totals, byDevice, byType, pageViewCount] = await Promise.all([
     VisitorSession.findAll({
@@ -48,7 +51,7 @@ export async function rebuildDailyStat(dateStr) {
     }),
     VisitorSession.findAll({ where, attributes: ["deviceType", [fn("COUNT", col("id")), "count"]], group: ["deviceType"], raw: true }),
     VisitorSession.findAll({ where, attributes: ["visitorType", [fn("COUNT", col("id")), "count"]], group: ["visitorType"], raw: true }),
-    VisitorPageView.count({ where: { viewedAt: { [Op.gte]: dayStart, [Op.lte]: dayEnd } } }),
+    VisitorPageView.count({ where: { viewedAt: { [Op.gte]: dayStart, [Op.lte]: dayEnd }, trafficType: "genuine" } }),
   ]);
 
   const t = totals[0] || {};

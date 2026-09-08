@@ -17,6 +17,10 @@ const VisitorPageView = sequelize.define(
     viewedAt: { type: DataTypes.DATE, allowNull: false },
     leftAt: { type: DataTypes.DATE, allowNull: true },
     durationSeconds: { type: DataTypes.INTEGER, allowNull: true },
+    // Denormalized copy of the parent VisitorSession's trafficType, set once
+    // at creation — lets page-view aggregates (e.g. rebuildDailyStat's
+    // pageViews count) filter genuine-vs-synthetic directly without a join.
+    trafficType: { type: DataTypes.ENUM("genuine", "synthetic"), allowNull: false, defaultValue: "genuine" },
   },
   {
     tableName: "visitor_page_views",
@@ -24,6 +28,7 @@ const VisitorPageView = sequelize.define(
       { fields: ["sessionId"], name: "visitor_page_views_session_id_idx" },
       { fields: ["path", "viewedAt"], name: "visitor_page_views_path_viewed_at_idx" },
       { fields: ["viewedAt"], name: "visitor_page_views_viewed_at_idx" },
+      { fields: ["trafficType"], name: "visitor_page_views_traffic_type_idx" },
     ],
   }
 );

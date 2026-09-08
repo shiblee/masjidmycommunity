@@ -25,6 +25,12 @@ const Visitor = sequelize.define(
     // never used to identify or look someone up by name.
     lastUserId: { type: DataTypes.INTEGER, allowNull: true },
     isBot: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
+    // "genuine" (a real browser) vs "synthetic" (the admin-configurable demo
+    // bot in syntheticVisitorService.js) — deliberately separate from isBot,
+    // which only flags a detected web-crawler UA on a real request. Every
+    // count/aggregate elsewhere in this app defaults to trafficType:"genuine"
+    // unless an admin explicitly asks for a combined view.
+    trafficType: { type: DataTypes.ENUM("genuine", "synthetic"), allowNull: false, defaultValue: "genuine" },
   },
   {
     tableName: "visitors",
@@ -32,6 +38,7 @@ const Visitor = sequelize.define(
       { unique: true, fields: ["visitorKey"], name: "visitors_visitor_key_unique" },
       { fields: ["lastSeenAt"], name: "visitors_last_seen_at_idx" },
       { fields: ["firstSeenAt"], name: "visitors_first_seen_at_idx" },
+      { fields: ["trafficType"], name: "visitors_traffic_type_idx" },
     ],
   }
 );
