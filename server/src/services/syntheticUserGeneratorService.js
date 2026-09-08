@@ -25,6 +25,7 @@ import { generateAndSaveAvatar } from "./avatarGeneratorService.js";
 import { generateBio, generateEducationEnhancement, generateWorkExperienceEnhancement } from "./aiProviderService.js";
 import { buildBioProfileContext, BIO_LANGUAGES } from "../utils/bioContext.js";
 import { recordMetaChange } from "../utils/metaChangeLog.js";
+import { BOT_EMAIL_DOMAIN } from "../constants/botAccountConstants.js";
 
 // Deterministic, code-driven generation of one fully-populated, clearly-
 // flagged bot User account — every structural fact (age, graduation year,
@@ -206,11 +207,15 @@ export async function generateSyntheticUser(settings, { skipAi = false } = {}) {
   const educationLevel = levelForDegree(degree);
 
   const username = await generateUniqueUsername(fullName);
-  // A subdomain of the site's own real domain — not the bare domain, so a
-  // generated local-part can never collide with a real staff mailbox
-  // there, and not a third-party domain, so an email can never reach
-  // someone unaffiliated with this platform even in a misconfiguration.
-  const email = `${username}@synthetic.masjidmycommunity.com`;
+  // A subdomain of the site's own real domain, styled like an ordinary
+  // mailbox rather than visibly saying "synthetic" — still not the bare
+  // domain (so a generated local-part can never collide with a real staff
+  // mailbox there), and still not a real third-party provider (Gmail,
+  // Yahoo, Rediffmail, ...): using one of those would risk attaching an
+  // actual stranger's real address to a fake identity with no consent and
+  // no way to undo it, for a purely cosmetic gain this domain already
+  // delivers risk-free.
+  const email = `${username}@${BOT_EMAIL_DOMAIN}`;
   const password = await bcrypt.hash(crypto.randomUUID(), 10);
   const avatarPath = generateAndSaveAvatar(username);
 

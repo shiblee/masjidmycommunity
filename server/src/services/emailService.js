@@ -2,6 +2,7 @@ import nodemailer from "nodemailer";
 import EmailTemplate from "../models/EmailTemplate.js";
 import EmailSettings from "../models/EmailSettings.js";
 import EmailLog from "../models/EmailLog.js";
+import { BOT_EMAIL_DOMAIN } from "../constants/botAccountConstants.js";
 
 const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS } = process.env;
 
@@ -150,6 +151,16 @@ export async function sendNotification(key, { to, variables = {}, userMeta = {} 
 
   if (!to) {
     await logEmail({ ...logBase, status: "skipped", errorMessage: "No recipient email on file." });
+    return { sent: false, skipped: true };
+  }
+
+  // Structural guarantee, not just an absence of bugs: no code path in this
+  // app can ever actually deliver mail to a synthetic bot account, no
+  // matter how a future call site is written — enforced here, at the one
+  // real dispatch choke point, rather than trusting every caller to
+  // remember to check userType first.
+  if (to.toLowerCase().endsWith(`@${BOT_EMAIL_DOMAIN}`)) {
+    await logEmail({ ...logBase, status: "skipped", errorMessage: "Recipient is a synthetic bot account — never emailed." });
     return { sent: false, skipped: true };
   }
 
