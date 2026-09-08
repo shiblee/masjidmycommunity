@@ -29,6 +29,20 @@ function currency(n) {
   return `₹${Number(n || 0).toLocaleString("en-IN")}`;
 }
 
+// Whole-day count from today (local) to the target end date — used as a
+// live label next to the field rather than something the admin has to
+// work out by reading the date themselves.
+function daysRemainingLabel(endDate) {
+  if (!endDate) return null;
+  const end = new Date(`${endDate}T00:00:00`);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const days = Math.round((end - today) / 86400000);
+  if (days < 0) return "Ended";
+  if (days === 0) return "Ends today";
+  return `${days} day${days === 1 ? "" : "s"} remaining`;
+}
+
 function ReasonModal({ title, placeholder, extraFields, onCancel, onSubmit }) {
   const [text, setText] = useState("");
   return (
@@ -203,7 +217,11 @@ function BasicInfoTab({ id, campaign, onSaved }) {
           />
         </div>
       </AField>
-      <AField label="Target End Date" error={errors.endDate}>
+      <AField
+        label="Target End Date"
+        error={errors.endDate}
+        labelExtra={form.endDate ? <span className="pf-char-counter">{daysRemainingLabel(form.endDate)}</span> : undefined}
+      >
         <input type="date" min={minEndDate} value={form.endDate || ""} onChange={setField("endDate")} />
       </AField>
 

@@ -24,6 +24,19 @@ const truncateWords = (text, max) => {
   return words.length > max ? words.slice(0, max).join(" ") : text;
 };
 
+// Whole-day count from today (local) to the target end date — live label
+// next to the field rather than something the creator has to work out.
+function daysRemainingLabel(endDate) {
+  if (!endDate) return null;
+  const end = new Date(`${endDate}T00:00:00`);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const days = Math.round((end - today) / 86400000);
+  if (days < 0) return "Ended";
+  if (days === 0) return "Ends today";
+  return `${days} day${days === 1 ? "" : "s"} remaining`;
+}
+
 const STATUS_LABEL = {
   draft: "Draft", submitted: "Submitted", under_review: "Under Review", changes_requested: "Changes Requested",
   approved: "Approved", active: "Active", paused: "Paused", goal_reached: "Goal Reached",
@@ -421,7 +434,11 @@ function CampaignWizard({ embedded = false }) {
                   />
                 </div>
               </Field>
-              <Field label="Target End Date" error={errors.endDate}>
+              <Field
+                label="Target End Date"
+                error={errors.endDate}
+                labelExtra={form.endDate ? <span className="pf-char-counter">{daysRemainingLabel(form.endDate)}</span> : undefined}
+              >
                 <input type="date" min={minEndDate} value={form.endDate || ""} onChange={setField("endDate")} />
               </Field>
             </>
