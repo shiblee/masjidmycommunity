@@ -1,5 +1,6 @@
 import MasjidBotSettings from "../models/MasjidBotSettings.js";
 import { recordMetaChange, metaActorFrom } from "../utils/metaChangeLog.js";
+import { checkForDuplicate } from "../services/masjidDuplicateDetectionService.js";
 
 const SETTINGS_FIELDS = [
   "enabled", "masjidsPerHour", "indiaPercent", "activeHourStart", "activeHourEnd",
@@ -21,6 +22,20 @@ export const getSettings = async (req, res) => {
   try {
     const settings = await MasjidBotSettings.findByPk(1);
     res.json(serializeSettings(settings));
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Lets an admin (or this build's own verification) check what the
+// duplicate-detection stage would decide for a given candidate, without
+// spending any Google API calls or writing anything — pure internal logic
+// against the real existing Masjid table.
+export const checkDuplicate = async (req, res) => {
+  try {
+    const { name, lat, lng, placeId } = req.body || {};
+    const result = await checkForDuplicate({ name, lat: Number(lat), lng: Number(lng), placeId });
+    res.json(result);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
