@@ -9,6 +9,7 @@ import LocationMap from "../../components/LocationMap.jsx";
 import MediaThumb from "../../components/MediaThumb.jsx";
 import MicButton from "../../components/MicButton.jsx";
 import PrayerRosterSection from "./PrayerRosterSection.jsx";
+import DonationAccountSection from "./DonationAccountSection.jsx";
 import EngagementRow from "../../components/masjid/EngagementRow.jsx";
 import { WizardShell, WizardStepper } from "../../components/wizard/WizardShell.jsx";
 import { ContactPersonForm, Field } from "../../components/masjid/ContactPersonForm.jsx";
@@ -555,6 +556,7 @@ function MasjidWizard({ embedded = false }) {
           )}
           <MasjidSummary form={form} photos={photos} contacts={contacts} />
           <PrayerRosterSection basePath={`/${masjidId}`} api={masjidApi} />
+          {status === "approved" && <DonationAccountSection basePath={`/${masjidId}`} api={masjidApi} />}
 
           {status === "approved" && greenTick && (
             <div className="card msj-greentick-cta">

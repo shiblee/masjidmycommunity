@@ -45,6 +45,12 @@ const ACCOUNT_RE = /^\d{9,18}$/;
 // commonly allow (apostrophes, hyphens, periods) — not digits or symbols.
 const NAME_RE = /^[A-Za-z][A-Za-z.'\- ]{1,99}$/;
 export const EDITABLE_STATUSES = new Set(["draft", "changes_requested"]);
+// Banking details are operational data, not registration content under
+// review — unlike EDITABLE_STATUSES above, an owner needs to be able to add
+// or update them once the masjid is approved and actually raising campaigns,
+// not just during the initial draft. Still blocked while a submission is
+// awaiting a decision, or once the masjid is rejected/inactive/deleted.
+const DONATION_ACCOUNT_EDITABLE_STATUSES = new Set(["draft", "changes_requested", "approved"]);
 
 async function logHistory(masjidId, action, note, actorName) {
   await MasjidHistory.create({ masjidId, action, actorType: "user", actorName: actorName || "Owner", note: note || null });
@@ -265,12 +271,23 @@ export const update = async (req, res) => {
   }
 };
 
+export const getDonationAccount = async (req, res) => {
+  try {
+    const masjid = await findOwnedMasjid(req, res);
+    if (!masjid) return;
+    const account = await MasjidDonationAccount.findOne({ where: { masjidId: masjid.id } });
+    res.json({ donationAccount: account ? maskDonationAccount(account) : null, editable: DONATION_ACCOUNT_EDITABLE_STATUSES.has(masjid.status) });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 export const upsertDonationAccount = async (req, res) => {
   try {
     const masjid = await findOwnedMasjid(req, res);
     if (!masjid) return;
-    if (!EDITABLE_STATUSES.has(masjid.status)) {
-      return res.status(400).json({ message: "This masjid can't be edited while it's under review." });
+    if (!DONATION_ACCOUNT_EDITABLE_STATUSES.has(masjid.status)) {
+      return res.status(400).json({ message: "Donation details can't be edited while this masjid's submission is under review." });
     }
 
     const { upiId, upiAccountHolder, bankName, accountHolderName, accountNumber, ifscCode, branchName } = req.body;

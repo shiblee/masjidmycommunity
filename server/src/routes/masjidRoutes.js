@@ -7,6 +7,7 @@ import {
   createDraft,
   checkContent,
   update,
+  getDonationAccount,
   upsertDonationAccount,
   uploadPhotos,
   updatePhoto,
@@ -48,6 +49,7 @@ router.post("/", createDraft);
 router.post("/check-content", checkContent);
 router.get("/:id", getOne);
 router.patch("/:id", update);
+router.get("/:id/donation-account", getDonationAccount);
 router.put("/:id/donation-account", upsertDonationAccount);
 router.post("/:id/photos", uploadMasjidPhotos, uploadPhotos);
 router.patch("/:id/photos/:photoId", updatePhoto);
