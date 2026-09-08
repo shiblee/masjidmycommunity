@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import campaignApi from "../../services/campaignApi.js";
 import { Icon } from "../Icons.jsx";
+import { useBodyScrollLock } from "../../hooks/useBodyScrollLock.js";
 
 const PRESET_AMOUNTS = [500, 1000, 2500, 5000, 10000];
 
@@ -15,6 +16,7 @@ const PRESET_AMOUNTS = [500, 1000, 2500, 5000, 10000];
 // Submitting a claim requires sign-in (server-enforced too) so every claim
 // is tied to a real account, not just free-text a visitor could fake.
 function DonateModal({ campaign, donationAccount, slug, user, onClose }) {
+  useBodyScrollLock();
   const [amount, setAmount] = useState(PRESET_AMOUNTS[1]);
   const [custom, setCustom] = useState("");
   const [step, setStep] = useState("amount"); // "amount" | "claim" | "done"

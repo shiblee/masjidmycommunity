@@ -3,10 +3,12 @@ import axios from "axios";
 import { API_BASE } from "../../config.js";
 import { Icon } from "../Icons.jsx";
 import { formatDate } from "../../utils/formatDateTime.js";
+import { useBodyScrollLock } from "../../hooks/useBodyScrollLock.js";
 
 const PAGE_SIZE = 15;
 
 function AllDonorsModal({ slug, total, onClose }) {
+  useBodyScrollLock();
   const [q, setQ] = useState("");
   const [page, setPage] = useState(1);
   const [donors, setDonors] = useState(null);
