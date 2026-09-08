@@ -76,6 +76,7 @@ function CampaignWizard({ embedded = false }) {
   const [errors, setErrors] = useState({});
   const [submitted, setSubmitted] = useState(false);
   const [acknowledged, setAcknowledged] = useState(false);
+  const [complianceAcknowledged, setComplianceAcknowledged] = useState(false);
 
   // Advancing steps doesn't change the URL (this wizard can be embedded
   // inline on the Community Wall), so the router's own scroll-to-top never
@@ -468,6 +469,10 @@ function CampaignWizard({ embedded = false }) {
                   <li>Funds will be used strictly for the purpose described in this campaign.</li>
                   <li>This masjid holds the necessary local authorization to raise funds for this project.</li>
                 </ul>
+                <label className="msj-ack-row">
+                  <input type="checkbox" checked={complianceAcknowledged} onChange={(e) => setComplianceAcknowledged(e.target.checked)} />
+                  I confirm all of the above.
+                </label>
               </div>
               <p className="msj-note" style={{ marginBottom: 8, marginTop: 16 }}>Optional: upload supporting documents (registration certificate, trust deed, NOC, budget estimate). PDF, JPG, PNG, DOC/DOCX up to 10MB each.</p>
               <label className="btn btn-outline-ink msj-upload-btn">
@@ -504,7 +509,7 @@ function CampaignWizard({ embedded = false }) {
             </div>
             <div style={{ display: "flex", gap: 12 }}>
               <button className="btn btn-outline-ink" onClick={saveAsDraft} type="button" disabled={saving}>Save as Draft</button>
-              {step < STEPS.length && <button className="btn btn-gold" onClick={goNext} type="button" disabled={saving}>{saving ? "Saving…" : "Next"} <span className="btn-arrow">→</span></button>}
+              {step < STEPS.length && <button className="btn btn-gold" onClick={goNext} type="button" disabled={saving || (step === 4 && !complianceAcknowledged)}>{saving ? "Saving…" : "Next"} <span className="btn-arrow">→</span></button>}
               {step === STEPS.length && <button className="btn btn-gold" onClick={doSubmit} type="button" disabled={saving || !acknowledged}>{saving ? "Submitting…" : "Submit for Review"} <span className="btn-arrow">→</span></button>}
             </div>
           </div>
