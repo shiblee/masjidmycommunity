@@ -5,6 +5,7 @@ import CampaignBudgetItem from "../models/CampaignBudgetItem.js";
 import CampaignCategory from "../models/CampaignCategory.js";
 import CampaignClassification from "../models/CampaignClassification.js";
 import CampaignUpdate from "../models/CampaignUpdate.js";
+import CampaignHistory from "../models/CampaignHistory.js";
 import Masjid from "../models/Masjid.js";
 import MasjidDonationAccount from "../models/MasjidDonationAccount.js";
 import Donation from "../models/Donation.js";
@@ -12,6 +13,7 @@ import User from "../models/User.js";
 import { getEngagementFor } from "../services/masjidEngagementService.js";
 import { amountRaised } from "./campaignController.js";
 import { notifyAdmins } from "../services/adminAlertService.js";
+import { recordDonationActivity, recordMilestoneActivity } from "../services/communityActivityService.js";
 
 const PUBLIC_STATUSES = ["active", "paused", "goal_reached", "completed"];
 
@@ -188,6 +190,18 @@ export const submitDonationClaim = async (req, res) => {
     // name/account stay on the row for compliance/accounting/audit.
     const account = await User.findByPk(req.user.id, { attributes: ["id", "fullName", "email"] });
 
+    // DEMO MODE — no payment gateway exists yet, so there's no way to
+    // actually confirm a transfer happened. Until one is wired up, every
+    // claim is auto-recorded (status "recorded") the moment it's submitted
+    // instead of sitting "pending" for an admin to confirm, so the donate
+    // flow demonstrates end-to-end without a manual admin step in between.
+    // adminCampaignController.js's confirmDonation/declineDonation (and the
+    // "pending" status itself) are left fully in place — revert this one
+    // status value back to "pending" once a real gateway lands.
+    const goal = campaign.goalAmount ? Number(campaign.goalAmount) : null;
+    const beforeRaised = await amountRaised(campaign.id);
+    const beforePercent = goal ? Math.min(100, (beforeRaised / goal) * 100) : 0;
+
     const donation = await Donation.create({
       campaignId: campaign.id,
       userId: req.user.id,
@@ -196,20 +210,38 @@ export const submitDonationClaim = async (req, res) => {
       amount,
       method: ["bank_transfer", "upi", "cash", "cheque", "other"].includes(method) ? method : "upi",
       donationType: campaign.donationType,
-      status: "pending",
+      status: "recorded",
       recordedBy: null,
       isAnonymous: !!isAnonymous,
     });
+    await CampaignHistory.create({
+      campaignId: campaign.id,
+      action: "donation_confirmed",
+      actorType: "user",
+      actorName: account?.fullName || "Donor",
+      note: `${donation.currency} ${donation.amount} via ${donation.method} (auto-recorded — no payment gateway yet)`,
+    });
+
+    const afterRaised = await amountRaised(campaign.id);
+    const afterPercent = goal ? Math.min(100, (afterRaised / goal) * 100) : 0;
+
+    if (campaign.status === "active" && goal && afterRaised >= goal) {
+      campaign.status = "goal_reached";
+      await campaign.save();
+    }
+
+    await recordDonationActivity(campaign, donation);
+    if (goal) await recordMilestoneActivity(campaign, beforePercent, afterPercent);
 
     await notifyAdmins({
       type: "donation_claim",
-      title: "New donation claim to review",
-      body: `${account?.fullName || "A donor"} claims to have sent ₹${Number(amount).toLocaleString("en-IN")} to "${campaign.title}"${isAnonymous ? " (requested anonymously)" : ""}. Confirm once verified so it counts toward the campaign's total.`,
+      title: "New donation recorded",
+      body: `${account?.fullName || "A donor"} donated ₹${Number(amount).toLocaleString("en-IN")} to "${campaign.title}"${isAnonymous ? " (shown as Anonymous)" : ""}. Auto-recorded — no payment gateway is connected yet, so this wasn't independently verified.`,
       link: `/admin/campaigns/${campaign.id}`,
       relatedMasjidId: campaign.masjidId,
     });
 
-    res.status(201).json({ donation: { id: donation.id, status: donation.status } });
+    res.status(201).json({ donation: { id: donation.id, status: donation.status }, amountRaised: afterRaised });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

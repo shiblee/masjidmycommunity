@@ -8,11 +8,15 @@ const PRESET_AMOUNTS = [500, 1000, 2500, 5000, 10000];
 
 // No online payment gateway exists on this platform yet — every donation is
 // still a manual bank/UPI transfer. What this modal actually submits is the
-// donor's own CLAIM that they sent it (status:"pending", never counted
-// toward the public raised total — see server/src/models/Donation.js) so
-// the masjid/admin is notified and can review it, rather than a donor's
-// transfer going completely unnoticed until they separately message someone.
-// A real payment gateway is a planned future replacement for this whole flow.
+// donor's own CLAIM that they sent it. DEMO MODE: submitDonationClaim
+// (publicCampaignController.js) currently auto-records every claim
+// (status:"recorded") the moment it's submitted, immediately counting it
+// toward the public total, rather than leaving it "pending" for an admin to
+// confirm first — there's no way to verify a real transfer without a
+// gateway, so this demonstrates the end-to-end flow without a manual step
+// in between. The "pending" status and admin confirm/decline are still
+// fully in place (adminCampaignController.js) for when a real gateway
+// replaces this whole flow and auto-recording is reverted.
 // Submitting a claim requires sign-in (server-enforced too) so every claim
 // is tied to a real account, not just free-text a visitor could fake.
 function DonateModal({ campaign, donationAccount, slug, user, onClose }) {
@@ -51,7 +55,7 @@ function DonateModal({ campaign, donationAccount, slug, user, onClose }) {
           <div className="msj-confirm-icon" style={{ margin: "0 auto 16px" }}><Icon name="check" size={28} /></div>
           <h3>Thank you!</h3>
           <p className="msj-modal-sub">
-            The masjid has been notified of your ₹{effectiveAmount.toLocaleString("en-IN")} transfer. Once they confirm it, your contribution will appear on this campaign's total.
+            Your ₹{effectiveAmount.toLocaleString("en-IN")} contribution has been recorded and now counts toward this campaign's total.
           </p>
           <button className="btn btn-gold" style={{ width: "100%", justifyContent: "center" }} onClick={onClose} type="button">
             Close
