@@ -1,11 +1,13 @@
 import fs from "fs";
 import path from "path";
 import { Op } from "sequelize";
+import { sequelize } from "../config/db.js";
 import Campaign from "../models/Campaign.js";
 import CampaignPhoto from "../models/CampaignPhoto.js";
 import CampaignBudgetItem from "../models/CampaignBudgetItem.js";
 import CampaignDocument from "../models/CampaignDocument.js";
 import CampaignHistory from "../models/CampaignHistory.js";
+import CampaignUpdate from "../models/CampaignUpdate.js";
 import Donation from "../models/Donation.js";
 import Masjid from "../models/Masjid.js";
 import User from "../models/User.js";
@@ -290,6 +292,40 @@ export const recordDonation = async (req, res) => {
     if (goal) await recordMilestoneActivity(campaign, beforePercent, afterPercent);
 
     res.status(201).json({ donation, amountRaised: afterRaised });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Hard delete — no admin campaign-delete path existed before this (owner
+// side has no delete either, only reject/cancel, which don't remove the
+// row). Restricted to campaigns with zero recorded donations since a
+// campaign that's ever received real money is real financial history, not
+// disposable data.
+export const remove = async (req, res) => {
+  try {
+    const campaign = await Campaign.findByPk(req.params.id);
+    if (!campaign) return res.status(404).json({ message: "Campaign not found." });
+
+    const donationCount = await Donation.count({ where: { campaignId: campaign.id } });
+    if (donationCount > 0) {
+      return res.status(409).json({ message: "This campaign has recorded donations and cannot be deleted.", donationCount });
+    }
+
+    const documents = await CampaignDocument.findAll({ where: { campaignId: campaign.id } });
+
+    await sequelize.transaction(async (t) => {
+      await CampaignPhoto.destroy({ where: { campaignId: campaign.id }, transaction: t });
+      await CampaignBudgetItem.destroy({ where: { campaignId: campaign.id }, transaction: t });
+      await CampaignDocument.destroy({ where: { campaignId: campaign.id }, transaction: t });
+      await CampaignHistory.destroy({ where: { campaignId: campaign.id }, transaction: t });
+      await CampaignUpdate.destroy({ where: { campaignId: campaign.id }, transaction: t });
+      await campaign.destroy({ transaction: t });
+    });
+
+    for (const doc of documents) fs.unlink(doc.storedPath, () => {});
+
+    res.json({ deleted: true });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

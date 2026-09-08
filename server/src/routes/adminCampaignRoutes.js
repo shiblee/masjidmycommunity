@@ -13,6 +13,7 @@ import {
   cancel,
   recordDonation,
   downloadDocument,
+  remove,
 } from "../controllers/adminCampaignController.js";
 
 const router = Router();
@@ -31,5 +32,6 @@ router.post("/:id/complete", markCompleted);
 router.post("/:id/cancel", cancel);
 router.post("/:id/donations", recordDonation);
 router.get("/:id/documents/:docId/file", downloadDocument);
+router.post("/:id/delete", remove);
 
 export default router;
