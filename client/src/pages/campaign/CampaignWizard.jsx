@@ -3,16 +3,17 @@ import { useNavigate, useParams, useSearchParams, Link } from "react-router-dom"
 import axios from "axios";
 import { API_BASE, API_ORIGIN } from "../../config.js";
 import { Icon } from "../../components/Icons.jsx";
+import { WizardShell, WizardStepper } from "../../components/wizard/WizardShell.jsx";
 import campaignApi from "../../services/campaignApi.js";
 import masjidApi from "../../services/masjidApi.js";
 import MediaThumb from "../../components/MediaThumb.jsx";
 
 const STEPS = [
-  { key: "basic", label: "Masjid & Basic Info" },
-  { key: "funding", label: "Category & Funding" },
-  { key: "photos", label: "Photos & Media" },
-  { key: "compliance", label: "Compliance" },
-  { key: "review", label: "Review & Submit" },
+  { key: "basic", label: "Masjid & Basic Info", icon: "mosque" },
+  { key: "funding", label: "Category & Funding", icon: "wallet" },
+  { key: "photos", label: "Photos & Media", icon: "camera" },
+  { key: "compliance", label: "Compliance", icon: "shieldCheck" },
+  { key: "review", label: "Review & Submit", icon: "sparkle" },
 ];
 
 const DESC_MAX = 5000;
@@ -34,15 +35,6 @@ function Field({ label, children, hint, error, required }) {
       {children}
       {error ? <span className="auth-field-error">{error}</span> : hint ? <span className="msj-field-hint">{hint}</span> : null}
     </div>
-  );
-}
-
-function WizardShell({ embedded, children }) {
-  if (embedded) return <div className="cw-wizard-embed">{children}</div>;
-  return (
-    <main className="msj-page">
-      <div className="wrap py-lg">{children}</div>
-    </main>
   );
 }
 
@@ -341,26 +333,16 @@ function CampaignWizard({ embedded = false }) {
     <WizardShell embedded={embedded}>
       <Link to={backTo} className="msj-back-link"><Icon name="chevronLeft" size={16} /> {backLabel}</Link>
 
-        <div className="section-head msj-wizard-title-head" style={{ marginTop: 16, marginBottom: 32 }}>
-          <span className="eyebrow">Start a Campaign</span>
-          <h2 className="msj-wizard-title">{form.title || "New Fundraising Campaign"}</h2>
-        </div>
-
+      <div className="msj-wizard-center">
         {adminFeedback && status === "changes_requested" && (
-          <div className="msj-feedback-banner">
+          <div className="msj-feedback-banner" style={{ marginTop: 20 }}>
             <strong>Changes requested by the admin</strong>
             <p>{adminFeedback}</p>
           </div>
         )}
 
-        <div className="msj-steps">
-          {STEPS.map((s, i) => (
-            <div key={s.key} className={`msj-step-dot${i + 1 === step ? " active" : ""}${i + 1 < step ? " done" : ""}`}>
-              <span>{i + 1 < step ? <Icon name="check" size={12} /> : i + 1}</span>
-              {s.label}
-            </div>
-          ))}
-        </div>
+        <WizardStepper steps={STEPS} current={step} />
+        <p className="msj-stepper-current">Step {step} of {STEPS.length} — {STEPS[step - 1].label}</p>
 
         {errors.form && <div className="auth-alert" style={{ marginBottom: 20 }}><Icon name="info" size={17} />{errors.form}</div>}
 
@@ -542,6 +524,7 @@ function CampaignWizard({ embedded = false }) {
             </div>
           </div>
         </div>
+      </div>
     </WizardShell>
   );
 }
