@@ -139,9 +139,20 @@ export const listPublicDonors = async (req, res) => {
     const offset = (Math.max(Number(page) || 1, 1) - 1) * limit;
 
     const { rows, count } = await Donation.findAndCountAll({ where, order: [["createdAt", "DESC"]], limit, offset });
+
+    // Real avatars only for non-anonymous donors with an account behind them
+    // (admin-recorded rows have no userId) — never fetched/exposed for a
+    // donor who chose to display as "Anonymous".
+    const photoUserIds = [...new Set(rows.filter((d) => !d.isAnonymous && d.userId).map((d) => d.userId))];
+    const users = photoUserIds.length
+      ? await User.findAll({ where: { id: photoUserIds }, attributes: ["id", "profilePhoto"] })
+      : [];
+    const photoByUserId = new Map(users.map((u) => [u.id, u.profilePhoto]));
+
     const donors = rows.map((d) => ({
       id: d.id,
       donorName: d.isAnonymous ? "Anonymous" : (d.donorName || "Anonymous"),
+      donorPhoto: d.isAnonymous ? null : photoByUserId.get(d.userId) || null,
       amount: Number(d.amount),
       donationType: d.donationType,
       createdAt: d.createdAt,

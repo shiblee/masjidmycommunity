@@ -4027,10 +4027,27 @@ footer{
 .camp-rail-progress{ height:4px; }
 .camp-rail-card-meta{ display:flex; justify-content:space-between; font-size:11px; color:var(--text-on-paper-dim); margin-top:5px; }
 
-.camp-donate-panel h3{ font-size:18px; }
-.camp-donate-stats{ display:flex; gap:18px; margin-top:14px; flex-wrap:wrap; }
-.camp-donate-stats strong{ display:block; font-size:16px; color:var(--text-on-paper); }
-.camp-donate-stats span{ display:block; font-size:11px; color:var(--text-on-paper-dim); text-transform:uppercase; letter-spacing:.02em; margin-top:2px; }
+.camp-donate-panel-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:4px; }
+.camp-donate-eyebrow{ font-size:11px; font-weight:700; color:var(--teal-deep); text-transform:uppercase; letter-spacing:.05em; }
+.camp-icon-btn{
+  width:32px; height:32px; flex-shrink:0; border-radius:100px; border:1px solid var(--line); background:#fff;
+  color:var(--text-on-paper-dim); display:flex; align-items:center; justify-content:center; cursor:pointer; transition:border-color .2s, color .2s;
+}
+.camp-icon-btn:hover{ border-color:var(--teal-deep); color:var(--teal-deep); }
+.camp-donate-panel h3{ font-size:18px; margin-top:2px; }
+
+.camp-donate-hero-stat{ display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; margin-top:16px; }
+.camp-donate-hero-stat strong{ font-size:28px; line-height:1; color:var(--text-on-paper); font-variant-numeric:tabular-nums; }
+.camp-donate-hero-stat span{ font-size:12.5px; color:var(--text-on-paper-dim); }
+.camp-donate-progress{ height:7px; margin-top:12px; }
+.camp-donate-progress-meta{ display:flex; justify-content:space-between; margin-top:6px; font-size:11.5px; color:var(--text-on-paper-dim); font-variant-numeric:tabular-nums; }
+
+.camp-donate-substats{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:16px; }
+.camp-donate-substats div{ background:var(--paper-dim); border-radius:10px; padding:9px 12px; }
+.camp-donate-substats strong{ display:block; font-size:14.5px; color:var(--text-on-paper); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.camp-donate-substats span{ display:block; font-size:10.5px; color:var(--text-on-paper-dim); text-transform:uppercase; letter-spacing:.02em; margin-top:1px; }
+
+.camp-donate-cta{ width:100%; justify-content:center; margin-top:18px; }
 
 .camp-donate-amounts{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:6px; }
 .camp-donate-amount{
@@ -4049,10 +4066,25 @@ footer{
   width:34px; height:34px; border-radius:100px; background:var(--paper-dim); color:var(--teal-deep); font-weight:700; font-size:13px;
   display:flex; align-items:center; justify-content:center; flex-shrink:0;
 }
+.camp-donor-avatar-photo{ object-fit:cover; }
+.camp-donor-avatar-anon{ background:var(--paper-dim); color:var(--text-on-paper-dim); }
 .camp-donor-info{ flex:1; min-width:0; display:flex; flex-direction:column; }
 .camp-donor-info strong{ font-size:13.5px; color:var(--text-on-paper); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .camp-donor-info span{ font-size:11.5px; color:var(--text-on-paper-dim); }
 .camp-donor-amount{ font-size:13.5px; font-weight:700; color:var(--text-on-paper); flex-shrink:0; }
+
+.camp-donor-state{ display:flex; flex-direction:column; align-items:center; gap:8px; text-align:center; padding:24px 10px; color:var(--text-on-paper-dim); }
+.camp-donor-state p{ font-size:13px; }
+.camp-donor-state-error p{ color:#C24B3F; }
+
+.camp-donor-skel-block{
+  background:linear-gradient(90deg, var(--paper-dim) 25%, rgba(0,0,0,.05) 37%, var(--paper-dim) 63%);
+  background-size:400% 100%; animation:camp-donor-shimmer 1.4s ease infinite; border-radius:6px; display:block;
+}
+.camp-donor-row-skeleton .camp-donor-avatar{ border-radius:100px; }
+.camp-donor-row-skeleton .camp-donor-skel-line{ height:11px; margin:3px 0; }
+@keyframes camp-donor-shimmer{ 0%{ background-position:100% 0; } 100%{ background-position:0 0; } }
+@media (prefers-reduced-motion: reduce){ .camp-donor-skel-block{ animation:none; } }
 
 .acct-avatar-photo{ object-fit:cover; }
 

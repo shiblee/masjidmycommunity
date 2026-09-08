@@ -2,12 +2,12 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { API_BASE } from "../../config.js";
 import { Icon } from "../Icons.jsx";
-import { formatDate } from "../../utils/formatDateTime.js";
+import DonorRow from "./DonorRow.jsx";
 import AllDonorsModal from "./AllDonorsModal.jsx";
 
 const PREVIEW_COUNT = 5;
 
-function CampaignDonorsList({ slug, donorCount }) {
+function CampaignDonorsList({ slug, campaignTitle, donorCount }) {
   const [donors, setDonors] = useState(null);
   const [showAll, setShowAll] = useState(false);
 
@@ -26,18 +26,22 @@ function CampaignDonorsList({ slug, donorCount }) {
       </div>
 
       <div className="camp-donor-list">
-        {donors === null && <p className="msj-note">Loading…</p>}
-        {donors && donors.length === 0 && <p className="msj-note">Be the first to support this campaign.</p>}
-        {donors?.map((d) => (
-          <div className="camp-donor-row" key={d.id}>
-            <div className="camp-donor-avatar">{d.donorName === "Anonymous" ? <Icon name="heart" size={13} /> : d.donorName.trim()[0]?.toUpperCase()}</div>
+        {donors === null && Array.from({ length: 3 }).map((_, i) => (
+          <div className="camp-donor-row camp-donor-row-skeleton" key={i} aria-hidden="true">
+            <div className="camp-donor-avatar camp-donor-skel-block" />
             <div className="camp-donor-info">
-              <strong>{d.donorName}</strong>
-              <span>{formatDate(d.createdAt)}</span>
+              <span className="camp-donor-skel-block camp-donor-skel-line" style={{ width: "55%" }} />
+              <span className="camp-donor-skel-block camp-donor-skel-line" style={{ width: "35%" }} />
             </div>
-            <div className="camp-donor-amount">₹{Number(d.amount).toLocaleString("en-IN")}</div>
           </div>
         ))}
+        {donors && donors.length === 0 && (
+          <div className="camp-donor-state">
+            <Icon name="heart" size={20} />
+            <p>Be the first to support this campaign.</p>
+          </div>
+        )}
+        {donors?.map((d) => <DonorRow key={d.id} donor={d} />)}
       </div>
 
       {donorCount > 0 && (
@@ -46,7 +50,7 @@ function CampaignDonorsList({ slug, donorCount }) {
         </button>
       )}
 
-      {showAll && <AllDonorsModal slug={slug} total={donorCount} onClose={() => setShowAll(false)} />}
+      {showAll && <AllDonorsModal slug={slug} total={donorCount} campaignTitle={campaignTitle} onClose={() => setShowAll(false)} />}
     </div>
   );
 }

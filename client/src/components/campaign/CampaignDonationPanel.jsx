@@ -43,7 +43,7 @@ function CampaignDonationPanel({ campaign, category, donationAccount, slug }) {
     }
     setDonateOpen(true);
   };
-  const pct = campaign.progressPercent ?? 0;
+  const pct = Math.min(campaign.progressPercent ?? 0, 100);
   const goal = campaign.goalAmount ? Number(campaign.goalAmount) : null;
   const raised = Number(campaign.amountRaised) || 0;
   const remaining = goal ? Math.max(0, goal - raised) : null;
@@ -51,48 +51,34 @@ function CampaignDonationPanel({ campaign, category, donationAccount, slug }) {
 
   return (
     <div className="card msj-profile-card camp-donate-panel">
-      <h3>{campaign.title}</h3>
-      <div className="progress-track" style={{ marginTop: 12 }}><div className="progress-fill" style={{ width: `${Math.min(pct, 100)}%` }} /></div>
-      <div className="camp-donate-stats">
-        <div>
-          <strong>₹{raised.toLocaleString("en-IN")}</strong>
-          <span>raised</span>
-        </div>
-        {goal != null && (
-          <div>
-            <strong>₹{goal.toLocaleString("en-IN")}</strong>
-            <span>goal</span>
-          </div>
-        )}
-        {remaining != null && (
-          <div>
-            <strong>₹{remaining.toLocaleString("en-IN")}</strong>
-            <span>remaining</span>
-          </div>
-        )}
+      <div className="camp-donate-panel-head">
+        <span className="camp-donate-eyebrow">Support this campaign</span>
+        <button type="button" ref={shareBtnRef} className="camp-icon-btn" onClick={() => setShareOpen((s) => !s)} aria-label="Share campaign">
+          <Icon name="link" size={14} />
+        </button>
       </div>
-      <p className="msj-list-meta" style={{ marginTop: 4 }}>{campaign.donorCount ?? 0} contributions · {category?.name || campaign.donationType}</p>
+      <h3>{campaign.title}</h3>
 
-      <button type="button" className="btn btn-gold" style={{ width: "100%", justifyContent: "center", marginTop: 18 }} onClick={openDonate}>
+      <div className="camp-donate-hero-stat">
+        <strong>₹{raised.toLocaleString("en-IN")}</strong>
+        <span>{goal != null ? `raised of ₹${goal.toLocaleString("en-IN")} goal` : "raised"}</span>
+      </div>
+      <div className="progress-track camp-donate-progress"><div className="progress-fill" style={{ width: `${pct}%` }} /></div>
+      <div className="camp-donate-progress-meta">
+        <span>{pct.toFixed(pct % 1 === 0 ? 0 : 1)}% funded</span>
+        {remaining != null && <span>₹{remaining.toLocaleString("en-IN")} to go</span>}
+      </div>
+
+      <div className="camp-donate-substats">
+        <div><strong>{campaign.donorCount ?? 0}</strong><span>{(campaign.donorCount ?? 0) === 1 ? "Donor" : "Donors"}</span></div>
+        <div><strong>{category?.name || campaign.donationType}</strong><span>Category</span></div>
+      </div>
+
+      <button type="button" className="btn btn-gold camp-donate-cta" onClick={openDonate}>
         <Icon name="heart" size={16} /> Donate to This Campaign
       </button>
-      <button
-        type="button"
-        ref={shareBtnRef}
-        className="btn btn-outline-ink"
-        style={{ width: "100%", justifyContent: "center", marginTop: 10 }}
-        onClick={() => setShareOpen((s) => !s)}
-      >
-        <Icon name="link" size={15} /> Share Campaign
-      </button>
-      <ShareMenu
-        open={shareOpen}
-        onClose={() => setShareOpen(false)}
-        anchorRef={shareBtnRef}
-        url={url}
-        title={campaign.title}
-        text={campaign.shortDescription || ""}
-      />
+
+      <ShareMenu open={shareOpen} onClose={() => setShareOpen(false)} anchorRef={shareBtnRef} url={url} title={campaign.title} text={campaign.shortDescription || ""} />
 
       {donateOpen && <DonateModal campaign={campaign} donationAccount={donationAccount} slug={slug} user={user} onClose={() => setDonateOpen(false)} />}
     </div>

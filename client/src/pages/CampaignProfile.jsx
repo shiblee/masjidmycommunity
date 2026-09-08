@@ -133,7 +133,7 @@ function CampaignProfile() {
 
           <aside className="msj-profile-side camp-profile-side">
             <CampaignDonationPanel campaign={campaign} category={category} donationAccount={donationAccount} slug={slug} />
-            <CampaignDonorsList slug={slug} donorCount={campaign.donorCount} />
+            <CampaignDonorsList slug={slug} campaignTitle={campaign.title} donorCount={campaign.donorCount} />
           </aside>
         </div>
       </section>
