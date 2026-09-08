@@ -86,8 +86,6 @@ function CampaignProfile() {
               </div>
             )}
 
-            <CampaignPostSection campaignId={campaign.id} />
-
             {campaign.donationType === "Zakat" && <span className="camp-zakat-badge" style={{ marginTop: 32 }}><Icon name="check" size={12} /> Zakat Eligible</span>}
 
             <div className="section-head" style={{ marginTop: campaign.donationType === "Zakat" ? 12 : 32 }}>
@@ -98,6 +96,8 @@ function CampaignProfile() {
             {campaign.donationType === "Zakat" && campaign.zakatEligibilityNote && (
               <p className="msj-note" style={{ marginTop: 12 }}><strong>Zakat eligibility:</strong> {campaign.zakatEligibilityNote}</p>
             )}
+
+            <CampaignPostSection campaignId={campaign.id} />
 
             {budgetItems.length > 0 && (
               <>
