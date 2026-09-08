@@ -52,9 +52,13 @@ const LANDMARK_TYPES = ["historical_landmark", "historical_place", "tourist_attr
 function stripLeadingNameFromAddress(name, formattedAddress) {
   if (!formattedAddress || !name) return formattedAddress;
   const prefix = `${name}, `;
-  return formattedAddress.toLowerCase().startsWith(prefix.toLowerCase())
-    ? formattedAddress.slice(prefix.length)
-    : formattedAddress;
+  let result = formattedAddress;
+  // Some places (seen on a real import) repeat the name twice in Google's
+  // own formattedAddress — strip every leading occurrence, not just one.
+  while (result.toLowerCase().startsWith(prefix.toLowerCase())) {
+    result = result.slice(prefix.length);
+  }
+  return result;
 }
 
 function buildFallbackMasjidCopy({ name, formattedAddress, city, state, country, placeTypes }) {
