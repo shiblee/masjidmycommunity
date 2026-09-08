@@ -59,6 +59,7 @@ function AdminApp() {
         <Route path="community-wall" element={<CommunityWall />} />
         <Route path="campaigns" element={<Campaigns />} />
         <Route path="campaigns/:id" element={<CampaignReview />} />
+        <Route path="campaigns/:id/:tab" element={<CampaignReview />} />
         <Route path="donations" element={<Donations />} />
         <Route path="donors" element={<Donors />} />
         <Route path="projects" element={<Projects />} />

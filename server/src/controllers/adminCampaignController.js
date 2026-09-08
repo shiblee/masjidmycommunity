@@ -11,10 +11,17 @@ import CampaignUpdate from "../models/CampaignUpdate.js";
 import Donation from "../models/Donation.js";
 import Masjid from "../models/Masjid.js";
 import User from "../models/User.js";
-import { amountRaised } from "./campaignController.js";
+import { amountRaised, serializeCampaign, generateUniqueSlug } from "./campaignController.js";
 import { recordCampaignApprovedActivity, recordDonationActivity, recordMilestoneActivity } from "../services/communityActivityService.js";
 import { sendCampaignApprovedEmail, sendCampaignRejectedEmail, sendCampaignChangesRequestedEmail, sendCampaignStatusUpdatedEmail } from "../services/emailService.js";
 import { notifyUser } from "../services/notificationService.js";
+import { mediaTypeOf, IMAGE_MAX_BYTES } from "../middleware/upload.js";
+import { PLATFORM_EMAIL } from "../seed/platformUserDefaults.js";
+import { getGreenTickBadgeInfo } from "../services/greenTickService.js";
+
+// Editing these material fields mirrors the owner's own CORE_FIELDS list —
+// see campaignController.js's update() for the full rationale.
+const CORE_FIELDS = ["title", "shortDescription", "description", "goalAmount", "endDate", "categoryId", "donationType", "zakatEligibilityNote"];
 
 async function logHistory(campaignId, action, note, actorName) {
   await CampaignHistory.create({ campaignId, action, actorType: "admin", actorName: actorName || "Admin", note: note || null });
@@ -55,6 +62,32 @@ export const listAll = async (req, res) => {
   }
 };
 
+// Admin-created campaigns skip the Green Tick / ownership gates the owner
+// wizard enforces — an admin has full rights to raise a campaign for any
+// masjid on the platform's behalf. Attributed to the platform account
+// (mirrors adminMasjidController.js's createMasjid) rather than any real
+// user, so provenance stays honest.
+export const create = async (req, res) => {
+  try {
+    const { masjidId, title } = req.body;
+    if (!masjidId) return res.status(400).json({ message: "Select a masjid for this campaign." });
+    if (!title?.trim()) return res.status(400).json({ message: "Campaign title is required." });
+
+    const masjid = await Masjid.findByPk(masjidId);
+    if (!masjid) return res.status(404).json({ message: "Masjid not found." });
+
+    const platformUser = await User.findOne({ where: { email: PLATFORM_EMAIL } });
+    if (!platformUser) return res.status(500).json({ message: "Platform account is not configured." });
+
+    const slug = await generateUniqueSlug(title);
+    const campaign = await Campaign.create({ masjidId, createdBy: platformUser.id, title: title.trim(), slug, status: "draft" });
+    await logHistory(campaign.id, "admin_created", null, req.user.email);
+    res.status(201).json({ campaign: await serializeCampaign(campaign) });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 export const getOne = async (req, res) => {
   try {
     const campaign = await Campaign.findByPk(req.params.id);
@@ -69,6 +102,7 @@ export const getOne = async (req, res) => {
       Masjid.findByPk(campaign.masjidId),
       amountRaised(campaign.id),
     ]);
+    const greenTick = masjid ? await getGreenTickBadgeInfo(masjid.id) : null;
 
     const goal = campaign.goalAmount ? Number(campaign.goalAmount) : null;
     res.json({
@@ -78,7 +112,7 @@ export const getOne = async (req, res) => {
       documents,
       history,
       donations,
-      masjid,
+      masjid: masjid ? { ...masjid.toJSON(), ...greenTick } : null,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -325,6 +359,152 @@ export const remove = async (req, res) => {
 
     for (const doc of documents) fs.unlink(doc.storedPath, () => {});
 
+    res.json({ deleted: true });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Admin field-level edit — same CORE_FIELDS as the owner's own update(),
+// but without the "material change on a live campaign forces re-review"
+// step, since the admin editing it *is* the review.
+export const updateFields = async (req, res) => {
+  try {
+    const campaign = await Campaign.findByPk(req.params.id);
+    if (!campaign) return res.status(404).json({ message: "Campaign not found." });
+
+    for (const field of ["goalAmount", "endDate", "categoryId", "zakatEligibilityNote"]) {
+      if (req.body[field] === "") req.body[field] = null;
+    }
+    if (req.body.title !== undefined && !req.body.title?.trim()) {
+      return res.status(400).json({ message: "Campaign title can't be empty." });
+    }
+    if ((req.body.donationType ?? campaign.donationType) === "Zakat" && !(req.body.zakatEligibilityNote ?? campaign.zakatEligibilityNote)?.trim()) {
+      return res.status(400).json({ message: "Explain how this campaign qualifies for Zakat." });
+    }
+    if (req.body.goalAmount !== undefined && req.body.goalAmount !== null && Number(req.body.goalAmount) <= 0) {
+      return res.status(400).json({ message: "Funding goal must be greater than zero." });
+    }
+
+    const changedLabels = [];
+    for (const field of CORE_FIELDS) {
+      if (req.body[field] === undefined) continue;
+      const next = typeof req.body[field] === "string" ? req.body[field].trim() : req.body[field];
+      if (String(campaign[field] ?? "") !== String(next ?? "")) changedLabels.push(field);
+      campaign[field] = next;
+    }
+    await campaign.save();
+    if (changedLabels.length) await logHistory(campaign.id, "admin_updated", `Updated: ${changedLabels.join(", ")}`, req.user.email);
+
+    res.json({ campaign: await serializeCampaign(campaign) });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const uploadPhotos = async (req, res) => {
+  try {
+    const campaign = await Campaign.findByPk(req.params.id);
+    if (!campaign) return res.status(404).json({ message: "Campaign not found." });
+    if (!req.files?.length) return res.status(400).json({ message: "No photos or videos were uploaded." });
+
+    const oversizedImage = req.files.find((file) => mediaTypeOf(file.mimetype) === "photo" && file.size > IMAGE_MAX_BYTES);
+    if (oversizedImage) {
+      req.files.forEach((file) => fs.unlink(file.path, () => {}));
+      return res.status(400).json({ message: `Photos must be under ${IMAGE_MAX_BYTES / (1024 * 1024)}MB. "${oversizedImage.originalname}" is too large.` });
+    }
+
+    const existingCount = await CampaignPhoto.count({ where: { campaignId: campaign.id } });
+    let coverAssigned = (await CampaignPhoto.count({ where: { campaignId: campaign.id, isCover: true } })) > 0;
+
+    const created = await Promise.all(
+      req.files.map((file, i) => {
+        const mediaType = mediaTypeOf(file.mimetype);
+        const isCover = !coverAssigned && mediaType === "photo";
+        if (isCover) coverAssigned = true;
+        return CampaignPhoto.create({
+          campaignId: campaign.id,
+          url: `/uploads/campaign-photos/${file.filename}`,
+          mediaType,
+          isCover,
+          sortOrder: existingCount + i,
+        });
+      })
+    );
+    await logHistory(campaign.id, "admin_added_photos", `Added ${created.length} photo(s)/video(s)`, req.user.email);
+    res.status(201).json({ photos: created });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const updatePhoto = async (req, res) => {
+  try {
+    const campaign = await Campaign.findByPk(req.params.id);
+    if (!campaign) return res.status(404).json({ message: "Campaign not found." });
+    const photo = await CampaignPhoto.findOne({ where: { id: req.params.photoId, campaignId: campaign.id } });
+    if (!photo) return res.status(404).json({ message: "Photo not found." });
+
+    if (req.body.sortOrder !== undefined) photo.sortOrder = req.body.sortOrder;
+    if (req.body.isCover) {
+      if (photo.mediaType === "video") return res.status(400).json({ message: "A video can't be set as the cover — it shows as a still image across the site." });
+      await CampaignPhoto.update({ isCover: false }, { where: { campaignId: campaign.id } });
+      photo.isCover = true;
+    }
+    await photo.save();
+    res.json({ photo });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const deletePhoto = async (req, res) => {
+  try {
+    const campaign = await Campaign.findByPk(req.params.id);
+    if (!campaign) return res.status(404).json({ message: "Campaign not found." });
+    const photo = await CampaignPhoto.findOne({ where: { id: req.params.photoId, campaignId: campaign.id } });
+    if (!photo) return res.status(404).json({ message: "Photo not found." });
+    await photo.destroy();
+    await logHistory(campaign.id, "admin_removed_photo", null, req.user.email);
+    res.json({ deleted: true });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const uploadDocuments = async (req, res) => {
+  try {
+    const campaign = await Campaign.findByPk(req.params.id);
+    if (!campaign) return res.status(404).json({ message: "Campaign not found." });
+    if (!req.files?.length) return res.status(400).json({ message: "No documents were uploaded." });
+
+    const created = await Promise.all(
+      req.files.map((file) =>
+        CampaignDocument.create({
+          campaignId: campaign.id,
+          documentType: req.body.documentType || "other",
+          fileName: file.originalname,
+          storedPath: file.path,
+          uploadedBy: req.user.id,
+        })
+      )
+    );
+    await logHistory(campaign.id, "admin_added_documents", `Added ${created.length} document(s)`, req.user.email);
+    res.status(201).json({ documents: created.map((d) => ({ id: d.id, documentType: d.documentType, fileName: d.fileName, createdAt: d.createdAt })) });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const deleteDocument = async (req, res) => {
+  try {
+    const campaign = await Campaign.findByPk(req.params.id);
+    if (!campaign) return res.status(404).json({ message: "Campaign not found." });
+    const doc = await CampaignDocument.findOne({ where: { id: req.params.docId, campaignId: campaign.id } });
+    if (!doc) return res.status(404).json({ message: "Document not found." });
+    fs.unlink(doc.storedPath, () => {});
+    await doc.destroy();
+    await logHistory(campaign.id, "admin_removed_document", null, req.user.email);
     res.json({ deleted: true });
   } catch (error) {
     res.status(500).json({ message: error.message });

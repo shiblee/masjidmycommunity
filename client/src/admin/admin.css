@@ -738,6 +738,25 @@ table.amx-table{ width:100%; border-collapse:collapse; font-size:13.5px; }
   .amx-review-actions{ position:static; }
 }
 
+/* Each row is a real control (not a static readonly checkbox) — clicking an
+   incomplete item jumps straight to the tab that fixes it. */
+.amx-checklist{ display:flex; flex-direction:column; gap:6px; }
+.amx-checklist-item{
+  display:flex; align-items:center; gap:10px; width:100%; text-align:left; padding:9px 10px; border-radius:9px;
+  border:1px solid transparent; background:none; font-size:13.5px; color:var(--a-text); cursor:pointer; transition:background .15s, border-color .15s;
+}
+.amx-checklist-item:hover{ background:var(--a-bg); }
+.amx-checklist-item:disabled, .amx-checklist-item.done{ cursor:default; }
+.amx-checklist-item.done:hover{ background:none; }
+.amx-checklist-item.done{ color:var(--a-text-faint); }
+.amx-checklist-icon{
+  flex-shrink:0; width:20px; height:20px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+  background:var(--a-bg); color:var(--a-text-faint); border:1px solid var(--a-border);
+}
+.amx-checklist-item.done .amx-checklist-icon{ background:var(--a-green-deep); border-color:var(--a-green-deep); color:#fff; }
+.amx-checklist-item:not(.done) .amx-checklist-icon{ color:var(--a-warn, #C9942C); border-color:var(--a-warn, #C9942C); }
+.amx-checklist-arrow{ margin-left:auto; color:var(--a-text-faint); flex-shrink:0; }
+
 /* ===== Pages module ===== */
 .amx-nav-badge{
   margin-left:auto; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.04em;

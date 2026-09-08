@@ -69,7 +69,7 @@ function slugify(title) {
     .slice(0, 80) || "campaign";
 }
 
-async function generateUniqueSlug(title) {
+export async function generateUniqueSlug(title) {
   const base = slugify(title);
   let slug = base;
   let n = 1;

@@ -1,11 +1,79 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Icon from "../components/Icons.jsx";
 import { API_ORIGIN } from "../../config.js";
 import StatusBadge from "../components/StatusBadge.jsx";
 import Pagination from "../components/Pagination.jsx";
 import adminApi from "../services/adminApi.js";
 import { formatDate } from "../../utils/formatDateTime.js";
+
+// Admin can raise a campaign for any masjid, not just an approved/Green
+// Tick verified one — same full-rights override as adminMasjidController.js's
+// own createMasjid. Lands on the new campaign's Basic Info tab to fill in
+// the rest, mirroring the "Add Masjid" flow exactly.
+function AddCampaignModal({ onCancel, onCreated }) {
+  const [masjids, setMasjids] = useState(null);
+  const [masjidId, setMasjidId] = useState("");
+  const [title, setTitle] = useState("");
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    adminApi.get("/masjids", { params: { status: "all", pageSize: 500, sortBy: "name", sortDir: "asc" } })
+      .then(({ data }) => setMasjids(data.masjids))
+      .catch(() => setMasjids([]));
+  }, []);
+
+  const submit = async (e) => {
+    e.preventDefault();
+    if (!masjidId) { setError("Select a masjid."); return; }
+    if (!title.trim()) { setError("Campaign title is required."); return; }
+    setSaving(true);
+    setError("");
+    try {
+      const { data } = await adminApi.post("/campaigns", { masjidId, title: title.trim() });
+      onCreated(data.campaign);
+    } catch (err) {
+      setError(err.response?.data?.message || "Couldn't create this campaign.");
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="amx-modal-overlay" onClick={() => (saving ? null : onCancel())}>
+      <div className="amx-modal" onClick={(e) => e.stopPropagation()}>
+        <button className="amx-modal-close" onClick={onCancel} aria-label="Close" disabled={saving}>
+          <Icon name="x" size={16} />
+        </button>
+        <h3>Add Campaign</h3>
+        <p className="amx-modal-sub">Creates a new campaign under the platform account. You'll land on its Basic Info tab next to fill in the rest.</p>
+        <form onSubmit={submit}>
+          <div className="amx-form-group">
+            <label htmlFor="new-campaign-masjid">Masjid</label>
+            <select id="new-campaign-masjid" value={masjidId} onChange={(e) => setMasjidId(e.target.value)} disabled={!masjids}>
+              <option value="">{masjids ? "Select a masjid" : "Loading masjids…"}</option>
+              {masjids?.map((m) => <option key={m.id} value={m.id}>{m.name}{m.city ? ` — ${m.city}` : ""}</option>)}
+            </select>
+          </div>
+          <div className="amx-form-group">
+            <label htmlFor="new-campaign-title">Campaign Title</label>
+            <input id="new-campaign-title" type="text" autoFocus value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Rebuild Our Flood-Damaged Prayer Hall" maxLength={255} />
+          </div>
+          {error && (
+            <div className="amx-field-error">
+              <Icon name="info" size={14} />
+              {error}
+            </div>
+          )}
+          <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+            <button type="button" className="amx-btn amx-btn-outline" style={{ flex: 1 }} onClick={onCancel} disabled={saving}>Cancel</button>
+            <button type="submit" className="amx-btn amx-btn-primary" style={{ flex: 1 }} disabled={saving}>{saving ? "Creating…" : "Create"}</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
 
 const TABS = [
   { key: "all", label: "All Campaigns" },
@@ -24,6 +92,8 @@ function currency(n) {
 }
 
 function Campaigns() {
+  const navigate = useNavigate();
+  const [addingCampaign, setAddingCampaign] = useState(false);
   const [tab, setTab] = useState("all");
   const [q, setQ] = useState("");
   const [page, setPage] = useState(1);
@@ -51,7 +121,17 @@ function Campaigns() {
           <h1>Campaigns</h1>
           <p>{totalActive} active campaigns on this page · {currency(totalRaised)} raised across this page</p>
         </div>
+        <button type="button" className="amx-btn amx-btn-primary" onClick={() => setAddingCampaign(true)}>
+          <Icon name="plus" size={15} /> Add Campaign
+        </button>
       </div>
+
+      {addingCampaign && (
+        <AddCampaignModal
+          onCancel={() => setAddingCampaign(false)}
+          onCreated={(campaign) => navigate(`/admin/campaigns/${campaign.id}/basic`)}
+        />
+      )}
 
       <div className="amx-card amx-panel">
         <div className="amx-tabs" style={{ marginBottom: 20, flexWrap: "wrap" }}>
