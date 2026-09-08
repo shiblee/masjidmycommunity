@@ -76,43 +76,57 @@ function Campaigns() {
         )}
 
         {data.campaigns.length > 0 && (
-          <div className="amx-campaign-grid">
-            {data.campaigns.map((c) => {
-              const pct = c.progressPercent ?? 0;
-              return (
-                <Link to={`/admin/campaigns/${c.id}`} className="amx-campaign-card" key={c.id} style={{ display: "block", color: "inherit" }}>
-                  <div className="amx-campaign-cover" style={{ background: c.coverPhotoUrl ? `url(${API_ORIGIN}${c.coverPhotoUrl}) center/cover` : "linear-gradient(135deg,#1E3A46,#2A4E5C)" }}>
-                    {!c.coverPhotoUrl && <Icon name="campaign" />}
-                    <StatusBadge status={c.status} />
-                  </div>
-                  <div className="amx-campaign-body">
-                    <div>
-                      <h4>{c.title}</h4>
-                      <div className="amx-campaign-masjid">{c.masjid?.name}</div>
-                    </div>
-                    <div>
-                      <div className="amx-progress">
-                        <span style={{ width: `${Math.min(pct, 100)}%` }} />
+          <div className="amx-table-wrap">
+          <table className="amx-table">
+            <thead>
+              <tr>
+                <th>Campaign</th>
+                <th>Masjid</th>
+                <th>Goal</th>
+                <th>Raised</th>
+                <th>Progress</th>
+                <th>Status</th>
+                <th>Created</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.campaigns.map((c) => {
+                const pct = c.progressPercent ?? 0;
+                return (
+                  <tr key={c.id}>
+                    <td>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <div className="amx-verify-thumb" style={{ width: 36, height: 36 }}>
+                          {c.coverPhotoUrl ? <img src={`${API_ORIGIN}${c.coverPhotoUrl}`} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 8 }} /> : <Icon name="campaign" size={16} />}
+                        </div>
+                        <div>
+                          <strong>{c.title}</strong>
+                          <div className="amx-cell-sub">ID {c.id}</div>
+                        </div>
                       </div>
-                      <div className="amx-campaign-stats" style={{ marginTop: 7 }}>
-                        <span>{currency(c.amountRaised)} raised</span>
-                        <span>{pct}%</span>
+                    </td>
+                    <td>{c.masjid?.name || "—"}</td>
+                    <td>{c.goalAmount ? currency(c.goalAmount) : <span className="amx-cell-sub">No goal set</span>}</td>
+                    <td>{currency(c.amountRaised)}</td>
+                    <td>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <div className="amx-progress" style={{ width: 70 }}>
+                          <span style={{ width: `${Math.min(pct, 100)}%` }} />
+                        </div>
+                        <span className="amx-cell-sub">{pct}%</span>
                       </div>
-                    </div>
-                    <div className="amx-campaign-foot">
-                      <span>
-                        <Icon name="target" />
-                        {c.goalAmount ? currency(c.goalAmount) : "No goal set"}
-                      </span>
-                      <span>
-                        <Icon name="clock" />
-                        {formatDate(c.createdAt)}
-                      </span>
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
+                    </td>
+                    <td><StatusBadge status={c.status} /></td>
+                    <td>{formatDate(c.createdAt)}</td>
+                    <td style={{ textAlign: "right" }}>
+                      <Link to={`/admin/campaigns/${c.id}`} className="amx-btn amx-btn-sm amx-btn-outline">Review</Link>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
           </div>
         )}
 
