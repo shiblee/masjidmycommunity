@@ -410,6 +410,22 @@ function ComplianceTab({ id, documents, setDocuments, showToast }) {
     }
   };
 
+  // Opens the file (PDF/image render natively; other types fall back to a
+  // download, same as any browser). The tab is opened synchronously before
+  // the fetch resolves so popup blockers don't treat it as unsolicited.
+  const viewDocument = async (doc) => {
+    const win = window.open("", "_blank");
+    try {
+      const res = await adminApi.get(`/campaigns/${id}/documents/${doc.id}/file`, { responseType: "blob" });
+      const url = window.URL.createObjectURL(res.data);
+      if (win) win.location.href = url;
+      else window.open(url, "_blank");
+    } catch {
+      win?.close();
+      showToast("Couldn't open that document.");
+    }
+  };
+
   const removeDocument = async (docId) => {
     await adminApi.delete(`/campaigns/${id}/documents/${docId}`);
     setDocuments((d) => d.filter((doc) => doc.id !== docId));
@@ -437,6 +453,7 @@ function ComplianceTab({ id, documents, setDocuments, showToast }) {
         <div key={d.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid var(--a-border)" }}>
           <span><Icon name="book" size={14} style={{ marginRight: 6 }} />{d.fileName} <span className="amx-panel-sub">({d.documentType})</span></span>
           <div style={{ display: "flex", gap: 8 }}>
+            <button type="button" className="amx-btn amx-btn-sm amx-btn-outline" onClick={() => viewDocument(d)}><Icon name="eye" size={13} /> View</button>
             <button type="button" className="amx-btn amx-btn-sm amx-btn-outline" onClick={() => downloadDocument(d)}>Download</button>
             <button type="button" className="amx-btn amx-btn-sm amx-btn-outline" onClick={() => removeDocument(d.id)}><Icon name="trash" size={13} /></button>
           </div>
