@@ -113,7 +113,14 @@ function Visitors() {
   // Default") on first load only — after that, the checkbox is fully
   // manual for the rest of the session, same as every other filter here.
   useEffect(() => {
-    adminApi.get("/visitors/bot/settings").then(({ data }) => setIncludeSynthetic(!!data.combinedViewDefault)).catch(() => {});
+    adminApi
+      .get("/visitors/bot/settings")
+      .then(({ data }) => {
+        if (!data.combinedViewDefault) return;
+        setIncludeSynthetic(true);
+        setTrafficType("all");
+      })
+      .catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -168,8 +175,16 @@ function Visitors() {
 
       <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 10 }}>
         <label className="amx-cell-sub" style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
-          <input type="checkbox" checked={includeSynthetic} onChange={(e) => setIncludeSynthetic(e.target.checked)} />
-          Include synthetic bot traffic in the numbers below
+          <input
+            type="checkbox"
+            checked={includeSynthetic}
+            onChange={(e) => {
+              const checked = e.target.checked;
+              setIncludeSynthetic(checked);
+              setTrafficType(checked ? "all" : "genuine");
+            }}
+          />
+          Include synthetic bot traffic in the KPIs and list below
         </label>
       </div>
 
