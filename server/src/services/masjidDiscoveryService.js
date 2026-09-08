@@ -37,15 +37,39 @@ function dataCompletenessOf({ address, city, state, country, phone, website, pho
   return Math.round((checks.filter(Boolean).length / checks.length) * 100);
 }
 
+const LANDMARK_TYPES = ["historical_landmark", "historical_place", "tourist_attraction"];
+
+// Used when AI text-polish isn't available (or fails) — every sentence
+// here is either a directly-confirmed fact (name, address) or a general
+// statement true of any mosque (prayer, community role), never a specific
+// invented claim about this one. Richer than a single bare fact sentence
+// on purpose, since a one-liner reads as too thin for a real directory
+// listing.
+function buildFallbackMasjidCopy({ name, formattedAddress, city, state, country, placeTypes }) {
+  const location = formattedAddress || [city, state, country].filter(Boolean).join(", ");
+  const isLandmark = (placeTypes || []).some((t) => LANDMARK_TYPES.includes(t));
+
+  const tagline = `Mosque in ${[city, country].filter(Boolean).join(", ") || "the local area"}`.slice(0, 80);
+
+  const sentences = [
+    `${name} is a mosque${location ? ` located at ${location}` : ""}.`,
+    "As a place of worship, it serves the local Muslim community as a center for daily prayers, the Friday (Jumu'ah) congregational prayer, and communal gatherings.",
+  ];
+  if (isLandmark) sentences.push(`${name} is also recognized as a place of local historical or cultural interest.`);
+  sentences.push("Prayer times, photos, and further details for this masjid are being added on Masjid My Community.");
+
+  return { tagline, description: sentences.join(" ") };
+}
+
 async function getBotUser() {
   const user = await User.findOne({ where: { email: MASJID_BOT_EMAIL } });
   if (!user) throw new Error("Masjid Bot system user is not seeded.");
   return user;
 }
 
-async function writeTranslations(masjidId, name, about) {
+async function writeTranslations(masjidId, name, tagline, about) {
   for (const lang of TRANSLATION_LANGUAGES) {
-    for (const [field, text] of [["name", name], ["about", about]]) {
+    for (const [field, text] of [["name", name], ["tagline", tagline], ["about", about]]) {
       if (!text) continue;
       const result = await generateTranslation({ text, targetLanguageCode: lang }).catch(() => null);
       if (!result?.translated) continue;
@@ -66,11 +90,13 @@ async function importPlace(place, { autoPublish }) {
   const botUser = await getBotUser();
   const slug = await generateUniqueSlug(Masjid, name, { fallback: "masjid" });
 
+  const placeTypes = details.types || [];
   const descriptionResult = await generateMasjidDescription({
-    name, city: address.city, state: address.state, country: address.country, category: null,
+    name, address: details.formattedAddress, city: address.city, state: address.state, country: address.country, category: null, placeTypes,
   }).catch(() => null);
-  const about = descriptionResult?.description
-    || `${name} is a mosque located in ${[address.city, address.country].filter(Boolean).join(", ") || "an area found via Google Places"}.`;
+  const fallbackCopy = buildFallbackMasjidCopy({ name, formattedAddress: details.formattedAddress, city: address.city, state: address.state, country: address.country, placeTypes });
+  const tagline = descriptionResult?.tagline || fallbackCopy.tagline;
+  const about = descriptionResult?.description || fallbackCopy.description;
 
   const completeness = dataCompletenessOf({
     address: details.formattedAddress, city: address.city, state: address.state, country: address.country,
@@ -84,6 +110,7 @@ async function importPlace(place, { autoPublish }) {
         creationMethod: "bot_import",
         name,
         slug,
+        tagline,
         about,
         category: "Other",
         address: details.formattedAddress || null,
@@ -156,7 +183,7 @@ async function importPlace(place, { autoPublish }) {
     return masjid;
   });
 
-  await writeTranslations(result.id, name, about).catch(() => {});
+  await writeTranslations(result.id, name, tagline, about).catch(() => {});
 
   return { id: result.id, name, city: address.city, country: address.country, status: result.status, dataCompletenessPercent: completeness, photoCount: photos.length };
 }

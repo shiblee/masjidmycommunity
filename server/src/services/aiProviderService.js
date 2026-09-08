@@ -546,24 +546,31 @@ export async function generateGroundedAnswer({ question, contextText, history, l
   }
 }
 
-const MasjidDescriptionSchema = z.object({ description: z.string() });
+const MasjidDescriptionSchema = z.object({ tagline: z.string(), description: z.string() });
 
 function masjidDescriptionSystemPrompt() {
   return [
-    "You write a short, factual one-paragraph description of a mosque for a directory listing.",
-    "Use ONLY the name, city, state, and country given below. Never invent history, an imam's name, an establishment year, congregation size, architectural details, or any other fact not explicitly given.",
-    "If the given facts are sparse, write a brief, honest sentence using only what's given (e.g. just name and city) — do not pad with generic claims or invented specifics.",
-    "2-3 plain sentences, no markdown, no quotation marks.",
+    "You write listing copy for a mosque directory: a short one-line tagline and a fuller description.",
+    "Use ONLY the name, address, city, state, country, and place type given below. Never invent history, an imam's name, an establishment year, congregation size, specific architectural details, or any other specific fact not explicitly given.",
+    "You MAY include general, universally-true statements about what a mosque is and does (a place of daily prayer, a center for the local Muslim community's religious and social life, hosting Friday/Jumu'ah prayers) — these are true of any mosque, not a specific unverifiable claim about this one.",
+    "If the given place type includes something notable (e.g. a historical landmark or tourist attraction), you may mention that too, since it was explicitly given.",
+    "If the given facts are sparse, still write honestly and naturally — lean on the general mosque statements above rather than inventing specifics about this particular one.",
+    "'tagline': one short plain sentence (under 80 characters), e.g. a mosque type/location summary — no marketing language, no exclamation marks.",
+    "'description': 4-6 plain sentences, informative and natural to read, not a bare fact dump.",
+    "No markdown, no quotation marks in either field.",
   ].join(" ");
 }
 
-async function callClaudeMasjidDescription({ name, city, state, country, category }) {
+async function callClaudeMasjidDescription({ name, address, city, state, country, category, placeTypes }) {
   const response = await anthropic.messages.parse({
     model: AI_MODEL,
-    max_tokens: 300,
+    max_tokens: 500,
     system: [{ type: "text", text: masjidDescriptionSystemPrompt(), cache_control: { type: "ephemeral" } }],
     output_config: { format: zodOutputFormat(MasjidDescriptionSchema), effort: AI_EFFORT },
-    messages: [{ role: "user", content: `Name: ${name}\nCity: ${city || "(not given)"}\nState: ${state || "(not given)"}\nCountry: ${country || "(not given)"}\nCategory: ${category || "(not given)"}` }],
+    messages: [{
+      role: "user",
+      content: `Name: ${name}\nAddress: ${address || "(not given)"}\nCity: ${city || "(not given)"}\nState: ${state || "(not given)"}\nCountry: ${country || "(not given)"}\nCategory: ${category || "(not given)"}\nPlace type(s): ${(placeTypes || []).join(", ") || "(not given)"}`,
+    }],
   });
   return response.parsed_output;
 }
@@ -572,12 +579,12 @@ async function callClaudeMasjidDescription({ name, city, state, country, categor
 // (masjidDiscoveryService.js) always has a plain templated fallback ready
 // — this only ever polishes text on top of facts already confirmed by
 // Google Places, never supplies a fact of its own.
-export async function generateMasjidDescription({ name, city, state, country, category }) {
+export async function generateMasjidDescription({ name, address, city, state, country, category, placeTypes }) {
   if (!aiProviderConfigured || AI_PROVIDER !== "claude") return null;
   try {
-    const parsed = await callClaudeMasjidDescription({ name, city, state, country, category });
-    if (!parsed?.description) return null;
-    return { description: parsed.description.trim() };
+    const parsed = await callClaudeMasjidDescription({ name, address, city, state, country, category, placeTypes });
+    if (!parsed?.description || !parsed?.tagline) return null;
+    return { tagline: parsed.tagline.trim(), description: parsed.description.trim() };
   } catch (error) {
     console.error("AI provider masjid description failed:", error.message);
     return null;
