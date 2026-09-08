@@ -108,6 +108,15 @@ function Visitors() {
       .finally(() => setLoading(false));
   };
 
+  // Seeds the page's "include synthetic" checkbox from the admin's saved
+  // default (Settings → Visitor Bot → "Combine Synthetic Traffic by
+  // Default") on first load only — after that, the checkbox is fully
+  // manual for the rest of the session, same as every other filter here.
+  useEffect(() => {
+    adminApi.get("/visitors/bot/settings").then(({ data }) => setIncludeSynthetic(!!data.combinedViewDefault)).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(loadSummary, [from, to, includeSynthetic]);
   useEffect(loadSessions, [query, from, to, type, status, device, trafficType, sortKey, sortDir, page]);
   useEffect(() => setPage(1), [query, from, to, type, status, device, trafficType]);
