@@ -1,0 +1,80 @@
+name: Nginx - Add /campaign/:slug proxy rule
+
+# Manual-only — mirrors nginx-add-share-routes.yml / nginx-widen-masjid-regex.yml
+# exactly (same backup + `nginx -t` validation + rollback-on-failure safety),
+# adding the equivalent proxy rule for /campaign/:slug so
+# renderCampaignSharePage (publicShareMetaController.js) is actually reached
+# instead of nginx serving the static SPA shell directly. Campaign URLs are
+# always slugs (no numeric-id form, unlike /masjid/:id), so this is written
+# straight to the slug pattern — no separate "widen" step needed later.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  patch-nginx:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Write remote patch script
+        run: |
+          cat > insertion.txt <<'BLOCK'
+              location ~ ^/campaign/[a-z0-9-]+$ {
+                  proxy_pass http://127.0.0.1:5050;
+                  proxy_http_version 1.1;
+                  proxy_set_header Host $host;
+                  proxy_set_header X-Real-IP $remote_addr;
+                  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                  proxy_set_header X-Forwarded-Proto $scheme;
+              }
+          BLOCK
+
+          cat > remote_patch.sh <<'SCRIPT'
+          #!/bin/bash
+          set -e
+          CONF=/etc/nginx/sites-available/masjidmycommunity
+          BACKUP="${CONF}.bak-$(date +%Y%m%d%H%M%S)"
+
+          sudo cp "$CONF" "$BACKUP"
+          echo "Backed up current config to $BACKUP"
+
+          if grep -q "location ~ \^/campaign/" "$CONF"; then
+            echo "Rule already present -- no changes made."
+          else
+            awk '
+              /^[[:space:]]*location \/ \{/ {
+                while ((getline line < "/tmp/insertion.txt") > 0) print line
+                close("/tmp/insertion.txt")
+                print ""
+              }
+              { print }
+            ' "$CONF" > /tmp/masjidmycommunity.new
+            sudo cp /tmp/masjidmycommunity.new "$CONF"
+            rm -f /tmp/masjidmycommunity.new
+            echo "Inserted new location block."
+          fi
+
+          echo "===== nginx -t ====="
+          if sudo nginx -t; then
+            echo "Syntax OK -- reloading nginx."
+            sudo systemctl reload nginx
+            echo "Reloaded successfully."
+          else
+            echo "SYNTAX ERROR -- restoring backup, NOT reloading."
+            sudo cp "$BACKUP" "$CONF"
+            exit 1
+          fi
+          SCRIPT
+
+      - name: Copy scripts and run patch over SSH
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+
+          scp -i ~/.ssh/deploy_key insertion.txt remote_patch.sh "$DEPLOY_USER@$DEPLOY_HOST:/tmp/"
+          ssh -i ~/.ssh/deploy_key "$DEPLOY_USER@$DEPLOY_HOST" '
+            chmod +x /tmp/remote_patch.sh && /tmp/remote_patch.sh && rm -f /tmp/insertion.txt /tmp/remote_patch.sh
+          '

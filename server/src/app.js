@@ -65,7 +65,7 @@ import publicSuccessStoryRoutes from "./routes/publicSuccessStoryRoutes.js";
 import adminSuccessStoryRoutes from "./routes/adminSuccessStoryRoutes.js";
 import publicSitemapRoutes from "./routes/publicSitemapRoutes.js";
 import publicUserRoutes from "./routes/publicUserRoutes.js";
-import { renderMasjidSharePage } from "./controllers/publicShareMetaController.js";
+import { renderMasjidSharePage, renderCampaignSharePage } from "./controllers/publicShareMetaController.js";
 import publicVisitorRoutes from "./routes/publicVisitorRoutes.js";
 import adminVisitorRoutes from "./routes/adminVisitorRoutes.js";
 import adminUserBotRoutes from "./routes/adminUserBotRoutes.js";
@@ -112,9 +112,13 @@ app.use("/sitemap.xml", publicSitemapRoutes);
 
 // Same "needs one more Nginx proxy rule to actually be reached" situation as
 // /sitemap.xml above — see publicShareMetaController.js for what this does
-// and why (per-masjid Open Graph tags for link previews on WhatsApp/
-// Facebook/etc, which currently all show the same generic site-wide image).
+// and why (per-masjid/per-campaign Open Graph tags for link previews on
+// WhatsApp/Facebook/etc). The /masjid/:id proxy rule is live in production;
+// /campaign/:slug needs the matching rule added before this route does
+// anything (until then it's unreachable — nginx serves the static SPA
+// shell directly for that path, same generic preview as before).
 app.get("/masjid/:id", renderMasjidSharePage);
+app.get("/campaign/:slug", renderCampaignSharePage);
 
 app.use("/api/users/public", publicUserRoutes);
 app.use("/api/users", userRoutes);

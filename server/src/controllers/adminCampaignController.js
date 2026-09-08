@@ -393,6 +393,21 @@ export const updateFields = async (req, res) => {
       if (String(campaign[field] ?? "") !== String(next ?? "")) changedLabels.push(field);
       campaign[field] = next;
     }
+
+    // Slug never auto-regenerates when the title changes (a live campaign's
+    // URL may already be shared/bookmarked — silently changing it would
+    // 404 those links) — same deliberate stance as adminMasjidController.js's
+    // own manual slug field. An admin who wants the URL to catch up sets it
+    // here explicitly.
+    if (req.body.slug !== undefined) {
+      const slug = req.body.slug.trim().toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, "");
+      if (!slug) return res.status(400).json({ field: "slug", message: "URL slug can't be empty." });
+      const existing = await Campaign.findOne({ where: { slug, id: { [Op.ne]: campaign.id } } });
+      if (existing) return res.status(400).json({ field: "slug", message: "That URL slug is already in use by another campaign." });
+      if (slug !== campaign.slug) changedLabels.push("slug");
+      campaign.slug = slug;
+    }
+
     await campaign.save();
     if (changedLabels.length) await logHistory(campaign.id, "admin_updated", `Updated: ${changedLabels.join(", ")}`, req.user.email);
 

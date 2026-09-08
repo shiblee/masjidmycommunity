@@ -1,7 +1,12 @@
 import fs from "fs";
 import path from "path";
+import { Op } from "sequelize";
 import MasjidPhoto from "../models/MasjidPhoto.js";
+import Campaign from "../models/Campaign.js";
+import CampaignPhoto from "../models/CampaignPhoto.js";
 import { findPublicMasjidByParam } from "../utils/findMasjidBySlugOrId.js";
+
+const CAMPAIGN_PUBLIC_STATUSES = ["active", "paused", "goal_reached", "completed"];
 
 // The built SPA's index.html — used as a template for a specific masjid's
 // page, not replaced by it. Read once and cached; a stale cache after a
@@ -29,9 +34,10 @@ function escapeHtml(str) {
 //
 // IMPORTANT — this route only takes effect once nginx proxies /masjid/:id
 // requests to this backend instead of serving the static SPA file directly
-// (the same wiring /sitemap.xml assumes, in app.js, but which was never
-// actually added — see app.js's comment on that route). Without that nginx
-// rule, this handler is dead code that nothing ever reaches.
+// (the same wiring /sitemap.xml assumes, in app.js). That rule is live in
+// production (added + widened to match slugs via the nginx-add-share-routes
+// and nginx-widen-masjid-regex workflows) — renderCampaignSharePage below
+// needs its own equivalent rule before it does anything.
 export const renderMasjidSharePage = async (req, res, next) => {
   try {
     const masjid = await findPublicMasjidByParam(req.params.id, { status: "approved", moderationStatus: "active" });
@@ -67,6 +73,48 @@ export const renderMasjidSharePage = async (req, res, next) => {
     // The canonical slug URL even when this request arrived via a legacy
     // numeric-id link — so a crawler indexes/shares the one true URL.
     const pageUrl = `${origin}/masjid/${masjid.slug || masjid.id}`;
+
+    const metaTags = `
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="${escapeHtml(title)}" />
+    <meta property="og:description" content="${escapeHtml(description)}" />
+    <meta property="og:image" content="${escapeHtml(imageUrl)}" />
+    <meta property="og:url" content="${escapeHtml(pageUrl)}" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="${escapeHtml(title)}" />
+    <meta name="twitter:description" content="${escapeHtml(description)}" />
+    <meta name="twitter:image" content="${escapeHtml(imageUrl)}" />`;
+
+    const html = template()
+      .replace(/<title>.*?<\/title>/, `<title>${escapeHtml(title)}</title>`)
+      .replace(/<meta name="description"[^>]*\/>/, `<meta name="description" content="${escapeHtml(description)}" />`)
+      .replace("</head>", `${metaTags}\n  </head>`);
+
+    res.set("Content-Type", "text/html").send(html);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Same crawler-facing rationale as renderMasjidSharePage above, for
+// /campaign/:slug — campaigns are always addressed by slug (no numeric-id
+// fallback exists for them, unlike masjids), so this only ever looks up by
+// slug. Requires the matching nginx proxy rule for /campaign/:slug, same as
+// the /masjid/:id one this mirrors.
+export const renderCampaignSharePage = async (req, res, next) => {
+  try {
+    const campaign = await Campaign.findOne({ where: { slug: req.params.slug, status: { [Op.in]: CAMPAIGN_PUBLIC_STATUSES }, moderationStatus: "active" } });
+    if (!campaign) return res.set("Content-Type", "text/html").send(template());
+
+    const origin = `${req.protocol}://${req.get("host")}`;
+    const cover = await CampaignPhoto.findOne({ where: { campaignId: campaign.id, isCover: true }, attributes: ["url"] });
+    const imageUrl = cover ? `${origin}${cover.url}` : `${origin}/icons/icon-512.png`;
+    const title = `${campaign.title} — Masjid My Community`;
+    const description = (campaign.shortDescription || campaign.description || "Support this campaign on Masjid My Community.")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 200);
+    const pageUrl = `${origin}/campaign/${campaign.slug}`;
 
     const metaTags = `
     <meta property="og:type" content="website" />

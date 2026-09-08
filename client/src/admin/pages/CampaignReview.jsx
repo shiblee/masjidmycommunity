@@ -186,7 +186,7 @@ function CampaignSnapshot({ campaign, masjid, cover }) {
 function BasicInfoTab({ id, campaign, onSaved }) {
   const [form, setForm] = useState({
     title: campaign.title || "", shortDescription: campaign.shortDescription || "",
-    description: campaign.description || "", endDate: campaign.endDate || "",
+    description: campaign.description || "", endDate: campaign.endDate || "", slug: campaign.slug || "",
   });
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
@@ -208,7 +208,9 @@ function BasicInfoTab({ id, campaign, onSaved }) {
       const { data } = await adminApi.patch(`/campaigns/${id}`, form);
       onSaved(data.campaign);
     } catch (err) {
-      setErrors({ form: err.response?.data?.message || "Couldn't save changes." });
+      const field = err.response?.data?.field;
+      const message = err.response?.data?.message || "Couldn't save changes.";
+      setErrors(field ? { [field]: message } : { form: message });
     } finally {
       setSaving(false);
     }
@@ -221,6 +223,14 @@ function BasicInfoTab({ id, campaign, onSaved }) {
 
       <AField label="Campaign Title" required error={errors.title}>
         <input value={form.title} onChange={setField("title")} maxLength={255} />
+      </AField>
+      <AField
+        label="URL Slug"
+        required
+        error={errors.slug}
+        hint={!errors.slug ? `Public URL: /campaign/${form.slug || "…"} — changing this does not redirect the old link, so only update it if you're sure.` : undefined}
+      >
+        <input value={form.slug} onChange={setField("slug")} placeholder="e.g. rebuild-our-flood-damaged-hall" />
       </AField>
       <AField label="Short Description" required error={errors.shortDescription}>
         <input value={form.shortDescription} onChange={setField("shortDescription")} placeholder="A brief summary of what this campaign funds" />
