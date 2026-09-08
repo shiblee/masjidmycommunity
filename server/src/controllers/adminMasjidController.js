@@ -9,6 +9,7 @@ import MasjidContactDesignation from "../models/MasjidContactDesignation.js";
 import MasjidContactPerson from "../models/MasjidContactPerson.js";
 import MasjidReview from "../models/MasjidReview.js";
 import MasjidFavorite from "../models/MasjidFavorite.js";
+import Campaign from "../models/Campaign.js";
 import User from "../models/User.js";
 import { recordMasjidApprovedActivity } from "../services/communityActivityService.js";
 import { sendMasjidChangesRequestedEmail, sendMasjidApprovedEmail, sendMasjidRejectedEmail } from "../services/emailService.js";
@@ -637,6 +638,41 @@ export const setActive = async (req, res, active) => {
 
 export const activate = (req, res) => setActive(req, res, true);
 export const deactivate = (req, res) => setActive(req, res, false);
+
+// Admin-side counterpart to the owner's own masjidController.js::deleteMasjid
+// — same soft-delete fields, same campaign guard, but reachable without
+// requiring the admin to also own the record (an owner's own account may be
+// unavailable, or the record may need removing for reasons the owner
+// wouldn't self-serve, e.g. a test/placeholder listing).
+export const remove = async (req, res) => {
+  try {
+    const masjid = await Masjid.findByPk(req.params.id);
+    if (!masjid) return res.status(404).json({ message: "Masjid not found." });
+    if (masjid.status === "deleted") return res.status(400).json({ message: "This masjid has already been deleted." });
+
+    const campaignCount = await Campaign.count({ where: { masjidId: masjid.id } });
+    if (campaignCount > 0) {
+      return res.status(409).json({
+        message: "This masjid is currently associated with one or more campaigns. Please close/remove the associated campaigns before deleting the masjid.",
+        campaignCount,
+      });
+    }
+
+    const reason = req.body?.reason?.trim() || "Removed by admin";
+    const comment = req.body?.comment?.trim() || null;
+
+    masjid.status = "deleted";
+    masjid.deletionReason = reason;
+    masjid.deletionComment = comment;
+    masjid.deletedAt = new Date();
+    await masjid.save();
+    await logHistory(masjid.id, "deleted", comment ? `${reason} — ${comment}` : reason, req.user.email);
+
+    res.json({ deleted: true });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 
 export const verifyDonationAccount = async (req, res) => {
   try {
