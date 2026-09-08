@@ -19,6 +19,7 @@ import { classifyContent } from "../services/aiProviderService.js";
 import { getEngagementFor, getEngagementForMany } from "../services/masjidEngagementService.js";
 import { getGreenTickBadgeInfo, getGreenTickBadgeInfoForMany } from "../services/greenTickService.js";
 import { generateUniqueSlug } from "../utils/slugify.js";
+import { verifyIfscForBank } from "../services/ifscLookupService.js";
 
 // Second-layer contextual check (Layer 2 of the Common Content Moderation
 // Engine) — run only on fields the rule-based filter above did NOT already
@@ -38,8 +39,6 @@ async function firstAiFlaggedField(fields) {
 
 // UPI addressing per NPCI: identifier "@" provider handle.
 const UPI_RE = /^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z][a-zA-Z0-9.\-_]{1,63}$/;
-// RBI format: 4-letter bank code, reserved "0", 6-character branch code.
-const IFSC_RE = /^[A-Z]{4}0[A-Z0-9]{6}$/;
 const ACCOUNT_RE = /^\d{9,18}$/;
 // A bank-registered holder name: letters, spaces, and the punctuation banks
 // commonly allow (apostrophes, hyphens, periods) — not digits or symbols.
@@ -282,6 +281,21 @@ export const getDonationAccount = async (req, res) => {
   }
 };
 
+// Re-runs the exact same IFSC↔bank check the live "verify-ifsc" endpoint
+// does — a save can never succeed with a bank/IFSC pairing that endpoint
+// would have rejected, regardless of what the client sends.
+export const verifyIfsc = async (req, res) => {
+  try {
+    const masjid = await findOwnedMasjid(req, res);
+    if (!masjid) return;
+    const result = await verifyIfscForBank({ ifsc: req.query.ifsc, bankId: req.query.bankId });
+    if (!result.ok) return res.status(400).json({ field: result.field, message: result.message });
+    res.json(result.details);
+  } catch (error) {
+    res.status(500).json({ message: "Couldn't verify this IFSC code right now. Please try again." });
+  }
+};
+
 export const upsertDonationAccount = async (req, res) => {
   try {
     const masjid = await findOwnedMasjid(req, res);
@@ -290,11 +304,10 @@ export const upsertDonationAccount = async (req, res) => {
       return res.status(400).json({ message: "Donation details can't be edited while this masjid's submission is under review." });
     }
 
-    const { upiId, upiAccountHolder, bankName, accountHolderName, accountNumber, ifscCode, branchName } = req.body;
+    const { upiId, upiAccountHolder, bankId, accountHolderName, accountNumber, ifscCode } = req.body;
 
     const trimmedUpi = upiId?.trim();
     const trimmedAccount = accountNumber?.trim();
-    const trimmedIfsc = ifscCode?.trim().toUpperCase();
 
     if (trimmedUpi && !UPI_RE.test(trimmedUpi)) {
       return res.status(400).json({ message: "Enter a valid UPI ID, for example name@okhdfcbank." });
@@ -305,29 +318,38 @@ export const upsertDonationAccount = async (req, res) => {
     if (trimmedUpi && upiAccountHolder?.trim() && !NAME_RE.test(upiAccountHolder.trim())) {
       return res.status(400).json({ message: "Enter a valid name — letters, spaces, and basic punctuation only." });
     }
+
+    let verifiedBank = null;
     if (trimmedAccount) {
       if (!ACCOUNT_RE.test(trimmedAccount)) {
         return res.status(400).json({ message: "Account number must be 9–18 digits." });
       }
-      if (!trimmedIfsc) return res.status(400).json({ message: "IFSC is required with a bank account number." });
       if (!accountHolderName?.trim()) return res.status(400).json({ message: "Add the account holder's name." });
       if (!NAME_RE.test(accountHolderName.trim())) {
         return res.status(400).json({ message: "Enter a valid account holder name — letters, spaces, and basic punctuation only." });
       }
-      if (!bankName?.trim()) return res.status(400).json({ message: "Add the bank's name." });
-    }
-    if (trimmedIfsc && !IFSC_RE.test(trimmedIfsc)) {
-      return res.status(400).json({ message: "Enter a valid 11-character IFSC, for example HDFC0001234." });
+      // Bank-specific IFSC + branch lookup — the same check the owner's
+      // form already ran live as they typed, re-verified here so it can't
+      // be skipped or spoofed by calling this endpoint directly.
+      const result = await verifyIfscForBank({ ifsc: ifscCode, bankId });
+      if (!result.ok) return res.status(400).json({ field: result.field, message: result.message });
+      verifiedBank = result.details;
     }
 
     const [account] = await MasjidDonationAccount.findOrCreate({ where: { masjidId: masjid.id } });
     account.upiId = trimmedUpi ?? account.upiId;
     account.upiAccountHolder = upiAccountHolder ?? account.upiAccountHolder;
-    account.bankName = bankName ?? account.bankName;
     account.accountHolderName = accountHolderName ?? account.accountHolderName;
-    if (trimmedAccount) account.accountNumber = trimmedAccount;
-    account.ifscCode = trimmedIfsc ?? account.ifscCode;
-    account.branchName = branchName ?? account.branchName;
+    if (trimmedAccount) {
+      account.accountNumber = trimmedAccount;
+      account.bankId = verifiedBank.bankId;
+      account.bankName = verifiedBank.bankName;
+      account.ifscCode = verifiedBank.ifscCode;
+      account.branchName = verifiedBank.branchName;
+      account.branchAddress = verifiedBank.address;
+      account.branchCity = verifiedBank.city;
+      account.branchState = verifiedBank.state;
+    }
     account.verified = false;
     await account.save();
 

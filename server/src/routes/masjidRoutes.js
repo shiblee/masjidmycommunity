@@ -8,6 +8,7 @@ import {
   checkContent,
   update,
   getDonationAccount,
+  verifyIfsc,
   upsertDonationAccount,
   uploadPhotos,
   updatePhoto,
@@ -50,6 +51,7 @@ router.post("/check-content", checkContent);
 router.get("/:id", getOne);
 router.patch("/:id", update);
 router.get("/:id/donation-account", getDonationAccount);
+router.get("/:id/donation-account/verify-ifsc", verifyIfsc);
 router.put("/:id/donation-account", upsertDonationAccount);
 router.post("/:id/photos", uploadMasjidPhotos, uploadPhotos);
 router.patch("/:id/photos/:photoId", updatePhoto);

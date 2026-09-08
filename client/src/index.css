@@ -4088,6 +4088,10 @@ footer{
 
 .acct-avatar-photo{ object-fit:cover; }
 
+.msj-donation-verify-status{ display:inline-flex; align-items:center; gap:4px; font-size:11.5px; font-weight:700; }
+.msj-donation-verify-status.checking{ color:var(--text-on-paper-dim); }
+.msj-donation-verify-status.ok{ color:var(--teal-deep); }
+
 /* My Profile (Account > Profile) */
 .profile-stack{ display:flex; flex-direction:column; gap:20px; max-width:640px; }
 .profile-card{ }
