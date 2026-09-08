@@ -342,9 +342,6 @@ export const submit = async (req, res) => {
     const photoCount = await CampaignPhoto.count({ where: { campaignId: campaign.id } });
     if (photoCount === 0) return res.status(400).json({ message: "Upload at least one photograph before submitting." });
 
-    const budgetTotal = (await CampaignBudgetItem.sum("amount", { where: { campaignId: campaign.id } })) || 0;
-    if (budgetTotal <= 0) return res.status(400).json({ message: "Add at least one budget line item before submitting." });
-
     const wasChangesRequested = campaign.status === "changes_requested";
     const previousFeedback = campaign.adminFeedback;
     campaign.status = "under_review";

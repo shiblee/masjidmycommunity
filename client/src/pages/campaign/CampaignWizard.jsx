@@ -7,6 +7,7 @@ import { WizardShell, WizardStepper } from "../../components/wizard/WizardShell.
 import campaignApi from "../../services/campaignApi.js";
 import masjidApi from "../../services/masjidApi.js";
 import MediaThumb from "../../components/MediaThumb.jsx";
+import MicButton from "../../components/MicButton.jsx";
 
 const STEPS = [
   { key: "basic", label: "Masjid & Basic Info", icon: "mosque" },
@@ -16,7 +17,12 @@ const STEPS = [
   { key: "review", label: "Review & Submit", icon: "sparkle" },
 ];
 
-const DESC_MAX = 5000;
+const DESC_MAX_WORDS = 500;
+const wordCount = (text) => (text || "").trim().split(/\s+/).filter(Boolean).length;
+const truncateWords = (text, max) => {
+  const words = (text || "").trim().split(/\s+/).filter(Boolean);
+  return words.length > max ? words.slice(0, max).join(" ") : text;
+};
 
 const STATUS_LABEL = {
   draft: "Draft", submitted: "Submitted", under_review: "Under Review", changes_requested: "Changes Requested",
@@ -28,10 +34,17 @@ function emptyForm() {
   return { title: "", shortDescription: "", description: "", categoryId: "", donationType: "General Sadaqah", zakatEligibilityNote: "", goalAmount: "", endDate: "" };
 }
 
-function Field({ label, children, hint, error, required }) {
+function Field({ label, children, hint, error, required, labelExtra }) {
   return (
     <div className={`auth-field${error ? " has-error" : ""}`}>
-      <label>{label}{required && <span className="msj-required">*</span>}</label>
+      {labelExtra ? (
+        <div className="pf-field-label-row">
+          <label>{label}{required && <span className="msj-required">*</span>}</label>
+          {labelExtra}
+        </div>
+      ) : (
+        <label>{label}{required && <span className="msj-required">*</span>}</label>
+      )}
       {children}
       {error ? <span className="auth-field-error">{error}</span> : hint ? <span className="msj-field-hint">{hint}</span> : null}
     </div>
@@ -54,7 +67,6 @@ function CampaignWizard({ embedded = false }) {
   const [categories, setCategories] = useState([]);
   const [classifications, setClassifications] = useState([]);
   const [form, setForm] = useState(emptyForm());
-  const [budgetItems, setBudgetItems] = useState([{ label: "", amount: "" }]);
   const [photos, setPhotos] = useState([]);
   const [documents, setDocuments] = useState([]);
   const [step, setStep] = useState(1);
@@ -105,7 +117,6 @@ function CampaignWizard({ embedded = false }) {
           categoryId: c.categoryId || "", donationType: c.donationType || "General Sadaqah", zakatEligibilityNote: c.zakatEligibilityNote || "",
           goalAmount: c.goalAmount || "", endDate: c.endDate || "",
         });
-        setBudgetItems(c.budgetItems?.length ? c.budgetItems.map((b) => ({ label: b.label, amount: b.amount })) : [{ label: "", amount: "" }]);
         setPhotos(c.photos || []);
         setDocuments(c.documents || []);
         setLoaded(true);
@@ -122,7 +133,7 @@ function CampaignWizard({ embedded = false }) {
     setErrors((er) => ({ ...er, [key]: null }));
   };
 
-  const budgetTotal = budgetItems.reduce((s, b) => s + (Number(b.amount) || 0), 0);
+  const minEndDate = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
 
   const validateStep = () => {
     if (step === 1 && !masjidId) {
@@ -131,6 +142,14 @@ function CampaignWizard({ embedded = false }) {
     }
     if (step === 1 && !form.title?.trim()) {
       setErrors({ title: "Campaign title is required." });
+      return false;
+    }
+    if (step === 1 && wordCount(form.description) > DESC_MAX_WORDS) {
+      setErrors({ description: `Keep the description under ${DESC_MAX_WORDS} words.` });
+      return false;
+    }
+    if (step === 1 && form.endDate && form.endDate < minEndDate) {
+      setErrors({ endDate: "Target end date must be in the future." });
       return false;
     }
     if (step === 2 && form.donationType === "Zakat" && !form.zakatEligibilityNote?.trim()) {
@@ -181,39 +200,12 @@ function CampaignWizard({ embedded = false }) {
   };
   const goBack = () => setStep((s) => Math.max(s - 1, 1));
 
-  const goNextFromFunding = async () => {
-    if (!validateStep()) return;
-    const savedForm = await saveCurrentStep();
-    if (!savedForm) return;
-    const savedBudget = await saveBudget();
-    if (savedBudget) setStep(3);
-  };
-
   const saveAsDraft = async () => {
     if (!campaignId) {
       if (!masjidId || !form.title.trim()) { navigate("/account/my-campaigns"); return; }
     }
     const ok = await saveCurrentStep();
     if (ok) navigate("/account/my-campaigns");
-  };
-
-  const saveBudget = async () => {
-    const items = budgetItems.filter((b) => b.label.trim() && Number(b.amount) > 0);
-    if (items.length === 0) {
-      setErrors({ budget: "Add at least one budget line item." });
-      return false;
-    }
-    setSaving(true);
-    setErrors({});
-    try {
-      await campaignApi.put(`/${campaignId}/budget-items`, { items });
-      return true;
-    } catch (err) {
-      setErrors({ budget: err.response?.data?.message || "Couldn't save budget items." });
-      return false;
-    } finally {
-      setSaving(false);
-    }
   };
 
   const handleFiles = async (e) => {
@@ -324,7 +316,7 @@ function CampaignWizard({ embedded = false }) {
             <p>{adminFeedback}</p>
           </div>
         )}
-        <CampaignSummary form={form} masjidInfo={masjidInfo} budgetItems={budgetItems} budgetTotal={budgetTotal} photos={photos} documents={documents} category={categories.find((c) => c.id === Number(form.categoryId))} />
+        <CampaignSummary form={form} masjidInfo={masjidInfo} photos={photos} documents={documents} category={categories.find((c) => c.id === Number(form.categoryId))} />
       </WizardShell>
     );
   }
@@ -385,11 +377,33 @@ function CampaignWizard({ embedded = false }) {
               <Field label="Short Description" required>
                 <input value={form.shortDescription} onChange={setField("shortDescription")} placeholder="A brief summary of what this campaign funds" />
               </Field>
-              <Field label="Full Description" required>
-                <textarea rows={7} maxLength={DESC_MAX} value={form.description} onChange={setField("description")} placeholder="Describe the project in detail" />
+              <Field
+                label="Full Description"
+                required
+                error={errors.description}
+                labelExtra={<span className="pf-char-counter">{wordCount(form.description)}/{DESC_MAX_WORDS} words</span>}
+              >
+                <div className="msj-about-wrap">
+                  <textarea
+                    rows={7}
+                    value={form.description}
+                    onChange={(e) => {
+                      setForm((f) => ({ ...f, description: truncateWords(e.target.value, DESC_MAX_WORDS) }));
+                      setErrors((er) => ({ ...er, description: null }));
+                    }}
+                    placeholder="Describe the project in detail"
+                  />
+                  <MicButton
+                    onTranscript={(text) => {
+                      setForm((f) => ({ ...f, description: truncateWords(text, DESC_MAX_WORDS) }));
+                      setErrors((er) => ({ ...er, description: null }));
+                    }}
+                    className="msj-about-mic"
+                  />
+                </div>
               </Field>
-              <Field label="Target End Date">
-                <input type="date" value={form.endDate || ""} onChange={setField("endDate")} />
+              <Field label="Target End Date" error={errors.endDate}>
+                <input type="date" min={minEndDate} value={form.endDate || ""} onChange={setField("endDate")} />
               </Field>
             </>
           )}
@@ -417,34 +431,6 @@ function CampaignWizard({ embedded = false }) {
               <Field label="Funding Goal (INR)" required error={errors.goalAmount}>
                 <input type="number" min="1" value={form.goalAmount} onChange={setField("goalAmount")} placeholder="e.g. 100000" />
               </Field>
-
-              <h4 className="msj-subhead">Budget Breakdown</h4>
-              <p className="msj-note" style={{ marginBottom: 16 }}>Break the goal down into what the funds will actually be spent on — this is shown publicly for transparency.</p>
-              {budgetItems.map((b, i) => (
-                <div className="msj-field-row" key={i}>
-                  <Field label={`Line Item ${i + 1}`}>
-                    <input value={b.label} onChange={(e) => setBudgetItems((items) => items.map((it, idx) => (idx === i ? { ...it, label: e.target.value } : it)))} placeholder="e.g. Roofing materials" />
-                  </Field>
-                  <Field label="Amount (INR)">
-                    <div style={{ display: "flex", gap: 8 }}>
-                      <input type="number" min="0" value={b.amount} onChange={(e) => setBudgetItems((items) => items.map((it, idx) => (idx === i ? { ...it, amount: e.target.value } : it)))} placeholder="0" />
-                      {budgetItems.length > 1 && (
-                        <button type="button" className="btn btn-outline-ink" onClick={() => setBudgetItems((items) => items.filter((_, idx) => idx !== i))} title="Remove line item">
-                          <Icon name="trash" size={16} />
-                        </button>
-                      )}
-                    </div>
-                  </Field>
-                </div>
-              ))}
-              <button type="button" className="btn btn-outline-ink" onClick={() => setBudgetItems((items) => [...items, { label: "", amount: "" }])} style={{ marginBottom: 16 }}>
-                <Icon name="plus" size={16} /> Add Line Item
-              </button>
-              {errors.budget && <span className="auth-field-error" style={{ display: "block", marginBottom: 12 }}>{errors.budget}</span>}
-              <p className="msj-note">
-                Budget total: <strong>₹{budgetTotal.toLocaleString("en-IN")}</strong>
-                {form.goalAmount && Number(form.goalAmount) !== budgetTotal && <span> — differs from the funding goal of ₹{Number(form.goalAmount).toLocaleString("en-IN")}.</span>}
-              </p>
             </>
           )}
 
@@ -503,7 +489,7 @@ function CampaignWizard({ embedded = false }) {
 
           {step === 5 && (
             <>
-              <CampaignSummary form={form} masjidInfo={masjidInfo} budgetItems={budgetItems} budgetTotal={budgetTotal} photos={photos} documents={documents} category={categories.find((c) => c.id === Number(form.categoryId))} onEdit={setStep} />
+              <CampaignSummary form={form} masjidInfo={masjidInfo} photos={photos} documents={documents} category={categories.find((c) => c.id === Number(form.categoryId))} onEdit={setStep} />
               <label className="msj-ack-row">
                 <input type="checkbox" checked={acknowledged} onChange={(e) => setAcknowledged(e.target.checked)} />
                 I confirm the information above is accurate and complies with Masjid My Community's Islamic and legal guidelines.
@@ -518,8 +504,7 @@ function CampaignWizard({ embedded = false }) {
             </div>
             <div style={{ display: "flex", gap: 12 }}>
               <button className="btn btn-outline-ink" onClick={saveAsDraft} type="button" disabled={saving}>Save as Draft</button>
-              {step === 2 && <button className="btn btn-outline-ink" onClick={goNextFromFunding} type="button" disabled={saving}>Next <span className="btn-arrow">→</span></button>}
-              {step < STEPS.length && step !== 2 && <button className="btn btn-gold" onClick={goNext} type="button" disabled={saving}>{saving ? "Saving…" : "Next"} <span className="btn-arrow">→</span></button>}
+              {step < STEPS.length && <button className="btn btn-gold" onClick={goNext} type="button" disabled={saving}>{saving ? "Saving…" : "Next"} <span className="btn-arrow">→</span></button>}
               {step === STEPS.length && <button className="btn btn-gold" onClick={doSubmit} type="button" disabled={saving || !acknowledged}>{saving ? "Submitting…" : "Submit for Review"} <span className="btn-arrow">→</span></button>}
             </div>
           </div>
@@ -529,7 +514,7 @@ function CampaignWizard({ embedded = false }) {
   );
 }
 
-function CampaignSummary({ form, masjidInfo, budgetItems, budgetTotal, photos, documents, category, onEdit }) {
+function CampaignSummary({ form, masjidInfo, photos, documents, category, onEdit }) {
   const cover = photos.find((p) => p.isCover) || photos.find((p) => p.mediaType !== "video");
   return (
     <div className="msj-summary">
@@ -547,8 +532,6 @@ function CampaignSummary({ form, masjidInfo, budgetItems, budgetTotal, photos, d
       <div className="msj-summary-block">
         <div className="msj-summary-head"><h4>Funding &amp; Budget</h4>{onEdit && <button type="button" onClick={() => onEdit(2)}>Edit</button>}</div>
         <p>Goal: ₹{Number(form.goalAmount || 0).toLocaleString("en-IN")}</p>
-        {budgetItems.filter((b) => b.label).map((b, i) => <p key={i}>{b.label}: ₹{Number(b.amount || 0).toLocaleString("en-IN")}</p>)}
-        <p><strong>Budget total: ₹{budgetTotal.toLocaleString("en-IN")}</strong></p>
       </div>
       <div className="msj-summary-block">
         <div className="msj-summary-head"><h4>Photographs</h4>{onEdit && <button type="button" onClick={() => onEdit(3)}>Edit</button>}</div>
