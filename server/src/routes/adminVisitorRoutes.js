@@ -2,7 +2,7 @@ import { Router } from "express";
 import auth, { requireAdmin } from "../middleware/auth.js";
 import {
   getSummary, listSessions, getSessionDetail, getVisitorInsights, issueStreamTicket, streamOnline, getOnline,
-  getSettings, updateSettings, getBotSettings, updateBotSettings, testRunBot, resetBotData,
+  getSettings, updateSettings, getBotSettings, updateBotSettings, testRunBot, resetBotData, getBotStatus,
 } from "../controllers/adminVisitorController.js";
 
 const router = Router();
@@ -27,5 +27,6 @@ router.get("/bot/settings", getBotSettings);
 router.patch("/bot/settings", updateBotSettings);
 router.post("/bot/test-run", testRunBot);
 router.delete("/bot/data", resetBotData);
+router.get("/bot/status", getBotStatus);
 
 export default router;

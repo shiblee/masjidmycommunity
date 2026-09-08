@@ -9,6 +9,7 @@ import { addAdminClient } from "../services/visitorRealtimeService.js";
 import VisitorSettings from "../models/VisitorSettings.js";
 import VisitorBotSettings from "../models/VisitorBotSettings.js";
 import { generateSyntheticVisit } from "../services/syntheticVisitorService.js";
+import { getBotSchedulerState } from "../services/visitorBotSchedulerService.js";
 import { recordMetaChange, metaActorFrom } from "../utils/metaChangeLog.js";
 
 // EventSource can't send an Authorization header, so the live "Online Now"
@@ -141,6 +142,38 @@ export const resetBotData = async (req, res) => {
     await VisitorSession.destroy({ where: { trafficType: "synthetic" } });
     const deletedVisitors = await Visitor.destroy({ where: { trafficType: "synthetic" } });
     res.json({ deletedVisitors, deletedSessions: sessionIds.length });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Powers the bot Monitoring panel. estimatedNextVisit is a best-effort
+// projection (expected wait = remaining minutes / remaining quota this
+// hour) — the scheduler is probabilistic, so this is never a guarantee.
+export const getBotStatus = async (req, res) => {
+  try {
+    const settings = await VisitorBotSettings.findByPk(1);
+    const now = new Date();
+    const hourStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), now.getUTCHours(), 0, 0, 0));
+    const dayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0, 0));
+    const [generatedThisHour, generatedToday] = await Promise.all([
+      VisitorSession.count({ where: { trafficType: "synthetic", startedAt: { [Op.gte]: hourStart } } }),
+      VisitorSession.count({ where: { trafficType: "synthetic", startedAt: { [Op.gte]: dayStart } } }),
+    ]);
+    const remainingQuota = Math.max(settings.visitorsPerHour - generatedThisHour, 0);
+    const remainingMinutes = Math.max(60 - now.getUTCMinutes(), 1);
+    const state = getBotSchedulerState();
+
+    res.json({
+      enabled: settings.enabled,
+      visitorsPerHour: settings.visitorsPerHour,
+      generatedToday,
+      generatedThisHour,
+      estimatedNextVisit: settings.enabled && remainingQuota > 0 ? new Date(now.getTime() + (remainingMinutes / remainingQuota) * 60000) : null,
+      schedulerStatus: settings.enabled ? "running" : "stopped",
+      lastGenerated: state.lastGenerated,
+      lastError: state.lastError,
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
