@@ -7,6 +7,9 @@ import { getVisitorSummary, getOnlineCount, getOnlineSessions } from "../service
 import { getInsights } from "../services/visitorInsightsService.js";
 import { addAdminClient } from "../services/visitorRealtimeService.js";
 import VisitorSettings from "../models/VisitorSettings.js";
+import VisitorBotSettings from "../models/VisitorBotSettings.js";
+import { generateSyntheticVisit } from "../services/syntheticVisitorService.js";
+import { recordMetaChange, metaActorFrom } from "../utils/metaChangeLog.js";
 
 // EventSource can't send an Authorization header, so the live "Online Now"
 // stream can't go through the normal Bearer-token admin middleware — an
@@ -69,6 +72,75 @@ export const updateSettings = async (req, res) => {
     }
     await settings.save();
     res.json(settings);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const BOT_SETTINGS_FIELDS = [
+  "enabled", "visitorsPerHour", "indiaPercent", "activeHourStart", "activeHourEnd",
+  "allowedPaths", "sessionDurationMinSeconds", "sessionDurationMaxSeconds",
+  "pagesPerSessionMin", "pagesPerSessionMax", "deviceWeights", "browserWeights", "combinedViewDefault",
+];
+
+export const getBotSettings = async (req, res) => {
+  try {
+    const settings = await VisitorBotSettings.findByPk(1);
+    res.json(settings);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const updateBotSettings = async (req, res) => {
+  try {
+    const settings = await VisitorBotSettings.findByPk(1);
+    const actor = await metaActorFrom(req);
+    const fields = [];
+    for (const field of BOT_SETTINGS_FIELDS) {
+      if (req.body[field] === undefined) continue;
+      const oldValue = settings[field];
+      const newValue = req.body[field];
+      settings[field] = newValue;
+      fields.push({
+        field,
+        oldValue: typeof oldValue === "object" && oldValue !== null ? JSON.stringify(oldValue) : oldValue,
+        newValue: typeof newValue === "object" && newValue !== null ? JSON.stringify(newValue) : newValue,
+      });
+    }
+    await settings.save();
+    await recordMetaChange({ entityType: "VisitorBotSettings", entityId: 1, entityName: "Visitor Bot Settings", action: "update", actor, fields }).catch(() => {});
+    res.json(settings);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Generates and immediately persists one synthetic visit, bypassing the
+// scheduler entirely — lets an admin sanity-check their configuration
+// (paths, device/browser mix, duration range) without waiting for the
+// hourly quota to fire.
+export const testRunBot = async (req, res) => {
+  try {
+    const settings = await VisitorBotSettings.findByPk(1);
+    const visit = await generateSyntheticVisit(settings);
+    res.json(visit);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Deletes every synthetic row this feature has ever created — scoped
+// strictly to trafficType:"synthetic", in FK-safe child-to-parent order.
+// Never touches a genuine visitor/session/page-view row.
+export const resetBotData = async (req, res) => {
+  try {
+    const sessions = await VisitorSession.findAll({ where: { trafficType: "synthetic" }, attributes: ["id"] });
+    const sessionIds = sessions.map((s) => s.id);
+    if (sessionIds.length) await VisitorPageView.destroy({ where: { sessionId: sessionIds } });
+    await VisitorSession.destroy({ where: { trafficType: "synthetic" } });
+    const deletedVisitors = await Visitor.destroy({ where: { trafficType: "synthetic" } });
+    res.json({ deletedVisitors, deletedSessions: sessionIds.length });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

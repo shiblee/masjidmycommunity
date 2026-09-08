@@ -1,6 +1,9 @@
 import { Router } from "express";
 import auth, { requireAdmin } from "../middleware/auth.js";
-import { getSummary, listSessions, getSessionDetail, getVisitorInsights, issueStreamTicket, streamOnline, getOnline, getSettings, updateSettings } from "../controllers/adminVisitorController.js";
+import {
+  getSummary, listSessions, getSessionDetail, getVisitorInsights, issueStreamTicket, streamOnline, getOnline,
+  getSettings, updateSettings, getBotSettings, updateBotSettings, testRunBot, resetBotData,
+} from "../controllers/adminVisitorController.js";
 
 const router = Router();
 
@@ -20,5 +23,9 @@ router.get("/online", getOnline);
 router.post("/stream-ticket", issueStreamTicket);
 router.get("/settings", getSettings);
 router.put("/settings", updateSettings);
+router.get("/bot/settings", getBotSettings);
+router.patch("/bot/settings", updateBotSettings);
+router.post("/bot/test-run", testRunBot);
+router.delete("/bot/data", resetBotData);
 
 export default router;
