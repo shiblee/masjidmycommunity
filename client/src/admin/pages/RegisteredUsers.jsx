@@ -21,6 +21,18 @@ function initialsOf(name = "") {
   return ((parts[0]?.[0] || "") + (parts.length > 1 ? parts[parts.length - 1]?.[0] || "" : "")).toUpperCase();
 }
 
+// Shortens a long email's local part for the narrow Contact column — the
+// full address is still in the DOM (title tooltip, still text-searchable),
+// just not spelled out in full when it's the long part pushing the row wide.
+function shortEmail(email) {
+  if (!email) return "—";
+  const at = email.indexOf("@");
+  if (at === -1) return email;
+  const local = email.slice(0, at);
+  const domain = email.slice(at);
+  return local.length > 10 ? `${local.slice(0, 8)}…${domain}` : email;
+}
+
 const SORT_COLUMNS = {
   name: { label: "User", get: (u) => u.fullName?.toLowerCase() || "" },
   contact: { label: "Contact", get: (u) => (u.email || u.mobile || "").toLowerCase() },
@@ -253,7 +265,7 @@ function RegisteredUsers() {
                       </div>
                     </td>
                     <td>
-                      <div>{u.email || "—"}</div>
+                      <div title={u.email || ""}>{shortEmail(u.email)}</div>
                       <div className="amx-cell-sub">{u.mobile || "—"}</div>
                     </td>
                     <td>{METHOD_LABEL[u.registrationMethod] || u.registrationMethod}</td>
