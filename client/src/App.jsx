@@ -16,6 +16,7 @@ import Testimonials from "./pages/Testimonials.jsx";
 import SuccessStories from "./pages/SuccessStories.jsx";
 import SuccessStoryDetail from "./pages/SuccessStoryDetail.jsx";
 import ExploreCampaigns from "./pages/ExploreCampaigns.jsx";
+import ActiveCampaigns from "./pages/ActiveCampaigns.jsx";
 import Jobs from "./pages/Jobs.jsx";
 import VerifiedMasjid from "./pages/VerifiedMasjid.jsx";
 import Sitemap from "./pages/Sitemap.jsx";
@@ -81,6 +82,7 @@ function App() {
           <Route path="/success-stories" element={<SuccessStories />} />
           <Route path="/success-stories/:slug" element={<SuccessStoryDetail />} />
           <Route path="/explore-campaigns" element={<ExploreCampaigns />} />
+          <Route path="/campaigns" element={<ActiveCampaigns />} />
           <Route path="/jobs" element={<Jobs />} />
           <Route path="/verified-masjid" element={<VerifiedMasjid />} />
           <Route path="/verify-masjid/:verificationId" element={<VerifyMasjid />} />

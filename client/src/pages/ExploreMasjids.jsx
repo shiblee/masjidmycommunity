@@ -135,7 +135,7 @@ function ExploreMasjids() {
     <main className="msj-page">
       <section className="cw-hero msj-explore-hero on-ink">
         <div className="wrap">
-          <span className="eyebrow">Explore Masjids</span>
+          <span className="eyebrow">Masjids</span>
           <h1>Verified masjids across the community</h1>
           <p>Every masjid listed here has been reviewed and approved by our team — trusted, transparent, and part of the Masjid My Community network.</p>
         </div>

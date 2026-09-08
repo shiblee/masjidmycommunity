@@ -7,10 +7,9 @@ import { useTranslation } from "../i18n/LanguageContext.jsx";
 
 function useNavLinks(t) {
   return [
-    { href: "/explore-masjids", label: t("nav.exploreMasjids", "Explore Masjids") },
+    { href: "/explore-masjids", label: t("nav.exploreMasjids", "Masjids") },
     { href: "/my-community", label: t("nav.myCommunity", "My Community") },
-    { href: "/explore-campaigns", label: t("nav.campaign", "Campaign") },
-    { href: "/about", label: t("nav.aboutUs", "About Us") },
+    { href: "/campaigns", label: t("nav.campaign", "Campaign") },
     { href: "/jobs", label: t("nav.jobs", "Jobs") },
   ];
 }

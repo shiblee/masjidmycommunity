@@ -11,9 +11,10 @@ function useSections(t) {
       links: [
         { to: "/", label: t("sitemapPage.link.home", "Home") },
         { to: "/how-it-works", label: t("sitemapPage.link.howItWorks", "How It Works") },
+        { to: "/campaigns", label: t("sitemapPage.link.activeCampaigns", "Active Campaigns") },
         { to: "/explore-campaigns", label: t("sitemapPage.link.exploreCampaigns", "Explore Campaigns") },
         { to: "/verified-masjid", label: t("sitemapPage.link.verifiedMasjid", "Verified Masjid") },
-        { to: "/explore-masjids", label: t("sitemapPage.link.exploreMasjids", "Explore Masjids") },
+        { to: "/explore-masjids", label: t("sitemapPage.link.exploreMasjids", "Masjids") },
         { to: "/our-impact", label: t("sitemapPage.link.ourImpact", "Our Impact") },
       ],
     },

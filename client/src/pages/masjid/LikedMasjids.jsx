@@ -57,7 +57,7 @@ function LikedMasjids() {
               <Icon name="heart" size={30} />
               <h3>You haven't liked any masjids yet</h3>
               <p>Explore masjids and tap the like button on the ones you'd like to follow.</p>
-              <Link to="/explore-masjids" className="btn btn-gold">Explore Masjids <span className="btn-arrow">→</span></Link>
+              <Link to="/explore-masjids" className="btn btn-gold">Masjids <span className="btn-arrow">→</span></Link>
             </div>
           ) : (
             <>

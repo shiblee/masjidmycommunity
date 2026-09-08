@@ -127,7 +127,7 @@ function MasjidProfile() {
           <Icon name="mosque" size={30} />
           <h3>This masjid isn't available</h3>
           <p>It may not be approved yet, or the link may be incorrect.</p>
-          <Link to="/explore-masjids" className="btn btn-gold">Explore Masjids</Link>
+          <Link to="/explore-masjids" className="btn btn-gold">Masjids</Link>
         </div>
       </main>
     );

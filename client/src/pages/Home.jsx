@@ -2,34 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
 import { API_BASE, API_ORIGIN } from "../config.js";
-
-// Live campaigns are fetched from the API on mount (see Home()); this shapes
-// them into the same card fields the (formerly static) mock data used, so
-// the existing filter/save/render UX below needed no redesign.
-function toCardShape(c) {
-  const goal = c.goalAmount ? Number(c.goalAmount) : null;
-  const isFunded = ["goal_reached", "completed"].includes(c.status) || (goal && c.amountRaised >= goal);
-  let days = 0;
-  if (!isFunded && c.endDate) {
-    days = Math.max(0, Math.ceil((new Date(c.endDate).getTime() - Date.now()) / 86400000));
-  } else if (!isFunded) {
-    days = 30;
-  }
-  return {
-    id: c.id,
-    slug: c.slug,
-    name: c.masjid?.name || "",
-    loc: [c.masjid?.city, c.masjid?.country].filter(Boolean).join(", "),
-    cat: c.category?.name || "Community Welfare",
-    title: c.title,
-    raised: c.amountRaised || 0,
-    goal: goal || c.amountRaised || 1,
-    supporters: c.donorCount || 0,
-    days: isFunded ? 0 : days,
-    badge: isFunded ? "Funded" : "Verified",
-    img: c.coverPhotoUrl ? `${API_ORIGIN}${c.coverPhotoUrl}` : "",
-  };
-}
+import { toCardShape } from "../utils/campaignCardShape.js";
 
 const masjidData = [
   { name: "Masjid An-Noor", loc: "Dhaka, Bangladesh", flag: "🇧🇩", year: 2009, camps: 2, served: "3,200", img: "https://images.unsplash.com/photo-1549526725-5c188c251c37?auto=format&fit=crop&w=500&q=75" },
@@ -698,9 +671,9 @@ function Home() {
           )}
 
           <div style={{ textAlign: "center", marginTop: "44px" }}>
-            <a href="#campaigns" className="btn btn-outline-ink">
+            <Link to="/campaigns" className="btn btn-outline-ink">
               View All Campaigns <span className="btn-arrow">→</span>
-            </a>
+            </Link>
           </div>
         </div>
       </section>

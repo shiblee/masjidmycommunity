@@ -31,7 +31,7 @@ function VerifyMasjid() {
           <Icon name="shieldCheck" size={30} />
           <h3>No masjid found with this verification ID</h3>
           <p>Double-check the verification ID, or the QR code you scanned may be invalid.</p>
-          <Link to="/explore-masjids" className="btn btn-gold">Explore Masjids</Link>
+          <Link to="/explore-masjids" className="btn btn-gold">Masjids</Link>
         </div>
       </main>
     );
