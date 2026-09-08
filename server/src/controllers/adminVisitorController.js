@@ -221,6 +221,25 @@ const SORT_COLUMNS = {
   status: "status",
 };
 
+// Populates the Browser/Location filter dropdowns with whatever values
+// actually exist in the data, rather than a hardcoded guess — so the list
+// never shows a browser or country with zero matching sessions, and never
+// omits one that's actually present.
+export const getFilterOptions = async (req, res) => {
+  try {
+    const [browserRows, countryRows] = await Promise.all([
+      VisitorSession.findAll({ attributes: ["browser"], where: { browser: { [Op.ne]: null } }, group: ["browser"], order: [["browser", "ASC"]], raw: true }),
+      VisitorSession.findAll({ attributes: ["countryCode", "country"], where: { countryCode: { [Op.ne]: null } }, group: ["countryCode", "country"], order: [["country", "ASC"]], raw: true }),
+    ]);
+    res.json({
+      browsers: browserRows.map((r) => r.browser).filter(Boolean),
+      countries: countryRows.filter((r) => r.countryCode).map((r) => ({ code: r.countryCode, name: r.country })),
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 function buildWhere(req) {
   const { from, to } = parseRange(req);
   const where = { startedAt: { [Op.gte]: from, [Op.lte]: to } };

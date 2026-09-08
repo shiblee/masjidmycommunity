@@ -2,7 +2,7 @@ import { Router } from "express";
 import auth, { requireAdmin } from "../middleware/auth.js";
 import {
   getSummary, listSessions, getSessionDetail, getVisitorInsights, issueStreamTicket, streamOnline, getOnline,
-  getSettings, updateSettings, getBotSettings, updateBotSettings, testRunBot, resetBotData, getBotStatus,
+  getSettings, updateSettings, getBotSettings, updateBotSettings, testRunBot, resetBotData, getBotStatus, getFilterOptions,
 } from "../controllers/adminVisitorController.js";
 
 const router = Router();
@@ -18,6 +18,7 @@ router.use(auth, requireAdmin);
 router.get("/summary", getSummary);
 router.get("/insights", getVisitorInsights);
 router.get("/sessions", listSessions);
+router.get("/filter-options", getFilterOptions);
 router.get("/sessions/:sessionKey", getSessionDetail);
 router.get("/online", getOnline);
 router.post("/stream-ticket", issueStreamTicket);

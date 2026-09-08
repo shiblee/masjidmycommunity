@@ -143,6 +143,7 @@
 .amx-field.has-error input:focus{ box-shadow:0 0 0 4px rgba(194,75,63,.12); }
 .amx-field-error{ display:flex; align-items:center; gap:6px; margin-top:7px; font-size:12.5px; color:var(--a-danger); font-weight:600; }
 .amx-field-error svg{ width:14px; height:14px; flex-shrink:0; }
+.amx-field-hint{ display:block; font-size:11.5px; line-height:1.4; color:var(--a-text-faint); margin-top:5px; }
 .amx-required{ color:var(--a-danger); margin-left:4px; font-weight:700; }
 .amx-pw-toggle{
   position:absolute; right:6px; top:50%; transform:translateY(-50%); background:none; border:none; padding:8px;

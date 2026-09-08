@@ -62,8 +62,11 @@ function Visitors() {
   const [type, setType] = useState("all");
   const [status, setStatus] = useState("all");
   const [device, setDevice] = useState("all");
+  const [browser, setBrowser] = useState("all");
+  const [country, setCountry] = useState("all");
   const [trafficType, setTrafficType] = useState("genuine");
   const [includeSynthetic, setIncludeSynthetic] = useState(false);
+  const [filterOptions, setFilterOptions] = useState({ browsers: [], countries: [] });
   const [page, setPage] = useState(1);
   const [sortKey, setSortKey] = useState("visitTime");
   const [sortDir, setSortDir] = useState("desc");
@@ -83,6 +86,8 @@ function Visitors() {
     type,
     status,
     device,
+    browser,
+    country,
     trafficType,
     sort: sortKey,
     dir: sortDir,
@@ -125,9 +130,16 @@ function Visitors() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Populates the Browser/Location dropdowns from whatever values actually
+  // exist in the data — fetched once; the list doesn't need to react to
+  // every filter change, just reflect what's realistically pickable.
+  useEffect(() => {
+    adminApi.get("/visitors/filter-options").then(({ data }) => setFilterOptions(data)).catch(() => {});
+  }, []);
+
   useEffect(loadSummary, [from, to, includeSynthetic]);
-  useEffect(loadSessions, [query, from, to, type, status, device, trafficType, sortKey, sortDir, page]);
-  useEffect(() => setPage(1), [query, from, to, type, status, device, trafficType]);
+  useEffect(loadSessions, [query, from, to, type, status, device, browser, country, trafficType, sortKey, sortDir, page]);
+  useEffect(() => setPage(1), [query, from, to, type, status, device, browser, country, trafficType]);
 
   const exportCsv = async () => {
     setExporting(true);
@@ -224,6 +236,14 @@ function Visitors() {
             <option value="desktop">Desktop</option>
             <option value="mobile">Mobile</option>
             <option value="tablet">Tablet</option>
+          </select>
+          <select className="amx-select" value={browser} onChange={(e) => setBrowser(e.target.value)}>
+            <option value="all">All Browsers</option>
+            {filterOptions.browsers.map((b) => <option key={b} value={b}>{b}</option>)}
+          </select>
+          <select className="amx-select" value={country} onChange={(e) => setCountry(e.target.value)}>
+            <option value="all">All Locations</option>
+            {filterOptions.countries.map((c) => <option key={c.code} value={c.code}>{c.name}</option>)}
           </select>
           <select className="amx-select" value={trafficType} onChange={(e) => setTrafficType(e.target.value)} title="Genuine vs. synthetic bot traffic">
             <option value="genuine">Genuine Visitors</option>
