@@ -62,6 +62,7 @@ function VisitorSessionDetail() {
           <p>Session {session.sessionKey}</p>
         </div>
         <div className="amx-page-actions" style={{ alignItems: "center", gap: 10 }}>
+          <StatusBadge status={session.trafficType === "synthetic" ? "warn" : "ok"} label={session.trafficType === "synthetic" ? "Synthetic" : "Genuine"} />
           <StatusBadge status={session.visitorType === "new" ? "ok" : "neutral"} label={session.visitorType === "new" ? "New Visitor" : "Returning Visitor"} />
           <StatusBadge status={STATUS_MAP[session.status] || "neutral"} label={session.status[0].toUpperCase() + session.status.slice(1)} />
         </div>
@@ -78,7 +79,7 @@ function VisitorSessionDetail() {
           <InfoRow label="Device">{session.deviceType} {session.deviceName ? `(${session.deviceName})` : ""}</InfoRow>
           <InfoRow label="Browser">{session.browser} {session.browserVersion}</InfoRow>
           <InfoRow label="OS">{session.os}</InfoRow>
-          <InfoRow label="Location">{session.country || "Unknown"}</InfoRow>
+          <InfoRow label="Location">{[session.city, session.country].filter(Boolean).join(", ") || "Unknown"}</InfoRow>
           <InfoRow label="Language">{session.language}</InfoRow>
           <InfoRow label="Referrer">{session.referrerHost || "Direct"}</InfoRow>
           {(session.utmSource || session.utmMedium || session.utmCampaign) && (

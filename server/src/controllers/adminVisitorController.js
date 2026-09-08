@@ -213,6 +213,10 @@ const SORT_COLUMNS = {
 function buildWhere(req) {
   const { from, to } = parseRange(req);
   const where = { startedAt: { [Op.gte]: from, [Op.lte]: to } };
+  // Genuine-only unless the admin explicitly asks to see synthetic bot
+  // traffic — same default-safe posture as the KPI/insights endpoints.
+  if (req.query.trafficType === "synthetic") where.trafficType = "synthetic";
+  else if (req.query.trafficType !== "all") where.trafficType = "genuine";
   if (req.query.type && req.query.type !== "all") where.visitorType = req.query.type;
   if (req.query.status && req.query.status !== "all") where.status = req.query.status;
   if (req.query.device && req.query.device !== "all") where.deviceType = req.query.device;
@@ -260,8 +264,8 @@ export const listSessions = async (req, res) => {
 
 function sendCsv(res, rows) {
   const headers = [
-    "sessionKey", "visitorId", "visitorType", "startedAt", "endedAt", "durationSeconds", "pageCount",
-    "landingPath", "exitPath", "referrerHost", "deviceType", "browser", "os", "country", "status",
+    "sessionKey", "visitorId", "trafficType", "visitorType", "startedAt", "endedAt", "durationSeconds", "pageCount",
+    "landingPath", "exitPath", "referrerHost", "deviceType", "browser", "os", "country", "city", "status",
   ];
   const escape = (v) => {
     const s = v == null ? "" : String(v);

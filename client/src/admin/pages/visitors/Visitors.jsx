@@ -8,6 +8,7 @@ import adminApi from "../../services/adminApi.js";
 import { formatDateTime } from "../../../utils/formatDateTime.js";
 import VisitorInsights from "./components/VisitorInsights.jsx";
 import OnlineNowWidget from "./components/OnlineNowWidget.jsx";
+import BotStatusWidget from "./components/BotStatusWidget.jsx";
 import VisitorSettingsModal from "./components/VisitorSettingsModal.jsx";
 
 const PAGE_SIZE = 50;
@@ -60,6 +61,8 @@ function Visitors() {
   const [type, setType] = useState("all");
   const [status, setStatus] = useState("all");
   const [device, setDevice] = useState("all");
+  const [trafficType, setTrafficType] = useState("genuine");
+  const [includeSynthetic, setIncludeSynthetic] = useState(false);
   const [page, setPage] = useState(1);
   const [sortKey, setSortKey] = useState("visitTime");
   const [sortDir, setSortDir] = useState("desc");
@@ -79,12 +82,13 @@ function Visitors() {
     type,
     status,
     device,
+    trafficType,
     sort: sortKey,
     dir: sortDir,
   });
 
   const loadSummary = () => {
-    const params = { from: `${from}T00:00:00.000Z`, to: `${to}T23:59:59.999Z` };
+    const params = { from: `${from}T00:00:00.000Z`, to: `${to}T23:59:59.999Z`, includeSynthetic: includeSynthetic ? "true" : undefined };
     adminApi.get("/visitors/summary", { params }).then(({ data }) => setSummary(data)).catch(() => {});
     adminApi.get("/visitors/insights", { params }).then(({ data }) => setInsights(data.insights)).catch(() => setInsights([]));
   };
@@ -104,9 +108,9 @@ function Visitors() {
       .finally(() => setLoading(false));
   };
 
-  useEffect(loadSummary, [from, to]);
-  useEffect(loadSessions, [query, from, to, type, status, device, sortKey, sortDir, page]);
-  useEffect(() => setPage(1), [query, from, to, type, status, device]);
+  useEffect(loadSummary, [from, to, includeSynthetic]);
+  useEffect(loadSessions, [query, from, to, type, status, device, trafficType, sortKey, sortDir, page]);
+  useEffect(() => setPage(1), [query, from, to, type, status, device, trafficType]);
 
   const exportCsv = async () => {
     setExporting(true);
@@ -140,6 +144,7 @@ function Visitors() {
         </div>
         <div className="amx-page-actions" style={{ alignItems: "center", gap: 10 }}>
           <OnlineNowWidget />
+          <BotStatusWidget />
           <button className="amx-btn amx-btn-outline" onClick={exportCsv} disabled={exporting}>
             <Icon name="download" size={16} />
             {exporting ? "Exporting…" : "Export CSV"}
@@ -151,6 +156,13 @@ function Visitors() {
       </div>
 
       {showSettings && <VisitorSettingsModal onClose={() => setShowSettings(false)} onSaved={() => {}} />}
+
+      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 10 }}>
+        <label className="amx-cell-sub" style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+          <input type="checkbox" checked={includeSynthetic} onChange={(e) => setIncludeSynthetic(e.target.checked)} />
+          Include synthetic bot traffic in the numbers below
+        </label>
+      </div>
 
       {summary && (
         <div className="amx-kpi-grid" style={{ gridTemplateColumns: "repeat(4,1fr)" }}>
@@ -191,6 +203,11 @@ function Visitors() {
             <option value="mobile">Mobile</option>
             <option value="tablet">Tablet</option>
           </select>
+          <select className="amx-select" value={trafficType} onChange={(e) => setTrafficType(e.target.value)} title="Genuine vs. synthetic bot traffic">
+            <option value="genuine">Genuine Visitors</option>
+            <option value="synthetic">Synthetic (Bot)</option>
+            <option value="all">All Traffic</option>
+          </select>
         </div>
 
         {loading ? (
@@ -210,6 +227,7 @@ function Visitors() {
               <thead>
                 <tr>
                   <th>Visitor</th>
+                  <th>Source</th>
                   <SortHeader label="Visit Time" sortKey="visitTime" activeKey={sortKey} direction={sortDir} onSort={toggleSort} />
                   <SortHeader label="Type" sortKey="type" activeKey={sortKey} direction={sortDir} onSort={toggleSort} />
                   <SortHeader label="Device" sortKey="device" activeKey={sortKey} direction={sortDir} onSort={toggleSort} />
@@ -226,6 +244,9 @@ function Visitors() {
                     <td>
                       <div>Visitor #{s.visitorId}</div>
                       <div className="amx-cell-sub">{s.landingPath}</div>
+                    </td>
+                    <td>
+                      <StatusBadge status={s.trafficType === "synthetic" ? "warn" : "ok"} label={s.trafficType === "synthetic" ? "Synthetic" : "Genuine"} />
                     </td>
                     <td>{formatDateTime(s.startedAt)}</td>
                     <td><StatusBadge status={s.visitorType === "new" ? "ok" : "neutral"} label={s.visitorType === "new" ? "New" : "Returning"} /></td>

@@ -17,7 +17,12 @@ const SECTIONS = [
   { key: "reviews", label: "Reviews", icon: "star" },
   { key: "authentication", label: "Authentication", icon: "lock" },
   { key: "maps", label: "Google Maps", icon: "globe" },
+  { key: "visitorBot", label: "Visitor Bot", icon: "activity" },
 ];
+
+const BOT_DEVICE_KEYS = ["desktop", "mobile", "tablet"];
+const BOT_BROWSER_KEYS = ["Chrome", "Safari", "Firefox", "Edge"];
+const HOUR_OPTIONS = Array.from({ length: 24 }, (_, h) => h);
 
 function initialsOf(name) {
   if (!name) return "AD";
@@ -79,6 +84,15 @@ function Settings() {
   const [authSettingsInput, setAuthSettingsInput] = useState({ otpExpiryMinutes: "5", otpResendCooldownSeconds: "60", otpMaxAttempts: "5" });
   const [savingAuthSettings, setSavingAuthSettings] = useState(false);
   const [authSettingsError, setAuthSettingsError] = useState("");
+
+  const [botSettings, setBotSettings] = useState(null);
+  const [botInput, setBotInput] = useState(null);
+  const [savingBot, setSavingBot] = useState(false);
+  const [botError, setBotError] = useState("");
+  const [testRunResult, setTestRunResult] = useState(null);
+  const [testRunning, setTestRunning] = useState(false);
+  const [resettingBotData, setResettingBotData] = useState(false);
+  const [resetResult, setResetResult] = useState(null);
 
   const showToast = (message) => {
     setToast(message);
@@ -165,6 +179,26 @@ function Settings() {
         });
       })
       .catch(() => {});
+  }, []);
+
+  const botInputFrom = (data) => ({
+    ...data,
+    visitorsPerHour: String(data.visitorsPerHour),
+    sessionDurationMinSeconds: String(data.sessionDurationMinSeconds),
+    sessionDurationMaxSeconds: String(data.sessionDurationMaxSeconds),
+    pagesPerSessionMin: String(data.pagesPerSessionMin),
+    pagesPerSessionMax: String(data.pagesPerSessionMax),
+    allowedPathsText: Array.isArray(data.allowedPaths) ? data.allowedPaths.join("\n") : "",
+  });
+
+  useEffect(() => {
+    adminApi
+      .get("/visitors/bot/settings")
+      .then(({ data }) => {
+        setBotSettings(data);
+        setBotInput(botInputFrom(data));
+      })
+      .catch(() => setBotError("Couldn't load the visitor bot's settings."));
   }, []);
 
   const saveProfile = async (e) => {
@@ -458,6 +492,83 @@ function Settings() {
     } catch {
       setPlatform((p) => ({ ...p, [key]: prev }));
       showToast("Couldn't save that change. Please try again.");
+    }
+  };
+
+  const saveBotSettings = async (patch) => {
+    setSavingBot(true);
+    setBotError("");
+    try {
+      const { data } = await adminApi.patch("/visitors/bot/settings", patch);
+      setBotSettings(data);
+      setBotInput(botInputFrom(data));
+      showToast("Visitor bot settings saved.");
+    } catch (err) {
+      setBotError(err.response?.data?.message || "Couldn't save the visitor bot's settings.");
+    } finally {
+      setSavingBot(false);
+    }
+  };
+
+  const toggleBotEnabled = () => saveBotSettings({ enabled: !botSettings.enabled });
+  const toggleCombinedViewDefault = () => saveBotSettings({ combinedViewDefault: !botSettings.combinedViewDefault });
+
+  const submitBotForm = (e) => {
+    e.preventDefault();
+    const intFields = ["visitorsPerHour", "sessionDurationMinSeconds", "sessionDurationMaxSeconds", "pagesPerSessionMin", "pagesPerSessionMax"];
+    const parsed = {};
+    for (const field of intFields) {
+      const n = Number(botInput[field]);
+      if (!Number.isInteger(n) || n < 1) {
+        setBotError("Every number field must be a whole number of at least 1.");
+        return;
+      }
+      parsed[field] = n;
+    }
+    if (parsed.sessionDurationMinSeconds > parsed.sessionDurationMaxSeconds) {
+      setBotError("Minimum session duration can't exceed the maximum.");
+      return;
+    }
+    if (parsed.pagesPerSessionMin > parsed.pagesPerSessionMax) {
+      setBotError("Minimum pages per session can't exceed the maximum.");
+      return;
+    }
+    parsed.indiaPercent = Math.min(100, Math.max(0, Number(botInput.indiaPercent) || 0));
+    parsed.activeHourStart = botInput.activeHourStart === "" || botInput.activeHourStart == null ? null : Number(botInput.activeHourStart);
+    parsed.activeHourEnd = botInput.activeHourEnd === "" || botInput.activeHourEnd == null ? null : Number(botInput.activeHourEnd);
+    parsed.deviceWeights = botInput.deviceWeights;
+    parsed.browserWeights = botInput.browserWeights;
+    const paths = botInput.allowedPathsText.split("\n").map((p) => p.trim()).filter(Boolean);
+    parsed.allowedPaths = paths.length ? paths : null;
+    saveBotSettings(parsed);
+  };
+
+  const runBotTestRun = async () => {
+    setTestRunning(true);
+    setTestRunResult(null);
+    setBotError("");
+    try {
+      const { data } = await adminApi.post("/visitors/bot/test-run");
+      setTestRunResult(data);
+    } catch (err) {
+      setBotError(err.response?.data?.message || "Couldn't generate a test visit — check the configuration above.");
+    } finally {
+      setTestRunning(false);
+    }
+  };
+
+  const clearSyntheticData = async () => {
+    if (!window.confirm("Permanently delete every synthetic visitor and session? Genuine visitor data is never touched.")) return;
+    setResettingBotData(true);
+    setResetResult(null);
+    try {
+      const { data } = await adminApi.delete("/visitors/bot/data");
+      setResetResult(data);
+      showToast("Synthetic visitor data cleared.");
+    } catch {
+      showToast("Couldn't clear synthetic data. Please try again.");
+    } finally {
+      setResettingBotData(false);
     }
   };
 
@@ -1101,6 +1212,209 @@ function Settings() {
                   {savingMapSettings ? "Saving…" : "Save Settings"}
                 </button>
               </form>
+            </>
+          )}
+
+          {section === "visitorBot" && (
+            <>
+              <div className="amx-panel-head">
+                <div>
+                  <h3>Visitor Bot Settings</h3>
+                  <div className="amx-panel-sub">
+                    Generates clearly-labeled synthetic demo traffic through the same tracking pipeline real visitors use — for
+                    demoing the Visitors dashboard or load-testing it. Synthetic visits are excluded from the public counter and
+                    real analytics by default and never trigger emails, notifications, or any business action.
+                  </div>
+                </div>
+              </div>
+
+              {!botSettings ? (
+                <p className="amx-panel-sub">Loading…</p>
+              ) : (
+                <>
+                  <div className="amx-settings-row" style={{ marginBottom: 18 }}>
+                    <div>
+                      <strong>Enable Visitor Bot</strong>
+                      <span>Starts generating synthetic visits on the hourly schedule below. Switching this off stops new synthetic visits within a minute.</span>
+                    </div>
+                    <Toggle on={botSettings.enabled} onClick={toggleBotEnabled} disabled={savingBot} />
+                  </div>
+
+                  <form onSubmit={submitBotForm} className="amx-form-grid" noValidate>
+                    <div className="amx-form-group">
+                      <label htmlFor="bot-visitors-per-hour">Visitors per Hour</label>
+                      <input
+                        id="bot-visitors-per-hour"
+                        type="number"
+                        min={1}
+                        step={1}
+                        value={botInput.visitorsPerHour}
+                        onChange={(e) => setBotInput((s) => ({ ...s, visitorsPerHour: e.target.value }))}
+                      />
+                      <div className="amx-panel-sub" style={{ marginTop: 6 }}>Spread randomly across each hour, not generated all at once.</div>
+                    </div>
+                    <div className="amx-form-group">
+                      <label htmlFor="bot-india-percent">India %</label>
+                      <input
+                        id="bot-india-percent"
+                        type="number"
+                        min={0}
+                        max={100}
+                        step={1}
+                        value={botInput.indiaPercent}
+                        onChange={(e) => setBotInput((s) => ({ ...s, indiaPercent: e.target.value }))}
+                      />
+                      <div className="amx-panel-sub" style={{ marginTop: 6 }}>
+                        International: <strong>{100 - (Number(botInput.indiaPercent) || 0)}%</strong>
+                      </div>
+                    </div>
+                    <div className="amx-form-group">
+                      <label htmlFor="bot-active-start">Active Hours (UTC)</label>
+                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                        <select
+                          id="bot-active-start"
+                          value={botInput.activeHourStart ?? ""}
+                          onChange={(e) => setBotInput((s) => ({ ...s, activeHourStart: e.target.value }))}
+                        >
+                          <option value="">All day</option>
+                          {HOUR_OPTIONS.map((h) => <option key={h} value={h}>{String(h).padStart(2, "0")}:00</option>)}
+                        </select>
+                        <span>to</span>
+                        <select
+                          value={botInput.activeHourEnd ?? ""}
+                          onChange={(e) => setBotInput((s) => ({ ...s, activeHourEnd: e.target.value }))}
+                        >
+                          <option value="">All day</option>
+                          {HOUR_OPTIONS.map((h) => <option key={h} value={h}>{String(h).padStart(2, "0")}:00</option>)}
+                        </select>
+                      </div>
+                    </div>
+                    <div className="amx-form-group">
+                      <label>Session Duration (seconds)</label>
+                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                        <input
+                          type="number"
+                          min={1}
+                          value={botInput.sessionDurationMinSeconds}
+                          onChange={(e) => setBotInput((s) => ({ ...s, sessionDurationMinSeconds: e.target.value }))}
+                        />
+                        <span>to</span>
+                        <input
+                          type="number"
+                          min={1}
+                          value={botInput.sessionDurationMaxSeconds}
+                          onChange={(e) => setBotInput((s) => ({ ...s, sessionDurationMaxSeconds: e.target.value }))}
+                        />
+                      </div>
+                    </div>
+                    <div className="amx-form-group">
+                      <label>Pages per Session</label>
+                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                        <input
+                          type="number"
+                          min={1}
+                          value={botInput.pagesPerSessionMin}
+                          onChange={(e) => setBotInput((s) => ({ ...s, pagesPerSessionMin: e.target.value }))}
+                        />
+                        <span>to</span>
+                        <input
+                          type="number"
+                          min={1}
+                          value={botInput.pagesPerSessionMax}
+                          onChange={(e) => setBotInput((s) => ({ ...s, pagesPerSessionMax: e.target.value }))}
+                        />
+                      </div>
+                    </div>
+                    <div className="amx-form-group">
+                      <label>Device Mix (weights)</label>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        {BOT_DEVICE_KEYS.map((key) => (
+                          <input
+                            key={key}
+                            type="number"
+                            min={0}
+                            title={key}
+                            placeholder={key}
+                            value={botInput.deviceWeights[key] ?? 0}
+                            onChange={(e) => setBotInput((s) => ({ ...s, deviceWeights: { ...s.deviceWeights, [key]: Number(e.target.value) } }))}
+                          />
+                        ))}
+                      </div>
+                      <div className="amx-panel-sub" style={{ marginTop: 6 }}>Desktop / Mobile / Tablet, in that order — relative weights, not required to sum to 100.</div>
+                    </div>
+                    <div className="amx-form-group">
+                      <label>Browser Mix (weights)</label>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        {BOT_BROWSER_KEYS.map((key) => (
+                          <input
+                            key={key}
+                            type="number"
+                            min={0}
+                            title={key}
+                            placeholder={key}
+                            value={botInput.browserWeights[key] ?? 0}
+                            onChange={(e) => setBotInput((s) => ({ ...s, browserWeights: { ...s.browserWeights, [key]: Number(e.target.value) } }))}
+                          />
+                        ))}
+                      </div>
+                      <div className="amx-panel-sub" style={{ marginTop: 6 }}>Chrome / Safari / Firefox / Edge, in that order.</div>
+                    </div>
+                    <div className="amx-form-group" style={{ gridColumn: "1 / -1" }}>
+                      <label htmlFor="bot-allowed-paths">Allowed Pages / Routes</label>
+                      <textarea
+                        id="bot-allowed-paths"
+                        rows={4}
+                        placeholder={"One path per line, e.g.\n/\n/explore-masjids\n/about"}
+                        value={botInput.allowedPathsText}
+                        onChange={(e) => setBotInput((s) => ({ ...s, allowedPathsText: e.target.value }))}
+                      />
+                      <div className="amx-panel-sub" style={{ marginTop: 6 }}>
+                        Leave blank to use the default safe pool of public marketing pages, mixed with a few real masjid profile pages.
+                      </div>
+                    </div>
+
+                    {botError && (
+                      <div className="amx-field-error" style={{ gridColumn: "1 / -1" }}>
+                        <Icon name="info" size={14} />
+                        {botError}
+                      </div>
+                    )}
+                    <button type="submit" className="amx-btn amx-btn-primary" disabled={savingBot} style={{ alignSelf: "end" }}>
+                      {savingBot ? "Saving…" : "Save Visitor Bot Settings"}
+                    </button>
+                  </form>
+
+                  <div className="amx-settings-row" style={{ marginTop: 18 }}>
+                    <div>
+                      <strong>Combine Synthetic Traffic by Default</strong>
+                      <span>Starting view for the Visitors dashboard's KPIs and insights — can still be switched per-visit on that page.</span>
+                    </div>
+                    <Toggle on={botSettings.combinedViewDefault} onClick={toggleCombinedViewDefault} disabled={savingBot} />
+                  </div>
+
+                  <div style={{ display: "flex", gap: 10, marginTop: 20, paddingTop: 20, borderTop: "1px solid var(--a-border)", flexWrap: "wrap" }}>
+                    <button type="button" className="amx-btn amx-btn-outline" onClick={runBotTestRun} disabled={testRunning}>
+                      {testRunning ? "Generating…" : "Test Run"}
+                    </button>
+                    <button type="button" className="amx-btn amx-btn-outline" onClick={clearSyntheticData} disabled={resettingBotData}>
+                      {resettingBotData ? "Clearing…" : "Clear Synthetic Visitor Data"}
+                    </button>
+                  </div>
+
+                  {testRunResult && (
+                    <div className="amx-panel-sub" style={{ marginTop: 12 }}>
+                      Generated one synthetic visit: <strong>{testRunResult.city}, {testRunResult.country}</strong> — {testRunResult.deviceType} / {testRunResult.browser},{" "}
+                      {testRunResult.pageCount} page{testRunResult.pageCount === 1 ? "" : "s"}, {testRunResult.durationSeconds}s. Visible in the Visitors list as{" "}
+                      <strong>Synthetic</strong>.
+                    </div>
+                  )}
+                  {resetResult && (
+                    <div className="amx-panel-sub" style={{ marginTop: 12 }}>
+                      Cleared {resetResult.deletedVisitors} synthetic visitor{resetResult.deletedVisitors === 1 ? "" : "s"} and {resetResult.deletedSessions} session{resetResult.deletedSessions === 1 ? "" : "s"}.
+                    </div>
+                  )}
+                </>
+              )}
             </>
           )}
         </div>
