@@ -39,6 +39,11 @@ const Donation = sequelize.define(
     // Null for a donor's own self-reported (pending) claim — set to the
     // confirming/recording admin's id once it's reviewed either way.
     recordedBy: { type: DataTypes.INTEGER, allowNull: true },
+    // The logged-in user who submitted a self-reported claim (the public
+    // Donate flow requires sign-in specifically so this is always a real,
+    // accountable account — never null for a donor-submitted row). Null for
+    // an admin-recorded donation, which has no donor account involved.
+    userId: { type: DataTypes.INTEGER, allowNull: true },
   },
   {
     tableName: "donations",

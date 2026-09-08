@@ -146,7 +146,10 @@ export const listPublicDonors = async (req, res) => {
 // it happened, instead of relying on the donor separately messaging them.
 // Always status:"pending" and recordedBy:null — never counted toward the
 // public raised total (amountRaised()/donorCount only sum status:"recorded")
-// until an admin reviews it via confirmDonation/declineDonation.
+// until an admin reviews it via confirmDonation/declineDonation. Requires
+// sign-in (route-level auth/requireUser) so every claim is tied to a real,
+// accountable account (userId) even if the donor chooses to display
+// anonymously — prevents an anonymous visitor from spamming fake claims.
 export const submitDonationClaim = async (req, res) => {
   try {
     const campaign = await Campaign.findOne({ where: { slug: req.params.slug, status: { [Op.in]: PUBLIC_STATUSES }, moderationStatus: "active" } });
@@ -157,6 +160,7 @@ export const submitDonationClaim = async (req, res) => {
 
     const donation = await Donation.create({
       campaignId: campaign.id,
+      userId: req.user.id,
       donorName: donorName?.trim() || null,
       donorEmail: donorEmail?.trim() || null,
       amount,

@@ -1,12 +1,20 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Icon } from "../Icons.jsx";
 import ShareMenu from "../ShareMenu.jsx";
 import DonateModal from "./DonateModal.jsx";
+import { getStoredUser } from "../../utils/userAuthStorage.js";
 
 function CampaignDonationPanel({ campaign, category, donationAccount, slug }) {
+  const [user, setUser] = useState(() => getStoredUser());
   const [donateOpen, setDonateOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const shareBtnRef = useRef(null);
+
+  useEffect(() => {
+    const onSessionUpdated = (e) => setUser(e.detail);
+    window.addEventListener("mmc-user-session-updated", onSessionUpdated);
+    return () => window.removeEventListener("mmc-user-session-updated", onSessionUpdated);
+  }, []);
   const pct = campaign.progressPercent ?? 0;
   const goal = campaign.goalAmount ? Number(campaign.goalAmount) : null;
   const raised = Number(campaign.amountRaised) || 0;
@@ -58,7 +66,7 @@ function CampaignDonationPanel({ campaign, category, donationAccount, slug }) {
         text={campaign.shortDescription || ""}
       />
 
-      {donateOpen && <DonateModal campaign={campaign} donationAccount={donationAccount} slug={slug} onClose={() => setDonateOpen(false)} />}
+      {donateOpen && <DonateModal campaign={campaign} donationAccount={donationAccount} slug={slug} user={user} onClose={() => setDonateOpen(false)} />}
     </div>
   );
 }
