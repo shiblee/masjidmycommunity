@@ -31,7 +31,10 @@ const COMPLETION_CHECKS = [
   (user, counts) => counts.skills > 0,
 ];
 
-function computeProfileCompletion(user, counts) {
+// Exported so syntheticUserGeneratorService.js can confirm a freshly
+// generated bot account actually reaches 100% via this exact, unmodified
+// definition of "complete" — never a second, diverging one.
+export function computeProfileCompletion(user, counts) {
   const done = COMPLETION_CHECKS.filter((test) => test(user, counts)).length;
   return Math.round((done / COMPLETION_CHECKS.length) * 100);
 }
@@ -39,7 +42,7 @@ function computeProfileCompletion(user, counts) {
 // Batched — one GROUP BY per sub-resource table regardless of how many user
 // ids are passed in, so the Users list page doesn't pay N extra queries per
 // row just to show each member's completion percentage.
-async function getCompletionCountsByUserIds(userIds) {
+export async function getCompletionCountsByUserIds(userIds) {
   const counts = Object.fromEntries(userIds.map((id) => [id, { workExperience: 0, education: 0, hobbies: 0, skills: 0 }]));
   if (!userIds.length) return counts;
 
@@ -83,6 +86,7 @@ export function toAdminUser(user, isOnline = false, completionCounts = null) {
     locationState: user.locationState,
     locationCountry: user.locationCountry,
     status: user.status,
+    userType: user.userType,
     createdAt: user.createdAt,
     lastLoginAt: user.lastLoginAt,
     // "Online" = at least one non-revoked, unexpired refresh session — i.e.

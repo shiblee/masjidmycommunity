@@ -40,7 +40,9 @@ function maskTarget(otpTarget, user) {
   return otpTarget === "email" ? maskEmail(user.email) : maskMobile(user.mobile);
 }
 
-async function generateUniqueUsername(fullName) {
+// Exported so syntheticUserGeneratorService.js can reuse the exact same
+// format/uniqueness rules for bot-user usernames instead of duplicating them.
+export async function generateUniqueUsername(fullName) {
   const base = (fullName || "user").toLowerCase().replace(/[^a-z0-9]+/g, "").slice(0, 14) || "user";
   for (let i = 0; i < 6; i++) {
     const candidate = `${base}${Math.floor(1000 + Math.random() * 9000)}`;

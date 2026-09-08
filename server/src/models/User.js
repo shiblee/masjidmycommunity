@@ -134,6 +134,16 @@ const User = sequelize.define(
       type: DataTypes.FLOAT,
       allowNull: true,
     },
+    // "real" (registered by an actual person) vs "bot" (created by
+    // userBotSchedulerService.js/syntheticUserGeneratorService.js) — the
+    // one permanent, database-level distinction the synthetic user
+    // generator relies on. Never exposed as an editable profile field, so
+    // it can't be changed via normal profile editing.
+    userType: {
+      type: DataTypes.ENUM("real", "bot"),
+      allowNull: false,
+      defaultValue: "real",
+    },
   },
   {
     tableName: "users",
@@ -141,6 +151,7 @@ const User = sequelize.define(
       { unique: true, fields: ["username"], name: "users_username_unique" },
       { unique: true, fields: ["email"], name: "users_email_unique" },
       { unique: true, fields: ["mobile"], name: "users_mobile_unique" },
+      { fields: ["userType"], name: "users_user_type_idx" },
     ],
   }
 );
