@@ -4,6 +4,7 @@ import Visitor from "../models/Visitor.js";
 import VisitorSession from "../models/VisitorSession.js";
 import VisitorPageView from "../models/VisitorPageView.js";
 import VisitorSettings from "../models/VisitorSettings.js";
+import VisitorBotSettings from "../models/VisitorBotSettings.js";
 import { countryFromTimezone } from "../constants/timezoneCountries.js";
 import { bumpPublicTotal, getPublicTotal } from "./visitorStatsService.js";
 import { schedulePublicBroadcast } from "./visitorRealtimeService.js";
@@ -127,9 +128,22 @@ export async function recordPageView({ visitorKey, path, title, referrer, utmSou
     sessionId: session.id, visitorId: visitor.id, sequence: session.pageCount, path, title: title || null, viewedAt: now, trafficType,
   });
 
-  if (isNewVisitor && trafficType === "genuine") {
-    bumpPublicTotal();
-    schedulePublicBroadcast(getPublicTotal);
+  // A genuine new visitor always moves the public counter. A synthetic one
+  // only does when the admin has explicitly turned on
+  // VisitorBotSettings.combinedViewDefault (see getPublicTotal's own
+  // comment) — off by default, so the public number stays genuine-only
+  // unless an admin has made that deliberate choice.
+  if (isNewVisitor) {
+    if (trafficType === "genuine") {
+      bumpPublicTotal();
+      schedulePublicBroadcast(getPublicTotal);
+    } else {
+      const botSettings = await VisitorBotSettings.findByPk(1);
+      if (botSettings?.combinedViewDefault) {
+        bumpPublicTotal();
+        schedulePublicBroadcast(getPublicTotal);
+      }
+    }
   }
 
   return { sessionKey: session.sessionKey, isNewVisitor };

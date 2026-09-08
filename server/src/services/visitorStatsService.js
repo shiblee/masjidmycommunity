@@ -2,6 +2,7 @@ import { Op, fn, col } from "sequelize";
 import Visitor from "../models/Visitor.js";
 import VisitorSession from "../models/VisitorSession.js";
 import VisitorSettings from "../models/VisitorSettings.js";
+import VisitorBotSettings from "../models/VisitorBotSettings.js";
 
 // The single source of truth for "how many visitors/sessions" — every
 // consumer (the public counter's initial load, its SSE broadcasts, and the
@@ -19,16 +20,19 @@ let cachedTotal = null;
 let cachedAt = 0;
 const CACHE_MS = 5 * 60 * 1000;
 
-// Always genuine-only, with no override — this is the number shown to the
-// public on the homepage, and it must never be inflated by the synthetic
-// visitor bot (syntheticVisitorService.js) no matter what an admin
-// configures elsewhere. recordPageView() enforces the write side of this
-// guarantee (it never bumps this cache for a synthetic visit); this is the
-// read-side guarantee.
+// Genuine-only by default; an admin can explicitly opt the *public* counter
+// itself into a combined (genuine + synthetic) figure via Settings →
+// Visitor Bot → "Combine Synthetic Traffic by Default" — an informed,
+// deliberate choice (confirmed with the site owner), not the default
+// posture. recordPageView() mirrors this same flag on the write side (see
+// its own comment) so a synthetic visit only ever bumps this number when
+// the admin has turned combining on.
 export async function getPublicTotal() {
   const now = Date.now();
   if (cachedTotal == null || now - cachedAt > CACHE_MS) {
-    cachedTotal = await Visitor.count({ where: { trafficType: "genuine" } });
+    const botSettings = await VisitorBotSettings.findByPk(1);
+    const where = botSettings?.combinedViewDefault ? {} : { trafficType: "genuine" };
+    cachedTotal = await Visitor.count({ where });
     cachedAt = now;
   }
   return cachedTotal;
@@ -38,6 +42,14 @@ export async function getPublicTotal() {
  * cache exact without waiting for the next periodic re-verify. */
 export function bumpPublicTotal() {
   if (cachedTotal != null) cachedTotal += 1;
+}
+
+/** Forces the next getPublicTotal() call to recompute from the database
+ * instead of serving the up-to-5-minutes-stale cache — called whenever an
+ * admin changes combinedViewDefault, so the public counter's mode switches
+ * immediately rather than on the next opportunistic refresh. */
+export function invalidatePublicTotalCache() {
+  cachedTotal = null;
 }
 
 async function onlineWhere(includeSynthetic = false) {

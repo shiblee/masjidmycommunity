@@ -1390,7 +1390,11 @@ function Settings() {
                   <div className="amx-settings-row" style={{ marginTop: 18 }}>
                     <div>
                       <strong>Combine Synthetic Traffic by Default</strong>
-                      <span>Starting view for the Visitors dashboard's KPIs and insights — can still be switched per-visit on that page.</span>
+                      <span>
+                        Starting view for the Visitors dashboard's KPIs and insights (switchable per-visit on that page). Also switches the{" "}
+                        <strong>public "Total Visitors" counter</strong> on the live website to include synthetic bot visits — real site
+                        visitors will see a number that includes bot-generated traffic while this is on.
+                      </span>
                     </div>
                     <Toggle on={botSettings.combinedViewDefault} onClick={toggleCombinedViewDefault} disabled={savingBot} />
                   </div>

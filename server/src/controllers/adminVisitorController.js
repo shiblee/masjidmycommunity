@@ -3,9 +3,9 @@ import { Op } from "sequelize";
 import Visitor from "../models/Visitor.js";
 import VisitorSession from "../models/VisitorSession.js";
 import VisitorPageView from "../models/VisitorPageView.js";
-import { getVisitorSummary, getOnlineCount, getOnlineSessions } from "../services/visitorStatsService.js";
+import { getVisitorSummary, getOnlineCount, getOnlineSessions, getPublicTotal, invalidatePublicTotalCache } from "../services/visitorStatsService.js";
 import { getInsights } from "../services/visitorInsightsService.js";
-import { addAdminClient } from "../services/visitorRealtimeService.js";
+import { addAdminClient, schedulePublicBroadcast } from "../services/visitorRealtimeService.js";
 import VisitorSettings from "../models/VisitorSettings.js";
 import VisitorBotSettings from "../models/VisitorBotSettings.js";
 import { generateSyntheticVisit } from "../services/syntheticVisitorService.js";
@@ -111,6 +111,17 @@ export const updateBotSettings = async (req, res) => {
     }
     await settings.save();
     await recordMetaChange({ entityType: "VisitorBotSettings", entityId: 1, entityName: "Visitor Bot Settings", action: "update", actor, fields }).catch(() => {});
+
+    // combinedViewDefault also drives the public counter's genuine-vs-
+    // combined mode (see visitorStatsService.js) — switch it over
+    // immediately, including pushing the new number to anyone already
+    // watching the public counter's live stream, rather than waiting for
+    // the cache's normal 5-minute refresh or the next visitor event.
+    if (fields.some((f) => f.field === "combinedViewDefault")) {
+      invalidatePublicTotalCache();
+      schedulePublicBroadcast(getPublicTotal);
+    }
+
     res.json(settings);
   } catch (error) {
     res.status(500).json({ message: error.message });
