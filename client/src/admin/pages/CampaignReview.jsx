@@ -573,6 +573,8 @@ function CampaignReview() {
   const cover = photos.find((p) => p.isCover) || photos[0];
   const reviewable = ["submitted", "under_review", "changes_requested"].includes(campaign.status);
   const budgetTotal = budgetItems.reduce((s, b) => s + Number(b.amount || 0), 0);
+  const pendingDonations = donations.filter((d) => d.status === "pending");
+  const confirmedDonations = donations.filter((d) => d.status !== "pending" && d.status !== "declined");
 
   const checklist = [
     { done: !!campaign.shortDescription?.trim() && !!campaign.description?.trim(), label: "Basic info (title & description) complete", tab: "basic" },
@@ -678,8 +680,32 @@ function CampaignReview() {
               {documents.length === 0 && <p>No documents uploaded.</p>}
             </Section>
 
-            <Section title="Donations Recorded">
-              {donations.map((d) => (
+            <Section title="Donations">
+              {pendingDonations.length > 0 && (
+                <>
+                  <h4 style={{ fontSize: 13, textTransform: "uppercase", letterSpacing: ".03em", color: "var(--a-warn, #C9942C)", marginBottom: 8 }}>
+                    Pending Review — not yet counted in the total
+                  </h4>
+                  {pendingDonations.map((d) => (
+                    <div key={d.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "10px 0", borderBottom: "1px solid var(--a-border)" }}>
+                      <div>
+                        <strong>{currency(d.amount)}</strong> claimed via {d.method} — {d.donorName || "Anonymous"}{d.donorEmail ? ` (${d.donorEmail})` : ""}
+                        <span className="amx-panel-sub" style={{ display: "block" }}>{formatDateTime(d.createdAt)}</span>
+                      </div>
+                      <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                        <button className="amx-btn amx-btn-sm amx-btn-accent" disabled={busy} onClick={() => act(() => adminApi.post(`/campaigns/${id}/donations/${d.id}/confirm`), "Donation confirmed and added to the total.")}>
+                          Confirm
+                        </button>
+                        <button className="amx-btn amx-btn-sm amx-btn-outline" disabled={busy} onClick={() => act(() => adminApi.post(`/campaigns/${id}/donations/${d.id}/decline`), "Claim declined.")}>
+                          Decline
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </>
+              )}
+
+              {confirmedDonations.map((d) => (
                 <div key={d.id} style={{ padding: "10px 0", borderBottom: "1px solid var(--a-border)" }}>
                   <strong>{currency(d.amount)}</strong> via {d.method} — {d.donorName || "Anonymous"}
                   <span className="amx-panel-sub" style={{ marginLeft: 8 }}>{formatDateTime(d.createdAt)}</span>

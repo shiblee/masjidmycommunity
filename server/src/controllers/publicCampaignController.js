@@ -10,6 +10,7 @@ import MasjidDonationAccount from "../models/MasjidDonationAccount.js";
 import Donation from "../models/Donation.js";
 import { getEngagementFor } from "../services/masjidEngagementService.js";
 import { amountRaised } from "./campaignController.js";
+import { notifyAdmins } from "../services/adminAlertService.js";
 
 const PUBLIC_STATUSES = ["active", "paused", "goal_reached", "completed"];
 
@@ -135,6 +136,45 @@ export const listPublicDonors = async (req, res) => {
     }));
 
     res.json({ donors, total: count, page: Number(page) || 1, pageSize: limit });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// The public Donate flow's "I've Sent It" step — records the donor's own
+// claim (not a confirmed transfer) so the masjid/admin actually finds out
+// it happened, instead of relying on the donor separately messaging them.
+// Always status:"pending" and recordedBy:null — never counted toward the
+// public raised total (amountRaised()/donorCount only sum status:"recorded")
+// until an admin reviews it via confirmDonation/declineDonation.
+export const submitDonationClaim = async (req, res) => {
+  try {
+    const campaign = await Campaign.findOne({ where: { slug: req.params.slug, status: { [Op.in]: PUBLIC_STATUSES }, moderationStatus: "active" } });
+    if (!campaign) return res.status(404).json({ message: "Campaign not found." });
+
+    const { donorName, donorEmail, amount, method } = req.body;
+    if (!(Number(amount) > 0)) return res.status(400).json({ message: "Enter a donation amount greater than zero." });
+
+    const donation = await Donation.create({
+      campaignId: campaign.id,
+      donorName: donorName?.trim() || null,
+      donorEmail: donorEmail?.trim() || null,
+      amount,
+      method: ["bank_transfer", "upi", "cash", "cheque", "other"].includes(method) ? method : "upi",
+      donationType: campaign.donationType,
+      status: "pending",
+      recordedBy: null,
+    });
+
+    await notifyAdmins({
+      type: "donation_claim",
+      title: "New donation claim to review",
+      body: `${donorName?.trim() || "A donor"} claims to have sent ₹${Number(amount).toLocaleString("en-IN")} to "${campaign.title}". Confirm once verified so it counts toward the campaign's total.`,
+      link: `/admin/campaigns/${campaign.id}`,
+      relatedMasjidId: campaign.masjidId,
+    });
+
+    res.status(201).json({ donation: { id: donation.id, status: donation.status } });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

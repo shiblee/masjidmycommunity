@@ -15,6 +15,8 @@ import {
   markCompleted,
   cancel,
   recordDonation,
+  confirmDonation,
+  declineDonation,
   uploadPhotos,
   updatePhoto,
   deletePhoto,
@@ -41,6 +43,8 @@ router.post("/:id/resume", resume);
 router.post("/:id/complete", markCompleted);
 router.post("/:id/cancel", cancel);
 router.post("/:id/donations", recordDonation);
+router.post("/:id/donations/:donationId/confirm", confirmDonation);
+router.post("/:id/donations/:donationId/decline", declineDonation);
 router.post("/:id/photos", uploadCampaignPhotos, uploadPhotos);
 router.patch("/:id/photos/:photoId", updatePhoto);
 router.delete("/:id/photos/:photoId", deletePhoto);

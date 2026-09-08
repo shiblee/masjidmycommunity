@@ -1,32 +1,89 @@
 import React, { useState } from "react";
+import axios from "axios";
+import { API_BASE } from "../../config.js";
 import { Icon } from "../Icons.jsx";
 
 const PRESET_AMOUNTS = [500, 1000, 2500, 5000, 10000];
 
 // No online payment gateway exists on this platform yet — every donation is
-// still a manual bank/UPI transfer that an admin later confirms and records
-// (see server/src/models/Donation.js). This modal doesn't submit anything;
-// the amount picker is purely for the donor's own reference while they
-// transfer, and the "I've sent it" step just closes with next-step copy —
-// it intentionally never claims to have processed a payment.
-function DonateModal({ campaign, donationAccount, onClose }) {
+// still a manual bank/UPI transfer. What this modal actually submits is the
+// donor's own CLAIM that they sent it (status:"pending", never counted
+// toward the public raised total — see server/src/models/Donation.js) so
+// the masjid/admin is notified and can review it, rather than a donor's
+// transfer going completely unnoticed until they separately message someone.
+// A real payment gateway is a planned future replacement for this whole flow.
+function DonateModal({ campaign, donationAccount, slug, onClose }) {
   const [amount, setAmount] = useState(PRESET_AMOUNTS[1]);
   const [custom, setCustom] = useState("");
-  const [sent, setSent] = useState(false);
+  const [step, setStep] = useState("amount"); // "amount" | "claim" | "done"
+  const [donorName, setDonorName] = useState("");
+  const [donorEmail, setDonorEmail] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
   const effectiveAmount = custom ? Number(custom) : amount;
 
-  if (sent) {
+  const submitClaim = async () => {
+    setSubmitting(true);
+    setError("");
+    try {
+      await axios.post(`${API_BASE}/campaigns/public/${slug}/donations`, {
+        donorName: donorName.trim() || undefined,
+        donorEmail: donorEmail.trim() || undefined,
+        amount: effectiveAmount,
+        method: donationAccount?.upiId ? "upi" : "bank_transfer",
+      });
+      setStep("done");
+    } catch (err) {
+      setError(err.response?.data?.message || "Couldn't submit this — please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (step === "done") {
     return (
       <div className="msj-modal-overlay" onClick={onClose}>
         <div className="msj-modal" onClick={(e) => e.stopPropagation()} style={{ textAlign: "center" }}>
           <div className="msj-confirm-icon" style={{ margin: "0 auto 16px" }}><Icon name="check" size={28} /></div>
           <h3>Thank you!</h3>
           <p className="msj-modal-sub">
-            The masjid has been notified to look out for your transfer. Once they confirm it, your contribution will appear on this campaign.
+            The masjid has been notified of your ₹{effectiveAmount.toLocaleString("en-IN")} transfer. Once they confirm it, your contribution will appear on this campaign's total.
           </p>
           <button className="btn btn-gold" style={{ width: "100%", justifyContent: "center" }} onClick={onClose} type="button">
             Close
           </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (step === "claim") {
+    return (
+      <div className="msj-modal-overlay" onClick={submitting ? undefined : onClose}>
+        <div className="msj-modal" onClick={(e) => e.stopPropagation()}>
+          {!submitting && <button className="msj-modal-close" onClick={onClose} aria-label="Close"><Icon name="x" size={16} /></button>}
+          <h3>Let the masjid know</h3>
+          <p className="msj-modal-sub">Once you've sent ₹{effectiveAmount.toLocaleString("en-IN")}, tell us who to look out for — this is optional, but it helps the masjid match your transfer.</p>
+
+          <div className="auth-field">
+            <label>Your Name (optional)</label>
+            <input value={donorName} onChange={(e) => setDonorName(e.target.value)} placeholder="Anonymous if left blank" maxLength={120} />
+          </div>
+          <div className="auth-field">
+            <label>Email (optional, for follow-up)</label>
+            <input type="email" value={donorEmail} onChange={(e) => setDonorEmail(e.target.value)} maxLength={180} />
+          </div>
+
+          {error && <div className="auth-alert" style={{ marginBottom: 16 }}><Icon name="info" size={17} />{error}</div>}
+
+          <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
+            <button className="btn btn-outline-ink" style={{ flex: 1, justifyContent: "center" }} onClick={() => setStep("amount")} disabled={submitting} type="button">
+              Back
+            </button>
+            <button className="btn btn-gold" style={{ flex: 1, justifyContent: "center" }} onClick={submitClaim} disabled={submitting} type="button">
+              {submitting ? "Submitting…" : "I've Sent It"}
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -75,7 +132,7 @@ function DonateModal({ campaign, donationAccount, onClose }) {
             Close
           </button>
           {donationAccount && (
-            <button className="btn btn-gold" style={{ flex: 1, justifyContent: "center" }} onClick={() => setSent(true)} type="button">
+            <button className="btn btn-gold" style={{ flex: 1, justifyContent: "center" }} disabled={!(effectiveAmount > 0)} onClick={() => setStep("claim")} type="button">
               I've Sent It
             </button>
           )}

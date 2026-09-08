@@ -58,7 +58,7 @@ function CampaignDonationPanel({ campaign, category, donationAccount, slug }) {
         text={campaign.shortDescription || ""}
       />
 
-      {donateOpen && <DonateModal campaign={campaign} donationAccount={donationAccount} onClose={() => setDonateOpen(false)} />}
+      {donateOpen && <DonateModal campaign={campaign} donationAccount={donationAccount} slug={slug} onClose={() => setDonateOpen(false)} />}
     </div>
   );
 }

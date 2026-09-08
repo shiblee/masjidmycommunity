@@ -331,6 +331,65 @@ export const recordDonation = async (req, res) => {
   }
 };
 
+// Reviews a donor's self-reported claim from the public Donate flow
+// (submitDonationClaim in publicCampaignController.js). Confirming moves it
+// to status:"recorded" — the same state a directly-admin-recorded donation
+// starts in — so it's counted by amountRaised()/donorCount from this point
+// on, exactly like recordDonation above (goal-reached check, activity feed,
+// milestone notification all mirrored here for the same reason).
+export const confirmDonation = async (req, res) => {
+  try {
+    const campaign = await Campaign.findByPk(req.params.id);
+    if (!campaign) return res.status(404).json({ message: "Campaign not found." });
+    const donation = await Donation.findOne({ where: { id: req.params.donationId, campaignId: campaign.id } });
+    if (!donation) return res.status(404).json({ message: "Donation not found." });
+    if (donation.status !== "pending") return res.status(400).json({ message: "Only a pending donation claim can be confirmed." });
+
+    const beforeRaised = await amountRaised(campaign.id);
+    const goal = campaign.goalAmount ? Number(campaign.goalAmount) : null;
+    const beforePercent = goal ? Math.min(100, (beforeRaised / goal) * 100) : 0;
+
+    donation.status = "recorded";
+    donation.recordedBy = req.user.id;
+    await donation.save();
+    await logHistory(campaign.id, "donation_confirmed", `${donation.currency} ${donation.amount} via ${donation.method} (donor-submitted claim)`, req.user.email);
+
+    const afterRaised = await amountRaised(campaign.id);
+    const afterPercent = goal ? Math.min(100, (afterRaised / goal) * 100) : 0;
+
+    if (campaign.status === "active" && goal && afterRaised >= goal) {
+      campaign.status = "goal_reached";
+      await campaign.save();
+    }
+
+    await recordDonationActivity(campaign, donation);
+    if (goal) await recordMilestoneActivity(campaign, beforePercent, afterPercent);
+
+    res.json({ donation, amountRaised: afterRaised });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const declineDonation = async (req, res) => {
+  try {
+    const campaign = await Campaign.findByPk(req.params.id);
+    if (!campaign) return res.status(404).json({ message: "Campaign not found." });
+    const donation = await Donation.findOne({ where: { id: req.params.donationId, campaignId: campaign.id } });
+    if (!donation) return res.status(404).json({ message: "Donation not found." });
+    if (donation.status !== "pending") return res.status(400).json({ message: "Only a pending donation claim can be declined." });
+
+    donation.status = "declined";
+    donation.recordedBy = req.user.id;
+    await donation.save();
+    await logHistory(campaign.id, "donation_declined", `${donation.currency} ${donation.amount} claim declined`, req.user.email);
+
+    res.json({ donation });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // Hard delete — no admin campaign-delete path existed before this (owner
 // side has no delete either, only reject/cancel, which don't remove the
 // row). Restricted to campaigns with zero recorded donations since a

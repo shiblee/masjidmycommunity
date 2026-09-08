@@ -1,10 +1,14 @@
 import { DataTypes } from "sequelize";
 import { sequelize } from "../config/db.js";
 
-// Donations are admin-recorded confirmations of transfers that happened
-// outside the platform (no payment gateway integration exists yet) — never
-// user-submitted, and Campaign.amountRaised is always derived by summing
-// these rather than stored, so it can never be edited directly by a creator.
+// Two ways a Donation row comes to exist, until a real payment gateway
+// replaces both: (1) an admin directly records a confirmed transfer
+// (recordedBy set, status "recorded" immediately), or (2) a donor
+// self-reports one from the public Donate flow (recordedBy null, status
+// "pending" — a claim, not a confirmation). Campaign.amountRaised/donorCount
+// only ever sum status:"recorded" rows (see amountRaised() in
+// campaignController.js), so a pending claim never inflates a campaign's
+// public total until an admin reviews and confirms it (or declines it).
 const Donation = sequelize.define(
   "Donation",
   {
@@ -27,12 +31,14 @@ const Donation = sequelize.define(
       defaultValue: "General Sadaqah",
     },
     status: {
-      type: DataTypes.ENUM("recorded", "refunded", "disputed"),
+      type: DataTypes.ENUM("recorded", "pending", "declined", "refunded", "disputed"),
       allowNull: false,
       defaultValue: "recorded",
     },
     notes: { type: DataTypes.TEXT, allowNull: true },
-    recordedBy: { type: DataTypes.INTEGER, allowNull: false },
+    // Null for a donor's own self-reported (pending) claim — set to the
+    // confirming/recording admin's id once it's reviewed either way.
+    recordedBy: { type: DataTypes.INTEGER, allowNull: true },
   },
   {
     tableName: "donations",
