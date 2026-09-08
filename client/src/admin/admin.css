@@ -204,8 +204,17 @@
 
 /* ---------- modal (forgot password) ---------- */
 .amx-modal-overlay{
-  position:fixed; inset:0; z-index:300; background:rgba(23,38,44,.55); backdrop-filter:blur(3px);
-  display:flex; align-items:center; justify-content:center; padding:20px; animation:amxFadeIn .2s ease;
+  /* Blur lives on a ::before behind the overlay's own content (z-index:-1)
+     rather than directly on the overlay — putting backdrop-filter on an
+     element that also contains opaque text content lets Chrome/WebKit
+     composite the blurred page behind it through that content's own text
+     glyph edges (a real, reproducible bug), ghosting page text right
+     through the modal's heading. See client/src/index.css's .msj-modal-overlay
+     for the same fix on the public-site modal. */
+  position:fixed; inset:0; z-index:300; display:flex; align-items:center; justify-content:center; padding:20px; animation:amxFadeIn .2s ease;
+}
+.amx-modal-overlay::before{
+  content:""; position:absolute; inset:0; background:rgba(23,38,44,.55); backdrop-filter:blur(3px); z-index:-1;
 }
 @keyframes amxFadeIn{ from{ opacity:0; } to{ opacity:1; } }
 .amx-modal{
