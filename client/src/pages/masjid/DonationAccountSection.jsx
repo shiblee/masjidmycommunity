@@ -137,8 +137,6 @@ function DonationAccountSection({ basePath, api }) {
 
   if (loading) return <div className="msj-summary-block"><p>Loading donation account…</p></div>;
 
-  const bankName = (id) => banks.find((b) => String(b.id) === String(id))?.name;
-
   return (
     <div className="msj-summary-block msj-donation-account-section">
       <div className="msj-summary-head">

@@ -69,7 +69,11 @@ export async function verifyIfscForBank({ ifsc, bankId }) {
   if (!lookup) {
     return { ok: false, field: "ifscCode", message: "This IFSC code wasn't found. Double-check it and try again." };
   }
-  if (!bankNameMatches(bank.name, lookup.BANK)) {
+  // "Other" is the catch-all for a bank not on the curated list — still
+  // requires a real, existing IFSC (and still auto-fills its branch), just
+  // skips the name match since there's no specific bank to match against.
+  const isCatchAll = bank.name.trim().toLowerCase() === "other";
+  if (!isCatchAll && !bankNameMatches(bank.name, lookup.BANK)) {
     return { ok: false, field: "ifscCode", message: `This IFSC belongs to ${lookup.BANK}, not ${bank.name}. Choose the matching bank or correct the code.` };
   }
 
@@ -78,7 +82,9 @@ export async function verifyIfscForBank({ ifsc, bankId }) {
     details: {
       ifscCode: trimmedIfsc,
       bankId: bank.id,
-      bankName: bank.name,
+      // For the "Other" catch-all, show the real bank name the lookup found
+      // rather than the literal word "Other" everywhere this gets displayed.
+      bankName: isCatchAll ? lookup.BANK || bank.name : bank.name,
       branchName: lookup.BRANCH || null,
       address: lookup.ADDRESS || null,
       city: lookup.CITY || null,
