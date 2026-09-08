@@ -8,6 +8,7 @@ import campaignApi from "../../services/campaignApi.js";
 import masjidApi from "../../services/masjidApi.js";
 import MediaThumb from "../../components/MediaThumb.jsx";
 import MicButton from "../../components/MicButton.jsx";
+import { amountInWordsIndian } from "../../utils/amountInWords.js";
 
 const STEPS = [
   { key: "basic", label: "Masjid & Basic Info", icon: "mosque" },
@@ -464,7 +465,12 @@ function CampaignWizard({ embedded = false }) {
               )}
 
               <h3 style={{ marginTop: 28 }}>Funding &amp; Budget</h3>
-              <Field label="Funding Goal (INR)" required error={errors.goalAmount}>
+              <Field
+                label="Funding Goal (INR)"
+                required
+                error={errors.goalAmount}
+                hint={!errors.goalAmount ? amountInWordsIndian(form.goalAmount) : undefined}
+              >
                 <input type="number" min="1" value={form.goalAmount} onChange={setField("goalAmount")} placeholder="e.g. 100000" />
               </Field>
             </>

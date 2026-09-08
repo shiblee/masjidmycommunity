@@ -7,6 +7,7 @@ import adminApi from "../services/adminApi.js";
 import MediaThumb from "../../components/MediaThumb.jsx";
 import { formatDate, formatDateTime } from "../../utils/formatDateTime.js";
 import MicButton from "../../components/MicButton.jsx";
+import { amountInWordsIndian } from "../../utils/amountInWords.js";
 
 const TABS = [
   { key: "overview", label: "Overall" },
@@ -287,7 +288,12 @@ function FundingTab({ id, campaign, categories, classifications, onSaved }) {
           <textarea rows={4} value={form.zakatEligibilityNote} onChange={setField("zakatEligibilityNote")} />
         </AField>
       )}
-      <AField label="Funding Goal (INR)" required error={errors.goalAmount}>
+      <AField
+        label="Funding Goal (INR)"
+        required
+        error={errors.goalAmount}
+        hint={!errors.goalAmount ? amountInWordsIndian(form.goalAmount) : undefined}
+      >
         <input type="number" min="1" value={form.goalAmount} onChange={setField("goalAmount")} />
       </AField>
 
