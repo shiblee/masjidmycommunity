@@ -52,7 +52,6 @@ function CampaignProfile() {
         {cover && <MediaThumb src={`${API_ORIGIN}${cover.url}`} mediaType={cover.mediaType} className="msj-profile-hero-img" videoProps={{ controls: true }} />}
         <div className="msj-profile-hero-overlay" />
         <div className="wrap msj-profile-hero-content">
-          <span className="msj-verified-badge"><Icon name="shieldCheck" size={13} /> Admin Reviewed</span>
           <h1>{campaign.title}</h1>
           {campaign.shortDescription && <p className="msj-profile-tagline">{campaign.shortDescription}</p>}
           <p className="msj-list-loc">
