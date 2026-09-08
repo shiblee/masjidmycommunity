@@ -3502,7 +3502,15 @@ footer{
 .msj-profile-hero{ position:relative; height:340px; display:flex; align-items:flex-end; overflow:hidden; }
 .msj-profile-hero-img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
 .msj-profile-hero-overlay{ position:absolute; inset:0; background:linear-gradient(180deg, rgba(11,31,30,.15), rgba(11,31,30,.88)); }
-.msj-profile-hero-content{ position:relative; z-index:1; padding-bottom:36px; }
+/* No z-index here (deliberately) — this is the last real DOM child in
+   .msj-profile-hero, so it already paints above the absolutely-positioned
+   img/overlay siblings by DOM order alone, with no z-index needed. A
+   z-index:1 here previously created its own compositing layer that
+   reproducibly made a position:fixed modal opened over this hero (e.g. the
+   Donate modal) show this section's own text bleeding through the modal's
+   text — confirmed live, not a screenshot artifact, and confirmed fixed by
+   removing just this one declaration. */
+.msj-profile-hero-content{ position:relative; padding-bottom:36px; }
 .msj-profile-hero-content h1{ font-size:clamp(28px,4vw,44px); color:var(--text-on-ink); margin-top:12px; }
 .msj-profile-tagline{ font-size:16px; color:var(--text-on-ink-dim); margin-top:8px; }
 .msj-profile-grid{ display:grid; grid-template-columns:2fr 1fr; gap:48px; align-items:start; }
@@ -3529,7 +3537,8 @@ footer{
 .msj-hub-header{ position:relative; padding-top:48px; padding-bottom:28px; overflow:hidden; }
 .msj-hub-cover{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
 .msj-hub-header-overlay{ position:absolute; inset:0; background:linear-gradient(180deg, rgba(11,31,30,.55), rgba(11,31,30,.92)); }
-.msj-hub-header-content{ position:relative; z-index:1; }
+/* No z-index — same reasoning/fix as .msj-profile-hero-content above. */
+.msj-hub-header-content{ position:relative; }
 .msj-hub-header-top{ display:flex; gap:20px; align-items:flex-end; }
 .msj-hub-logo{ width:84px; height:84px; border-radius:16px; object-fit:cover; border:3px solid rgba(255,255,255,.85); flex-shrink:0; box-shadow:0 10px 24px -10px rgba(0,0,0,.5); }
 .msj-hub-header-top h1{ font-size:clamp(24px,3.4vw,36px); color:var(--text-on-ink); margin-top:6px; }
@@ -3697,14 +3706,8 @@ footer{
 }
 
 .msj-modal-overlay{
-  /* No backdrop-filter here (deliberately) — it reliably ghosted the
-     blurred page content through this overlay's own opaque children (the
-     modal's heading text specifically), on real Chrome, not just a
-     screenshot artifact. Tried isolation:isolate on .msj-modal and moving
-     the blur to a ::before layer behind the content — neither fixed it, so
-     the blur effect itself is dropped rather than keep fighting the
-     browser's compositing bug for a purely decorative touch. */
-  position:fixed; inset:0; background:rgba(11,31,30,.6); display:flex; align-items:center; justify-content:center; padding:20px; z-index:1000;
+  position:fixed; inset:0; background:rgba(11,31,30,.6); backdrop-filter:blur(3px); display:flex; align-items:center; justify-content:center;
+  padding:20px; z-index:1000;
 }
 .msj-modal{
   position:relative; background:#fff; border-radius:16px; padding:32px; width:100%; max-width:420px;

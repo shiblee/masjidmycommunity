@@ -204,11 +204,8 @@
 
 /* ---------- modal (forgot password) ---------- */
 .amx-modal-overlay{
-  /* No backdrop-filter (deliberately) — it reliably ghosted the blurred
-     page behind this overlay through its own opaque children's text on
-     real Chrome. See client/src/index.css's .msj-modal-overlay for the
-     same fix and the two other approaches that didn't work first. */
-  position:fixed; inset:0; z-index:300; background:rgba(23,38,44,.55); display:flex; align-items:center; justify-content:center; padding:20px; animation:amxFadeIn .2s ease;
+  position:fixed; inset:0; z-index:300; background:rgba(23,38,44,.55); backdrop-filter:blur(3px);
+  display:flex; align-items:center; justify-content:center; padding:20px; animation:amxFadeIn .2s ease;
 }
 @keyframes amxFadeIn{ from{ opacity:0; } to{ opacity:1; } }
 .amx-modal{
