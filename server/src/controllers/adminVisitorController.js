@@ -1,9 +1,33 @@
+import jwt from "jsonwebtoken";
 import { Op } from "sequelize";
 import Visitor from "../models/Visitor.js";
 import VisitorSession from "../models/VisitorSession.js";
 import VisitorPageView from "../models/VisitorPageView.js";
-import { getVisitorSummary } from "../services/visitorStatsService.js";
+import { getVisitorSummary, getOnlineCount, getOnlineSessions } from "../services/visitorStatsService.js";
 import { getInsights } from "../services/visitorInsightsService.js";
+import { addAdminClient } from "../services/visitorRealtimeService.js";
+
+// EventSource can't send an Authorization header, so the live "Online Now"
+// stream can't go through the normal Bearer-token admin middleware — an
+// already-authenticated admin exchanges their real token for one of these
+// short-lived (60s), single-purpose tickets first (a normal Bearer-checked
+// POST), then connects the stream with it as a query param instead. Not
+// tracked as single-use server-side (no store for that) — the 60s window
+// and admin-only issuance keep the exposure small without that complexity.
+export const issueStreamTicket = (req, res) => {
+  const ticket = jwt.sign({ adminId: req.user.id, purpose: "visitor-stream" }, process.env.JWT_SECRET, { expiresIn: "60s" });
+  res.json({ ticket });
+};
+
+export const streamOnline = async (req, res) => {
+  try {
+    const payload = jwt.verify(req.query.ticket || "", process.env.JWT_SECRET);
+    if (payload.purpose !== "visitor-stream") throw new Error("wrong purpose");
+  } catch {
+    return res.status(401).json({ message: "Invalid or expired stream ticket." });
+  }
+  addAdminClient(req, res, async () => ({ onlineCount: await getOnlineCount(), sessions: await getOnlineSessions() }));
+};
 
 function parseRange(req) {
   const to = req.query.to ? new Date(req.query.to) : new Date();
@@ -16,6 +40,15 @@ export const getSummary = async (req, res) => {
     const { from, to } = parseRange(req);
     const summary = await getVisitorSummary({ from, to });
     res.json(summary);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Polling fallback for "Online Now" if the SSE stream can't connect.
+export const getOnline = async (req, res) => {
+  try {
+    res.json({ onlineCount: await getOnlineCount(), sessions: await getOnlineSessions() });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

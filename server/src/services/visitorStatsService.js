@@ -34,11 +34,37 @@ export function bumpPublicTotal() {
   if (cachedTotal != null) cachedTotal += 1;
 }
 
-export async function getOnlineCount() {
+async function onlineWhere() {
   const settings = await VisitorSettings.findByPk(1);
   const windowSeconds = settings?.onlineWindowSeconds ?? 120;
   const since = new Date(Date.now() - windowSeconds * 1000);
-  return VisitorSession.count({ where: { lastActivityAt: { [Op.gte]: since }, status: { [Op.ne]: "ended" } } });
+  return { lastActivityAt: { [Op.gte]: since }, status: { [Op.ne]: "ended" } };
+}
+
+export async function getOnlineCount() {
+  return VisitorSession.count({ where: await onlineWhere() });
+}
+
+/** Powers the admin "Online Now" live widget — one row per currently-active
+ * session, most recent first. Deliberately excludes ipAddress. */
+export async function getOnlineSessions(limit = 50) {
+  const rows = await VisitorSession.findAll({
+    where: await onlineWhere(),
+    order: [["lastActivityAt", "DESC"]],
+    limit,
+    attributes: ["sessionKey", "visitorId", "visitorType", "deviceType", "browser", "country", "exitPath", "startedAt", "lastActivityAt"],
+  });
+  const now = Date.now();
+  return rows.map((r) => ({
+    sessionKey: r.sessionKey,
+    visitorId: r.visitorId,
+    visitorType: r.visitorType,
+    deviceType: r.deviceType,
+    browser: r.browser,
+    country: r.country,
+    currentPath: r.exitPath,
+    durationSeconds: Math.round((now - new Date(r.startedAt).getTime()) / 1000),
+  }));
 }
 
 export async function getVisitorSummary({ from, to }) {

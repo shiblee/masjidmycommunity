@@ -65,3 +65,46 @@ export function schedulePublicBroadcast(getCurrentTotal) {
 export function publicClientCount() {
   return PUBLIC_CLIENTS.size;
 }
+
+// ===== Admin "Online Now" stream =====
+// One shared tick computes the online-visitors snapshot ONCE and fans it
+// out to every connected admin — a dashboard left open by several admins
+// at once still costs exactly one query per tick, not one per viewer.
+const ADMIN_CLIENTS = new Set();
+const ADMIN_TICK_MS = 5000;
+let adminTickTimer = null;
+let lastAdminPayload = null;
+
+async function adminTick(getSnapshot) {
+  if (ADMIN_CLIENTS.size === 0) {
+    clearInterval(adminTickTimer);
+    adminTickTimer = null;
+    return;
+  }
+  const snapshot = await getSnapshot();
+  const serialized = JSON.stringify(snapshot);
+  if (serialized === lastAdminPayload) return;
+  lastAdminPayload = serialized;
+  for (const res of ADMIN_CLIENTS) writeEvent(res, snapshot);
+}
+
+export function addAdminClient(req, res, getSnapshot) {
+  res.writeHead(200, {
+    "Content-Type": "text/event-stream",
+    "Cache-Control": "no-cache, no-transform",
+    Connection: "keep-alive",
+    "X-Accel-Buffering": "no",
+  });
+  res.write("retry: 5000\n\n");
+
+  getSnapshot().then((snapshot) => writeEvent(res, snapshot));
+
+  const keepalive = setInterval(() => res.write(": keepalive\n\n"), KEEPALIVE_MS);
+  ADMIN_CLIENTS.add(res);
+  if (!adminTickTimer) adminTickTimer = setInterval(() => adminTick(getSnapshot), ADMIN_TICK_MS);
+
+  req.on("close", () => {
+    clearInterval(keepalive);
+    ADMIN_CLIENTS.delete(res);
+  });
+}

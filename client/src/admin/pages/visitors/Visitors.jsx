@@ -7,6 +7,7 @@ import SortHeader from "../../components/SortHeader.jsx";
 import adminApi from "../../services/adminApi.js";
 import { formatDateTime } from "../../../utils/formatDateTime.js";
 import VisitorInsights from "./components/VisitorInsights.jsx";
+import OnlineNowWidget from "./components/OnlineNowWidget.jsx";
 
 const PAGE_SIZE = 50;
 
@@ -135,7 +136,8 @@ function Visitors() {
           <h1>Visitors</h1>
           <p>Real-time site traffic and visitor analytics for the public website</p>
         </div>
-        <div className="amx-page-actions">
+        <div className="amx-page-actions" style={{ alignItems: "center", gap: 10 }}>
+          <OnlineNowWidget />
           <button className="amx-btn amx-btn-outline" onClick={exportCsv} disabled={exporting}>
             <Icon name="download" size={16} />
             {exporting ? "Exporting…" : "Export CSV"}
