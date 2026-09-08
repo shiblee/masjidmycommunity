@@ -45,8 +45,20 @@ const LANDMARK_TYPES = ["historical_landmark", "historical_place", "tourist_attr
 // invented claim about this one. Richer than a single bare fact sentence
 // on purpose, since a one-liner reads as too thin for a real directory
 // listing.
+// Google's formattedAddress for well-known landmarks often repeats the
+// place's own name as its first line (e.g. "Badshahi Mosque, Badshahi
+// Mosque, Fort Rd, ..."), which would otherwise duplicate awkwardly right
+// after "<name> is a mosque located at <address>".
+function stripLeadingNameFromAddress(name, formattedAddress) {
+  if (!formattedAddress || !name) return formattedAddress;
+  const prefix = `${name}, `;
+  return formattedAddress.toLowerCase().startsWith(prefix.toLowerCase())
+    ? formattedAddress.slice(prefix.length)
+    : formattedAddress;
+}
+
 function buildFallbackMasjidCopy({ name, formattedAddress, city, state, country, placeTypes }) {
-  const location = formattedAddress || [city, state, country].filter(Boolean).join(", ");
+  const location = stripLeadingNameFromAddress(name, formattedAddress) || [city, state, country].filter(Boolean).join(", ");
   const isLandmark = (placeTypes || []).some((t) => LANDMARK_TYPES.includes(t));
 
   const tagline = `Mosque in ${[city, country].filter(Boolean).join(", ") || "the local area"}`.slice(0, 80);
@@ -91,8 +103,9 @@ async function importPlace(place, { autoPublish }) {
   const slug = await generateUniqueSlug(Masjid, name, { fallback: "masjid" });
 
   const placeTypes = details.types || [];
+  const cleanedAddress = stripLeadingNameFromAddress(name, details.formattedAddress);
   const descriptionResult = await generateMasjidDescription({
-    name, address: details.formattedAddress, city: address.city, state: address.state, country: address.country, category: null, placeTypes,
+    name, address: cleanedAddress, city: address.city, state: address.state, country: address.country, category: null, placeTypes,
   }).catch(() => null);
   const fallbackCopy = buildFallbackMasjidCopy({ name, formattedAddress: details.formattedAddress, city: address.city, state: address.state, country: address.country, placeTypes });
   const tagline = descriptionResult?.tagline || fallbackCopy.tagline;
