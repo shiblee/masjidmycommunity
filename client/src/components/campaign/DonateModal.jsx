@@ -18,8 +18,8 @@ function DonateModal({ campaign, donationAccount, slug, user, onClose }) {
   const [amount, setAmount] = useState(PRESET_AMOUNTS[1]);
   const [custom, setCustom] = useState("");
   const [step, setStep] = useState("amount"); // "amount" | "claim" | "done"
-  const [donorName, setDonorName] = useState(user?.fullName || "");
   const [donorEmail, setDonorEmail] = useState(user?.email || "");
+  const [isAnonymous, setIsAnonymous] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const effectiveAmount = custom ? Number(custom) : amount;
@@ -29,10 +29,10 @@ function DonateModal({ campaign, donationAccount, slug, user, onClose }) {
     setError("");
     try {
       await campaignApi.post(`/public/${slug}/donations`, {
-        donorName: donorName.trim() || undefined,
         donorEmail: donorEmail.trim() || undefined,
         amount: effectiveAmount,
         method: donationAccount?.upiId ? "upi" : "bank_transfer",
+        isAnonymous,
       });
       setStep("done");
     } catch (err) {
@@ -81,12 +81,17 @@ function DonateModal({ campaign, donationAccount, slug, user, onClose }) {
         <div className="msj-modal" onClick={(e) => e.stopPropagation()}>
           {!submitting && <button className="msj-modal-close" onClick={onClose} aria-label="Close"><Icon name="x" size={16} /></button>}
           <h3>Let the masjid know</h3>
-          <p className="msj-modal-sub">Once you've sent ₹{effectiveAmount.toLocaleString("en-IN")}, confirm who to look out for — or clear the name below to stay anonymous publicly (your account still stands behind the claim).</p>
+          <p className="msj-modal-sub">Once you've sent ₹{effectiveAmount.toLocaleString("en-IN")}, confirm the claim below.</p>
 
-          <div className="auth-field">
-            <label>Your Name (optional)</label>
-            <input value={donorName} onChange={(e) => setDonorName(e.target.value)} placeholder="Anonymous if left blank" maxLength={120} />
+          <div className="camp-donate-account" style={{ marginBottom: 16 }}>
+            <div><span>Donating as</span><strong>{isAnonymous ? "Anonymous" : (user?.fullName || "You")}</strong></div>
           </div>
+
+          <label className="msj-ack-row" style={{ marginTop: 0, marginBottom: 16 }}>
+            <input type="checkbox" checked={isAnonymous} onChange={(e) => setIsAnonymous(e.target.checked)} />
+            Donate Anonymously — don't show my name publicly on this campaign's donor list or activity feed. Your account is still kept on file for payment, compliance and audit purposes.
+          </label>
+
           <div className="auth-field">
             <label>Email (optional, for follow-up)</label>
             <input type="email" value={donorEmail} onChange={(e) => setDonorEmail(e.target.value)} maxLength={180} />

@@ -8,6 +8,7 @@ import CampaignUpdate from "../models/CampaignUpdate.js";
 import Masjid from "../models/Masjid.js";
 import MasjidDonationAccount from "../models/MasjidDonationAccount.js";
 import Donation from "../models/Donation.js";
+import User from "../models/User.js";
 import { getEngagementFor } from "../services/masjidEngagementService.js";
 import { amountRaised } from "./campaignController.js";
 import { notifyAdmins } from "../services/adminAlertService.js";
@@ -110,10 +111,11 @@ export const getPublicOne = async (req, res) => {
 };
 
 // Public donor list for the campaign hub's "Recent Donors"/"View All Donors"
-// panels — deliberately never returns donorEmail (no consent/privacy field
-// exists on Donation today, so contact info stays server-side only; name,
-// amount, type and date are the same facts already shown one-by-one on the
-// admin side, just aggregated for public display).
+// panels — deliberately never returns donorEmail, and masks donorName to
+// "Anonymous" whenever isAnonymous is set, regardless of what real name is
+// actually stored (donorName/donorEmail/userId stay on the row underneath
+// for payment/compliance/accounting/audit — see the Donation model comment
+// — this endpoint is the only thing that ever hides them).
 export const listPublicDonors = async (req, res) => {
   try {
     const campaign = await Campaign.findOne({ where: { slug: req.params.slug, status: { [Op.in]: PUBLIC_STATUSES }, moderationStatus: "active" } });
@@ -121,7 +123,17 @@ export const listPublicDonors = async (req, res) => {
 
     const { q, page = 1, pageSize = 10 } = req.query;
     const where = { campaignId: campaign.id, status: "recorded" };
-    if (q) where.donorName = { [Op.like]: `%${q}%` };
+    if (q) {
+      // Never let a search match an anonymous donor by their real name —
+      // that would leak "this person donated" even though the UI shows
+      // "Anonymous". Anonymous rows only surface if the query itself looks
+      // like it's searching for "anonymous".
+      const matchesAnonymous = "anonymous".includes(q.trim().toLowerCase());
+      where[Op.or] = [
+        { isAnonymous: false, donorName: { [Op.like]: `%${q}%` } },
+        ...(matchesAnonymous ? [{ isAnonymous: true }] : []),
+      ];
+    }
 
     const limit = Math.min(Number(pageSize) || 10, 50);
     const offset = (Math.max(Number(page) || 1, 1) - 1) * limit;
@@ -129,7 +141,7 @@ export const listPublicDonors = async (req, res) => {
     const { rows, count } = await Donation.findAndCountAll({ where, order: [["createdAt", "DESC"]], limit, offset });
     const donors = rows.map((d) => ({
       id: d.id,
-      donorName: d.donorName || "Anonymous",
+      donorName: d.isAnonymous ? "Anonymous" : (d.donorName || "Anonymous"),
       amount: Number(d.amount),
       donationType: d.donationType,
       createdAt: d.createdAt,
@@ -155,25 +167,33 @@ export const submitDonationClaim = async (req, res) => {
     const campaign = await Campaign.findOne({ where: { slug: req.params.slug, status: { [Op.in]: PUBLIC_STATUSES }, moderationStatus: "active" } });
     if (!campaign) return res.status(404).json({ message: "Campaign not found." });
 
-    const { donorName, donorEmail, amount, method } = req.body;
+    const { donorEmail, amount, method, isAnonymous } = req.body;
     if (!(Number(amount) > 0)) return res.status(400).json({ message: "Enter a donation amount greater than zero." });
+
+    // donorName always comes from the authenticated account, never
+    // client-supplied text — now that sign-in is required, this is the one
+    // real identity behind every claim. isAnonymous only ever controls
+    // whether *public* displays substitute "Anonymous" for it; the real
+    // name/account stay on the row for compliance/accounting/audit.
+    const account = await User.findByPk(req.user.id, { attributes: ["id", "fullName", "email"] });
 
     const donation = await Donation.create({
       campaignId: campaign.id,
       userId: req.user.id,
-      donorName: donorName?.trim() || null,
-      donorEmail: donorEmail?.trim() || null,
+      donorName: account?.fullName || null,
+      donorEmail: donorEmail?.trim() || account?.email || null,
       amount,
       method: ["bank_transfer", "upi", "cash", "cheque", "other"].includes(method) ? method : "upi",
       donationType: campaign.donationType,
       status: "pending",
       recordedBy: null,
+      isAnonymous: !!isAnonymous,
     });
 
     await notifyAdmins({
       type: "donation_claim",
       title: "New donation claim to review",
-      body: `${donorName?.trim() || "A donor"} claims to have sent ₹${Number(amount).toLocaleString("en-IN")} to "${campaign.title}". Confirm once verified so it counts toward the campaign's total.`,
+      body: `${account?.fullName || "A donor"} claims to have sent ₹${Number(amount).toLocaleString("en-IN")} to "${campaign.title}"${isAnonymous ? " (requested anonymously)" : ""}. Confirm once verified so it counts toward the campaign's total.`,
       link: `/admin/campaigns/${campaign.id}`,
       relatedMasjidId: campaign.masjidId,
     });

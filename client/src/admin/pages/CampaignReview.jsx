@@ -67,7 +67,7 @@ function ReasonModal({ title, placeholder, extraFields, onCancel, onSubmit }) {
 }
 
 function DonationModal({ onCancel, onSubmit }) {
-  const [form, setForm] = useState({ donorName: "", donorEmail: "", amount: "", method: "upi", notes: "" });
+  const [form, setForm] = useState({ donorName: "", donorEmail: "", amount: "", method: "upi", notes: "", isAnonymous: false });
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
   return (
     <div className="amx-modal-overlay" onClick={onCancel}>
@@ -83,6 +83,10 @@ function DonationModal({ onCancel, onSubmit }) {
           <label>Donor Email (optional)</label>
           <input value={form.donorEmail} onChange={set("donorEmail")} />
         </div>
+        <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5, marginBottom: 14, cursor: "pointer" }}>
+          <input type="checkbox" checked={form.isAnonymous} onChange={(e) => setForm((f) => ({ ...f, isAnonymous: e.target.checked }))} />
+          Keep this donor anonymous on public displays
+        </label>
         <div className="amx-form-group">
           <label>Amount (INR)</label>
           <input type="number" min="1" value={form.amount} onChange={set("amount")} />
@@ -690,6 +694,7 @@ function CampaignReview() {
                     <div key={d.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "10px 0", borderBottom: "1px solid var(--a-border)" }}>
                       <div>
                         <strong>{currency(d.amount)}</strong> claimed via {d.method} — {d.donorName || "Anonymous"}{d.donorEmail ? ` (${d.donorEmail})` : ""}
+                        {d.isAnonymous && <span className="amx-badge amx-badge-neutral" style={{ marginLeft: 8 }} title="Real name shown here for admin review only — public displays will show Anonymous">Anonymous to public</span>}
                         <span className="amx-panel-sub" style={{ display: "block" }}>{formatDateTime(d.createdAt)}</span>
                       </div>
                       <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
@@ -708,6 +713,7 @@ function CampaignReview() {
               {confirmedDonations.map((d) => (
                 <div key={d.id} style={{ padding: "10px 0", borderBottom: "1px solid var(--a-border)" }}>
                   <strong>{currency(d.amount)}</strong> via {d.method} — {d.donorName || "Anonymous"}
+                  {d.isAnonymous && <span className="amx-badge amx-badge-neutral" style={{ marginLeft: 8 }} title="Real name shown here for admin review only — public displays show Anonymous">Anonymous to public</span>}
                   <span className="amx-panel-sub" style={{ marginLeft: 8 }}>{formatDateTime(d.createdAt)}</span>
                 </div>
               ))}

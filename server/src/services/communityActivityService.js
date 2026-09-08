@@ -73,7 +73,7 @@ export async function recordCampaignApprovedActivity(campaign, masjid, coverPhot
 }
 
 export async function recordDonationActivity(campaign, donation) {
-  const donorLabel = donation.donorName?.trim() || "An anonymous donor";
+  const donorLabel = donation.isAnonymous ? "An anonymous donor" : donation.donorName?.trim() || "An anonymous donor";
   return recordActivity({
     type: "donation",
     title: `${donorLabel} supported ${campaign.title}.`,

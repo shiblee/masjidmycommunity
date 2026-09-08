@@ -44,6 +44,12 @@ const Donation = sequelize.define(
     // accountable account — never null for a donor-submitted row). Null for
     // an admin-recorded donation, which has no donor account involved.
     userId: { type: DataTypes.INTEGER, allowNull: true },
+    // The donor's own preference, set once at donation time and never
+    // inferred from a blank name. donorName/donorEmail always hold the real
+    // identity regardless of this flag — payment/compliance/accounting/audit
+    // needs the real record; this only controls whether *public* displays
+    // (donor list, campaign page) show that name or "Anonymous" in its place.
+    isAnonymous: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
   },
   {
     tableName: "donations",

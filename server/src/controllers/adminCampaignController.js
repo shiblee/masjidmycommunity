@@ -294,7 +294,7 @@ export const recordDonation = async (req, res) => {
       return res.status(400).json({ message: "Donations can only be recorded for a live campaign." });
     }
 
-    const { donorName, donorEmail, amount, currency, method, donationType, notes } = req.body;
+    const { donorName, donorEmail, amount, currency, method, donationType, notes, isAnonymous } = req.body;
     if (!(Number(amount) > 0)) return res.status(400).json({ message: "Enter a donation amount greater than zero." });
 
     const beforeRaised = await amountRaised(campaign.id);
@@ -303,6 +303,7 @@ export const recordDonation = async (req, res) => {
 
     const donation = await Donation.create({
       campaignId: campaign.id,
+      isAnonymous: !!isAnonymous,
       donorName: donorName?.trim() || null,
       donorEmail: donorEmail?.trim() || null,
       amount,
