@@ -1431,6 +1431,7 @@ footer{
    selector for specificity, since .py-md is declared later in this file. */
 .py-md.msj-explore-content{ padding-top:32px; }
 .py-md.msj-hub-content{ padding-top:28px; }
+.py-md.camp-hub-content{ padding-top:28px; }
 
 .cw-layout{ display:grid; grid-template-columns:280px 1fr 320px; gap:44px; align-items:start; }
 .cw-main{ min-width:0; }

@@ -66,7 +66,7 @@ function CampaignProfile() {
         </div>
       </section>
 
-      <section className="py-md">
+      <section className="py-md camp-hub-content">
         <div className="wrap camp-hub-grid">
           <RunningCampaignsRail currentSlug={slug} />
 
