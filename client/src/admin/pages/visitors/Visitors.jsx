@@ -10,6 +10,7 @@ import VisitorInsights from "./components/VisitorInsights.jsx";
 import OnlineNowWidget from "./components/OnlineNowWidget.jsx";
 import BotStatusWidget from "./components/BotStatusWidget.jsx";
 import VisitorSettingsModal from "./components/VisitorSettingsModal.jsx";
+import Toggle from "../../components/Toggle.jsx";
 
 const PAGE_SIZE = 50;
 
@@ -161,6 +162,18 @@ function Visitors() {
         <div className="amx-page-actions" style={{ alignItems: "center", gap: 10 }}>
           <OnlineNowWidget />
           <BotStatusWidget />
+          <span className="amx-btn amx-btn-outline amx-btn-sm" style={{ display: "flex", alignItems: "center", gap: 8, cursor: "default" }}>
+            <span style={{ fontSize: 12.5, fontWeight: 600 }}>Include Synthetic</span>
+            <Toggle
+              size="sm"
+              on={includeSynthetic}
+              onClick={() => {
+                const next = !includeSynthetic;
+                setIncludeSynthetic(next);
+                setTrafficType(next ? "all" : "genuine");
+              }}
+            />
+          </span>
           <button className="amx-btn amx-btn-outline" onClick={exportCsv} disabled={exporting}>
             <Icon name="download" size={16} />
             {exporting ? "Exporting…" : "Export CSV"}
@@ -172,21 +185,6 @@ function Visitors() {
       </div>
 
       {showSettings && <VisitorSettingsModal onClose={() => setShowSettings(false)} onSaved={() => {}} />}
-
-      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 10 }}>
-        <label className="amx-cell-sub" style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
-          <input
-            type="checkbox"
-            checked={includeSynthetic}
-            onChange={(e) => {
-              const checked = e.target.checked;
-              setIncludeSynthetic(checked);
-              setTrafficType(checked ? "all" : "genuine");
-            }}
-          />
-          Include synthetic bot traffic in the KPIs and list below
-        </label>
-      </div>
 
       {summary && (
         <div className="amx-kpi-grid" style={{ gridTemplateColumns: "repeat(4,1fr)" }}>

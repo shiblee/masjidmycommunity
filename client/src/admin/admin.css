@@ -649,6 +649,9 @@ table.amx-table{ width:100%; border-collapse:collapse; font-size:13.5px; }
 .amx-toggle::after{ content:""; position:absolute; top:3px; left:3px; width:18px; height:18px; border-radius:50%; background:#fff; transition:transform .2s var(--a-ease); box-shadow:0 1px 3px rgba(0,0,0,.2); }
 .amx-toggle.on{ background:var(--a-green); }
 .amx-toggle.on::after{ transform:translateX(18px); }
+.amx-toggle-sm{ width:30px; height:18px; }
+.amx-toggle-sm::after{ width:12px; height:12px; }
+.amx-toggle-sm.on::after{ transform:translateX(12px); }
 
 .amx-completion-cell{ display:flex; align-items:center; gap:8px; min-width:90px; }
 .amx-completion-bar{ width:56px; height:6px; border-radius:100px; background:var(--a-border-strong); overflow:hidden; flex-shrink:0; }

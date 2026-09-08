@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { NavLink, Navigate, useParams } from "react-router-dom";
 import Icon from "../components/Icons.jsx";
+import Toggle from "../components/Toggle.jsx";
 import adminApi from "../services/adminApi.js";
 import { updateStoredUser } from "../authStorage.js";
 import MicButton from "../../components/MicButton.jsx";
@@ -29,10 +30,6 @@ function initialsOf(name) {
   if (!name) return "AD";
   const parts = name.trim().split(/\s+/);
   return ((parts[0]?.[0] || "") + (parts[parts.length - 1]?.[0] || "")).toUpperCase();
-}
-
-function Toggle({ on, onClick, disabled }) {
-  return <button type="button" className={`amx-toggle${on ? " on" : ""}`} onClick={onClick} disabled={disabled} aria-pressed={on} />;
 }
 
 function Settings() {
