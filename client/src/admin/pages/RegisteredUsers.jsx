@@ -40,6 +40,7 @@ function RegisteredUsers() {
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("all");
+  const [userType, setUserType] = useState("all");
   const [page, setPage] = useState(1);
   const [sortKey, setSortKey] = useState("createdAt");
   const [sortDir, setSortDir] = useState("desc");
@@ -77,9 +78,10 @@ function RegisteredUsers() {
         (u.email || "").toLowerCase().includes(q) ||
         (u.mobile || "").toLowerCase().includes(q);
       const matchesStatus = status === "all" || u.status === status;
-      return matchesQuery && matchesStatus;
+      const matchesUserType = userType === "all" || (u.userType || "real") === userType;
+      return matchesQuery && matchesStatus && matchesUserType;
     });
-  }, [users, query, status]);
+  }, [users, query, status, userType]);
 
   const sorted = useMemo(() => {
     const getValue = SORT_COLUMNS[sortKey].get;
@@ -92,7 +94,7 @@ function RegisteredUsers() {
     });
   }, [filtered, sortKey, sortDir]);
 
-  useEffect(() => setPage(1), [query, status, sortKey, sortDir]);
+  useEffect(() => setPage(1), [query, status, userType, sortKey, sortDir]);
 
   const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
   const paged = sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -181,6 +183,11 @@ function RegisteredUsers() {
             <option value="pending_verification">Pending Verification</option>
             <option value="suspended">Suspended</option>
           </select>
+          <select className="amx-select" value={userType} onChange={(e) => setUserType(e.target.value)}>
+            <option value="all">Real &amp; Bot Users</option>
+            <option value="real">Real Users</option>
+            <option value="bot">Bot Users</option>
+          </select>
         </div>
 
         {error && (
@@ -237,7 +244,10 @@ function RegisteredUsers() {
                           />
                         </span>
                         <div>
-                          <div>{u.fullName}</div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            {u.fullName}
+                            {u.userType === "bot" && <StatusBadge status="warn" label="BOT" />}
+                          </div>
                           <div className="amx-cell-sub">@{u.username} · #{u.id}</div>
                         </div>
                       </div>

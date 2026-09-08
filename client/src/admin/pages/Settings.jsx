@@ -20,6 +20,7 @@ const SECTIONS = [
   { key: "authentication", label: "Authentication", icon: "lock" },
   { key: "maps", label: "Google Maps", icon: "globe" },
   { key: "visitorBot", label: "Visitor Bot", icon: "activity" },
+  { key: "userBot", label: "User Bot", icon: "users" },
 ];
 
 const BOT_DEVICE_KEYS = ["desktop", "mobile", "tablet"];
@@ -92,6 +93,15 @@ function Settings() {
   const [testRunning, setTestRunning] = useState(false);
   const [resettingBotData, setResettingBotData] = useState(false);
   const [resetResult, setResetResult] = useState(null);
+
+  const [userBotSettings, setUserBotSettings] = useState(null);
+  const [userBotInput, setUserBotInput] = useState(null);
+  const [savingUserBot, setSavingUserBot] = useState(false);
+  const [userBotError, setUserBotError] = useState("");
+  const [userTestRunResult, setUserTestRunResult] = useState(null);
+  const [userTestRunning, setUserTestRunning] = useState(false);
+  const [resettingUserBotData, setResettingUserBotData] = useState(false);
+  const [userResetResult, setUserResetResult] = useState(null);
 
   const showToast = (message) => {
     setToast(message);
@@ -189,6 +199,23 @@ function Settings() {
     pagesPerSessionMax: String(data.pagesPerSessionMax),
     allowedPathsText: Array.isArray(data.allowedPaths) ? data.allowedPaths.join("\n") : "",
   });
+
+  const userBotInputFrom = (data) => ({
+    ...data,
+    usersPerHour: String(data.usersPerHour),
+    maxBotUsersPerDay: data.maxBotUsersPerDay == null ? "" : String(data.maxBotUsersPerDay),
+    maxTotalBotUsers: data.maxTotalBotUsers == null ? "" : String(data.maxTotalBotUsers),
+  });
+
+  useEffect(() => {
+    adminApi
+      .get("/user-bot/settings")
+      .then(({ data }) => {
+        setUserBotSettings(data);
+        setUserBotInput(userBotInputFrom(data));
+      })
+      .catch(() => setUserBotError("Couldn't load the user bot's settings."));
+  }, []);
 
   useEffect(() => {
     adminApi
@@ -568,6 +595,69 @@ function Settings() {
       showToast("Couldn't clear synthetic data. Please try again.");
     } finally {
       setResettingBotData(false);
+    }
+  };
+
+  const saveUserBotSettings = async (patch) => {
+    setSavingUserBot(true);
+    setUserBotError("");
+    try {
+      const { data } = await adminApi.patch("/user-bot/settings", patch);
+      setUserBotSettings(data);
+      setUserBotInput(userBotInputFrom(data));
+      showToast("User bot settings saved.");
+    } catch (err) {
+      setUserBotError(err.response?.data?.message || "Couldn't save the user bot's settings.");
+    } finally {
+      setSavingUserBot(false);
+    }
+  };
+
+  const toggleUserBotEnabled = () => saveUserBotSettings({ enabled: !userBotSettings.enabled });
+
+  const submitUserBotForm = (e) => {
+    e.preventDefault();
+    const n = Number(userBotInput.usersPerHour);
+    if (!Number.isInteger(n) || n < 1) {
+      setUserBotError("Users per hour must be a whole number of at least 1.");
+      return;
+    }
+    const parsed = { usersPerHour: n };
+    parsed.indiaPercent = Math.min(100, Math.max(0, Number(userBotInput.indiaPercent) || 0));
+    parsed.muslimPersonaPercent = Math.min(100, Math.max(0, Number(userBotInput.muslimPersonaPercent) || 0));
+    parsed.activeHourStart = userBotInput.activeHourStart === "" || userBotInput.activeHourStart == null ? null : Number(userBotInput.activeHourStart);
+    parsed.activeHourEnd = userBotInput.activeHourEnd === "" || userBotInput.activeHourEnd == null ? null : Number(userBotInput.activeHourEnd);
+    parsed.maxBotUsersPerDay = userBotInput.maxBotUsersPerDay === "" ? null : Number(userBotInput.maxBotUsersPerDay);
+    parsed.maxTotalBotUsers = userBotInput.maxTotalBotUsers === "" ? null : Number(userBotInput.maxTotalBotUsers);
+    saveUserBotSettings(parsed);
+  };
+
+  const runUserBotTestRun = async () => {
+    setUserTestRunning(true);
+    setUserTestRunResult(null);
+    setUserBotError("");
+    try {
+      const { data } = await adminApi.post("/user-bot/test-run");
+      setUserTestRunResult(data);
+    } catch (err) {
+      setUserBotError(err.response?.data?.message || "Couldn't generate a test user — check the configuration above.");
+    } finally {
+      setUserTestRunning(false);
+    }
+  };
+
+  const clearUserBotData = async () => {
+    if (!window.confirm("Permanently delete every bot user account and profile? Real user accounts are never touched.")) return;
+    setResettingUserBotData(true);
+    setUserResetResult(null);
+    try {
+      const { data } = await adminApi.delete("/user-bot/data");
+      setUserResetResult(data);
+      showToast("Bot user data cleared.");
+    } catch {
+      showToast("Couldn't clear bot user data. Please try again.");
+    } finally {
+      setResettingUserBotData(false);
     }
   };
 
@@ -1418,6 +1508,155 @@ function Settings() {
                   {resetResult && (
                     <div className="amx-panel-sub" style={{ marginTop: 12 }}>
                       Cleared {resetResult.deletedVisitors} synthetic visitor{resetResult.deletedVisitors === 1 ? "" : "s"} and {resetResult.deletedSessions} session{resetResult.deletedSessions === 1 ? "" : "s"}.
+                    </div>
+                  )}
+                </>
+              )}
+            </>
+          )}
+
+          {section === "userBot" && (
+            <>
+              <div className="amx-panel-head">
+                <div>
+                  <h3>User Bot Settings</h3>
+                  <div className="amx-panel-sub">
+                    Generates fully-populated, 100%-complete synthetic User accounts for demo/testing — real education, work
+                    experience, skills, and hobbies, drawn from the same lists real members choose from. Every bot account is
+                    permanently flagged at the database level and never counted as a real user in engagement analytics. Bot
+                    accounts stay active and publicly visible like any other profile, but the synthetic flag itself is
+                    admin-only — never shown on the public profile page.
+                  </div>
+                </div>
+              </div>
+
+              {!userBotSettings ? (
+                <p className="amx-panel-sub">Loading…</p>
+              ) : (
+                <>
+                  <div className="amx-settings-row" style={{ marginBottom: 18 }}>
+                    <div>
+                      <strong>Enable User Bot</strong>
+                      <span>Starts generating synthetic user accounts on the hourly schedule below. Switching this off stops new bot accounts within a minute.</span>
+                    </div>
+                    <Toggle on={userBotSettings.enabled} onClick={toggleUserBotEnabled} disabled={savingUserBot} />
+                  </div>
+
+                  <form onSubmit={submitUserBotForm} className="amx-form-grid" noValidate>
+                    <div className="amx-form-group">
+                      <label htmlFor="userbot-per-hour">Bot Users per Hour</label>
+                      <input
+                        id="userbot-per-hour"
+                        type="number"
+                        min={1}
+                        step={1}
+                        value={userBotInput.usersPerHour}
+                        onChange={(e) => setUserBotInput((s) => ({ ...s, usersPerHour: e.target.value }))}
+                      />
+                      <div className="amx-field-hint">Spread randomly across each hour, not generated all at once.</div>
+                    </div>
+                    <div className="amx-form-group">
+                      <label htmlFor="userbot-india-percent">India %</label>
+                      <input
+                        id="userbot-india-percent"
+                        type="number"
+                        min={0}
+                        max={100}
+                        step={1}
+                        value={userBotInput.indiaPercent}
+                        onChange={(e) => setUserBotInput((s) => ({ ...s, indiaPercent: e.target.value }))}
+                      />
+                      <div className="amx-field-hint">International: <strong>{100 - (Number(userBotInput.indiaPercent) || 0)}%</strong></div>
+                    </div>
+                    <div className="amx-form-group">
+                      <label htmlFor="userbot-muslim-percent">Muslim Persona %</label>
+                      <input
+                        id="userbot-muslim-percent"
+                        type="number"
+                        min={0}
+                        max={100}
+                        step={1}
+                        value={userBotInput.muslimPersonaPercent}
+                        onChange={(e) => setUserBotInput((s) => ({ ...s, muslimPersonaPercent: e.target.value }))}
+                      />
+                      <div className="amx-field-hint">Which name pool the generator draws from — never stored as a claim about the account's actual religion.</div>
+                    </div>
+                    <div className="amx-form-group">
+                      <label htmlFor="userbot-active-start">Active Hours (UTC)</label>
+                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                        <select
+                          id="userbot-active-start"
+                          value={userBotInput.activeHourStart ?? ""}
+                          onChange={(e) => setUserBotInput((s) => ({ ...s, activeHourStart: e.target.value }))}
+                        >
+                          <option value="">All day</option>
+                          {HOUR_OPTIONS.map((h) => <option key={h} value={h}>{String(h).padStart(2, "0")}:00</option>)}
+                        </select>
+                        <span>to</span>
+                        <select
+                          value={userBotInput.activeHourEnd ?? ""}
+                          onChange={(e) => setUserBotInput((s) => ({ ...s, activeHourEnd: e.target.value }))}
+                        >
+                          <option value="">All day</option>
+                          {HOUR_OPTIONS.map((h) => <option key={h} value={h}>{String(h).padStart(2, "0")}:00</option>)}
+                        </select>
+                      </div>
+                    </div>
+                    <div className="amx-form-group">
+                      <label htmlFor="userbot-max-per-day">Max Bot Users per Day</label>
+                      <input
+                        id="userbot-max-per-day"
+                        type="number"
+                        min={0}
+                        placeholder="No limit"
+                        value={userBotInput.maxBotUsersPerDay}
+                        onChange={(e) => setUserBotInput((s) => ({ ...s, maxBotUsersPerDay: e.target.value }))}
+                      />
+                      <div className="amx-field-hint">Leave blank for no daily cap.</div>
+                    </div>
+                    <div className="amx-form-group">
+                      <label htmlFor="userbot-max-total">Max Total Bot Users</label>
+                      <input
+                        id="userbot-max-total"
+                        type="number"
+                        min={0}
+                        placeholder="No limit"
+                        value={userBotInput.maxTotalBotUsers}
+                        onChange={(e) => setUserBotInput((s) => ({ ...s, maxTotalBotUsers: e.target.value }))}
+                      />
+                      <div className="amx-field-hint">Generation stops for good once this many bot accounts exist, regardless of the hourly/daily quota.</div>
+                    </div>
+
+                    {userBotError && (
+                      <div className="amx-field-error" style={{ gridColumn: "1 / -1" }}>
+                        <Icon name="info" size={14} />
+                        {userBotError}
+                      </div>
+                    )}
+                    <button type="submit" className="amx-btn amx-btn-primary" disabled={savingUserBot} style={{ alignSelf: "end" }}>
+                      {savingUserBot ? "Saving…" : "Save User Bot Settings"}
+                    </button>
+                  </form>
+
+                  <div style={{ display: "flex", gap: 10, marginTop: 20, paddingTop: 20, borderTop: "1px solid var(--a-border)", flexWrap: "wrap" }}>
+                    <button type="button" className="amx-btn amx-btn-outline" onClick={runUserBotTestRun} disabled={userTestRunning}>
+                      {userTestRunning ? "Generating…" : "Generate Test User"}
+                    </button>
+                    <button type="button" className="amx-btn amx-btn-outline" onClick={clearUserBotData} disabled={resettingUserBotData}>
+                      {resettingUserBotData ? "Clearing…" : "Clear Bot User Data"}
+                    </button>
+                  </div>
+
+                  {userTestRunResult && (
+                    <div className="amx-panel-sub" style={{ marginTop: 12 }}>
+                      Generated one bot user: <strong>{userTestRunResult.fullName}</strong> (@{userTestRunResult.username}) —{" "}
+                      {userTestRunResult.city}, {userTestRunResult.country}, age {userTestRunResult.age}, profile{" "}
+                      {userTestRunResult.profileCompletion}% complete. Visible in Users → Synthetic Users.
+                    </div>
+                  )}
+                  {userResetResult && (
+                    <div className="amx-panel-sub" style={{ marginTop: 12 }}>
+                      Cleared {userResetResult.deletedUsers} bot user account{userResetResult.deletedUsers === 1 ? "" : "s"}.
                     </div>
                   )}
                 </>

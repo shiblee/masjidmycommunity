@@ -30,6 +30,7 @@ const NAV_ITEMS = [
     children: [
       { to: "/admin/registered-users", label: "Users", icon: "globe" },
       { to: "/admin/visitors", label: "Visitors", icon: "eye" },
+      { to: "/admin/synthetic-users", label: "Synthetic Users", icon: "users" },
     ],
   },
   { to: "/admin/masjids", label: "Masjids", icon: "mosque" },

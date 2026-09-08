@@ -20,6 +20,7 @@ import RegisteredUsers from "./pages/RegisteredUsers.jsx";
 import RegisteredUserDetail from "./pages/RegisteredUserDetail.jsx";
 import UserActivityHistory from "./pages/UserActivityHistory.jsx";
 import Visitors from "./pages/visitors/Visitors.jsx";
+import SyntheticUsers from "./pages/SyntheticUsers.jsx";
 import VisitorSessionDetail from "./pages/visitors/VisitorSessionDetail.jsx";
 import Notifications from "./pages/Notifications.jsx";
 import EmailTemplateEditor from "./pages/EmailTemplateEditor.jsx";
@@ -68,6 +69,7 @@ function AdminApp() {
         <Route path="registered-users/:id" element={<RegisteredUserDetail />} />
         <Route path="registered-users/:id/activity" element={<UserActivityHistory />} />
         <Route path="visitors" element={<Visitors />} />
+        <Route path="synthetic-users" element={<SyntheticUsers />} />
         <Route path="visitors/:sessionKey" element={<VisitorSessionDetail />} />
         <Route path="registered-users/:id/:tab" element={<RegisteredUserDetail />} />
         <Route path="notifications" element={<Notifications />} />
