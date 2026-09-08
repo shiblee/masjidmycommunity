@@ -3697,18 +3697,14 @@ footer{
 }
 
 .msj-modal-overlay{
-  /* The blur lives on a ::before behind everything else in this element
-     (z-index:-1), never directly on the overlay itself — putting
-     backdrop-filter on the overlay itself let Chrome/WebKit composite the
-     blurred page content through .msj-modal's own text glyph edges (a real,
-     reproducible bug with backdrop-filter + an overflow:auto descendant),
-     ghosting whatever page text sat behind the modal right through its
-     heading. Isolating the blur to a dedicated layer behind the content
-     fixes it outright instead of fighting the browser's compositing. */
-  position:fixed; inset:0; display:flex; align-items:center; justify-content:center; padding:20px; z-index:1000;
-}
-.msj-modal-overlay::before{
-  content:""; position:absolute; inset:0; background:rgba(11,31,30,.6); backdrop-filter:blur(3px); z-index:-1;
+  /* No backdrop-filter here (deliberately) — it reliably ghosted the
+     blurred page content through this overlay's own opaque children (the
+     modal's heading text specifically), on real Chrome, not just a
+     screenshot artifact. Tried isolation:isolate on .msj-modal and moving
+     the blur to a ::before layer behind the content — neither fixed it, so
+     the blur effect itself is dropped rather than keep fighting the
+     browser's compositing bug for a purely decorative touch. */
+  position:fixed; inset:0; background:rgba(11,31,30,.6); display:flex; align-items:center; justify-content:center; padding:20px; z-index:1000;
 }
 .msj-modal{
   position:relative; background:#fff; border-radius:16px; padding:32px; width:100%; max-width:420px;
