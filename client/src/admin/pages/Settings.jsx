@@ -1735,8 +1735,8 @@ function Settings() {
                     Discovers and imports <strong>real, existing mosques</strong> via the Google Places API — never
                     invented names, addresses, or photos. Imports land in Masjids → Under Review for a human Approve
                     before going publicly live (unless Auto-Publish is on), are always attributed to "Masjid My
-                    Community — Automated Import" rather than a real person, and never receive Green Tick
-                    certification automatically — that still requires the real verification process.
+                    Community" rather than a real person, and never receive Green Tick certification automatically —
+                    that still requires the real verification process.
                   </div>
                 </div>
               </div>

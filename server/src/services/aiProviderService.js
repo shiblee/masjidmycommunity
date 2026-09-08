@@ -393,10 +393,14 @@ async function callGeminiSeoMeta({ name, category, city, country, tagline, about
 function buildFallbackSeoMeta({ name, category, city, country, tagline, about }) {
   const location = [city, country].filter(Boolean).join(", ");
   const metaTitle = clampAt([name, location].filter(Boolean).join(" – "), SEO_TITLE_MAX) || name;
-  const summary =
+  const rawSummary =
     tagline ||
     about ||
     [name, category ? `a ${category.toLowerCase()}` : null, location ? `in ${location}` : null].filter(Boolean).join(", ");
+  // Strip any trailing sentence punctuation before appending the fixed
+  // suffix below, so a summary that already ends in "." (as about/tagline
+  // text usually does) never produces a double period.
+  const summary = rawSummary.trim().replace(/[.!?]+$/, "");
   const metaDescription = clampAt(
     `${summary}. Find prayer times, photos, and community updates on Masjid My Community.`,
     SEO_DESCRIPTION_MAX

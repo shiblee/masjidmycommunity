@@ -147,7 +147,7 @@ async function importPlace(place, { autoPublish }) {
         masjidId: masjid.id,
         action: autoPublish ? "bot_imported_and_published" : "bot_imported",
         actorType: "bot",
-        actorName: "Masjid My Community — Automated Import",
+        actorName: "Masjid My Community",
         note: `Discovered via Google Places (Place ID ${details.id}). Data completeness ${completeness}%.`,
       },
       { transaction: t }

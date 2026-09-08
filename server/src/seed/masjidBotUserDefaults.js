@@ -3,10 +3,12 @@ import bcrypt from "bcryptjs";
 import User from "../models/User.js";
 
 // The owner-of-record for masjids the Masjid Bot imports (see
-// masjidDiscoveryService.js) — deliberately a *separate* account from
-// PLATFORM_EMAIL (platformUserDefaults.js, used for masjids an admin adds
-// by hand) so bot-imported provenance is visually distinguishable even
-// before checking Masjid.creationMethod. Never meant to log in.
+// masjidDiscoveryService.js) — a *separate account* from PLATFORM_EMAIL
+// (platformUserDefaults.js, used for masjids an admin adds by hand), even
+// though both now display as "Masjid My Community": the actual
+// distinguisher is Masjid.creationMethod ("admin" vs "bot_import") plus
+// the "Bot Imported" badge in the admin UI, not the owner name text.
+// Never meant to log in.
 const MASJID_BOT_EMAIL = "masjid-bot@masjidmycommunity.org";
 
 export async function ensureMasjidBotUserDefaults() {
@@ -17,7 +19,7 @@ export async function ensureMasjidBotUserDefaults() {
   const hashed = await bcrypt.hash(randomPassword, 10);
 
   return User.create({
-    fullName: "Masjid My Community — Automated Import",
+    fullName: "Masjid My Community",
     username: "masjidmycommunitybot",
     email: MASJID_BOT_EMAIL,
     password: hashed,
