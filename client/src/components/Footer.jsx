@@ -3,6 +3,7 @@ import { Link, NavLink } from "react-router-dom";
 import { useTranslation } from "../i18n/LanguageContext.jsx";
 import { getStoredUser } from "../utils/userAuthStorage.js";
 import { getPublicVisitorCount, subscribeToVisitorCount } from "../utils/visitorTracking.js";
+import communityApi from "../services/communityApi.js";
 
 // Native script alone reads fine once you know the language, but a visitor
 // who can't yet read Urdu/Arabic/Hindi script has no way to tell the options
@@ -252,11 +253,19 @@ function AppBadge({ store }) {
 function Footer() {
   const { t } = useTranslation();
   const [user, setUser] = useState(() => getStoredUser());
+  const [communityStats, setCommunityStats] = useState(null);
 
   useEffect(() => {
     const onSessionUpdated = (e) => setUser(e.detail);
     window.addEventListener("mmc-user-session-updated", onSessionUpdated);
     return () => window.removeEventListener("mmc-user-session-updated", onSessionUpdated);
+  }, []);
+
+  // Real counts (server/src/controllers/publicCommunityController.js's
+  // getCommunityStats — the same endpoint the Community wall's own stats
+  // strip already uses) in place of what used to be hardcoded numbers.
+  useEffect(() => {
+    communityApi.get("/stats").then(({ data }) => setCommunityStats(data)).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -286,11 +295,11 @@ function Footer() {
               <span>{t("footer.stats.totalVisitors", "Total Visitors")}</span>
             </div>
             <div>
-              <FootStat n={1250} suffix="+" />
+              {communityStats ? <FootStat n={communityStats.masjidCount} suffix="+" /> : <span className="mono">—</span>}
               <span>{t("footer.stats.masjidsRegistered", "Masjids Registered")}</span>
             </div>
             <div>
-              <FootStat n={2500000} prefix="₹" suffix="+" />
+              {communityStats ? <FootStat n={communityStats.totalRaised} prefix="₹" suffix="+" /> : <span className="mono">—</span>}
               <span>{t("footer.stats.fundsRaised", "Funds Raised")}</span>
             </div>
             <div>
