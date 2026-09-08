@@ -24,7 +24,14 @@ function initialsOf(name) {
 
 const NAV_ITEMS = [
   { to: "/admin/dashboard", label: "Dashboard", icon: "dashboard" },
-  { to: "/admin/registered-users", label: "Users", icon: "globe" },
+  {
+    label: "Users",
+    icon: "globe",
+    children: [
+      { to: "/admin/registered-users", label: "Users", icon: "globe" },
+      { to: "/admin/visitors", label: "Visitors", icon: "eye" },
+    ],
+  },
   { to: "/admin/masjids", label: "Masjids", icon: "mosque" },
   { to: "/admin/campaigns", label: "Campaigns", icon: "campaign" },
   {

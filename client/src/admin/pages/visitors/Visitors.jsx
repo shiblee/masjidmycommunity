@@ -8,6 +8,7 @@ import adminApi from "../../services/adminApi.js";
 import { formatDateTime } from "../../../utils/formatDateTime.js";
 import VisitorInsights from "./components/VisitorInsights.jsx";
 import OnlineNowWidget from "./components/OnlineNowWidget.jsx";
+import VisitorSettingsModal from "./components/VisitorSettingsModal.jsx";
 
 const PAGE_SIZE = 50;
 
@@ -51,6 +52,7 @@ function Visitors() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
   const [query, setQuery] = useState("");
   const [from, setFrom] = useState(daysAgoIso(30));
@@ -142,8 +144,13 @@ function Visitors() {
             <Icon name="download" size={16} />
             {exporting ? "Exporting…" : "Export CSV"}
           </button>
+          <button className="amx-btn amx-btn-outline amx-icon-action" title="Counting rules" onClick={() => setShowSettings(true)}>
+            <Icon name="settings" size={16} />
+          </button>
         </div>
       </div>
+
+      {showSettings && <VisitorSettingsModal onClose={() => setShowSettings(false)} onSaved={() => {}} />}
 
       {summary && (
         <div className="amx-kpi-grid" style={{ gridTemplateColumns: "repeat(4,1fr)" }}>

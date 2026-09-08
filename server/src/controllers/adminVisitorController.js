@@ -6,6 +6,7 @@ import VisitorPageView from "../models/VisitorPageView.js";
 import { getVisitorSummary, getOnlineCount, getOnlineSessions } from "../services/visitorStatsService.js";
 import { getInsights } from "../services/visitorInsightsService.js";
 import { addAdminClient } from "../services/visitorRealtimeService.js";
+import VisitorSettings from "../models/VisitorSettings.js";
 
 // EventSource can't send an Authorization header, so the live "Online Now"
 // stream can't go through the normal Bearer-token admin middleware — an
@@ -40,6 +41,33 @@ export const getSummary = async (req, res) => {
     const { from, to } = parseRange(req);
     const summary = await getVisitorSummary({ from, to });
     res.json(summary);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const SETTINGS_FIELDS = [
+  "sessionTimeoutMinutes", "onlineWindowSeconds", "heartbeatSeconds", "returningWindowDays",
+  "countBots", "countAdmins", "ipRetentionDays", "publicCounterMode", "trackingEnabled",
+];
+
+export const getSettings = async (req, res) => {
+  try {
+    const settings = await VisitorSettings.findByPk(1);
+    res.json(settings);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const updateSettings = async (req, res) => {
+  try {
+    const settings = await VisitorSettings.findByPk(1);
+    for (const field of SETTINGS_FIELDS) {
+      if (req.body[field] !== undefined) settings[field] = req.body[field];
+    }
+    await settings.save();
+    res.json(settings);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
