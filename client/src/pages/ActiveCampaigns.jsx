@@ -95,9 +95,8 @@ function ActiveCampaigns() {
   const canLoadMore = filter !== "__saved__" && campaigns.length < total;
 
   return (
-    <main className="au-page">
-      <section className="au-hero on-ink">
-        <div className="hero-glow" aria-hidden="true" />
+    <main className="msj-page">
+      <section className="cw-hero msj-explore-hero on-ink">
         <div className="wrap">
           <span className="eyebrow">Active Campaigns</span>
           <h1>Every project raising funds right now.</h1>
@@ -105,9 +104,9 @@ function ActiveCampaigns() {
         </div>
       </section>
 
-      <section className="py">
+      <section className="py-md msj-explore-content">
         <div className="wrap">
-          <div className="campaign-filters">
+          <div className="campaign-filters" style={{ margin: "0 0 16px" }}>
             <button className={`filter-chip${filter === "All" ? " active" : ""}`} onClick={() => changeFilter("All")}>All</button>
             {categories.map((cat) => (
               <button key={cat.id} className={`filter-chip${filter === String(cat.id) ? " active" : ""}`} onClick={() => changeFilter(String(cat.id))}>
@@ -119,10 +118,12 @@ function ActiveCampaigns() {
             </button>
           </div>
 
-          <div className="msj-search" style={{ maxWidth: 420, margin: "18px 0" }}>
-            <Icon name="search" size={16} />
-            <input type="text" placeholder="Search campaigns…" value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} />
-            <MicButton onTranscript={(text) => { setQ(text); setPage(1); }} />
+          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 20 }}>
+            <div className="msj-search" style={{ flex: "0 1 360px" }}>
+              <Icon name="search" size={16} />
+              <input type="text" placeholder="Search campaigns…" value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} />
+              <MicButton onTranscript={(text) => { setQ(text); setPage(1); }} />
+            </div>
           </div>
 
           <div className="filter-count">
