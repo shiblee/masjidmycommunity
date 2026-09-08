@@ -6,6 +6,7 @@ import Pagination from "../../components/Pagination.jsx";
 import SortHeader from "../../components/SortHeader.jsx";
 import adminApi from "../../services/adminApi.js";
 import { formatDateTime } from "../../../utils/formatDateTime.js";
+import VisitorInsights from "./components/VisitorInsights.jsx";
 
 const PAGE_SIZE = 50;
 
@@ -44,6 +45,7 @@ function Kpi({ icon, color, value, label }) {
 function Visitors() {
   const navigate = useNavigate();
   const [summary, setSummary] = useState(null);
+  const [insights, setInsights] = useState([]);
   const [rows, setRows] = useState([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -79,10 +81,9 @@ function Visitors() {
   });
 
   const loadSummary = () => {
-    adminApi
-      .get("/visitors/summary", { params: { from: `${from}T00:00:00.000Z`, to: `${to}T23:59:59.999Z` } })
-      .then(({ data }) => setSummary(data))
-      .catch(() => {});
+    const params = { from: `${from}T00:00:00.000Z`, to: `${to}T23:59:59.999Z` };
+    adminApi.get("/visitors/summary", { params }).then(({ data }) => setSummary(data)).catch(() => {});
+    adminApi.get("/visitors/insights", { params }).then(({ data }) => setInsights(data.insights)).catch(() => setInsights([]));
   };
 
   const loadSessions = () => {
@@ -153,6 +154,8 @@ function Visitors() {
           <Kpi icon="target" color="#2C7A9C" value={formatDuration(summary.avgSessionDurationSeconds)} label="Avg Session Duration" />
         </div>
       )}
+
+      <VisitorInsights insights={insights} />
 
       <div className="amx-card amx-panel">
         <div className="amx-filters" style={{ flexWrap: "wrap" }}>

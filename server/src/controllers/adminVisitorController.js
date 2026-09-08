@@ -3,6 +3,7 @@ import Visitor from "../models/Visitor.js";
 import VisitorSession from "../models/VisitorSession.js";
 import VisitorPageView from "../models/VisitorPageView.js";
 import { getVisitorSummary } from "../services/visitorStatsService.js";
+import { getInsights } from "../services/visitorInsightsService.js";
 
 function parseRange(req) {
   const to = req.query.to ? new Date(req.query.to) : new Date();
@@ -15,6 +16,16 @@ export const getSummary = async (req, res) => {
     const { from, to } = parseRange(req);
     const summary = await getVisitorSummary({ from, to });
     res.json(summary);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const getVisitorInsights = async (req, res) => {
+  try {
+    const { from, to } = parseRange(req);
+    const insights = await getInsights({ from, to });
+    res.json({ insights });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
