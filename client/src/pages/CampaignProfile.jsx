@@ -10,6 +10,7 @@ import GreenTickBadge from "../components/masjid/GreenTickBadge.jsx";
 import RunningCampaignsRail from "../components/campaign/RunningCampaignsRail.jsx";
 import CampaignDonationPanel from "../components/campaign/CampaignDonationPanel.jsx";
 import CampaignDonorsList from "../components/campaign/CampaignDonorsList.jsx";
+import CampaignPostSection from "../components/campaign/CampaignPostSection.jsx";
 
 const API = `${API_BASE}/campaigns/public`;
 
@@ -84,6 +85,8 @@ function CampaignProfile() {
                 ))}
               </div>
             )}
+
+            <CampaignPostSection campaignId={campaign.id} />
 
             {campaign.donationType === "Zakat" && <span className="camp-zakat-badge" style={{ marginTop: 32 }}><Icon name="check" size={12} /> Zakat Eligible</span>}
 

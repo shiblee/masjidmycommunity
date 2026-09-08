@@ -4049,6 +4049,8 @@ footer{
 
 .camp-donate-cta{ width:100%; justify-content:center; margin-top:18px; }
 
+.camp-post-section{ margin:24px 0; }
+
 .camp-donate-amounts{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:6px; }
 .camp-donate-amount{
   padding:10px 6px; border:1px solid var(--line); border-radius:10px; background:#fff; font-family:var(--sans); font-weight:700;

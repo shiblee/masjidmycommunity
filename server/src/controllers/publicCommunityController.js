@@ -187,6 +187,14 @@ export const listPublished = async (req, res) => {
       where.relatedMasjidId = req.query.masjidId;
     }
 
+    // The Campaign Detail Page's embedded post — same query shape as
+    // masjidId above, filtered to one campaign's activities (the
+    // "campaign_approved" post the client picks out, plus its donation/
+    // milestone activity if a caller wants those too).
+    if (req.query.campaignId) {
+      where.relatedCampaignId = req.query.campaignId;
+    }
+
     // Hashtag filtering is a plain substring prefilter here (cheap, no extra
     // table) — the exact word-boundary match happens once more in JS below
     // so "#Community" doesn't also match "#CommunityXYZ".
