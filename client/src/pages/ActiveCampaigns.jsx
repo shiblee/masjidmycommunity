@@ -107,7 +107,7 @@ function ActiveCampaigns() {
 
       <section className="py">
         <div className="wrap">
-          <div className="campaign-filters reveal">
+          <div className="campaign-filters">
             <button className={`filter-chip${filter === "All" ? " active" : ""}`} onClick={() => changeFilter("All")}>All</button>
             {categories.map((cat) => (
               <button key={cat.id} className={`filter-chip${filter === String(cat.id) ? " active" : ""}`} onClick={() => changeFilter(String(cat.id))}>
