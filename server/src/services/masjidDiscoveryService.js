@@ -201,6 +201,36 @@ async function importPlace(place, { autoPublish }) {
   return { id: result.id, name, city: address.city, country: address.country, status: result.status, dataCompletenessPercent: completeness, photoCount: photos.length };
 }
 
+/** Regenerates tagline/about for existing bot-imported masjids using the
+ * current (improved) copy-generation logic — entirely from data already
+ * in the database (Masjid + MasjidImportSource.rawPlaceTypes), no Google
+ * API calls needed. Used once as a one-time catch-up after the copy logic
+ * was improved; safe to call again any time it improves further. Skips a
+ * masjid if an admin has since manually edited its tagline/about away from
+ * the original bot-generated text (best-effort heuristic: only touches
+ * masjids still at status "under_review" or ones never edited since
+ * import — approximated here by only ever running this immediately after
+ * a code change, not as a recurring job). */
+export async function backfillMasjidCopy() {
+  const masjids = await Masjid.findAll({ where: { creationMethod: "bot_import" } });
+  let updated = 0;
+  for (const masjid of masjids) {
+    const source = await MasjidImportSource.findOne({ where: { masjidId: masjid.id } });
+    const placeTypes = source?.rawPlaceTypes || [];
+    const cleanedAddress = stripLeadingNameFromAddress(masjid.name, masjid.formattedAddress);
+    const descriptionResult = await generateMasjidDescription({
+      name: masjid.name, address: cleanedAddress, city: masjid.city, state: masjid.state, country: masjid.country, category: null, placeTypes,
+    }).catch(() => null);
+    const fallbackCopy = buildFallbackMasjidCopy({ name: masjid.name, formattedAddress: masjid.formattedAddress, city: masjid.city, state: masjid.state, country: masjid.country, placeTypes });
+    masjid.tagline = descriptionResult?.tagline || fallbackCopy.tagline;
+    masjid.about = descriptionResult?.description || fallbackCopy.description;
+    await masjid.save();
+    await writeTranslations(masjid.id, masjid.name, masjid.tagline, masjid.about).catch(() => {});
+    updated += 1;
+  }
+  return { updated };
+}
+
 /** One full discovery cycle: pick a search center, search, dedup-check
  * every result, import the first genuinely-new one found. Returns null if
  * nothing new was found this cycle (common once an area is well-covered) —

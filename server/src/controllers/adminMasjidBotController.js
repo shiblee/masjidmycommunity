@@ -2,7 +2,7 @@ import MasjidBotSettings from "../models/MasjidBotSettings.js";
 import { recordMetaChange, metaActorFrom } from "../utils/metaChangeLog.js";
 import { checkForDuplicate } from "../services/masjidDuplicateDetectionService.js";
 import { searchMosques } from "../services/googlePlacesService.js";
-import { runDiscoveryCycle } from "../services/masjidDiscoveryService.js";
+import { runDiscoveryCycle, backfillMasjidCopy } from "../services/masjidDiscoveryService.js";
 import { getMasjidBotSchedulerState } from "../services/masjidBotSchedulerService.js";
 import { Op } from "sequelize";
 import Masjid from "../models/Masjid.js";
@@ -81,6 +81,18 @@ export const testImport = async (req, res) => {
     const imported = await runDiscoveryCycle(settings);
     if (!imported) return res.json({ imported: false, message: "No genuinely new mosque found in this attempt — try again, or a wider area may already be covered." });
     res.json({ imported: true, ...imported });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// One-time catch-up after the copy-generation logic was improved —
+// regenerates tagline/about for every already-imported bot masjid from
+// data already on file, no new Google API calls.
+export const backfillCopy = async (req, res) => {
+  try {
+    const result = await backfillMasjidCopy();
+    res.json(result);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
