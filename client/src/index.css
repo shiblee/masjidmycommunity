@@ -3983,6 +3983,59 @@ footer{
 .camp-side-card strong{ font-size:14px; color:var(--text-on-paper); }
 .camp-zakat-badge{ display:inline-flex; align-items:center; gap:5px; font-size:11.5px; font-weight:700; color:var(--teal-deep); background:rgba(141,198,63,.14); padding:4px 10px; border-radius:100px; margin-bottom:10px; }
 
+/* Campaign hub — three-column layout (Running Campaigns | details+wall | donate+donors) */
+.camp-hub-grid{ display:grid; grid-template-columns:250px 1.55fr 340px; gap:32px; align-items:start; }
+@media (max-width:1180px){
+  .camp-hub-grid{ grid-template-columns:1fr; }
+  .camp-rail{ order:1; }
+}
+
+.camp-rail{ position:sticky; top:100px; }
+.camp-rail-head{ margin-bottom:14px; }
+.camp-rail-search{ margin-bottom:16px; padding:7px 14px; }
+.camp-rail-search input{ font-size:13px; }
+.camp-rail-list{ display:flex; flex-direction:column; gap:12px; max-height:calc(100vh - 260px); overflow-y:auto; }
+@media (max-width:1180px){ .camp-rail-list{ max-height:none; flex-direction:row; overflow-x:auto; overflow-y:visible; padding-bottom:6px; } }
+.camp-rail-card{
+  display:flex; gap:10px; text-align:left; background:#fff; border:1px solid var(--line); border-radius:12px; padding:8px; cursor:pointer;
+  transition:border-color .2s, box-shadow .2s; font-family:var(--sans); flex-shrink:0;
+}
+.camp-rail-card:hover{ border-color:var(--teal-deep); box-shadow:0 10px 24px -16px rgba(11,31,30,.25); }
+@media (max-width:1180px){ .camp-rail-card{ width:220px; } }
+.camp-rail-card-img{ width:64px; height:64px; border-radius:8px; overflow:hidden; flex-shrink:0; background:var(--paper-dim); }
+.camp-rail-card-body{ min-width:0; flex:1; }
+.camp-rail-card-loc{ font-size:11px; color:var(--text-on-paper-dim); text-transform:uppercase; letter-spacing:.02em; }
+.camp-rail-card-title{ font-size:13.5px; font-weight:700; color:var(--text-on-paper); line-height:1.3; margin:2px 0 6px; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+.camp-rail-progress{ height:4px; }
+.camp-rail-card-meta{ display:flex; justify-content:space-between; font-size:11px; color:var(--text-on-paper-dim); margin-top:5px; }
+
+.camp-donate-panel h3{ font-size:18px; }
+.camp-donate-stats{ display:flex; gap:18px; margin-top:14px; flex-wrap:wrap; }
+.camp-donate-stats strong{ display:block; font-size:16px; color:var(--text-on-paper); }
+.camp-donate-stats span{ display:block; font-size:11px; color:var(--text-on-paper-dim); text-transform:uppercase; letter-spacing:.02em; margin-top:2px; }
+
+.camp-donate-amounts{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:6px; }
+.camp-donate-amount{
+  padding:10px 6px; border:1px solid var(--line); border-radius:10px; background:#fff; font-family:var(--sans); font-weight:700;
+  font-size:13.5px; color:var(--text-on-paper); cursor:pointer; transition:border-color .2s, background .2s;
+}
+.camp-donate-amount:hover{ border-color:var(--teal-deep); }
+.camp-donate-amount.active{ border-color:var(--teal-deep); background:rgba(141,198,63,.1); color:var(--teal-deep); }
+
+.camp-donors-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+.camp-donors-head h4{ font-size:15px; color:var(--text-on-paper); }
+.camp-donor-list{ display:flex; flex-direction:column; gap:10px; }
+.camp-donor-list-modal{ max-height:420px; overflow-y:auto; padding-right:4px; }
+.camp-donor-row{ display:flex; align-items:center; gap:10px; }
+.camp-donor-avatar{
+  width:34px; height:34px; border-radius:100px; background:var(--paper-dim); color:var(--teal-deep); font-weight:700; font-size:13px;
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+.camp-donor-info{ flex:1; min-width:0; display:flex; flex-direction:column; }
+.camp-donor-info strong{ font-size:13.5px; color:var(--text-on-paper); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.camp-donor-info span{ font-size:11.5px; color:var(--text-on-paper-dim); }
+.camp-donor-amount{ font-size:13.5px; font-weight:700; color:var(--text-on-paper); flex-shrink:0; }
+
 .acct-avatar-photo{ object-fit:cover; }
 
 /* My Profile (Account > Profile) */

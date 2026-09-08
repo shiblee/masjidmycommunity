@@ -106,6 +106,38 @@ export const getPublicOne = async (req, res) => {
   }
 };
 
+// Public donor list for the campaign hub's "Recent Donors"/"View All Donors"
+// panels — deliberately never returns donorEmail (no consent/privacy field
+// exists on Donation today, so contact info stays server-side only; name,
+// amount, type and date are the same facts already shown one-by-one on the
+// admin side, just aggregated for public display).
+export const listPublicDonors = async (req, res) => {
+  try {
+    const campaign = await Campaign.findOne({ where: { slug: req.params.slug, status: { [Op.in]: PUBLIC_STATUSES }, moderationStatus: "active" } });
+    if (!campaign) return res.status(404).json({ message: "Campaign not found." });
+
+    const { q, page = 1, pageSize = 10 } = req.query;
+    const where = { campaignId: campaign.id, status: "recorded" };
+    if (q) where.donorName = { [Op.like]: `%${q}%` };
+
+    const limit = Math.min(Number(pageSize) || 10, 50);
+    const offset = (Math.max(Number(page) || 1, 1) - 1) * limit;
+
+    const { rows, count } = await Donation.findAndCountAll({ where, order: [["createdAt", "DESC"]], limit, offset });
+    const donors = rows.map((d) => ({
+      id: d.id,
+      donorName: d.donorName || "Anonymous",
+      amount: Number(d.amount),
+      donationType: d.donationType,
+      createdAt: d.createdAt,
+    }));
+
+    res.json({ donors, total: count, page: Number(page) || 1, pageSize: limit });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 export const listByMasjid = async (req, res) => {
   try {
     const campaigns = await Campaign.findAll({

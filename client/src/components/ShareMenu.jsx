@@ -36,6 +36,13 @@ const PLATFORMS = [
     path: "M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 11-.001-4.124 2.062 2.062 0 010 4.124zM7.114 20.452H3.558V9h3.556v11.452z",
     hrefFor: ({ url }) => `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`,
   },
+  {
+    key: "email",
+    label: "Email",
+    bg: "#5B6472",
+    paths: ["M2 5.5A2.5 2.5 0 014.5 3h15A2.5 2.5 0 0122 5.5v13a2.5 2.5 0 01-2.5 2.5h-15A2.5 2.5 0 012 18.5v-13z", "M3 6l9 7 9-7"],
+    hrefFor: ({ url, title, text }) => `mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(`${text ? `${text}\n\n` : ""}${url}`)}`,
+  },
 ];
 
 /** A small, curated social-share popover — WhatsApp/Facebook/X/LinkedIn plus
@@ -90,7 +97,14 @@ function ShareMenu({ open, onClose, anchorRef, url, title, text }) {
   if (!open || !coords) return null;
 
   const openPlatform = (platform) => {
-    window.open(platform.hrefFor({ url, title, text }), "_blank", "noopener,noreferrer,width=600,height=640");
+    const href = platform.hrefFor({ url, title, text });
+    // mailto: (and any future non-http scheme) must navigate directly — a
+    // popup window for it just opens a blank, useless window in most browsers.
+    if (href.startsWith("mailto:")) {
+      window.location.href = href;
+    } else {
+      window.open(href, "_blank", "noopener,noreferrer,width=600,height=640");
+    }
     onClose();
   };
 
@@ -104,14 +118,30 @@ function ShareMenu({ open, onClose, anchorRef, url, title, text }) {
     }
   };
 
+  const nativeShare = async () => {
+    try {
+      await navigator.share({ title, text, url });
+      onClose();
+    } catch {
+      // User cancelled the native share sheet — leave the menu open.
+    }
+  };
+
   return createPortal(
     <div className="msj-share-menu" ref={popRef} style={{ top: coords.top, left: coords.left }} onClick={(e) => e.stopPropagation()}>
       <div className="msj-share-menu-title">Share via</div>
+      {typeof navigator !== "undefined" && navigator.share && (
+        <button type="button" className="msj-share-menu-copy" style={{ marginBottom: 10 }} onClick={nativeShare}>
+          More sharing options…
+        </button>
+      )}
       <div className="msj-share-menu-grid">
         {PLATFORMS.map((p) => (
           <button type="button" key={p.key} className="msj-share-menu-item" onClick={() => openPlatform(p)}>
             <span className="msj-share-menu-icon" style={{ background: p.bg }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d={p.path} /></svg>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={p.paths ? 1.6 : 0}>
+                {p.paths ? p.paths.map((d, i) => <path key={i} d={d} strokeLinecap="round" strokeLinejoin="round" />) : <path d={p.path} fill="#fff" />}
+              </svg>
             </span>
             {p.label}
           </button>

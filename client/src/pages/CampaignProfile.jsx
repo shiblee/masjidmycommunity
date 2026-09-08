@@ -7,6 +7,9 @@ import { API_BASE, API_ORIGIN } from "../config.js";
 import { formatDate } from "../utils/formatDateTime.js";
 import EngagementRow from "../components/masjid/EngagementRow.jsx";
 import GreenTickBadge from "../components/masjid/GreenTickBadge.jsx";
+import RunningCampaignsRail from "../components/campaign/RunningCampaignsRail.jsx";
+import CampaignDonationPanel from "../components/campaign/CampaignDonationPanel.jsx";
+import CampaignDonorsList from "../components/campaign/CampaignDonorsList.jsx";
 
 const API = `${API_BASE}/campaigns/public`;
 
@@ -44,7 +47,6 @@ function CampaignProfile() {
 
   const { campaign, photos, budgetItems, updates, masjid, category, donationAccount } = data;
   const cover = photos[active] || photos[0];
-  const pct = campaign.progressPercent ?? 0;
 
   return (
     <main className="msj-page">
@@ -65,7 +67,9 @@ function CampaignProfile() {
       </section>
 
       <section className="py-md">
-        <div className="wrap msj-profile-grid">
+        <div className="wrap camp-hub-grid">
+          <RunningCampaignsRail currentSlug={slug} />
+
           <div>
             {photos.length > 1 && (
               <div className="msj-profile-thumbs">
@@ -128,30 +132,8 @@ function CampaignProfile() {
           </div>
 
           <aside className="msj-profile-side camp-profile-side">
-            <div className="card msj-profile-card">
-              <h3>{campaign.title}</h3>
-              <div className="progress-track" style={{ marginTop: 12 }}><div className="progress-fill" style={{ width: `${pct}%` }} /></div>
-              <div className="camp-card-meta" style={{ marginTop: 10 }}>
-                <span><strong>₹{Number(campaign.amountRaised).toLocaleString("en-IN")}</strong> raised</span>
-                {campaign.goalAmount && <span>of ₹{Number(campaign.goalAmount).toLocaleString("en-IN")}</span>}
-              </div>
-              <p className="msj-list-meta" style={{ marginTop: 4 }}>{campaign.donorCount ?? 0} contributions · {category?.name || campaign.donationType}</p>
-
-              <h4 style={{ marginTop: 20, marginBottom: 6, fontSize: 14 }}>How to Contribute</h4>
-              {donationAccount ? (
-                <div className="camp-donate-account">
-                  {donationAccount.upiId && <div><span>UPI ID</span><strong>{donationAccount.upiId}</strong></div>}
-                  {donationAccount.upiAccountHolder && <div><span>UPI Holder</span><strong>{donationAccount.upiAccountHolder}</strong></div>}
-                  {donationAccount.bankName && <div><span>Bank</span><strong>{donationAccount.bankName}</strong></div>}
-                  {donationAccount.accountHolderName && <div><span>Account Holder</span><strong>{donationAccount.accountHolderName}</strong></div>}
-                  {donationAccount.accountNumberMasked && <div><span>Account No.</span><strong>{donationAccount.accountNumberMasked}</strong></div>}
-                  {donationAccount.ifscCode && <div><span>IFSC</span><strong>{donationAccount.ifscCode}</strong></div>}
-                  <p className="msj-note" style={{ marginTop: 10 }}>Transfer directly using the masjid's admin-verified details above, then let them know — donations are recorded once confirmed.</p>
-                </div>
-              ) : (
-                <p className="msj-note">This masjid hasn't published verified donation details yet.</p>
-              )}
-            </div>
+            <CampaignDonationPanel campaign={campaign} category={category} donationAccount={donationAccount} slug={slug} />
+            <CampaignDonorsList slug={slug} donorCount={campaign.donorCount} />
           </aside>
         </div>
       </section>
