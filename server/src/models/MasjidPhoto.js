@@ -25,7 +25,9 @@ const MasjidPhoto = sequelize.define(
     // streams the image from Google's Place Photo Media endpoint using the
     // secret server key at request time, keyed off sourcePhotoReference.
     sourceType: { type: DataTypes.ENUM("upload", "google_places"), allowNull: false, defaultValue: "upload" },
-    sourcePhotoReference: { type: DataTypes.STRING, allowNull: true },
+    // TEXT, not STRING/VARCHAR(255) — Google's photo resource names
+    // ("places/<id>/photos/<long token>") routinely exceed 255 characters.
+    sourcePhotoReference: { type: DataTypes.TEXT, allowNull: true },
     // Google requires displaying photo-contributor attribution alongside
     // Places photos — shown next to the caption on the public masjid page.
     attributionText: { type: DataTypes.STRING, allowNull: true },
