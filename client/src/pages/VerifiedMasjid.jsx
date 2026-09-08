@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Icon } from "../components/Icons.jsx";
 import SimpleFaqAccordion from "../components/SimpleFaqAccordion.jsx";
 import { useTranslation } from "../i18n/LanguageContext.jsx";
+import { useLoginGatedNav } from "../hooks/useLoginGatedNav.js";
 
 const STEP_KEYS = [
   { num: "01", icon: "book", key: "registration" },
@@ -58,6 +59,7 @@ const whyItMatters = [
 
 function VerifiedMasjid() {
   const { t } = useTranslation();
+  const goToCampaigns = useLoginGatedNav();
   const [maxRevealedStep, setMaxRevealedStep] = useState(-1);
 
   useEffect(() => {
@@ -233,7 +235,7 @@ function VerifiedMasjid() {
               <p>{t("verifiedMasjidPage.link.howItWorks.body", "From registration to fund settlement — the complete ecosystem.")}</p>
               <span className="pagelink-cta">{t("verifiedMasjidPage.link.howItWorks.cta", "How It Works")} <span className="btn-arrow">→</span></span>
             </Link>
-            <Link to="/explore-campaigns" className="pagelink-card">
+            <Link to="/explore-campaigns" className="pagelink-card" onClick={(e) => { e.preventDefault(); goToCampaigns("/explore-campaigns"); }}>
               <span className="pagelink-card-icon"><Icon name="flag" size={20} /></span>
               <h4>{t("verifiedMasjidPage.link.campaigns.title", "How a campaign moves from idea to funded")}</h4>
               <p>{t("verifiedMasjidPage.link.campaigns.body", "See the complete campaign lifecycle — from discovery to fund transfer.")}</p>

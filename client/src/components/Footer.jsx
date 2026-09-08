@@ -4,6 +4,7 @@ import { useTranslation } from "../i18n/LanguageContext.jsx";
 import { getStoredUser } from "../utils/userAuthStorage.js";
 import { getPublicVisitorCount, subscribeToVisitorCount } from "../utils/visitorTracking.js";
 import communityApi from "../services/communityApi.js";
+import { useLoginGatedNav } from "../hooks/useLoginGatedNav.js";
 
 // Native script alone reads fine once you know the language, but a visitor
 // who can't yet read Urdu/Arabic/Hindi script has no way to tell the options
@@ -254,6 +255,7 @@ function Footer() {
   const { t } = useTranslation();
   const [user, setUser] = useState(() => getStoredUser());
   const [communityStats, setCommunityStats] = useState(null);
+  const goToCampaigns = useLoginGatedNav();
 
   useEffect(() => {
     const onSessionUpdated = (e) => setUser(e.detail);
@@ -345,7 +347,9 @@ function Footer() {
             <div className="footer-links-grid">
               <div className="footer-col foot-reveal">
                 <h4>{t("footer.col.platform", "Platform")}</h4>
-                <NavLink to="/explore-campaigns">{t("footer.link.exploreCampaigns", "Explore Campaigns")}</NavLink>
+                <NavLink to="/explore-campaigns" onClick={(e) => { e.preventDefault(); goToCampaigns("/explore-campaigns"); }}>
+                  {t("footer.link.exploreCampaigns", "Explore Campaigns")}
+                </NavLink>
                 <NavLink to="/how-it-works">{t("footer.link.howItWorks", "How It Works")}</NavLink>
                 <NavLink to="/verified-masjid">{t("footer.link.verifiedMasjids", "Verified Masjids")}</NavLink>
                 <NavLink to="/our-impact">{t("footer.link.ourImpact", "Our Impact")}</NavLink>

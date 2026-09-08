@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Icon } from "../components/Icons.jsx";
 import Flow from "../components/Flow.jsx";
 import SimpleFaqAccordion from "../components/SimpleFaqAccordion.jsx";
 import { useTranslation } from "../i18n/LanguageContext.jsx";
-import { getStoredUser } from "../utils/userAuthStorage.js";
+import { useLoginGatedNav } from "../hooks/useLoginGatedNav.js";
 
 const STEP_KEYS = [
   { num: "01", icon: "compass", key: "discover" },
@@ -71,22 +71,8 @@ const checks = [
 
 function ExploreCampaigns() {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const [maxRevealedStep, setMaxRevealedStep] = useState(-1);
-
-  // Was a stale `href="/#campaigns"` (a Home-page anchor that no longer
-  // corresponds to anything, since campaigns moved to their own page) with
-  // no login check. Now gated the same way Donate is (Auth.jsx's ?redirect=
-  // round-trip): straight through to Explore Campaigns if already signed
-  // in, otherwise sign in first and land back here afterward.
-  const goToCampaigns = (e) => {
-    e.preventDefault();
-    if (getStoredUser()) {
-      navigate("/explore-campaigns");
-    } else {
-      navigate(`/auth?redirect=${encodeURIComponent("/explore-campaigns")}`);
-    }
-  };
+  const goToCampaigns = useLoginGatedNav();
 
   useEffect(() => {
     const els = document.querySelectorAll(".reveal");
@@ -272,7 +258,7 @@ function ExploreCampaigns() {
           <span className="eyebrow">{t("exploreCampaignsPage.cta.eyebrow", "Ready to support a cause?")}</span>
           <h2>{t("exploreCampaignsPage.cta.title", "Every verified masjid has a story worth supporting.")}</h2>
           <div className="ctas">
-            <a href="/explore-campaigns" className="btn btn-gold" onClick={goToCampaigns}>
+            <a href="/explore-campaigns" className="btn btn-gold" onClick={(e) => { e.preventDefault(); goToCampaigns("/explore-campaigns"); }}>
               {t("exploreCampaignsPage.cta.explore", "Explore Live Campaigns")} <span className="btn-arrow">→</span>
             </a>
           </div>

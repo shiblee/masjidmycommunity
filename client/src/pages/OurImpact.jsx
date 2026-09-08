@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Icon } from "../components/Icons.jsx";
 import Flow from "../components/Flow.jsx";
+import { useLoginGatedNav } from "../hooks/useLoginGatedNav.js";
 
 const heroStats = [
   { n: "46", label: "Countries Reached" },
@@ -127,6 +128,7 @@ function StatTile({ s, i }) {
 }
 
 function OurImpact() {
+  const goToCampaigns = useLoginGatedNav();
   useEffect(() => {
     const els = document.querySelectorAll(".reveal");
     const io = new IntersectionObserver(
@@ -285,7 +287,7 @@ function OurImpact() {
           <span className="eyebrow">Be part of it</span>
           <h2>Empowering Masjids. Creating Impact Beyond Boundaries.</h2>
           <div className="ctas">
-            <a href="/explore-campaigns" className="btn btn-gold">
+            <a href="/explore-campaigns" className="btn btn-gold" onClick={(e) => { e.preventDefault(); goToCampaigns("/explore-campaigns"); }}>
               Explore Campaigns <span className="btn-arrow">→</span>
             </a>
             <a href="/my-community" className="btn btn-outline-paper">

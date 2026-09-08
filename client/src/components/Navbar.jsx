@@ -4,6 +4,7 @@ import { getStoredUser, clearUserSession } from "../utils/userAuthStorage.js";
 import userApi from "../services/userApi.js";
 import { API_ORIGIN } from "../config.js";
 import { useTranslation } from "../i18n/LanguageContext.jsx";
+import { useLoginGatedNav } from "../hooks/useLoginGatedNav.js";
 
 function useNavLinks(t) {
   return [
@@ -68,6 +69,7 @@ function Navbar() {
   const navElRef = useRef(null);
   const { pathname } = useLocation();
   const navigate = useNavigate();
+  const goToCampaigns = useLoginGatedNav();
   const isLinkActive = (href) => !href.startsWith("#") && pathname === href;
 
   useClickOutside(menuRef, () => setMenuOpen(false));
@@ -157,7 +159,9 @@ function Navbar() {
     <>
       <div className="announce" ref={announceRef}>
         🕌 {t("nav.announce", "Empowering masjids. Strengthening communities. Join the global movement.")}
-        <Link to="/explore-campaigns">{t("nav.exploreCampaigns", "Explore campaigns →")}</Link>
+        <Link to="/explore-campaigns" onClick={(e) => { e.preventDefault(); goToCampaigns("/explore-campaigns"); }}>
+          {t("nav.exploreCampaigns", "Explore campaigns →")}
+        </Link>
       </div>
       <header className="nav" ref={navElRef}>
         <div className="nav-inner">

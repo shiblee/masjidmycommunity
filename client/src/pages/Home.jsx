@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import axios from "axios";
 import { API_BASE, API_ORIGIN } from "../config.js";
 import { toCardShape } from "../utils/campaignCardShape.js";
+import { useLoginGatedNav } from "../hooks/useLoginGatedNav.js";
 
 const masjidData = [
   { name: "Masjid An-Noor", loc: "Dhaka, Bangladesh", flag: "🇧🇩", year: 2009, camps: 2, served: "3,200", img: "https://images.unsplash.com/photo-1549526725-5c188c251c37?auto=format&fit=crop&w=500&q=75" },
@@ -394,6 +395,7 @@ function handleCatMouseMove(e) {
 }
 
 function Home() {
+  const goToCampaigns = useLoginGatedNav();
   const [tab, setTab] = useState("masjid");
   const [activeStep, setActiveStep] = useState(0);
   const [flipped, setFlipped] = useState(() => new Set());
@@ -547,7 +549,7 @@ function Home() {
               education, clean water, solar power — with full visibility into where every contribution goes.
             </p>
             <div className="hero-ctas">
-              <a href="/explore-campaigns" className="btn btn-gold">
+              <a href="/explore-campaigns" className="btn btn-gold" onClick={(e) => { e.preventDefault(); goToCampaigns("/explore-campaigns"); }}>
                 Explore Campaigns <span className="btn-arrow">→</span>
               </a>
               <a href="#register" className="btn btn-outline-paper">
@@ -1146,6 +1148,7 @@ function Home() {
             <a
               href="/explore-campaigns"
               className={`btn btn-outline-paper${ctaAudience === "donor" ? " cta-emphasized" : ""}${ctaAudience === "masjid" ? " cta-dimmed" : ""}`}
+              onClick={(e) => { e.preventDefault(); goToCampaigns("/explore-campaigns"); }}
             >
               Explore Campaigns <span className="btn-arrow">→</span>
             </a>

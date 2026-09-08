@@ -5,6 +5,7 @@ import { API_BASE } from "../config.js";
 import { Icon } from "../components/Icons.jsx";
 import { getStoredUser } from "../utils/userAuthStorage.js";
 import { useTranslation } from "../i18n/LanguageContext.jsx";
+import { useLoginGatedNav } from "../hooks/useLoginGatedNav.js";
 
 const GO_DEEPER_LINKS = [
   { to: "/how-it-works", icon: "compass", titleKey: "contact.link.howItWorks.title", title: "See the full platform journey", bodyKey: "contact.link.howItWorks.body", body: "From registration to fund settlement — the complete ecosystem.", ctaKey: "contact.link.howItWorks.cta", cta: "How It Works" },
@@ -48,6 +49,7 @@ const MESSAGE_MAX = 1000;
 function Contact() {
   const { t } = useTranslation();
   const user = getStoredUser();
+  const goToCampaigns = useLoginGatedNav();
   const [topics, setTopics] = useState([]);
   const [topic, setTopic] = useState("");
   const [form, setForm] = useState({ fullName: user?.fullName || "", email: user?.email || "", message: "" });
@@ -336,7 +338,7 @@ function Contact() {
             <a href="/#register" className="btn btn-gold">
               {t("contact.cta.register", "Register Your Masjid")} <span className="btn-arrow">→</span>
             </a>
-            <Link to="/explore-campaigns" className="btn btn-outline-paper">
+            <Link to="/explore-campaigns" className="btn btn-outline-paper" onClick={(e) => { e.preventDefault(); goToCampaigns("/explore-campaigns"); }}>
               {t("contact.cta.explore", "Explore Campaigns")} <span className="btn-arrow">→</span>
             </Link>
           </div>

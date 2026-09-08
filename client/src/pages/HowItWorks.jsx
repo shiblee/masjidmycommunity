@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Icon } from "../components/Icons.jsx";
 import Flow from "../components/Flow.jsx";
 import { useTranslation } from "../i18n/LanguageContext.jsx";
+import { useLoginGatedNav } from "../hooks/useLoginGatedNav.js";
 
 const STEP_KEYS = [
   { num: "01", icon: "book", key: "register" },
@@ -77,6 +78,7 @@ const ECOSYSTEM_FLOW_KEYS = [
 
 function HowItWorks() {
   const { t } = useTranslation();
+  const goToCampaigns = useLoginGatedNav();
   const [maxRevealedStep, setMaxRevealedStep] = useState(-1);
 
   useEffect(() => {
@@ -199,7 +201,7 @@ function HowItWorks() {
             <h2>{t("howItWorksPage.more.title", "Two things worth understanding next")}</h2>
           </div>
           <div className="pagelink-row reveal">
-            <Link to="/explore-campaigns" className="pagelink-card">
+            <Link to="/explore-campaigns" className="pagelink-card" onClick={(e) => { e.preventDefault(); goToCampaigns("/explore-campaigns"); }}>
               <span className="pagelink-card-icon"><Icon name="flag" size={20} /></span>
               <h4>{t("howItWorksPage.link.campaigns.title", "How a campaign moves from idea to funded")}</h4>
               <p>{t("howItWorksPage.link.campaigns.body", "See the complete campaign lifecycle — from discovery to fund transfer.")}</p>
@@ -228,7 +230,7 @@ function HowItWorks() {
             <a href="/#register" className="btn btn-gold">
               {t("howItWorksPage.cta.register", "Register Your Masjid")} <span className="btn-arrow">→</span>
             </a>
-            <a href="/explore-campaigns" className="btn btn-outline-paper">
+            <a href="/explore-campaigns" className="btn btn-outline-paper" onClick={(e) => { e.preventDefault(); goToCampaigns("/explore-campaigns"); }}>
               {t("howItWorksPage.cta.explore", "Explore Campaigns")} <span className="btn-arrow">→</span>
             </a>
           </div>

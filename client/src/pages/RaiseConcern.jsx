@@ -5,6 +5,7 @@ import { API_BASE } from "../config.js";
 import { Icon } from "../components/Icons.jsx";
 import { getStoredUser } from "../utils/userAuthStorage.js";
 import { useTranslation } from "../i18n/LanguageContext.jsx";
+import { useLoginGatedNav } from "../hooks/useLoginGatedNav.js";
 
 const DETAILS_MAX = 1000;
 
@@ -22,6 +23,7 @@ const GO_DEEPER_LINKS = [
 
 function RaiseConcern() {
   const { t } = useTranslation();
+  const goToCampaigns = useLoginGatedNav();
   const steps = STEP_DEFAULTS.map((s) => ({
     num: s.num,
     icon: s.icon,
@@ -318,7 +320,7 @@ function RaiseConcern() {
             <Link to="/verified-masjid" className="btn btn-gold">
               {t("concern.cta.verified", "Learn About Verification")} <span className="btn-arrow">→</span>
             </Link>
-            <Link to="/explore-campaigns" className="btn btn-outline-paper">
+            <Link to="/explore-campaigns" className="btn btn-outline-paper" onClick={(e) => { e.preventDefault(); goToCampaigns("/explore-campaigns"); }}>
               {t("concern.cta.explore", "Explore Campaigns")} <span className="btn-arrow">→</span>
             </Link>
           </div>
