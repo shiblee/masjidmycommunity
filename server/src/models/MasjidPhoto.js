@@ -18,6 +18,17 @@ const MasjidPhoto = sequelize.define(
     caption: { type: DataTypes.STRING, allowNull: true },
     isCover: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
     sortOrder: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+
+    // "upload" (default) is every real Multer-uploaded photo, unchanged.
+    // "google_places" photos are never downloaded/re-hosted — `url` for
+    // those points at masjidPhotoProxyController.js's proxy route, which
+    // streams the image from Google's Place Photo Media endpoint using the
+    // secret server key at request time, keyed off sourcePhotoReference.
+    sourceType: { type: DataTypes.ENUM("upload", "google_places"), allowNull: false, defaultValue: "upload" },
+    sourcePhotoReference: { type: DataTypes.STRING, allowNull: true },
+    // Google requires displaying photo-contributor attribution alongside
+    // Places photos — shown next to the caption on the public masjid page.
+    attributionText: { type: DataTypes.STRING, allowNull: true },
   },
   {
     tableName: "masjid_photos",

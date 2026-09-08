@@ -68,6 +68,7 @@ import { renderMasjidSharePage } from "./controllers/publicShareMetaController.j
 import publicVisitorRoutes from "./routes/publicVisitorRoutes.js";
 import adminVisitorRoutes from "./routes/adminVisitorRoutes.js";
 import adminUserBotRoutes from "./routes/adminUserBotRoutes.js";
+import adminMasjidBotRoutes from "./routes/adminMasjidBotRoutes.js";
 
 const app = express();
 
@@ -125,6 +126,7 @@ app.use("/api/masjids", masjidRoutes);
 app.use("/api/admin/masjids", adminMasjidRoutes);
 app.use("/api/admin/visitors", adminVisitorRoutes);
 app.use("/api/admin/user-bot", adminUserBotRoutes);
+app.use("/api/admin/masjid-bot", adminMasjidBotRoutes);
 app.use("/api/admin/community", adminCommunityRoutes);
 app.use("/api/admin/masjid-categories", adminMasjidCategoryRoutes);
 app.use("/api/admin/review-restricted-words", adminReviewRestrictedWordRoutes);

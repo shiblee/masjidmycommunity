@@ -21,6 +21,7 @@ const SECTIONS = [
   { key: "maps", label: "Google Maps", icon: "globe" },
   { key: "visitorBot", label: "Visitor Bot", icon: "activity" },
   { key: "userBot", label: "User Bot", icon: "users" },
+  { key: "masjidBot", label: "Masjid Bot", icon: "mosque" },
 ];
 
 const BOT_DEVICE_KEYS = ["desktop", "mobile", "tablet"];
@@ -102,6 +103,11 @@ function Settings() {
   const [userTestRunning, setUserTestRunning] = useState(false);
   const [resettingUserBotData, setResettingUserBotData] = useState(false);
   const [userResetResult, setUserResetResult] = useState(null);
+
+  const [masjidBotSettings, setMasjidBotSettings] = useState(null);
+  const [masjidBotInput, setMasjidBotInput] = useState(null);
+  const [savingMasjidBot, setSavingMasjidBot] = useState(false);
+  const [masjidBotError, setMasjidBotError] = useState("");
 
   const showToast = (message) => {
     setToast(message);
@@ -215,6 +221,25 @@ function Settings() {
         setUserBotInput(userBotInputFrom(data));
       })
       .catch(() => setUserBotError("Couldn't load the user bot's settings."));
+  }, []);
+
+  const masjidBotInputFrom = (data) => ({
+    ...data,
+    masjidsPerHour: String(data.masjidsPerHour),
+    maxMasjidsPerDay: data.maxMasjidsPerDay == null ? "" : String(data.maxMasjidsPerDay),
+    maxTotalImportedMasjids: data.maxTotalImportedMasjids == null ? "" : String(data.maxTotalImportedMasjids),
+    maxApiCallsPerHour: String(data.maxApiCallsPerHour),
+    placesApiServerKeyInput: "",
+  });
+
+  useEffect(() => {
+    adminApi
+      .get("/masjid-bot/settings")
+      .then(({ data }) => {
+        setMasjidBotSettings(data);
+        setMasjidBotInput(masjidBotInputFrom(data));
+      })
+      .catch(() => setMasjidBotError("Couldn't load the Masjid bot's settings."));
   }, []);
 
   useEffect(() => {
@@ -659,6 +684,47 @@ function Settings() {
     } finally {
       setResettingUserBotData(false);
     }
+  };
+
+  const saveMasjidBotSettings = async (patch) => {
+    setSavingMasjidBot(true);
+    setMasjidBotError("");
+    try {
+      const { data } = await adminApi.patch("/masjid-bot/settings", patch);
+      setMasjidBotSettings(data);
+      setMasjidBotInput(masjidBotInputFrom(data));
+      showToast("Masjid bot settings saved.");
+    } catch (err) {
+      setMasjidBotError(err.response?.data?.message || "Couldn't save the Masjid bot's settings.");
+    } finally {
+      setSavingMasjidBot(false);
+    }
+  };
+
+  const toggleMasjidBotEnabled = () => saveMasjidBotSettings({ enabled: !masjidBotSettings.enabled });
+  const toggleMasjidBotAutoPublish = () => saveMasjidBotSettings({ autoPublish: !masjidBotSettings.autoPublish });
+
+  const submitMasjidBotForm = (e) => {
+    e.preventDefault();
+    const intFields = ["masjidsPerHour", "maxApiCallsPerHour"];
+    const parsed = {};
+    for (const field of intFields) {
+      const n = Number(masjidBotInput[field]);
+      if (!Number.isInteger(n) || n < 1) {
+        setMasjidBotError("Every number field must be a whole number of at least 1.");
+        return;
+      }
+      parsed[field] = n;
+    }
+    parsed.indiaPercent = Math.min(100, Math.max(0, Number(masjidBotInput.indiaPercent) || 0));
+    parsed.activeHourStart = masjidBotInput.activeHourStart === "" || masjidBotInput.activeHourStart == null ? null : Number(masjidBotInput.activeHourStart);
+    parsed.activeHourEnd = masjidBotInput.activeHourEnd === "" || masjidBotInput.activeHourEnd == null ? null : Number(masjidBotInput.activeHourEnd);
+    parsed.maxMasjidsPerDay = masjidBotInput.maxMasjidsPerDay === "" ? null : Number(masjidBotInput.maxMasjidsPerDay);
+    parsed.maxTotalImportedMasjids = masjidBotInput.maxTotalImportedMasjids === "" ? null : Number(masjidBotInput.maxTotalImportedMasjids);
+    if (masjidBotInput.placesApiServerKeyInput.trim()) {
+      parsed.placesApiServerKey = masjidBotInput.placesApiServerKeyInput.trim();
+    }
+    saveMasjidBotSettings(parsed);
   };
 
   if (!SECTIONS.some((s) => s.key === sectionKey)) {
@@ -1659,6 +1725,155 @@ function Settings() {
                       Cleared {userResetResult.deletedUsers} bot user account{userResetResult.deletedUsers === 1 ? "" : "s"}.
                     </div>
                   )}
+                </>
+              )}
+            </>
+          )}
+
+          {section === "masjidBot" && (
+            <>
+              <div className="amx-panel-head">
+                <div>
+                  <h3>Masjid Bot Settings</h3>
+                  <div className="amx-panel-sub">
+                    Discovers and imports <strong>real, existing mosques</strong> via the Google Places API — never
+                    invented names, addresses, or photos. Imports land in Masjids → Under Review for a human Approve
+                    before going publicly live (unless Auto-Publish is on), are always attributed to "Masjid My
+                    Community — Automated Import" rather than a real person, and never receive Green Tick
+                    certification automatically — that still requires the real verification process.
+                  </div>
+                </div>
+              </div>
+
+              {!masjidBotSettings ? (
+                <p className="amx-panel-sub">Loading…</p>
+              ) : (
+                <>
+                  <div className="amx-settings-row" style={{ marginBottom: 18 }}>
+                    <div>
+                      <strong>Enable Masjid Bot</strong>
+                      <span>Starts importing masjids on the hourly schedule below. Switching this off stops new imports within a minute.</span>
+                    </div>
+                    <Toggle on={masjidBotSettings.enabled} onClick={toggleMasjidBotEnabled} disabled={savingMasjidBot} />
+                  </div>
+
+                  <form onSubmit={submitMasjidBotForm} className="amx-form-grid" noValidate>
+                    <div className="amx-form-group" style={{ gridColumn: "1 / -1" }}>
+                      <label htmlFor="masjidbot-api-key">Places API Server Key</label>
+                      <input
+                        id="masjidbot-api-key"
+                        type="password"
+                        autoComplete="off"
+                        placeholder={masjidBotSettings.placesApiServerKeySet ? "•••••••••••••••• (already set — enter a new key to replace it)" : "Paste a new, server-side Google Cloud API key"}
+                        value={masjidBotInput.placesApiServerKeyInput}
+                        onChange={(e) => setMasjidBotInput((s) => ({ ...s, placesApiServerKeyInput: e.target.value }))}
+                      />
+                      <div className="amx-field-hint">
+                        This must be a <strong>new, separate</strong> API key with Places API (New) enabled and billing
+                        turned on — never the existing public Google Maps key from the Google Maps settings tab, which
+                        is browser-restricted and unusable from the server. This key is never shown back once saved.
+                      </div>
+                    </div>
+                    <div className="amx-form-group">
+                      <label htmlFor="masjidbot-per-hour">Masjids per Hour</label>
+                      <input
+                        id="masjidbot-per-hour"
+                        type="number"
+                        min={1}
+                        step={1}
+                        value={masjidBotInput.masjidsPerHour}
+                        onChange={(e) => setMasjidBotInput((s) => ({ ...s, masjidsPerHour: e.target.value }))}
+                      />
+                      <div className="amx-field-hint">Spread randomly across each hour, not imported all at once.</div>
+                    </div>
+                    <div className="amx-form-group">
+                      <label htmlFor="masjidbot-india-percent">India %</label>
+                      <input
+                        id="masjidbot-india-percent"
+                        type="number"
+                        min={0}
+                        max={100}
+                        step={1}
+                        value={masjidBotInput.indiaPercent}
+                        onChange={(e) => setMasjidBotInput((s) => ({ ...s, indiaPercent: e.target.value }))}
+                      />
+                      <div className="amx-field-hint">International: <strong>{100 - (Number(masjidBotInput.indiaPercent) || 0)}%</strong></div>
+                    </div>
+                    <div className="amx-form-group">
+                      <label htmlFor="masjidbot-max-api-calls">Max API Calls per Hour</label>
+                      <input
+                        id="masjidbot-max-api-calls"
+                        type="number"
+                        min={1}
+                        step={1}
+                        value={masjidBotInput.maxApiCallsPerHour}
+                        onChange={(e) => setMasjidBotInput((s) => ({ ...s, maxApiCallsPerHour: e.target.value }))}
+                      />
+                      <div className="amx-field-hint">Independent safety cap — most calls are spent checking candidates that turn out to be duplicates, and this is what drives real Google billing.</div>
+                    </div>
+                    <div className="amx-form-group">
+                      <label htmlFor="masjidbot-active-start">Active Hours (UTC)</label>
+                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                        <select
+                          id="masjidbot-active-start"
+                          value={masjidBotInput.activeHourStart ?? ""}
+                          onChange={(e) => setMasjidBotInput((s) => ({ ...s, activeHourStart: e.target.value }))}
+                        >
+                          <option value="">All day</option>
+                          {HOUR_OPTIONS.map((h) => <option key={h} value={h}>{String(h).padStart(2, "0")}:00</option>)}
+                        </select>
+                        <span>to</span>
+                        <select
+                          value={masjidBotInput.activeHourEnd ?? ""}
+                          onChange={(e) => setMasjidBotInput((s) => ({ ...s, activeHourEnd: e.target.value }))}
+                        >
+                          <option value="">All day</option>
+                          {HOUR_OPTIONS.map((h) => <option key={h} value={h}>{String(h).padStart(2, "0")}:00</option>)}
+                        </select>
+                      </div>
+                    </div>
+                    <div className="amx-form-group">
+                      <label htmlFor="masjidbot-max-per-day">Max Masjids per Day</label>
+                      <input
+                        id="masjidbot-max-per-day"
+                        type="number"
+                        min={0}
+                        placeholder="No limit"
+                        value={masjidBotInput.maxMasjidsPerDay}
+                        onChange={(e) => setMasjidBotInput((s) => ({ ...s, maxMasjidsPerDay: e.target.value }))}
+                      />
+                      <div className="amx-field-hint">Leave blank for no daily cap.</div>
+                    </div>
+                    <div className="amx-form-group">
+                      <label htmlFor="masjidbot-max-total">Max Total Imported Masjids</label>
+                      <input
+                        id="masjidbot-max-total"
+                        type="number"
+                        min={0}
+                        placeholder="No limit"
+                        value={masjidBotInput.maxTotalImportedMasjids}
+                        onChange={(e) => setMasjidBotInput((s) => ({ ...s, maxTotalImportedMasjids: e.target.value }))}
+                      />
+                    </div>
+
+                    {masjidBotError && (
+                      <div className="amx-field-error" style={{ gridColumn: "1 / -1" }}>
+                        <Icon name="info" size={14} />
+                        {masjidBotError}
+                      </div>
+                    )}
+                    <button type="submit" className="amx-btn amx-btn-primary" disabled={savingMasjidBot} style={{ alignSelf: "end" }}>
+                      {savingMasjidBot ? "Saving…" : "Save Masjid Bot Settings"}
+                    </button>
+                  </form>
+
+                  <div className="amx-settings-row" style={{ marginTop: 18 }}>
+                    <div>
+                      <strong>Auto-Publish Imports</strong>
+                      <span>When on, imported masjids skip the Under Review queue and go straight to publicly Approved. Off by default — a human still clicks Approve first.</span>
+                    </div>
+                    <Toggle on={masjidBotSettings.autoPublish} onClick={toggleMasjidBotAutoPublish} disabled={savingMasjidBot} />
+                  </div>
                 </>
               )}
             </>

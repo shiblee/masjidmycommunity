@@ -79,6 +79,19 @@ const Masjid = sequelize.define(
     moderationStatus: { type: DataTypes.ENUM("active", "under_review"), allowNull: false, defaultValue: "active" },
     reportCount: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
     moderationReviewedAt: { type: DataTypes.DATE, allowNull: true },
+
+    // Provenance — who/what actually created this record. "user" (the
+    // default) covers every masjid registered through the public wizard;
+    // "admin" covers ones an admin added directly (see seed/platformUserDefaults.js);
+    // "bot_import" covers ones masjidDiscoveryService.js found via the Masjid
+    // Bot. Deliberately separate from `status` and from Green Tick — a
+    // bot-imported masjid existing in the directory is not the same claim
+    // as it being identity-verified (see GreenTickApplication.js).
+    creationMethod: {
+      type: DataTypes.ENUM("user", "admin", "bot_import"),
+      allowNull: false,
+      defaultValue: "user",
+    },
   },
   {
     tableName: "masjids",
@@ -86,6 +99,7 @@ const Masjid = sequelize.define(
       { fields: ["userId"], name: "masjids_user_id_idx" },
       { fields: ["status"], name: "masjids_status_idx" },
       { unique: true, fields: ["slug"], name: "masjids_slug_unique" },
+      { fields: ["creationMethod"], name: "masjids_creation_method_idx" },
     ],
   }
 );

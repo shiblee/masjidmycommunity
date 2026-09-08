@@ -13,6 +13,8 @@ import { startVisitorMaintenance } from "./services/visitorMaintenanceService.js
 import { startVisitorBotScheduler } from "./services/visitorBotSchedulerService.js";
 import { ensureUserBotSettings } from "./seed/userBotSettingsDefaults.js";
 import { startUserBotScheduler } from "./services/userBotSchedulerService.js";
+import { ensureMasjidBotUserDefaults } from "./seed/masjidBotUserDefaults.js";
+import { ensureMasjidBotSettings } from "./seed/masjidBotSettingsDefaults.js";
 import { ensureReviewRestrictedWordDefaults } from "./seed/reviewRestrictedWordDefaults.js";
 import { ensureMasjidContactDesignationDefaults } from "./seed/masjidContactDesignationDefaults.js";
 import { ensurePrayerDefaults } from "./seed/prayerDefaults.js";
@@ -55,6 +57,8 @@ connectDB()
       ensureVisitorSettings(),
       ensureVisitorBotSettings(),
       ensureUserBotSettings(),
+      ensureMasjidBotUserDefaults(),
+      ensureMasjidBotSettings(),
       ensureReviewRestrictedWordDefaults(),
       ensureMasjidContactDesignationDefaults(),
       ensurePrayerDefaults(),
