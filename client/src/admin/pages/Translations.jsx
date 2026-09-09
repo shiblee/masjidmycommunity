@@ -89,6 +89,41 @@ function TranslationRow({ row, languages, onSaved }) {
   );
 }
 
+// Percent-bar summary of how complete each active language's translation
+// set is, relative to the full key set (the union of every key that exists
+// for any language — see getCoverage). Clicking a language's "X missing"
+// count pre-fills the search box with the first missing key so the admin
+// can jump straight to filling it in, rather than hunting through the grid.
+function CoverageSummary({ coverage, onJumpToKey }) {
+  if (!coverage.length) return null;
+  return (
+    <div className="amx-card amx-panel" style={{ marginBottom: 20 }}>
+      <div className="amx-panel-head"><h3>Translation Coverage</h3></div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 20 }}>
+        {coverage.map((c) => (
+          <div key={c.code} style={{ flex: "1 1 200px", minWidth: 200 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 13.5 }}>
+              <strong>{c.name}</strong>
+              <span className="amx-panel-sub">{c.translated}/{c.total} ({c.percent}%)</span>
+            </div>
+            <div className="amx-progress"><span style={{ width: `${Math.min(c.percent, 100)}%` }} /></div>
+            {c.missingCount > 0 && (
+              <button
+                type="button"
+                className="amx-mark-read-link"
+                style={{ marginTop: 6 }}
+                onClick={() => onJumpToKey(c.missingKeys[0])}
+              >
+                {c.missingCount} key{c.missingCount === 1 ? "" : "s"} missing — jump to first
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function Translations() {
   const [languages, setLanguages] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -97,9 +132,11 @@ function Translations() {
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [coverage, setCoverage] = useState([]);
 
   useEffect(() => {
     adminApi.get("/languages").then(({ data }) => setLanguages(data.languages.filter((l) => l.isActive))).catch(() => {});
+    adminApi.get("/translations/coverage").then(({ data }) => setCoverage(data.coverage)).catch(() => {});
     // legalTerms/legalPrivacy/legalCookies are full page content, owned by
     // the Pages module now — kept out of this grid so editors aren't split
     // across two places for the same content. legalCommon (Print, Copy
@@ -142,6 +179,14 @@ function Translations() {
           <p>Edit the site's translated text for each active language</p>
         </div>
       </div>
+
+      <CoverageSummary
+        coverage={coverage}
+        onJumpToKey={(key) => {
+          setCategory("");
+          setQuery(key);
+        }}
+      />
 
       <div className="amx-card amx-panel">
         <div className="amx-filters">
