@@ -1909,6 +1909,32 @@ const DEFAULTS = [
   ["jobForm", "jobForm.workMode.onSite", "On-site", "ऑन-साइट", "آن سائٹ", "في الموقع"],
   ["jobForm", "jobForm.workMode.remote", "Remote", "रिमोट", "ریموٹ", "عن بُعد"],
   ["jobForm", "jobForm.workMode.hybrid", "Hybrid", "हाइब्रिड", "ہائبرڈ", "هجين"],
+
+  // Jobs redesign — Phase 2 (Saved Jobs, My Applications, profile-completion nudge)
+  ["nav", "nav.myApplications", "My Applications", "मेरे आवेदन", "میری درخواستیں", "طلباتي"],
+  ["jobs", "jobs.card.save", "Save job", "नौकरी सहेजें", "ملازمت محفوظ کریں", "حفظ الوظيفة"],
+  ["jobs", "jobs.card.unsave", "Remove from saved jobs", "सहेजी गई नौकरियों से हटाएं", "محفوظ شدہ ملازمتوں سے ہٹائیں", "إزالة من الوظائف المحفوظة"],
+  ["jobs", "jobs.rails.saved.title", "Saved Jobs", "सहेजी गई नौकरियाँ", "محفوظ شدہ ملازمتیں", "الوظائف المحفوظة"],
+  ["jobs", "jobs.rails.saved.subtitle", "Jobs you've bookmarked to come back to", "वे नौकरियाँ जिन्हें आपने बाद में देखने के लिए सहेजा है", "وہ ملازمتیں جو آپ نے بعد میں دیکھنے کے لیے محفوظ کی ہیں", "الوظائف التي حفظتها للعودة إليها لاحقًا"],
+  ["jobs", "jobs.rails.applications.title", "My Applications", "मेरे आवेदन", "میری درخواستیں", "طلباتي"],
+  ["jobs", "jobs.rails.applications.subtitle", "Where your recent applications stand", "आपके हाल के आवेदनों की स्थिति", "آپ کی حالیہ درخواستوں کی صورتحال", "حالة طلباتك الأخيرة"],
+  ["jobApply", "jobApply.completion.label", "Your profile is", "आपकी प्रोफ़ाइल", "آپ کی پروفائل", "ملفك الشخصي مكتمل"],
+  ["jobApply", "jobApply.completion.complete", "complete", "पूर्ण है", "مکمل ہے", "بنسبة"],
+  ["jobApply", "jobApply.completion.missingPrefix", "Add", "जोड़ें", "شامل کریں", "أضف"],
+  ["jobApply", "jobApply.completion.missingSuffix", "to strengthen your application.", "अपने आवेदन को मज़बूत बनाने के लिए।", "اپنی درخواست کو مضبوط بنانے کے لیے۔", "لتعزيز طلبك."],
+  ["jobApply", "jobApply.completion.photo", "Profile photo", "प्रोफ़ाइल फ़ोटो", "پروفائل فوٹو", "صورة الملف الشخصي"],
+  ["jobApply", "jobApply.completion.personal", "Personal details", "व्यक्तिगत विवरण", "ذاتی تفصیلات", "التفاصيل الشخصية"],
+  ["jobApply", "jobApply.completion.workExperience", "Work experience", "कार्य अनुभव", "کام کا تجربہ", "الخبرة العملية"],
+  ["jobApply", "jobApply.completion.education", "Education", "शिक्षा", "تعلیم", "التعليم"],
+  ["jobApply", "jobApply.completion.hobbies", "Hobbies", "शौक़", "مشاغل", "الهوايات"],
+  ["jobApply", "jobApply.completion.skills", "Skills", "कौशल", "مہارتیں", "المهارات"],
+  ["myApplications", "myApplications.hero.eyebrow", "Your Applications", "आपके आवेदन", "آپ کی درخواستیں", "طلباتك"],
+  ["myApplications", "myApplications.hero.title", "My Applications", "मेरे आवेदन", "میری درخواستیں", "طلباتي"],
+  ["myApplications", "myApplications.hero.sub", "Every job you've applied to, and where each one stands.", "हर वह नौकरी जिसके लिए आपने आवेदन किया है, और हर एक की स्थिति।", "ہر وہ ملازمت جس کے لیے آپ نے درخواست دی، اور ہر ایک کی صورتحال۔", "كل وظيفة تقدمت لها، وحالة كل طلب."],
+  ["myApplications", "myApplications.loadError", "Couldn't load your applications.", "आपके आवेदन लोड नहीं हो सके।", "آپ کی درخواستیں لوڈ نہیں ہو سکیں۔", "تعذّر تحميل طلباتك."],
+  ["myApplications", "myApplications.empty.title", "You haven't applied to any jobs yet", "आपने अभी तक किसी नौकरी के लिए आवेदन नहीं किया है", "آپ نے ابھی تک کسی ملازمت کے لیے درخواست نہیں دی", "لم تتقدم لأي وظيفة بعد"],
+  ["myApplications", "myApplications.empty.body", "Browse open roles from across the community and apply in a minute.", "समुदाय भर की खुली भूमिकाएँ ब्राउज़ करें और एक मिनट में आवेदन करें।", "کمیونٹی بھر کی خالی آسامیاں براؤز کریں اور ایک منٹ میں درخواست دیں۔", "تصفّح الوظائف الشاغرة من جميع أنحاء المجتمع وتقدّم خلال دقيقة."],
+  ["myApplications", "myApplications.appliedOn", "Applied {date}", "{date} को आवेदन किया", "{date} کو درخواست دی گئی", "تم التقديم في {date}"],
 ];
 
 // Additive, not "seed once": every deploy that adds new keys to DEFAULTS

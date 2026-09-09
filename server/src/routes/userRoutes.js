@@ -20,6 +20,7 @@ import {
   removeResume,
   downloadMyResume,
   generateBio,
+  getMyProfileCompletion,
 } from "../controllers/userController.js";
 import { listMine, markRead, markAllRead } from "../controllers/userNotificationController.js";
 import * as workExperience from "../controllers/userWorkExperienceController.js";
@@ -51,6 +52,7 @@ router.post("/logout", auth, requireUser, logout);
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPassword);
 router.get("/me", auth, requireUser, me);
+router.get("/me/profile-completion", auth, requireUser, getMyProfileCompletion);
 router.patch("/me", auth, requireUser, updateProfile);
 router.post("/me/photo", auth, requireUser, uploadProfilePhoto, saveProfilePhoto);
 router.delete("/me/photo", auth, requireUser, removeProfilePhoto);

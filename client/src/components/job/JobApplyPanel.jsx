@@ -4,10 +4,51 @@ import { Icon } from "../Icons.jsx";
 import { formatDate } from "../../utils/formatDateTime.js";
 import { getStoredUser } from "../../utils/userAuthStorage.js";
 import jobApi from "../../services/jobApi.js";
+import userApi from "../../services/userApi.js";
 import MicButton from "../MicButton.jsx";
+import { useJobFavorite } from "../../hooks/useJobFavorite.js";
 import { useTranslation } from "../../i18n/LanguageContext.jsx";
 
 const COVER_NOTE_MAX = 1000;
+
+const COMPLETION_LABEL_KEY = {
+  photo: ["jobApply.completion.photo", "Profile photo"],
+  personal: ["jobApply.completion.personal", "Personal details"],
+  workExperience: ["jobApply.completion.workExperience", "Work experience"],
+  education: ["jobApply.completion.education", "Education"],
+  hobbies: ["jobApply.completion.hobbies", "Hobbies"],
+  skills: ["jobApply.completion.skills", "Skills"],
+};
+
+// Compact, non-blocking nudge shown before Submit — applying still works at
+// any completion level, this just helps the applicant put their best
+// profile forward, per the "show completion status before applying" ask.
+function CompletionBar() {
+  const { t } = useTranslation();
+  const [completion, setCompletion] = useState(null);
+
+  useEffect(() => {
+    userApi.get("/me/profile-completion").then(({ data }) => setCompletion(data)).catch(() => {});
+  }, []);
+
+  if (!completion || completion.percent >= 100) return null;
+
+  return (
+    <div className="job-completion-bar">
+      <div className="job-completion-bar-head">
+        <span>{t("jobApply.completion.label", "Your profile is")} <strong>{completion.percent}%</strong> {t("jobApply.completion.complete", "complete")}</span>
+      </div>
+      <div className="job-completion-bar-track">
+        <div className="job-completion-bar-fill" style={{ width: `${completion.percent}%` }} />
+      </div>
+      {completion.missing.length > 0 && (
+        <p className="job-completion-bar-hint">
+          {t("jobApply.completion.missingPrefix", "Add")} {completion.missing.map((key) => t(...COMPLETION_LABEL_KEY[key])).join(", ")} {t("jobApply.completion.missingSuffix", "to strengthen your application.")}
+        </p>
+      )}
+    </div>
+  );
+}
 
 // Auto-fetches the applicant's profile (jobController.js's applyToJob pulls
 // education/work experience/skills/bio via the same aggregation
@@ -69,6 +110,7 @@ function ApplyModal({ job, onCancel, onSubmitted }) {
               <MicButton onTranscript={(text) => setCoverNote(text.slice(0, COVER_NOTE_MAX))} className="msj-about-mic" />
             </div>
           </div>
+          <CompletionBar />
           {error && <div className="auth-alert" style={{ marginBottom: 16 }}><Icon name="info" size={17} />{error}</div>}
           <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
             <button type="button" className="btn btn-outline-ink" style={{ flex: 1, justifyContent: "center" }} onClick={onCancel} disabled={saving}>{t("jobApply.modal.cancel", "Cancel")}</button>
@@ -87,6 +129,7 @@ function JobApplyPanel({ job, posterId }) {
   const [myApplication, setMyApplication] = useState(undefined); // undefined = loading, null = none
   const [applying, setApplying] = useState(false);
   const [justSubmitted, setJustSubmitted] = useState(false);
+  const { favorited, toggle: toggleFavorite, busy: favoriteBusy } = useJobFavorite(job.id, { favorited: !!job.favorited });
 
   useEffect(() => {
     const onSessionUpdated = (e) => setUser(e.detail);
@@ -114,10 +157,27 @@ function JobApplyPanel({ job, posterId }) {
     setApplying(true);
   };
 
+  const onSaveClick = async () => {
+    const result = await toggleFavorite();
+    if (result.needsLogin) navigate("/auth");
+  };
+
   return (
     <div className="card msj-profile-card camp-donate-panel">
       <div className="camp-donate-panel-head">
         <span className="camp-donate-eyebrow">{t("jobApply.panel.eyebrow", "This Opening")}</span>
+        {!isOwnJob && (
+          <button
+            type="button"
+            className={`job-card-save${favorited ? " active" : ""}`}
+            onClick={onSaveClick}
+            disabled={favoriteBusy}
+            aria-label={favorited ? t("jobs.card.unsave", "Remove from saved jobs") : t("jobs.card.save", "Save job")}
+            title={favorited ? t("jobs.card.unsave", "Remove from saved jobs") : t("jobs.card.save", "Save job")}
+          >
+            <Icon name="heart" size={15} />
+          </button>
+        )}
       </div>
       <h3>{job.title}</h3>
 

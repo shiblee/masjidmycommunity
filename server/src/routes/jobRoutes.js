@@ -3,6 +3,7 @@ import auth, { requireUser } from "../middleware/auth.js";
 import { uploadResume } from "../middleware/upload.js";
 import {
   listMine,
+  listMyApplications,
   getOne,
   createJob,
   updateJob,
@@ -21,6 +22,7 @@ const router = Router();
 router.use(auth, requireUser);
 
 router.get("/mine", listMine);
+router.get("/mine/applications", listMyApplications);
 router.post("/", createJob);
 router.get("/:id", getOne);
 router.patch("/:id", updateJob);

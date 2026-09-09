@@ -14,6 +14,7 @@ import { maskEmail, maskMobile } from "../utils/mask.js";
 import { recordProfileChange } from "../utils/profileChangeLog.js";
 import { getRequestContext } from "../utils/requestContext.js";
 import { isValidMaritalStatusValue } from "../utils/maritalStatus.js";
+import { computeProfileCompletion, getCompletionCountsByUserIds } from "./adminUserController.js";
 import {
   createUserSession,
   rotateUserSession,
@@ -552,6 +553,35 @@ export const me = async (req, res) => {
     const user = await User.findByPk(req.user.id);
     if (!user) return res.status(404).json({ message: "Account not found." });
     res.json({ user: toPublicUser(user) });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Same six checks as ProfileCompletion.jsx's own client-side CHECKS list and
+// adminUserController.js's COMPLETION_CHECKS — kept as parallel, matching
+// definitions (each file already computes this independently) rather than a
+// shared import, since ProfileCompletion.jsx needs synchronous local counts
+// for its own separate fetch shape. This endpoint exists so a caller that
+// wants the number without re-deriving it locally (JobApplyPanel's
+// pre-apply completion bar) has one to call.
+const MY_COMPLETION_CHECKS = [
+  { key: "photo", test: (user) => !!user.profilePhoto },
+  { key: "personal", test: (user) => !!(user.gender || user.maritalStatus || user.dateOfBirth || user.locationLabel) },
+  { key: "workExperience", test: (user, counts) => counts.workExperience > 0 },
+  { key: "education", test: (user, counts) => counts.education > 0 },
+  { key: "hobbies", test: (user, counts) => counts.hobbies > 0 },
+  { key: "skills", test: (user, counts) => counts.skills > 0 },
+];
+
+export const getMyProfileCompletion = async (req, res) => {
+  try {
+    const user = await User.findByPk(req.user.id);
+    if (!user) return res.status(404).json({ message: "Account not found." });
+    const counts = (await getCompletionCountsByUserIds([user.id]))[user.id];
+    const percent = computeProfileCompletion(user, counts);
+    const missing = MY_COMPLETION_CHECKS.filter((c) => !c.test(user, counts)).map((c) => c.key);
+    res.json({ percent, missing });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

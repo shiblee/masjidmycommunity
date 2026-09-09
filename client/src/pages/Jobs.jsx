@@ -1,10 +1,15 @@
 import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import axios from "axios";
 import { API_BASE } from "../config.js";
 import { Icon } from "../components/Icons.jsx";
 import SkillsFilter from "./jobs/SkillsFilter.jsx";
 import JobCard from "../components/job/JobCard.jsx";
 import JobCardSkeleton from "../components/job/JobCardSkeleton.jsx";
+import JobRail from "../components/job/JobRail.jsx";
+import publicJobApi from "../services/publicJobApi.js";
+import jobApi from "../services/jobApi.js";
+import { getStoredUser } from "../utils/userAuthStorage.js";
 import { useTranslation } from "../i18n/LanguageContext.jsx";
 
 const PAGE_SIZE = 12;
@@ -38,11 +43,21 @@ function Jobs() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
 
+  const [savedJobs, setSavedJobs] = useState([]);
+  const [myApplications, setMyApplications] = useState([]);
+  const isLoggedIn = !!getStoredUser();
+
   useEffect(() => {
     axios.get(`${API_BASE}/jobs/public/meta/categories`).then(({ data }) => setJobCategories(data.jobCategories)).catch(() => {});
     axios.get(`${API_BASE}/jobs/public/meta/job-types`).then(({ data }) => setJobTypes(data.employmentTypes)).catch(() => {});
     axios.get(`${API_BASE}/jobs/public/meta/experience-levels`).then(({ data }) => setExperienceLevels(data.experienceLevels)).catch(() => {});
     axios.get(`${API_BASE}/jobs/public/meta/skills`).then(({ data }) => setSkills(data.skills)).catch(() => {});
+
+    if (isLoggedIn) {
+      publicJobApi.get("/liked/mine", { params: { pageSize: 10 } }).then(({ data }) => setSavedJobs(data.jobs)).catch(() => {});
+      jobApi.get("/mine/applications").then(({ data }) => setMyApplications(data.applications.slice(0, 10))).catch(() => {});
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -145,6 +160,32 @@ function Jobs() {
 
       <section className="py-md msj-explore-content">
         <div className="wrap">
+          <JobRail
+            icon="heart"
+            title={t("jobs.rails.saved.title", "Saved Jobs")}
+            subtitle={t("jobs.rails.saved.subtitle", "Jobs you've bookmarked to come back to")}
+            count={savedJobs.length}
+          >
+            {savedJobs.map((j) => <JobCard job={j} key={j.id} />)}
+          </JobRail>
+
+          <JobRail
+            icon="mail"
+            title={t("jobs.rails.applications.title", "My Applications")}
+            subtitle={t("jobs.rails.applications.subtitle", "Where your recent applications stand")}
+            count={myApplications.length}
+          >
+            {myApplications.map((a) => (
+              <Link to={`/job/${a.job.slug}`} className="job-rail-app-item" key={a.id}>
+                <h4>{a.job.title}</h4>
+                <p><Icon name="mapPin" size={12} /> {a.job.location}</p>
+                <span className={`acct-status-pill ${a.status === "hired" ? "active" : a.status === "rejected" ? "rejected" : a.status === "shortlisted" ? "approved" : "submitted"}`}>
+                  {t(`jobApply.status.${a.status === "under_review" ? "underReview" : a.status}`, a.status)}
+                </span>
+              </Link>
+            ))}
+          </JobRail>
+
           {jobCategories.length > 0 && (
             <div className="job-category-strip">
               {jobCategories.map((c) => (

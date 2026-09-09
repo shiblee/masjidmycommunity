@@ -71,6 +71,33 @@ export const listMine = async (req, res) => {
   }
 };
 
+// Every job the current user has applied to, across all posters — rolls up
+// the same per-application shape JobApplicants.jsx already renders per-job,
+// joined with a small job summary so the page can link back to each listing.
+export const listMyApplications = async (req, res) => {
+  try {
+    const applications = await JobApplication.findAll({ where: { applicantUserId: req.user.id }, order: [["createdAt", "DESC"]] });
+    const jobIds = applications.map((a) => a.jobId);
+    const jobs = jobIds.length ? await Job.findAll({ where: { id: jobIds } }) : [];
+    const jobById = new Map(jobs.map((j) => [j.id, j]));
+
+    const rows = applications
+      .map((a) => {
+        const job = jobById.get(a.jobId);
+        if (!job) return null;
+        const json = serializeApplication(a, null);
+        delete json.applicant;
+        json.job = { id: job.id, slug: job.slug, title: job.title, jobType: job.jobType, location: job.location, status: job.status };
+        return json;
+      })
+      .filter(Boolean);
+
+    res.json({ applications: rows });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 export const getOne = async (req, res) => {
   try {
     const job = await findOwnedJob(req, res);
