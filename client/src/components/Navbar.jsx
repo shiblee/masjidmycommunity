@@ -74,7 +74,7 @@ function Navbar() {
   // /masjid/:slug and /campaign/:slug aren't sub-paths of the plural list
   // pages (/explore-masjids, /campaigns) they belong to, so an exact match
   // alone would leave "Masjids"/"Campaign" unhighlighted on every profile page.
-  const ACTIVE_PREFIXES = { "/explore-masjids": "/masjid/", "/campaigns": "/campaign/" };
+  const ACTIVE_PREFIXES = { "/explore-masjids": "/masjid/", "/campaigns": "/campaign/", "/jobs": "/job/" };
   const isLinkActive = (href) => !href.startsWith("#") && (pathname === href || pathname.startsWith(ACTIVE_PREFIXES[href] || "\0"));
 
   useClickOutside(menuRef, () => setMenuOpen(false));
