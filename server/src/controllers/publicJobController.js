@@ -52,6 +52,7 @@ export const listJobCategories = async (req, res) => {
 };
 
 const PUBLIC_STATUSES = ["active"];
+const MAP_POINTS_CAP = 300;
 
 async function withCard(job, { favoritedIds, matchProfile } = {}) {
   const poster = await User.findByPk(job.userId, { attributes: ["id", "fullName", "locationCity", "locationCountry"] });
@@ -66,6 +67,8 @@ async function withCard(job, { favoritedIds, matchProfile } = {}) {
     workMode: job.workMode,
     skills: job.skills || [],
     location: job.location,
+    latitude: job.latitude != null ? Number(job.latitude) : null,
+    longitude: job.longitude != null ? Number(job.longitude) : null,
     salary: job.salary,
     applicationDeadline: job.applicationDeadline,
     applicantCount: job.applicationCount,
@@ -88,7 +91,7 @@ async function getFavoritedIds(userId, jobIds) {
 
 export const listPublic = async (req, res) => {
   try {
-    const { q, jobType, experienceRequired, category, workMode, hasSalary, skills, location, excludeId, sort, nlQuery, lang, skipLocation, page = 1, pageSize = 12 } = req.query;
+    const { q, jobType, experienceRequired, category, workMode, hasSalary, skills, location, excludeId, sort, nlQuery, lang, skipLocation, lat, lng, page = 1, pageSize = 12 } = req.query;
     const where = { status: { [Op.in]: PUBLIC_STATUSES }, moderationStatus: "active" };
 
     // Natural-language search — parses free text into structured filters
@@ -144,17 +147,59 @@ export const listPublic = async (req, res) => {
       order = [["applicationDeadline", "ASC"]];
     }
 
+    // "Near You" — same server-side haversine `literal()` pattern
+    // publicMasjidController.js already uses, reused as-is for jobs.
+    const latNum = Number(lat), lngNum = Number(lng);
+    const hasCoords = Number.isFinite(latNum) && Number.isFinite(lngNum);
+    let distanceAttr = null;
+    if (hasCoords) {
+      distanceAttr = sequelize.literal(
+        `(6371 * acos(cos(radians(${latNum})) * cos(radians(latitude)) * cos(radians(longitude) - radians(${lngNum})) + sin(radians(${latNum})) * sin(radians(latitude))))`
+      );
+      if (sort === "distance") {
+        where.latitude = { [Op.ne]: null };
+        where.longitude = { [Op.ne]: null };
+        order = [[distanceAttr, "ASC"]];
+      }
+    }
+
     const limit = Math.min(Number(pageSize) || 12, 48);
     const offset = (Math.max(Number(page) || 1, 1) - 1) * limit;
 
-    const { rows, count } = await Job.findAndCountAll({ where, order, limit, offset });
+    const findOptions = { where, order, limit, offset };
+    if (distanceAttr) findOptions.attributes = { include: [[distanceAttr, "distanceKm"]] };
+
+    const { rows, count } = await Job.findAndCountAll(findOptions);
     const [favoritedIds, matchProfile] = await Promise.all([
       getFavoritedIds(req.user?.id, rows.map((j) => j.id)),
       req.user?.id ? getUserMatchProfile(req.user.id) : null,
     ]);
-    const jobs = await Promise.all(rows.map((j) => withCard(j, { favoritedIds, matchProfile })));
+    const jobs = await Promise.all(
+      rows.map((j) => withCard(j, { favoritedIds, matchProfile }).then((card) => ({
+        ...card,
+        ...(hasCoords && j.dataValues.distanceKm != null ? { distanceKm: Number(j.dataValues.distanceKm) } : {}),
+      })))
+    );
 
     res.json({ jobs, total: count, page: Number(page) || 1, pageSize: limit, appliedFilters });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+/** All currently-open, geocoded jobs (capped), for the Jobs page's Map view —
+ * mirrors publicMasjidController.js's listMapPoints exactly: no pagination,
+ * a straight cap, since a map wants every point at once rather than pages. */
+export const listMapPoints = async (req, res) => {
+  try {
+    const { q, category } = req.query;
+    const where = { status: { [Op.in]: PUBLIC_STATUSES }, moderationStatus: "active", latitude: { [Op.ne]: null }, longitude: { [Op.ne]: null } };
+    if (category) where.category = category;
+    if (q) where[Op.or] = [{ title: { [Op.like]: `%${q}%` } }, { description: { [Op.like]: `%${q}%` } }];
+
+    const rows = await Job.findAll({ where, order: [["createdAt", "DESC"]], limit: MAP_POINTS_CAP });
+    const jobs = await Promise.all(rows.map((j) => withCard(j)));
+    res.json({ jobs });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

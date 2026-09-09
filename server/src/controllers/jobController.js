@@ -118,7 +118,7 @@ export const createJob = async (req, res) => {
     const error = validateFields(req.body);
     if (error) return res.status(400).json({ message: error });
 
-    const { title, description, jobType, experienceRequired, category, workMode, skills, location, salary, applicationDeadline, contactMethod } = req.body;
+    const { title, description, jobType, experienceRequired, category, workMode, skills, location, formattedAddress, latitude, longitude, placeId, salary, applicationDeadline, contactMethod } = req.body;
 
     const restrictedField = await firstRestrictedField({ title: title.trim(), description: description.trim() });
     if (restrictedField) {
@@ -138,6 +138,10 @@ export const createJob = async (req, res) => {
       workMode: workMode || null,
       skills: normalizeSkills(skills),
       location: location.trim(),
+      formattedAddress: formattedAddress?.trim() || null,
+      latitude: latitude ?? null,
+      longitude: longitude ?? null,
+      placeId: placeId?.trim() || null,
       salary: salary?.trim() || null,
       applicationDeadline: applicationDeadline || null,
       contactMethod: contactMethod?.trim() || null,
@@ -163,7 +167,7 @@ export const updateJob = async (req, res) => {
     const error = validateFields({ ...job.toJSON(), ...req.body });
     if (error) return res.status(400).json({ message: error });
 
-    const { title, description, jobType, experienceRequired, category, workMode, skills, location, salary, applicationDeadline, contactMethod } = req.body;
+    const { title, description, jobType, experienceRequired, category, workMode, skills, location, formattedAddress, latitude, longitude, placeId, salary, applicationDeadline, contactMethod } = req.body;
 
     const restrictedField = await firstRestrictedField({ title: (title ?? job.title).trim(), description: (description ?? job.description).trim() });
     if (restrictedField) {
@@ -181,6 +185,10 @@ export const updateJob = async (req, res) => {
     if (workMode !== undefined) job.workMode = workMode || null;
     if (skills !== undefined) job.skills = normalizeSkills(skills);
     if (location !== undefined) job.location = location.trim();
+    if (formattedAddress !== undefined) job.formattedAddress = formattedAddress?.trim() || null;
+    if (latitude !== undefined) job.latitude = latitude ?? null;
+    if (longitude !== undefined) job.longitude = longitude ?? null;
+    if (placeId !== undefined) job.placeId = placeId?.trim() || null;
     if (salary !== undefined) job.salary = salary?.trim() || null;
     if (applicationDeadline !== undefined) job.applicationDeadline = applicationDeadline || null;
     if (contactMethod !== undefined) job.contactMethod = contactMethod?.trim() || null;

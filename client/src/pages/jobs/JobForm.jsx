@@ -5,6 +5,7 @@ import { Field } from "../../components/masjid/ContactPersonForm.jsx";
 import { WizardShell } from "../../components/wizard/WizardShell.jsx";
 import MicButton from "../../components/MicButton.jsx";
 import TagSelect from "../../components/profile/TagSelect.jsx";
+import AddressAutocomplete from "../../components/AddressAutocomplete.jsx";
 import jobApi from "../../services/jobApi.js";
 import userApi from "../../services/userApi.js";
 import { useTranslation } from "../../i18n/LanguageContext.jsx";
@@ -16,7 +17,11 @@ function todayStr() {
 }
 
 function emptyForm() {
-  return { title: "", description: "", jobType: "", experienceRequired: "", category: "", workMode: "", skills: [], location: "", salary: "", applicationDeadline: "", contactMethod: "" };
+  return {
+    title: "", description: "", jobType: "", experienceRequired: "", category: "", workMode: "", skills: [],
+    location: "", formattedAddress: "", latitude: null, longitude: null, placeId: "",
+    salary: "", applicationDeadline: "", contactMethod: "",
+  };
 }
 
 // A single full-page form, not a multi-step wizard like Masjid/Campaign —
@@ -67,7 +72,10 @@ function JobForm({ embedded = false }) {
         experienceRequired: j.experienceRequired || "",
         category: j.category || "", workMode: j.workMode || "",
         skills: (j.skills || []).map((name, i) => ({ id: `existing-${i}`, name })),
-        location: j.location, salary: j.salary || "",
+        location: j.location,
+        formattedAddress: j.formattedAddress || "", latitude: j.latitude != null ? Number(j.latitude) : null,
+        longitude: j.longitude != null ? Number(j.longitude) : null, placeId: j.placeId || "",
+        salary: j.salary || "",
         applicationDeadline: j.applicationDeadline || "", contactMethod: j.contactMethod || "",
       });
     }).catch(() => setErrors({ form: t("jobForm.errors.loadFailed", "Couldn't load this job.") })).finally(() => setLoading(false));
@@ -76,6 +84,22 @@ function JobForm({ embedded = false }) {
   const setField = (field) => (e) => {
     setForm((f) => ({ ...f, [field]: e.target.value }));
     setErrors((er) => ({ ...er, [field]: null, form: null }));
+  };
+
+  // Picking a search suggestion fills the free-text `location` too (unlike
+  // MasjidWizard's address line, a job has no separate house/flat-number
+  // nuance to preserve) — the user can still edit it freely afterward, this
+  // is just a convenient starting point plus the geocoded companions.
+  const applyResolvedAddress = (fields) => {
+    setForm((f) => ({
+      ...f,
+      location: fields.address || fields.formattedAddress || f.location,
+      formattedAddress: fields.formattedAddress || f.formattedAddress,
+      latitude: fields.latitude ?? f.latitude,
+      longitude: fields.longitude ?? f.longitude,
+      placeId: fields.placeId || f.placeId,
+    }));
+    setErrors((er) => ({ ...er, location: null, form: null }));
   };
 
   const addSkill = (option) => setForm((f) => ({ ...f, skills: [...f.skills, option] }));
@@ -160,8 +184,16 @@ function JobForm({ embedded = false }) {
                   {jobTypes.map((jt) => <option key={jt.id} value={jt.name}>{jt.name}</option>)}
                 </select>
               </Field>
-              <Field label={t("jobApply.panel.location", "Location")} required error={errors.location}>
-                <input value={form.location} onChange={setField("location")} placeholder={t("jobForm.fields.locationPlaceholder", "e.g. Lucknow, India or Remote")} maxLength={150} />
+              <Field label={t("jobApply.panel.location", "Location")} required error={errors.location} hint={t("jobForm.hints.locationSearch", "Search for a real address, or type freely (e.g. \"Remote\")")}>
+                <AddressAutocomplete
+                  value={form.location}
+                  onChange={(v) => {
+                    setForm((f) => ({ ...f, location: v }));
+                    setErrors((er) => ({ ...er, location: null, form: null }));
+                  }}
+                  onResolved={applyResolvedAddress}
+                  placeholder={t("jobForm.fields.locationPlaceholder", "e.g. Lucknow, India or Remote")}
+                />
               </Field>
             </div>
 

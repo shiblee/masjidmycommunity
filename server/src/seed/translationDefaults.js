@@ -1962,6 +1962,19 @@ const DEFAULTS = [
   ["jobAi", "jobAi.inputPlaceholder", "Ask about open jobs…", "खुली नौकरियों के बारे में पूछें…", "خالی ملازمتوں کے بارے میں پوچھیں…", "اسأل عن الوظائف الشاغرة…"],
   ["jobAi", "jobAi.askingBtn", "Asking…", "पूछ रहे हैं…", "پوچھا جا رہا ہے…", "جارٍ السؤال…"],
   ["jobAi", "jobAi.askBtn", "Ask", "पूछें", "پوچھیں", "اسأل"],
+
+  // Jobs redesign — Phase 5 (Location & Map Experience)
+  ["jobs", "jobs.rails.nearYou.title", "Near You", "आपके पास", "آپ کے قریب", "بالقرب منك"],
+  ["jobs", "jobs.rails.nearYou.subtitle", "Open roles closest to your location", "आपके स्थान के सबसे नज़दीक खुले पद", "آپ کے مقام کے قریب ترین خالی آسامیاں", "أقرب الوظائف الشاغرة إلى موقعك"],
+  ["jobs", "jobs.view.grid", "Grid", "ग्रिड", "گرڈ", "شبكة"],
+  ["jobs", "jobs.view.map", "Map", "मानचित्र", "نقشہ", "خريطة"],
+  ["jobs", "jobs.card.getDirections", "Get Directions", "दिशा-निर्देश प्राप्त करें", "راستہ حاصل کریں", "الحصول على الاتجاهات"],
+  ["jobs", "jobs.map.fromYou", "from you", "आपसे", "آپ سے", "منك"],
+  ["jobs", "jobs.map.youAreHere", "You are here", "आप यहाँ हैं", "آپ یہاں ہیں", "أنت هنا"],
+  ["jobs", "jobs.map.noMatch", "No jobs match your search.", "आपकी खोज से कोई नौकरी मेल नहीं खाती।", "آپ کی تلاش سے کوئی ملازمت مماثل نہیں۔", "لا توجد وظائف مطابقة لبحثك."],
+  ["jobs", "jobs.map.notMappedYet", "Not mapped yet", "अभी मानचित्रित नहीं", "ابھی نقشہ پر نہیں", "لم يتم تحديد الموقع بعد"],
+  ["jobs", "jobs.map.showMyLocation", "Show my location", "मेरा स्थान दिखाएं", "میرا مقام دکھائیں", "إظهار موقعي"],
+  ["jobForm", "jobForm.hints.locationSearch", "Search for a real address, or type freely (e.g. \"Remote\")", "किसी वास्तविक पते के लिए खोजें, या स्वतंत्र रूप से टाइप करें (उदाहरण: \"रिमोट\")", "کسی حقیقی پتے کے لیے تلاش کریں، یا آزادانہ طور پر ٹائپ کریں (مثلاً \"ریموٹ\")", "ابحث عن عنوان حقيقي، أو اكتب بحرية (مثال: \"عن بُعد\")"],
 ];
 
 // Additive, not "seed once": every deploy that adds new keys to DEFAULTS

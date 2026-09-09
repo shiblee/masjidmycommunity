@@ -8,6 +8,7 @@ import JobCard from "../components/job/JobCard.jsx";
 import JobCardSkeleton from "../components/job/JobCardSkeleton.jsx";
 import JobRail from "../components/job/JobRail.jsx";
 import JobAiAssistant from "../components/job/JobAiAssistant.jsx";
+import JobsMap from "./jobs/JobsMap.jsx";
 import publicJobApi from "../services/publicJobApi.js";
 import jobApi from "../services/jobApi.js";
 import { getStoredUser } from "../utils/userAuthStorage.js";
@@ -51,7 +52,31 @@ function Jobs() {
   const [recommended, setRecommended] = useState([]);
   const [bySkills, setBySkills] = useState([]);
   const [closingSoon, setClosingSoon] = useState([]);
+  const [nearYou, setNearYou] = useState([]);
   const isLoggedIn = !!getStoredUser();
+
+  const [view, setView] = useState("grid");
+  const [coords, setCoords] = useState(null);
+  const [mapJobs, setMapJobs] = useState(null);
+  const [selectedMapId, setSelectedMapId] = useState(null);
+
+  // Same two-tier location approach as ExploreMasjids.jsx: browser
+  // geolocation first, falling back to the user's own saved profile
+  // coordinates (if logged in) when permission is denied — asked for once
+  // on load since distance shows up in the grid, Near You rail, and Map alike.
+  const requestLocation = () => {
+    if (!navigator.geolocation) return fallbackToProfileLocation();
+    navigator.geolocation.getCurrentPosition(
+      (pos) => setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => fallbackToProfileLocation()
+    );
+  };
+  const fallbackToProfileLocation = () => {
+    const user = getStoredUser();
+    if (user?.locationLat != null && user?.locationLng != null) {
+      setCoords({ lat: Number(user.locationLat), lng: Number(user.locationLng) });
+    }
+  };
 
   useEffect(() => {
     axios.get(`${API_BASE}/jobs/public/meta/categories`).then(({ data }) => setJobCategories(data.jobCategories)).catch(() => {});
@@ -59,6 +84,7 @@ function Jobs() {
     axios.get(`${API_BASE}/jobs/public/meta/experience-levels`).then(({ data }) => setExperienceLevels(data.experienceLevels)).catch(() => {});
     axios.get(`${API_BASE}/jobs/public/meta/skills`).then(({ data }) => setSkills(data.skills)).catch(() => {});
     publicJobApi.get("/", { params: { sort: "deadline", pageSize: 8 } }).then(({ data }) => setClosingSoon(data.jobs)).catch(() => {});
+    requestLocation();
 
     if (isLoggedIn) {
       publicJobApi.get("/liked/mine", { params: { pageSize: 10 } }).then(({ data }) => setSavedJobs(data.jobs)).catch(() => {});
@@ -68,6 +94,23 @@ function Jobs() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (!coords) return;
+    publicJobApi
+      .get("/", { params: { lat: coords.lat, lng: coords.lng, sort: "distance", pageSize: 8 } })
+      .then(({ data }) => setNearYou(data.jobs))
+      .catch(() => {});
+  }, [coords]);
+
+  useEffect(() => {
+    if (view !== "map") return;
+    setMapJobs(null);
+    publicJobApi
+      .get("/map", { params: { q: q || undefined, category: category || undefined } })
+      .then(({ data }) => setMapJobs(data.jobs))
+      .catch(() => setMapJobs([]));
+  }, [view, q, category]);
 
   useEffect(() => {
     const handle = setTimeout(() => {
@@ -203,7 +246,7 @@ function Jobs() {
             subtitle={t("jobs.rails.recommended.subtitle", "Based on your skills, experience, and location")}
             count={recommended.length}
           >
-            {recommended.map((j) => <JobCard job={j} key={j.id} />)}
+            {recommended.map((j) => <JobCard job={j} userLocation={coords} key={j.id} />)}
           </JobRail>
 
           <JobRail
@@ -212,7 +255,16 @@ function Jobs() {
             subtitle={t("jobs.rails.bySkills.subtitle", "Jobs that share at least one skill with your profile")}
             count={bySkills.length}
           >
-            {bySkills.map((j) => <JobCard job={j} key={j.id} />)}
+            {bySkills.map((j) => <JobCard job={j} userLocation={coords} key={j.id} />)}
+          </JobRail>
+
+          <JobRail
+            icon="mapPin"
+            title={t("jobs.rails.nearYou.title", "Near You")}
+            subtitle={t("jobs.rails.nearYou.subtitle", "Open roles closest to your location")}
+            count={nearYou.length}
+          >
+            {nearYou.map((j) => <JobCard job={j} userLocation={coords} key={j.id} />)}
           </JobRail>
 
           <JobRail
@@ -221,7 +273,7 @@ function Jobs() {
             subtitle={t("jobs.rails.saved.subtitle", "Jobs you've bookmarked to come back to")}
             count={savedJobs.length}
           >
-            {savedJobs.map((j) => <JobCard job={j} key={j.id} />)}
+            {savedJobs.map((j) => <JobCard job={j} userLocation={coords} key={j.id} />)}
           </JobRail>
 
           <JobRail
@@ -247,7 +299,7 @@ function Jobs() {
             subtitle={t("jobs.rails.closingSoon.subtitle", "Roles with an application deadline coming up")}
             count={closingSoon.length}
           >
-            {closingSoon.map((j) => <JobCard job={j} key={j.id} />)}
+            {closingSoon.map((j) => <JobCard job={j} userLocation={coords} key={j.id} />)}
           </JobRail>
 
           {jobCategories.length > 0 && (
@@ -267,6 +319,15 @@ function Jobs() {
           )}
 
           <div className="job-filters-bar">
+            <div className="msj-view-switch">
+              <button type="button" className={view === "grid" ? "active" : ""} onClick={() => setView("grid")} title={t("jobs.view.grid", "Grid")}>
+                <Icon name="grid" size={15} /> {t("jobs.view.grid", "Grid")}
+              </button>
+              <button type="button" className={view === "map" ? "active" : ""} onClick={() => setView("map")} title={t("jobs.view.map", "Map")}>
+                <Icon name="map" size={15} /> {t("jobs.view.map", "Map")}
+              </button>
+            </div>
+
             <button
               type="button"
               className={`job-filters-toggle${filtersOpen ? " active" : ""}`}
@@ -322,42 +383,52 @@ function Jobs() {
             </div>
           )}
 
-          <div className="filter-count">
-            {loading && page === 1
-              ? t("jobs.filter.loadingJobs", "Loading jobs…")
-              : `${t("jobs.filter.showing", "Showing")} ${jobs?.length || 0} ${t("jobs.filter.of", "of")} ${total} ${t("jobs.filter.jobsCount", "jobs")}`}
-          </div>
-
-          {loading && page === 1 ? (
-            <div className="msj-list-grid" style={{ marginTop: 12 }}>
-              {Array.from({ length: SKELETON_COUNT }).map((_, i) => <JobCardSkeleton key={i} />)}
-            </div>
-          ) : jobs?.length === 0 ? (
-            <div className="msj-empty-state">
-              <Icon name="briefcase" size={30} />
-              <h3>{hasAnyFilter ? t("jobs.empty.filteredTitle", "No jobs match your filters") : t("jobs.empty.noneTitle", "No open jobs right now")}</h3>
-              <p>{hasAnyFilter ? t("jobs.empty.filteredBody", "Try removing a filter or broadening your search.") : t("jobs.empty.noneBody", "Check back soon — new roles are posted by the community often.")}</p>
-              <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center" }}>
-                {appliedFilters?.location && !skipLocation && (
-                  <button type="button" className="btn btn-outline-ink" onClick={broadenWithoutLocation}>
-                    {t("jobs.empty.tryWithoutLocation", "Search without location")}
-                  </button>
-                )}
-                {hasAnyFilter && <button type="button" className="btn btn-outline-ink" onClick={clearAll}>{t("jobs.filter.clearAll", "Clear All Filters")}</button>}
-              </div>
-            </div>
+          {view === "map" ? (
+            mapJobs === null ? (
+              <p className="msj-note">{t("jobs.filter.loadingJobs", "Loading jobs…")}</p>
+            ) : (
+              <JobsMap jobs={mapJobs} selectedId={selectedMapId} onSelect={setSelectedMapId} userLocation={coords} onLocateMe={requestLocation} />
+            )
           ) : (
-            <div className="msj-list-grid" style={{ marginTop: 12 }}>
-              {jobs?.map((j) => <JobCard job={j} key={j.id} />)}
-            </div>
-          )}
+            <>
+              <div className="filter-count">
+                {loading && page === 1
+                  ? t("jobs.filter.loadingJobs", "Loading jobs…")
+                  : `${t("jobs.filter.showing", "Showing")} ${jobs?.length || 0} ${t("jobs.filter.of", "of")} ${total} ${t("jobs.filter.jobsCount", "jobs")}`}
+              </div>
 
-          {canLoadMore && (
-            <div style={{ textAlign: "center", marginTop: "36px" }}>
-              <button className="btn btn-outline-ink" disabled={loading} onClick={() => setPage((p) => p + 1)}>
-                {loading ? t("jobs.loadingEllipsis", "Loading…") : t("jobs.loadMore", "Load More Jobs")}
-              </button>
-            </div>
+              {loading && page === 1 ? (
+                <div className="msj-list-grid" style={{ marginTop: 12 }}>
+                  {Array.from({ length: SKELETON_COUNT }).map((_, i) => <JobCardSkeleton key={i} />)}
+                </div>
+              ) : jobs?.length === 0 ? (
+                <div className="msj-empty-state">
+                  <Icon name="briefcase" size={30} />
+                  <h3>{hasAnyFilter ? t("jobs.empty.filteredTitle", "No jobs match your filters") : t("jobs.empty.noneTitle", "No open jobs right now")}</h3>
+                  <p>{hasAnyFilter ? t("jobs.empty.filteredBody", "Try removing a filter or broadening your search.") : t("jobs.empty.noneBody", "Check back soon — new roles are posted by the community often.")}</p>
+                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center" }}>
+                    {appliedFilters?.location && !skipLocation && (
+                      <button type="button" className="btn btn-outline-ink" onClick={broadenWithoutLocation}>
+                        {t("jobs.empty.tryWithoutLocation", "Search without location")}
+                      </button>
+                    )}
+                    {hasAnyFilter && <button type="button" className="btn btn-outline-ink" onClick={clearAll}>{t("jobs.filter.clearAll", "Clear All Filters")}</button>}
+                  </div>
+                </div>
+              ) : (
+                <div className="msj-list-grid" style={{ marginTop: 12 }}>
+                  {jobs?.map((j) => <JobCard job={j} userLocation={coords} key={j.id} />)}
+                </div>
+              )}
+
+              {canLoadMore && (
+                <div style={{ textAlign: "center", marginTop: "36px" }}>
+                  <button className="btn btn-outline-ink" disabled={loading} onClick={() => setPage((p) => p + 1)}>
+                    {loading ? t("jobs.loadingEllipsis", "Loading…") : t("jobs.loadMore", "Load More Jobs")}
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </div>
       </section>

@@ -4,6 +4,7 @@ import { Icon } from "../Icons.jsx";
 import { formatDate } from "../../utils/formatDateTime.js";
 import { useTranslation } from "../../i18n/LanguageContext.jsx";
 import { useJobFavorite } from "../../hooks/useJobFavorite.js";
+import { distanceToJob, formatDistance, jobDirectionsUrl } from "./jobLocationUtils.js";
 
 const WORK_MODE_KEY = {
   on_site: ["jobs.card.onSite", "On-site"],
@@ -18,7 +19,7 @@ const BEST_MATCH_THRESHOLD = 75;
 // etc. rails as they land in later phases — one shape, one place that knows
 // how to render a job summary, matching the withCard() response shape from
 // publicJobController.js.
-function JobCard({ job }) {
+function JobCard({ job, userLocation }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { favorited, toggle, busy } = useJobFavorite(job.id, { favorited: !!job.favorited });
@@ -27,6 +28,8 @@ function JobCard({ job }) {
   const extraSkillCount = skills.length - visibleSkills.length;
   const workModeEntry = job.workMode && WORK_MODE_KEY[job.workMode];
   const workModeLabel = workModeEntry ? t(workModeEntry[0], workModeEntry[1]) : null;
+  const distance = job.distanceKm ?? distanceToJob(userLocation, job);
+  const directionsUrl = jobDirectionsUrl(job);
 
   const onSaveClick = async (e) => {
     e.preventDefault();
@@ -70,6 +73,16 @@ function JobCard({ job }) {
         <Icon name="mapPin" size={13} /> {job.location}
         {workModeLabel && <span className="job-card-workmode">{workModeLabel}</span>}
       </p>
+      {(distance != null || directionsUrl) && (
+        <p className="job-card-meta job-card-distance-row">
+          {distance != null && <span>{formatDistance(distance)}</span>}
+          {directionsUrl && (
+            <a href={directionsUrl} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="job-card-directions-link">
+              <Icon name="compass" size={12} /> {t("jobs.card.getDirections", "Get Directions")}
+            </a>
+          )}
+        </p>
+      )}
       {job.experienceRequired && <p className="job-card-meta">{job.experienceRequired}</p>}
       {job.salary && <p className="job-card-salary">{job.salary}</p>}
 

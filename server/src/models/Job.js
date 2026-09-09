@@ -50,6 +50,14 @@ const Job = sequelize.define(
     // safety profile as every other column added this session.
     workMode: { type: DataTypes.ENUM("on_site", "remote", "hybrid"), allowNull: true },
     location: { type: DataTypes.STRING, allowNull: false },
+    // Optional geocoded companions to the free-text `location` above —
+    // mirrors Masjid's own shape exactly (same nullable, no-default columns,
+    // same safety profile). `location` stays the source of truth for
+    // display/search text; these only power distance/map features when set.
+    formattedAddress: { type: DataTypes.STRING, allowNull: true },
+    latitude: { type: DataTypes.DECIMAL(10, 7), allowNull: true },
+    longitude: { type: DataTypes.DECIMAL(10, 7), allowNull: true },
+    placeId: { type: DataTypes.STRING, allowNull: true },
     salary: { type: DataTypes.STRING, allowNull: true },
     applicationDeadline: { type: DataTypes.DATEONLY, allowNull: true },
     contactMethod: { type: DataTypes.STRING, allowNull: true },
