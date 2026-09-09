@@ -50,6 +50,13 @@ const Donation = sequelize.define(
     // needs the real record; this only controls whether *public* displays
     // (donor list, campaign page) show that name or "Anonymous" in its place.
     isAnonymous: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
+    // Set once, the first time a receipt PDF is generated for this donation
+    // (donationReceiptService.js) — kept so every later re-send (or a
+    // reprint) reuses the exact same receipt number and file instead of
+    // minting a new one, even though the PDF shows "Anonymous" here too
+    // when isAnonymous is set, same as every other public-facing surface.
+    receiptNumber: { type: DataTypes.STRING, allowNull: true },
+    receiptUrl: { type: DataTypes.STRING, allowNull: true },
   },
   {
     tableName: "donations",

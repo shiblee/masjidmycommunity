@@ -514,6 +514,72 @@ const DEFAULT_TEMPLATES = [
     status: "active",
     availableVariables: ["user_name", "masjid_name", "masjid_id", "document_type", "status_label", "remarks", "platform_name", "current_year"],
   },
+  {
+    key: "donation_thank_you_donor",
+    name: "Donation – Donor Thank You",
+    purpose: "Sent to the donor immediately once their donation is recorded, with the PDF receipt attached.",
+    subject: "Thank you for your donation to {{campaign_title}}",
+    heading: "Thank You for Your Generosity",
+    message:
+      "Your donation has been recorded, and it means more than words can say.\n\nCampaign: {{campaign_title}}\nMasjid: {{masjid_name}}\nAmount: {{donation_amount}}\nDonation ID: {{donation_id}}\nReceipt Number: {{receipt_number}}\nDate & Time: {{donation_date}}\nPayment Method: {{payment_method}}\nPayment Status: {{payment_status}}\n\nYour official donation receipt is attached to this email as a PDF — please keep it for your records.\n\nMay this contribution be accepted and rewarded.",
+    ctaText: "View Campaign",
+    ctaLink: "https://masjidmycommunity.com/campaign/{{campaign_slug}}",
+    footerText:
+      "{{platform_name}} — Empowering Masjids. Strengthening Communities.\nNeed help? Contact us at hello@masjidmycommunity.org\n© {{current_year}} {{platform_name}}. All rights reserved.",
+    quoteEnabled: true,
+    quoteTransliteration: "Mathalul-ladhina yunfiquna amwalahum fi sabilillahi kamathali habbatin anbatat sab'a sanabila fi kulli sunbulatin mi'atu habbah",
+    quoteTranslation: "The example of those who spend their wealth in the way of Allah is like a seed which grows seven spikes; in each spike is a hundred grains.",
+    quoteSource: "Qur'an 2:261 (Surah Al-Baqarah)",
+    status: "active",
+    availableVariables: [
+      "user_name", "campaign_title", "campaign_slug", "masjid_name", "donation_amount", "donation_id",
+      "receipt_number", "donation_date", "payment_method", "payment_status", "platform_name", "current_year",
+    ],
+  },
+  {
+    key: "donation_masjid_owner_notification",
+    name: "Donation – Masjid Owner Notification",
+    purpose: "Sent to the masjid's owning account whenever a donation is recorded for one of their campaigns, with a copy of the PDF receipt attached. Donor identity in the body respects the donor's anonymous preference — the attached receipt is the financial record.",
+    subject: "New donation received for {{campaign_title}}",
+    heading: "A New Donation Has Been Received",
+    message:
+      "{{donor_label}} has donated to your campaign through Masjid My Community.\n\nCampaign: {{campaign_title}}\nMasjid: {{masjid_name}}\nAmount: {{donation_amount}}\nDonation ID: {{donation_id}}\nReceipt Number: {{receipt_number}}\nDate & Time: {{donation_date}}\nPayment Method: {{payment_method}}\n\nA copy of the official donation receipt is attached to this email for your records.",
+    ctaText: "View Campaign",
+    ctaLink: "https://masjidmycommunity.com/campaign/{{campaign_slug}}",
+    footerText:
+      "{{platform_name}} — Empowering Masjids. Strengthening Communities.\nThis donation was received through {{platform_name}}.\n© {{current_year}} {{platform_name}}. All rights reserved.",
+    quoteEnabled: false,
+    quoteTransliteration: null,
+    quoteTranslation: null,
+    quoteSource: null,
+    status: "active",
+    availableVariables: [
+      "user_name", "campaign_title", "campaign_slug", "masjid_name", "donor_label", "donation_amount",
+      "donation_id", "receipt_number", "donation_date", "payment_method", "platform_name", "current_year",
+    ],
+  },
+  {
+    key: "donation_admin_acknowledgement",
+    name: "Donation – Admin Acknowledgement",
+    purpose: "Sent to the configured admin notification email whenever any donation is recorded, platform-wide. No PDF attached — the donor and masjid-owner emails already each carry a copy of the same receipt.",
+    subject: "Donation recorded: {{donation_amount}} for {{campaign_title}}",
+    heading: "Donation Recorded",
+    message:
+      "A donation was recorded on the platform.\n\nCampaign: {{campaign_title}}\nMasjid: {{masjid_name}}\nAmount: {{donation_amount}}\nDonation ID: {{donation_id}}\nReceipt Number: {{receipt_number}}\nDonor Visibility: {{donor_visibility}}\nDate & Time: {{donation_date}}\nPayment Method: {{payment_method}}",
+    ctaText: null,
+    ctaLink: null,
+    footerText:
+      "{{platform_name}} — Empowering Masjids. Strengthening Communities.\nThis is an automated admin notification from {{platform_name}}.\n© {{current_year}} {{platform_name}}. All rights reserved.",
+    quoteEnabled: false,
+    quoteTransliteration: null,
+    quoteTranslation: null,
+    quoteSource: null,
+    status: "active",
+    availableVariables: [
+      "campaign_title", "masjid_name", "donation_amount", "donation_id", "receipt_number",
+      "donor_visibility", "donation_date", "payment_method", "platform_name", "current_year",
+    ],
+  },
 ];
 
 export async function ensureEmailDefaults() {

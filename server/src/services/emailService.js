@@ -119,12 +119,14 @@ async function logEmail({ userId, userName, userEmail, notificationType, subject
   }
 }
 
-async function dispatch({ to, subject, html }) {
+async function dispatch({ to, subject, html, attachments }) {
   if (!isConfigured) {
     console.log(`\n[emailService] DEV MODE — SMTP not configured, email not actually delivered.`);
     console.log(`[emailService] To: ${to}`);
     console.log(`[emailService] Subject: ${subject}`);
-    console.log(`[emailService] (HTML body omitted from console — ${html.length} chars)\n`);
+    console.log(`[emailService] (HTML body omitted from console — ${html.length} chars)`);
+    if (attachments?.length) console.log(`[emailService] Attachments: ${attachments.map((a) => a.filename).join(", ")}`);
+    console.log("");
     // Treated as "sent" for logging purposes: the notification pipeline completed
     // correctly, it just has no live SMTP transport configured yet in this environment.
     return { sent: true, dev: true };
@@ -132,7 +134,7 @@ async function dispatch({ to, subject, html }) {
 
   const settings = await EmailSettings.findOne();
   const from = settings ? `${settings.senderName} <${settings.senderEmail}>` : `${PLATFORM_NAME} <hello@masjidmycommunity.org>`;
-  await transporter.sendMail({ from, to, subject, html, replyTo: settings?.replyTo || undefined });
+  await transporter.sendMail({ from, to, subject, html, replyTo: settings?.replyTo || undefined, attachments });
   return { sent: true, dev: false };
 }
 
@@ -141,7 +143,7 @@ async function dispatch({ to, subject, html }) {
  * enable/disable switch and each template's active/inactive status, and
  * always records an activity log entry regardless of outcome.
  */
-export async function sendNotification(key, { to, variables = {}, userMeta = {} }) {
+export async function sendNotification(key, { to, variables = {}, userMeta = {}, attachments = undefined }) {
   const logBase = {
     userId: userMeta.userId || null,
     userName: userMeta.userName || variables.user_name || null,
@@ -181,7 +183,7 @@ export async function sendNotification(key, { to, variables = {}, userMeta = {} 
   const html = renderEmailHtml(template, allVars);
 
   try {
-    const result = await dispatch({ to, subject, html });
+    const result = await dispatch({ to, subject, html, attachments });
     await logEmail({
       ...logBase,
       subject,
@@ -620,6 +622,86 @@ export async function sendModerationThresholdReachedEmail({ contentType, content
       hidden_date: new Date().toLocaleString("en-GB"),
     },
     userMeta: { userEmail: to },
+  });
+}
+
+function formatDonationAmount(amount, currency = "INR") {
+  const symbol = currency === "INR" ? "₹" : `${currency} `;
+  return `${symbol}${Number(amount).toLocaleString("en-IN")}`;
+}
+
+const DONATION_METHOD_LABELS = { upi: "UPI", bank_transfer: "Bank Transfer", cash: "Cash", cheque: "Cheque", other: "Other" };
+
+// The three donation-confirmation emails (donationNotificationService.js's
+// sendDonationConfirmationEmails orchestrates all three plus the receipt PDF
+// they attach) — kept here alongside every other transactional email rather
+// than in their own file, following this service's own established pattern
+// of one send* wrapper per notification, all going through sendNotification.
+export async function sendDonationThankYouEmail(donation, campaign, masjid, receipt) {
+  if (!donation.donorEmail) return { sent: false, skipped: true };
+  return sendNotification("donation_thank_you_donor", {
+    to: donation.donorEmail,
+    variables: {
+      user_name: donation.donorName || "Friend",
+      campaign_title: campaign.title,
+      campaign_slug: campaign.slug,
+      masjid_name: masjid?.name || "—",
+      donation_amount: formatDonationAmount(donation.amount, donation.currency),
+      donation_id: String(donation.id),
+      receipt_number: receipt.receiptNumber,
+      donation_date: new Date(donation.createdAt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" }),
+      payment_method: DONATION_METHOD_LABELS[donation.method] || donation.method,
+      payment_status: "Confirmed",
+    },
+    userMeta: { userId: donation.userId, userName: donation.donorName, userEmail: donation.donorEmail },
+    attachments: [{ filename: `${receipt.receiptNumber}.pdf`, content: receipt.buffer }],
+  });
+}
+
+export async function sendDonationMasjidOwnerEmail(donation, campaign, masjid, ownerUser, receipt) {
+  if (!ownerUser?.email) return { sent: false, skipped: true };
+  return sendNotification("donation_masjid_owner_notification", {
+    to: ownerUser.email,
+    variables: {
+      user_name: ownerUser.fullName,
+      campaign_title: campaign.title,
+      campaign_slug: campaign.slug,
+      masjid_name: masjid?.name || "—",
+      // Never the donor's real name here, regardless of isAnonymous — this
+      // is a plain-text notification, not the financial record itself
+      // (that's the attached receipt, which the masjid is entitled to for
+      // reconciliation); the body copy stays donor-anonymous whenever the
+      // donor asked for that, consistent with every public-facing surface.
+      donor_label: donation.isAnonymous ? "A donor who chose to stay anonymous" : donation.donorName || "A donor",
+      donation_amount: formatDonationAmount(donation.amount, donation.currency),
+      donation_id: String(donation.id),
+      receipt_number: receipt.receiptNumber,
+      donation_date: new Date(donation.createdAt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" }),
+      payment_method: DONATION_METHOD_LABELS[donation.method] || donation.method,
+    },
+    userMeta: { userId: ownerUser.id, userName: ownerUser.fullName, userEmail: ownerUser.email },
+    attachments: [{ filename: `${receipt.receiptNumber}.pdf`, content: receipt.buffer }],
+  });
+}
+
+export async function sendDonationAdminEmail(donation, campaign, masjid) {
+  const settings = await EmailSettings.findOne();
+  const to = settings?.adminNotificationEmail;
+  return sendNotification("donation_admin_acknowledgement", {
+    to,
+    variables: {
+      campaign_title: campaign.title,
+      masjid_name: masjid?.name || "—",
+      donor_visibility: donation.isAnonymous ? "Anonymous (identity on file, not shown publicly)" : "Public",
+      donation_amount: formatDonationAmount(donation.amount, donation.currency),
+      donation_id: String(donation.id),
+      receipt_number: donation.receiptNumber || "—",
+      donation_date: new Date(donation.createdAt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" }),
+      payment_method: DONATION_METHOD_LABELS[donation.method] || donation.method,
+    },
+    userMeta: { userEmail: to },
+    // No PDF here on purpose — the task calling for this specifically
+    // avoids attaching a third copy of the same receipt.
   });
 }
 

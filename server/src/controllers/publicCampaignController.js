@@ -14,6 +14,7 @@ import { getEngagementFor } from "../services/masjidEngagementService.js";
 import { amountRaised } from "./campaignController.js";
 import { notifyAdmins } from "../services/adminAlertService.js";
 import { recordDonationActivity, recordMilestoneActivity } from "../services/communityActivityService.js";
+import { sendDonationConfirmationEmails } from "../services/donationNotificationService.js";
 
 const PUBLIC_STATUSES = ["active", "paused", "goal_reached", "completed"];
 
@@ -240,6 +241,11 @@ export const submitDonationClaim = async (req, res) => {
       link: `/admin/campaigns/${campaign.id}`,
       relatedMasjidId: campaign.masjidId,
     });
+
+    // Fire-and-forget, same as this codebase's other post-action emails —
+    // the receipt PDF + three confirmation emails shouldn't hold up the
+    // response, and the function itself never throws.
+    sendDonationConfirmationEmails(donation, campaign);
 
     res.status(201).json({ donation: { id: donation.id, status: donation.status }, amountRaised: afterRaised });
   } catch (error) {

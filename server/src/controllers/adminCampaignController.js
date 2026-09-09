@@ -13,6 +13,7 @@ import Masjid from "../models/Masjid.js";
 import User from "../models/User.js";
 import { amountRaised, serializeCampaign, generateUniqueSlug } from "./campaignController.js";
 import { recordCampaignApprovedActivity, recordDonationActivity, recordMilestoneActivity } from "../services/communityActivityService.js";
+import { sendDonationConfirmationEmails } from "../services/donationNotificationService.js";
 import { sendCampaignApprovedEmail, sendCampaignRejectedEmail, sendCampaignChangesRequestedEmail, sendCampaignStatusUpdatedEmail } from "../services/emailService.js";
 import { notifyUser } from "../services/notificationService.js";
 import { mediaTypeOf, IMAGE_MAX_BYTES } from "../middleware/upload.js";
@@ -326,6 +327,8 @@ export const recordDonation = async (req, res) => {
     await recordDonationActivity(campaign, donation);
     if (goal) await recordMilestoneActivity(campaign, beforePercent, afterPercent);
 
+    sendDonationConfirmationEmails(donation, campaign);
+
     res.status(201).json({ donation, amountRaised: afterRaised });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -365,6 +368,8 @@ export const confirmDonation = async (req, res) => {
 
     await recordDonationActivity(campaign, donation);
     if (goal) await recordMilestoneActivity(campaign, beforePercent, afterPercent);
+
+    sendDonationConfirmationEmails(donation, campaign);
 
     res.json({ donation, amountRaised: afterRaised });
   } catch (error) {
