@@ -16,6 +16,10 @@ export async function recordActivity({
   relatedJobId = null,
   metadata = null,
   autoPublish = true,
+  // Lets a backfill (see jobPostedActivityBackfill.js) preserve the real
+  // original date instead of every activity looking freshly posted — every
+  // normal caller omits this and gets "now", same as before.
+  occurredAt = null,
 }) {
   try {
     return await CommunityActivity.create({
@@ -29,7 +33,8 @@ export async function recordActivity({
       relatedJobId,
       metadata,
       status: autoPublish ? "published" : "pending_review",
-      publishedAt: autoPublish ? new Date() : null,
+      publishedAt: autoPublish ? occurredAt || new Date() : null,
+      ...(occurredAt ? { createdAt: occurredAt } : {}),
     });
   } catch {
     // Wall activity logging must never break the calling flow.
@@ -77,7 +82,7 @@ export async function recordCampaignApprovedActivity(campaign, masjid, coverPhot
 // Unlike recordCampaignApprovedActivity (fired on admin approval), a Job has
 // no approval lifecycle — createJob calls this immediately after Job.create,
 // the same point logJobHistory's "posted" entry already fires from.
-export async function recordJobPostedActivity(job, poster) {
+export async function recordJobPostedActivity(job, poster, { occurredAt } = {}) {
   return recordActivity({
     type: "job_posted",
     title: `New opening: ${job.title}`,
@@ -85,6 +90,7 @@ export async function recordJobPostedActivity(job, poster) {
     relatedUserId: job.userId,
     relatedJobId: job.id,
     metadata: { jobTitle: job.title, jobSlug: job.slug, location: job.location, jobType: job.jobType },
+    occurredAt,
   });
 }
 
