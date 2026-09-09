@@ -15,6 +15,9 @@ const AdminNotification = sequelize.define(
     relatedConcernId: { type: DataTypes.INTEGER, allowNull: true },
     relatedContactId: { type: DataTypes.INTEGER, allowNull: true },
     relatedMasjidId: { type: DataTypes.INTEGER, allowNull: true },
+    // Nullable, no default — added the same additive way as the other
+    // relatedXId columns this session (see CommunityActivity.relatedJobId).
+    relatedJobId: { type: DataTypes.INTEGER, allowNull: true },
     isRead: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
     readAt: { type: DataTypes.DATE, allowNull: true },
   },

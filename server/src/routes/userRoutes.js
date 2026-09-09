@@ -16,6 +16,9 @@ import {
   changePassword,
   uploadProfilePhoto as saveProfilePhoto,
   removeProfilePhoto,
+  uploadResume as saveResume,
+  removeResume,
+  downloadMyResume,
   generateBio,
 } from "../controllers/userController.js";
 import { listMine, markRead, markAllRead } from "../controllers/userNotificationController.js";
@@ -32,7 +35,7 @@ import { listActive as listActiveCompanies } from "../controllers/adminCompanyCo
 import { listActive as listActiveEmploymentTypes } from "../controllers/adminEmploymentTypeController.js";
 import { listActive as listActiveExperienceLevels } from "../controllers/adminExperienceLevelController.js";
 import auth, { requireUser } from "../middleware/auth.js";
-import { uploadProfilePhoto } from "../middleware/upload.js";
+import { uploadProfilePhoto, uploadResume } from "../middleware/upload.js";
 
 const router = Router();
 
@@ -50,6 +53,9 @@ router.get("/me", auth, requireUser, me);
 router.patch("/me", auth, requireUser, updateProfile);
 router.post("/me/photo", auth, requireUser, uploadProfilePhoto, saveProfilePhoto);
 router.delete("/me/photo", auth, requireUser, removeProfilePhoto);
+router.post("/me/resume", auth, requireUser, uploadResume, saveResume);
+router.delete("/me/resume", auth, requireUser, removeResume);
+router.get("/me/resume", auth, requireUser, downloadMyResume);
 router.post("/me/verify/send-otp", auth, requireUser, sendContactUpdateOtp);
 router.post("/me/bio/generate", auth, requireUser, generateBio);
 router.put("/me/password", auth, requireUser, changePassword);

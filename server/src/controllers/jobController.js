@@ -1,9 +1,26 @@
+import fs from "fs";
+import path from "path";
 import Job from "../models/Job.js";
 import JobHistory from "../models/JobHistory.js";
+import JobApplication from "../models/JobApplication.js";
 import User from "../models/User.js";
 import { generateUniqueSlug } from "../utils/slugify.js";
 import { firstRestrictedField, RESTRICTED_CONTENT_MESSAGE } from "../utils/contentModeration.js";
 import { recordJobPostedActivity } from "../services/communityActivityService.js";
+import { buildProfileSnapshot } from "./publicUserController.js";
+import {
+  sendJobApplicationSubmittedNotifications,
+  sendJobApplicationStatusUpdatedNotifications,
+} from "../services/jobApplicationNotificationService.js";
+
+const APPLICATION_STATUSES = ["applied", "under_review", "shortlisted", "rejected", "hired"];
+const APPLICATION_STATUS_LABEL = {
+  applied: "Applied",
+  under_review: "Under Review",
+  shortlisted: "Shortlisted",
+  rejected: "Rejected",
+  hired: "Selected / Hired",
+};
 
 async function findOwnedJob(req, res) {
   const job = await Job.findOne({ where: { id: req.params.id, userId: req.user.id } });
@@ -168,6 +185,170 @@ export const reopenJob = async (req, res) => {
     await job.save();
     await logJobHistory(job.id, "status_changed", "closed → active", "user", null);
     res.json({ job });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+function serializeApplication(application, applicant) {
+  const json = application.toJSON();
+  delete json.resumePath; // server-side disk path only — never sent to the client
+  json.hasResume = !!application.resumePath;
+  json.applicant = applicant ? { id: applicant.id, fullName: applicant.fullName, email: applicant.email, mobile: applicant.mobile, username: applicant.username } : null;
+  return json;
+}
+
+// Login-gated (auth, requireUser at the route level) — any registered user
+// except the job's own creator can apply once. Profile auto-fill mirrors
+// getPublicProfile's own aggregation via buildProfileSnapshot, so an
+// application always shows what a viewer would see on the applicant's
+// profile at the time they applied, not a second drifting copy of the data.
+export const applyToJob = async (req, res) => {
+  try {
+    const job = await Job.findByPk(req.params.id);
+    if (!job) return res.status(404).json({ message: "Job not found." });
+    if (job.status !== "active") return res.status(400).json({ message: "This job is no longer accepting applications." });
+    if (job.userId === req.user.id) return res.status(400).json({ message: "You can't apply to your own job posting." });
+
+    const existing = await JobApplication.findOne({ where: { jobId: job.id, applicantUserId: req.user.id } });
+    if (existing) return res.status(409).json({ message: "You've already applied to this job." });
+
+    const applicant = await User.findByPk(req.user.id);
+    if (!applicant) return res.status(404).json({ message: "Account not found." });
+
+    let resumePath = applicant.resumePath;
+    let resumeFileName = applicant.resumeFileName;
+    if (req.file) {
+      const previousPath = applicant.resumePath;
+      resumePath = req.file.path;
+      resumeFileName = req.file.originalname;
+      // Also becomes the applicant's new standing resume, reused by future
+      // applications — matches "review/update before submitting".
+      applicant.resumePath = resumePath;
+      applicant.resumeFileName = resumeFileName;
+      await applicant.save();
+      if (previousPath && previousPath !== resumePath) fs.unlink(previousPath, () => {});
+    }
+
+    const profileSnapshot = await buildProfileSnapshot(applicant);
+
+    const application = await JobApplication.create({
+      jobId: job.id,
+      applicantUserId: applicant.id,
+      profileSnapshot,
+      resumePath,
+      resumeFileName,
+      coverNote: req.body.coverNote?.trim() || null,
+    });
+
+    job.applicationCount = await JobApplication.count({ where: { jobId: job.id } });
+    await job.save();
+
+    const poster = await User.findByPk(job.userId);
+    sendJobApplicationSubmittedNotifications(application, job, applicant, poster).catch(() => {});
+
+    res.status(201).json({ application: serializeApplication(application, applicant) });
+  } catch (error) {
+    if (error.name === "SequelizeUniqueConstraintError") return res.status(409).json({ message: "You've already applied to this job." });
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Powers JobApplyPanel.jsx's "already applied" state.
+export const getMyApplication = async (req, res) => {
+  try {
+    const application = await JobApplication.findOne({ where: { jobId: req.params.id, applicantUserId: req.user.id } });
+    res.json({ application: application ? serializeApplication(application, null) : null });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const listApplicants = async (req, res) => {
+  try {
+    const job = await findOwnedJob(req, res);
+    if (!job) return;
+    const applications = await JobApplication.findAll({ where: { jobId: job.id }, order: [["createdAt", "DESC"]] });
+    const applicantIds = applications.map((a) => a.applicantUserId);
+    const applicants = applicantIds.length
+      ? await User.findAll({ where: { id: applicantIds }, attributes: ["id", "fullName", "email", "mobile", "username"] })
+      : [];
+    const applicantById = new Map(applicants.map((u) => [u.id, u]));
+    res.json({ applications: applications.map((a) => serializeApplication(a, applicantById.get(a.applicantUserId))) });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const getApplicant = async (req, res) => {
+  try {
+    const job = await findOwnedJob(req, res);
+    if (!job) return;
+    const application = await JobApplication.findOne({ where: { id: req.params.appId, jobId: job.id } });
+    if (!application) return res.status(404).json({ message: "Application not found." });
+    const applicant = await User.findByPk(application.applicantUserId, { attributes: ["id", "fullName", "email", "mobile", "username", "createdAt"] });
+    res.json({ application: serializeApplication(application, applicant) });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Shared by the owner-facing route here and adminJobController.js's own
+// status-management route — one status-transition implementation, not two
+// drifting copies (same reasoning as validateFields/normalizeSkills above).
+export async function applyApplicationStatusChange(application, job, { status, remarks, actorType, actorName }) {
+  if (status !== undefined) {
+    if (!APPLICATION_STATUSES.includes(status)) return "Select a valid status.";
+    const from = application.status;
+    if (from !== status) {
+      application.status = status;
+      application.reviewedAt = new Date();
+      await logJobHistory(
+        job.id,
+        "application_status_changed",
+        `${APPLICATION_STATUS_LABEL[from]} → ${APPLICATION_STATUS_LABEL[status]} (applicant #${application.applicantUserId})`,
+        actorType,
+        actorName
+      );
+    }
+  }
+  if (remarks !== undefined) application.remarks = remarks?.trim() || null;
+  await application.save();
+
+  if (status !== undefined) {
+    const applicant = await User.findByPk(application.applicantUserId);
+    const poster = await User.findByPk(job.userId);
+    if (applicant) {
+      sendJobApplicationStatusUpdatedNotifications(application, job, applicant, poster, APPLICATION_STATUS_LABEL[status]).catch(() => {});
+    }
+  }
+  return null;
+}
+
+export const updateApplicationStatus = async (req, res) => {
+  try {
+    const job = await findOwnedJob(req, res);
+    if (!job) return;
+    const application = await JobApplication.findOne({ where: { id: req.params.appId, jobId: job.id } });
+    if (!application) return res.status(404).json({ message: "Application not found." });
+
+    const error = await applyApplicationStatusChange(application, job, { ...req.body, actorType: "user", actorName: null });
+    if (error) return res.status(400).json({ message: error });
+
+    const applicant = await User.findByPk(application.applicantUserId, { attributes: ["id", "fullName", "email", "mobile", "username"] });
+    res.json({ application: serializeApplication(application, applicant) });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const downloadApplicantResume = async (req, res) => {
+  try {
+    const job = await findOwnedJob(req, res);
+    if (!job) return;
+    const application = await JobApplication.findOne({ where: { id: req.params.appId, jobId: job.id } });
+    if (!application?.resumePath || !fs.existsSync(application.resumePath)) return res.status(404).json({ message: "No resume on file." });
+    res.download(path.resolve(application.resumePath), application.resumeFileName || "resume");
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

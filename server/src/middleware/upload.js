@@ -19,6 +19,12 @@ fs.mkdirSync(DOCUMENT_UPLOAD_ROOT, { recursive: true });
 const GREEN_TICK_UPLOAD_ROOT = path.resolve("private_uploads", "green-tick-documents");
 fs.mkdirSync(GREEN_TICK_UPLOAD_ROOT, { recursive: true });
 
+// A resume is personal/private the same way — never reachable by a guessable
+// URL, only via an authenticated download route (the owner themselves, the
+// job creator reviewing an applicant, or admin).
+const RESUME_UPLOAD_ROOT = path.resolve("private_uploads", "resumes");
+fs.mkdirSync(RESUME_UPLOAD_ROOT, { recursive: true });
+
 const WALL_POST_UPLOAD_ROOT = path.resolve("uploads", "wall-post-media");
 fs.mkdirSync(WALL_POST_UPLOAD_ROOT, { recursive: true });
 
@@ -146,6 +152,28 @@ export function uploadGreenTickDocuments(req, res, next) {
       return res.status(400).json({ message: `Each document must be under ${DOCUMENT_MAX_BYTES / (1024 * 1024)}MB.` });
     }
     res.status(400).json({ message: err.message || "Couldn't upload that file." });
+  });
+}
+
+const resumeUploadMulter = multer({
+  storage: diskStorageFor(RESUME_UPLOAD_ROOT),
+  limits: { fileSize: DOCUMENT_MAX_BYTES, files: 1 },
+  fileFilter: (req, file, cb) => {
+    if (!DOCUMENT_TYPES.has(file.mimetype)) return cb(new Error("Only PDF, JPG, PNG, DOC or DOCX files are allowed."));
+    cb(null, true);
+  },
+});
+
+// Single-file, optional — a job application can be submitted with no resume
+// re-upload (falling back to the applicant's standing User.resumePath), so
+// unlike uploadProfilePhoto this must tolerate a request with no file.
+export function uploadResume(req, res, next) {
+  resumeUploadMulter.single("resume")(req, res, (err) => {
+    if (!err) return next();
+    if (err.code === "LIMIT_FILE_SIZE") {
+      return res.status(400).json({ message: `Resumes must be under ${DOCUMENT_MAX_BYTES / (1024 * 1024)}MB.` });
+    }
+    res.status(400).json({ message: err.message || "Couldn't upload that resume." });
   });
 }
 

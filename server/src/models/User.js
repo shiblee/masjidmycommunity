@@ -94,6 +94,18 @@ const User = sequelize.define(
       type: DataTypes.STRING,
       allowNull: true,
     },
+    // A standing resume, uploaded once (self-service, mirrors profilePhoto)
+    // and reused to auto-fill future job applications — see
+    // userController.js's uploadResume. Nullable, no default, per the
+    // skills-column incident lesson on Job.js.
+    resumePath: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    resumeFileName: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
     bio: {
       type: DataTypes.TEXT,
       allowNull: true,

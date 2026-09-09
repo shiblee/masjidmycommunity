@@ -86,7 +86,7 @@ function JobProfile() {
           </div>
 
           <aside className="msj-profile-side camp-profile-side">
-            <JobApplyPanel job={job} />
+            <JobApplyPanel job={job} posterId={poster?.id} />
           </aside>
         </div>
       </section>

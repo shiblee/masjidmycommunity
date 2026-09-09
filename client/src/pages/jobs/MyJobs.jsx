@@ -78,6 +78,7 @@ function MyJobs() {
                   <p className="msj-list-meta">{j.applicationCount} application{j.applicationCount === 1 ? "" : "s"} · Posted {formatDate(j.createdAt)}</p>
                   <div className="msj-list-actions">
                     {["active", "closed"].includes(j.status) && <Link to={`/account/my-jobs/${j.id}`}>Edit</Link>}
+                    <Link to={`/account/my-jobs/${j.id}/applications`}>View Applicants ({j.applicationCount})</Link>
                     <Link to={`/job/${j.slug}`}>View Public Page</Link>
                     {["active", "closed"].includes(j.status) && (
                       <button type="button" className="auth-link" onClick={() => toggleStatus(j)} disabled={busyId === j.id}>

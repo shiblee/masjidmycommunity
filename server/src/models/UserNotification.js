@@ -13,6 +13,9 @@ const UserNotification = sequelize.define(
     link: { type: DataTypes.STRING, allowNull: true },
     relatedMasjidId: { type: DataTypes.INTEGER, allowNull: true },
     relatedCampaignId: { type: DataTypes.INTEGER, allowNull: true },
+    // Nullable, no default — appended the same additive way relatedJobId
+    // was added to CommunityActivity.
+    relatedJobId: { type: DataTypes.INTEGER, allowNull: true },
     isRead: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
     readAt: { type: DataTypes.DATE, allowNull: true },
   },

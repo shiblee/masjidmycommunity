@@ -705,4 +705,66 @@ export async function sendDonationAdminEmail(donation, campaign, masjid) {
   });
 }
 
+export async function sendJobApplicationSubmittedApplicantEmail(application, job, applicant, poster) {
+  if (!applicant.email) return { sent: false, skipped: true };
+  return sendNotification("job_application_submitted_applicant", {
+    to: applicant.email,
+    variables: {
+      user_name: applicant.fullName,
+      job_title: job.title,
+      poster_name: poster?.fullName || "the job creator",
+      job_location: job.location,
+      application_date: new Date(application.createdAt).toLocaleString("en-GB"),
+      job_slug: job.slug,
+    },
+    userMeta: { userId: applicant.id, userName: applicant.fullName, userEmail: applicant.email },
+  });
+}
+
+export async function sendJobApplicationSubmittedCreatorEmail(application, job, applicant, poster) {
+  if (!poster?.email) return { sent: false, skipped: true };
+  return sendNotification("job_application_submitted_creator", {
+    to: poster.email,
+    variables: {
+      user_name: poster.fullName,
+      job_title: job.title,
+      applicant_name: applicant.fullName,
+      application_date: new Date(application.createdAt).toLocaleString("en-GB"),
+      job_id: String(job.id),
+    },
+    userMeta: { userId: poster.id, userName: poster.fullName, userEmail: poster.email },
+  });
+}
+
+export async function sendJobApplicationSubmittedAdminEmail(application, job, applicant, poster) {
+  const settings = await EmailSettings.findOne();
+  const to = settings?.adminNotificationEmail;
+  return sendNotification("job_application_submitted_admin", {
+    to,
+    variables: {
+      job_title: job.title,
+      poster_name: poster?.fullName || "—",
+      applicant_name: applicant.fullName,
+      application_date: new Date(application.createdAt).toLocaleString("en-GB"),
+      job_id: String(job.id),
+    },
+    userMeta: { userEmail: to },
+  });
+}
+
+export async function sendJobApplicationStatusUpdatedEmail(application, job, applicant, poster, newStatusLabel) {
+  if (!applicant.email) return { sent: false, skipped: true };
+  return sendNotification("job_application_status_updated_applicant", {
+    to: applicant.email,
+    variables: {
+      user_name: applicant.fullName,
+      job_title: job.title,
+      poster_name: poster?.fullName || "the job creator",
+      new_status: newStatusLabel,
+      job_slug: job.slug,
+    },
+    userMeta: { userId: applicant.id, userName: applicant.fullName, userEmail: applicant.email },
+  });
+}
+
 export const emailServiceConfigured = isConfigured;

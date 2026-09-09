@@ -1,4 +1,5 @@
 import fs from "fs";
+import path from "path";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { Op } from "sequelize";
@@ -76,6 +77,10 @@ function toPublicUser(user) {
     locationCountry: user.locationCountry,
     locationLat: user.locationLat,
     locationLng: user.locationLng,
+    // Only the display name — resumePath is a server-side disk path, never
+    // sent to the client; fetching the actual file goes through
+    // downloadMyResume's authenticated route instead.
+    resumeFileName: user.resumeFileName || null,
   };
 }
 
@@ -696,6 +701,68 @@ export const removeProfilePhoto = async (req, res) => {
     }
 
     res.json({ user: toPublicUser(user) });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Self-service, mirrors uploadProfilePhoto/removeProfilePhoto — a standing
+// resume, uploaded once and reused to auto-fill future job applications
+// (jobController.js's applyToJob falls back to this when the applicant
+// doesn't attach a fresh one). Stored outside the public /uploads mount
+// (see upload.js's RESUME_UPLOAD_ROOT), so the raw disk path is never sent
+// to the client — only downloadMyResume can retrieve the file, and only for
+// its own owner.
+export const uploadResume = async (req, res) => {
+  try {
+    const user = await User.findByPk(req.user.id);
+    if (!user) return res.status(404).json({ message: "Account not found." });
+    if (!req.file) return res.status(400).json({ message: "No resume was uploaded." });
+
+    const previousPath = user.resumePath;
+    user.resumePath = req.file.path;
+    user.resumeFileName = req.file.originalname;
+    await user.save();
+
+    if (previousPath) fs.unlink(previousPath, () => {});
+
+    recordProfileChange({
+      userId: user.id,
+      section: "resume",
+      action: "update",
+      actor: { type: "user", id: user.id, name: user.fullName },
+      fields: [{ field: "resumeFileName", oldValue: null, newValue: user.resumeFileName }],
+    }).catch(() => {});
+
+    res.json({ user: toPublicUser(user) });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const removeResume = async (req, res) => {
+  try {
+    const user = await User.findByPk(req.user.id);
+    if (!user) return res.status(404).json({ message: "Account not found." });
+
+    const previousPath = user.resumePath;
+    user.resumePath = null;
+    user.resumeFileName = null;
+    await user.save();
+
+    if (previousPath) fs.unlink(previousPath, () => {});
+
+    res.json({ user: toPublicUser(user) });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const downloadMyResume = async (req, res) => {
+  try {
+    const user = await User.findByPk(req.user.id);
+    if (!user?.resumePath || !fs.existsSync(user.resumePath)) return res.status(404).json({ message: "No resume on file." });
+    res.download(path.resolve(user.resumePath), user.resumeFileName || "resume");
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

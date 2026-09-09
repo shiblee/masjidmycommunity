@@ -86,6 +86,7 @@ async function notifyMentions(body, { actorId, actorName }) {
       title: "Your job posting was mentioned on the Community Wall",
       body: `${actorName} mentioned "${job.title}" in a Wall post.`,
       link,
+      relatedJobId: job.id,
     }).catch(() => {});
   }
 }

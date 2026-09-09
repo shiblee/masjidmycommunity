@@ -27,6 +27,28 @@ async function serializeHobbies(entries) {
   return entries.map((e) => ({ ...e.toJSON(), name: e.hobbyId ? hobbyById[e.hobbyId]?.name || e.customName : e.customName }));
 }
 
+// Reused by jobController.js's applyToJob to build a JobApplication's
+// profileSnapshot — same underlying query/serialization getPublicProfile
+// itself uses, so "what a job application shows" and "what a profile
+// shows" never drift into two separate implementations.
+export async function buildProfileSnapshot(user) {
+  const [education, workExperience, skillEntries] = await Promise.all([
+    Education.findAll({ where: { userId: user.id }, order: [["endYear", "DESC"], ["startYear", "DESC"]] }),
+    WorkExperience.findAll({ where: { userId: user.id, isActive: true }, order: [["startDate", "DESC"]] }),
+    UserSkill.findAll({ where: { userId: user.id }, order: [["sortOrder", "ASC"]] }),
+  ]);
+  const skills = await serializeSkills(skillEntries);
+  return {
+    fullName: user.fullName,
+    email: user.email,
+    mobile: user.mobile,
+    bio: user.bio,
+    education: education.map((e) => e.toJSON()),
+    workExperience: workExperience.map((w) => w.toJSON()),
+    skills: skills.map((s) => ({ id: s.id, name: s.name })),
+  };
+}
+
 // Viewer-aware: relies on optionalAuth having attempted to decode req.user
 // without rejecting the request, so this endpoint stays fully public while
 // still tailoring the response for the profile owner (or an admin) — private

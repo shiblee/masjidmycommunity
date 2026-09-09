@@ -580,6 +580,82 @@ const DEFAULT_TEMPLATES = [
       "donor_visibility", "donation_date", "payment_method", "platform_name", "current_year",
     ],
   },
+  {
+    key: "job_application_submitted_applicant",
+    name: "Job Application – Applicant Confirmation",
+    purpose: "Sent to the applicant immediately after they successfully apply for a job, confirming their submission.",
+    subject: "Your application for {{job_title}} has been submitted",
+    heading: "Application Submitted",
+    message:
+      "Your application has been successfully submitted.\n\nJob Title: {{job_title}}\nPosted By: {{poster_name}}\nLocation: {{job_location}}\nApplication Date: {{application_date}}\n\nYou'll be notified here and by email as soon as there's an update on your application status.",
+    ctaText: "View Job",
+    ctaLink: "https://masjidmycommunity.com/job/{{job_slug}}",
+    footerText:
+      "{{platform_name}} — Empowering Masjids. Strengthening Communities.\n© {{current_year}} {{platform_name}}. All rights reserved.",
+    quoteEnabled: false,
+    quoteTransliteration: null,
+    quoteTranslation: null,
+    quoteSource: null,
+    status: "active",
+    availableVariables: ["user_name", "job_title", "poster_name", "job_location", "application_date", "job_slug", "platform_name", "current_year"],
+  },
+  {
+    key: "job_application_submitted_creator",
+    name: "Job Application – Job Creator Notification",
+    purpose: "Sent to the job's creator whenever a new application is received for one of their job postings.",
+    subject: "New applicant for {{job_title}}",
+    heading: "You Have a New Applicant",
+    message:
+      "A new application has been received for your job posting.\n\nJob Title: {{job_title}}\nApplicant: {{applicant_name}}\nApplication Date: {{application_date}}\n\nReview the applicant's profile, resume, and details from your Job Applicants screen.",
+    ctaText: "Review Applicants",
+    ctaLink: "https://masjidmycommunity.com/account/my-jobs/{{job_id}}/applications",
+    footerText:
+      "{{platform_name}} — Empowering Masjids. Strengthening Communities.\n© {{current_year}} {{platform_name}}. All rights reserved.",
+    quoteEnabled: false,
+    quoteTransliteration: null,
+    quoteTranslation: null,
+    quoteSource: null,
+    status: "active",
+    availableVariables: ["user_name", "job_title", "applicant_name", "application_date", "job_id", "platform_name", "current_year"],
+  },
+  {
+    key: "job_application_submitted_admin",
+    name: "Job Application – Admin Notification",
+    purpose: "Sent to the configured admin notification email whenever any job application is submitted, platform-wide.",
+    subject: "New job application: {{applicant_name}} → {{job_title}}",
+    heading: "New Job Application Received",
+    message:
+      "A new job application was submitted on the platform.\n\nJob Title: {{job_title}}\nPosted By: {{poster_name}}\nApplicant: {{applicant_name}}\nApplication Date: {{application_date}}",
+    ctaText: "Review Job",
+    ctaLink: "https://masjidmycommunity.com/admin/jobs/{{job_id}}",
+    footerText:
+      "{{platform_name}} — Empowering Masjids. Strengthening Communities.\nThis is an automated admin notification from {{platform_name}}.\n© {{current_year}} {{platform_name}}. All rights reserved.",
+    quoteEnabled: false,
+    quoteTransliteration: null,
+    quoteTranslation: null,
+    quoteSource: null,
+    status: "active",
+    availableVariables: ["job_title", "poster_name", "applicant_name", "application_date", "job_id", "platform_name", "current_year"],
+  },
+  {
+    key: "job_application_status_updated_applicant",
+    name: "Job Application – Status Updated",
+    purpose: "Sent to the applicant whenever the job creator or admin changes their application's status (Under Review, Shortlisted, Rejected, Hired).",
+    subject: "Update on your application for {{job_title}}",
+    heading: "Your Application Status Has Changed",
+    message:
+      "There's an update on your job application.\n\nJob Title: {{job_title}}\nPosted By: {{poster_name}}\nNew Status: {{new_status}}",
+    ctaText: "View Job",
+    ctaLink: "https://masjidmycommunity.com/job/{{job_slug}}",
+    footerText:
+      "{{platform_name}} — Empowering Masjids. Strengthening Communities.\n© {{current_year}} {{platform_name}}. All rights reserved.",
+    quoteEnabled: false,
+    quoteTransliteration: null,
+    quoteTranslation: null,
+    quoteSource: null,
+    status: "active",
+    availableVariables: ["user_name", "job_title", "poster_name", "new_status", "job_slug", "platform_name", "current_year"],
+  },
 ];
 
 export async function ensureEmailDefaults() {
