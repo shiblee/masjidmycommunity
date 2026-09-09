@@ -3439,7 +3439,7 @@ footer{
 .job-board-layout{ display:grid; grid-template-columns:264px 1fr; gap:26px; align-items:start; }
 .job-filters-sidebar{
   position:sticky; top:88px; background:#fff; border:1px solid var(--line); border-radius:16px; padding:20px;
-  display:flex; flex-direction:column; gap:20px; max-height:calc(100vh - 110px); overflow-y:auto;
+  display:flex; flex-direction:column; gap:20px;
 }
 .job-filters-sidebar-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
 .job-filters-sidebar-head h3{ font-size:15px; color:var(--text-on-paper); }
@@ -3464,7 +3464,7 @@ footer{
 
 @media (max-width:900px){
   .job-board-layout{ grid-template-columns:1fr; }
-  .job-filters-sidebar{ display:none; position:static; max-height:none; }
+  .job-filters-sidebar{ display:none; position:static; }
   .job-filters-sidebar.open{ display:flex; }
 }
 

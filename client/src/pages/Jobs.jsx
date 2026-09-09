@@ -395,46 +395,46 @@ function Jobs() {
                       </button>
                     </div>
                   )}
+
+                  <JobRail
+                    icon="sparkle"
+                    title={t("jobs.rails.recommended.title", "Recommended for You")}
+                    subtitle={t("jobs.rails.recommended.subtitle", "Based on your skills, experience, and location")}
+                    count={recommended.length}
+                  >
+                    {recommended.map((j) => <JobCard job={j} userLocation={coords} key={j.id} />)}
+                  </JobRail>
+
+                  <JobRail
+                    icon="target"
+                    title={t("jobs.rails.bySkills.title", "Based on Your Skills")}
+                    subtitle={t("jobs.rails.bySkills.subtitle", "Jobs that share at least one skill with your profile")}
+                    count={bySkills.length}
+                  >
+                    {bySkills.map((j) => <JobCard job={j} userLocation={coords} key={j.id} />)}
+                  </JobRail>
+
+                  <JobRail
+                    icon="mapPin"
+                    title={t("jobs.rails.nearYou.title", "Near You")}
+                    subtitle={t("jobs.rails.nearYou.subtitle", "Open roles closest to your location")}
+                    count={nearYou.length}
+                  >
+                    {nearYou.map((j) => <JobCard job={j} userLocation={coords} key={j.id} />)}
+                  </JobRail>
+
+                  <JobRail
+                    icon="clock"
+                    title={t("jobs.rails.closingSoon.title", "Closing Soon")}
+                    subtitle={t("jobs.rails.closingSoon.subtitle", "Roles with an application deadline coming up")}
+                    count={closingSoon.length}
+                  >
+                    {closingSoon.map((j) => <JobCard job={j} userLocation={coords} key={j.id} />)}
+                  </JobRail>
                 </>
               )}
             </div>
           </div>
-
-          <JobRail
-            icon="sparkle"
-            title={t("jobs.rails.recommended.title", "Recommended for You")}
-            subtitle={t("jobs.rails.recommended.subtitle", "Based on your skills, experience, and location")}
-            count={recommended.length}
-          >
-            {recommended.map((j) => <JobCard job={j} userLocation={coords} key={j.id} />)}
-          </JobRail>
-
-          <JobRail
-            icon="target"
-            title={t("jobs.rails.bySkills.title", "Based on Your Skills")}
-            subtitle={t("jobs.rails.bySkills.subtitle", "Jobs that share at least one skill with your profile")}
-            count={bySkills.length}
-          >
-            {bySkills.map((j) => <JobCard job={j} userLocation={coords} key={j.id} />)}
-          </JobRail>
-
-          <JobRail
-            icon="mapPin"
-            title={t("jobs.rails.nearYou.title", "Near You")}
-            subtitle={t("jobs.rails.nearYou.subtitle", "Open roles closest to your location")}
-            count={nearYou.length}
-          >
-            {nearYou.map((j) => <JobCard job={j} userLocation={coords} key={j.id} />)}
-          </JobRail>
-
-          <JobRail
-            icon="clock"
-            title={t("jobs.rails.closingSoon.title", "Closing Soon")}
-            subtitle={t("jobs.rails.closingSoon.subtitle", "Roles with an application deadline coming up")}
-            count={closingSoon.length}
-          >
-            {closingSoon.map((j) => <JobCard job={j} userLocation={coords} key={j.id} />)}
-          </JobRail>
         </div>
       </section>
     </main>
