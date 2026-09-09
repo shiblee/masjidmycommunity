@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { API_BASE } from "../../config.js";
 import { Icon } from "../Icons.jsx";
+import MicButton from "../MicButton.jsx";
 import { formatDate } from "../../utils/formatDateTime.js";
 import { useTranslation } from "../../i18n/LanguageContext.jsx";
 
@@ -35,6 +36,7 @@ function LatestJobsRail({ currentSlug, excludeId }) {
       <div className="msj-search camp-rail-search">
         <Icon name="search" size={14} />
         <input type="text" placeholder={t("jobProfile.rail.searchPlaceholder", "Search jobs…")} value={q} onChange={(e) => setQ(e.target.value)} />
+        <MicButton onTranscript={(text) => setQ(text)} />
       </div>
 
       <div className="camp-rail-list">

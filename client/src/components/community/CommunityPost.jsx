@@ -543,7 +543,7 @@ function PostImageGallery({ images, onOpen }) {
   );
 }
 
-function CommunityPost({ post, user, navigate, onVote, onEdit, onDelete, onReport, onHashtagClick, commentMaxLength, replyMaxLength, onOpenImage, commentsOpenByDefault = false }) {
+function CommunityPost({ post, user, navigate, onVote, onEdit, onDelete, onReport, onHashtagClick, commentMaxLength, replyMaxLength, onOpenImage, commentsOpenByDefault = false, hideCta = false }) {
   const meta = TYPE_META[post.type];
   const [showComments, setShowComments] = useState(commentsOpenByDefault);
   const [commentCountOverride, setCommentCountOverride] = useState(null);
@@ -614,7 +614,7 @@ function CommunityPost({ post, user, navigate, onVote, onEdit, onDelete, onRepor
 
       <div className="cw-post-actions">
         <div className="cw-post-ctas">
-          {post.cta && (
+          {post.cta && !hideCta && (
             <a href={post.cta.href} className="btn btn-gold cw-cta">
               {post.cta.label} <span className="btn-arrow">→</span>
             </a>

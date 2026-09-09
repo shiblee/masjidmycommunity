@@ -113,6 +113,7 @@ function JobPostSection({ jobId }) {
         replyMaxLength={contentLimits.maxReplyLength}
         onOpenImage={(_p, index) => setImageViewerIndex(index)}
         commentsOpenByDefault
+        hideCta
       />
 
       {reportOpen && (
