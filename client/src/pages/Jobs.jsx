@@ -119,8 +119,8 @@ function Jobs() {
     if (savedOnly) return;
     const handle = setTimeout(() => {
       setLoading(true);
-      axios
-        .get(`${API_BASE}/jobs/public`, {
+      publicJobApi
+        .get("/", {
           params: {
             nlQuery: q || undefined,
             lang: language || undefined,

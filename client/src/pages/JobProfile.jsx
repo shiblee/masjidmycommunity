@@ -1,15 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import axios from "axios";
 import { Icon } from "../components/Icons.jsx";
-import { API_BASE } from "../config.js";
 import { formatDate } from "../utils/formatDateTime.js";
 import LatestJobsRail from "../components/job/LatestJobsRail.jsx";
 import JobApplyPanel from "../components/job/JobApplyPanel.jsx";
 import JobPostSection from "../components/job/JobPostSection.jsx";
+import publicJobApi from "../services/publicJobApi.js";
 import { useTranslation } from "../i18n/LanguageContext.jsx";
-
-const API = `${API_BASE}/jobs/public`;
 
 function JobProfile() {
   const { t } = useTranslation();
@@ -20,8 +17,8 @@ function JobProfile() {
   useEffect(() => {
     setData(null);
     setNotFound(false);
-    axios
-      .get(`${API}/${slug}`)
+    publicJobApi
+      .get(`/${slug}`)
       .then(({ data }) => setData(data))
       .catch(() => setNotFound(true));
   }, [slug]);
