@@ -1,0 +1,41 @@
+name: Fix jobs.skills column data
+
+# One-off recovery: Job.skills changed from STRING to JSON in the app code,
+# but sequelize.sync({alter:true}) can't ALTER an existing VARCHAR column to
+# JSON when it already holds non-JSON values (a plain string like "Tajweed,
+# Arabic", or NULL under the old allowNull:true) — MySQL rejects the ALTER
+# with "Invalid JSON text", sequelize throws, server.js's connectDB() calls
+# process.exit(1), and pm2 restart-loops forever. Clearing the column first
+# (safe: this table is brand new today, only a couple of manual test rows)
+# lets the pending ALTER succeed once the app restarts.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clear jobs.skills then restart the API
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+
+          ssh -i ~/.ssh/deploy_key "$DEPLOY_USER@$DEPLOY_HOST" '
+            set -e
+            cd /var/www/masjidmycommunity/server
+            set -a
+            source .env
+            set +a
+            mysql -h "$DB_HOST" -P "${DB_PORT:-3306}" -u "$DB_USER" -p"$DB_PASSWORD" "$DB_NAME" -e "UPDATE jobs SET skills = NULL;"
+            echo "jobs.skills cleared"
+            pm2 restart masjidmycommunity-api
+            sleep 5
+            pm2 list
+            echo "=== last 30 lines of error log after restart ==="
+            pm2 logs masjidmycommunity-api --err --lines 30 --nostream || true
+          '
