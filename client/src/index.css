@@ -3420,7 +3420,7 @@ footer{
 .job-ai-understood svg{ flex-shrink:0; }
 
 .job-rail{
-  margin-bottom:26px; background:var(--paper-dim); border-radius:18px; padding:20px;
+  margin-top:36px; background:var(--paper-dim); border-radius:18px; padding:20px;
 }
 .job-rail-head{ display:flex; align-items:center; gap:10px; margin-bottom:14px; }
 .job-rail-head svg{ color:var(--teal-deep); flex-shrink:0; }
