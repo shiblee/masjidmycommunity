@@ -1,6 +1,8 @@
+import { Op } from "sequelize";
 import User from "../models/User.js";
 import UserSkill from "../models/UserSkill.js";
 import WorkExperience from "../models/WorkExperience.js";
+import Skill from "../models/Skill.js";
 
 // Deterministic, transparent match scoring — no LLM call per job-per-user
 // (too slow/costly for an entire board), just the same real signals a
@@ -45,13 +47,21 @@ function userCoarseLevel(years) {
 export async function getUserMatchProfile(userId) {
   const [user, skillRows, workRows] = await Promise.all([
     User.findByPk(userId, { attributes: ["id", "locationCity", "locationCountry"] }),
-    UserSkill.findAll({ where: { userId }, attributes: ["name"] }),
+    UserSkill.findAll({ where: { userId }, attributes: ["skillId", "customName"] }),
     WorkExperience.findAll({ where: { userId, isActive: true }, attributes: ["skillsUsed", "startDate", "endDate", "isCurrent"] }),
   ]);
   if (!user) return null;
 
+  // UserSkill has no plain `name` column — it's skillId (FK to the Skill
+  // master list) or a free-text customName, same resolution
+  // publicUserController.js's serializeSkills already does.
+  const skillIds = skillRows.map((s) => s.skillId).filter(Boolean);
+  const masterSkills = skillIds.length ? await Skill.findAll({ where: { id: { [Op.in]: skillIds } }, attributes: ["id", "name"] }) : [];
+  const masterNameById = new Map(masterSkills.map((s) => [s.id, s.name]));
+  const resolvedSkillNames = skillRows.map((s) => (s.skillId ? masterNameById.get(s.skillId) : s.customName)).filter(Boolean);
+
   const skillNames = new Set([
-    ...skillRows.map((s) => s.name.toLowerCase()),
+    ...resolvedSkillNames.map((n) => n.toLowerCase()),
     ...workRows.flatMap((w) => (w.skillsUsed || []).map((s) => String(s).toLowerCase())),
   ]);
 
