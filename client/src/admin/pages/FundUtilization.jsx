@@ -57,6 +57,20 @@ function FundUtilization() {
 
   return (
     <>
+      <div className="amx-page-head">
+        <div>
+          <span className="amx-crumb">Impact</span>
+          <h1>Fund Utilization</h1>
+          <p>How donated funds are allocated and disbursed across projects</p>
+        </div>
+        <div className="amx-page-actions">
+          <button className="amx-btn amx-btn-outline">
+            <Icon name="download" size={16} />
+            Download Report
+          </button>
+        </div>
+      </div>
+
       <div className="amx-kpi-grid" style={{ gridTemplateColumns: "repeat(3,1fr)" }}>
         <div className="amx-card amx-kpi">
           <div className="amx-kpi-top">

@@ -10,6 +10,8 @@ import MasjidReview from "./pages/MasjidReview.jsx";
 import CommunityWall from "./pages/CommunityWall.jsx";
 import Campaigns from "./pages/Campaigns.jsx";
 import CampaignReview from "./pages/CampaignReview.jsx";
+import FundUtilization from "./pages/FundUtilization.jsx";
+import ReportsAnalytics from "./pages/ReportsAnalytics.jsx";
 import GreenTickApplications from "./pages/GreenTickApplications.jsx";
 import RegisteredUsers from "./pages/RegisteredUsers.jsx";
 import RegisteredUserDetail from "./pages/RegisteredUserDetail.jsx";
@@ -56,9 +58,8 @@ function AdminApp() {
         <Route path="campaigns/:id" element={<CampaignReview />} />
         <Route path="campaigns/:id/:tab" element={<CampaignReview />} />
         <Route path="verification" element={<GreenTickApplications />} />
-        {/* Fund Utilization and Reports & Analytics merged into Dashboard's own tabs. */}
-        <Route path="fund-utilization" element={<Navigate to="/admin/dashboard" replace />} />
-        <Route path="reports" element={<Navigate to="/admin/dashboard" replace />} />
+        <Route path="fund-utilization" element={<FundUtilization />} />
+        <Route path="reports" element={<ReportsAnalytics />} />
         <Route path="registered-users" element={<RegisteredUsers />} />
         <Route path="registered-users/:id" element={<RegisteredUserDetail />} />
         <Route path="registered-users/:id/activity" element={<UserActivityHistory />} />
