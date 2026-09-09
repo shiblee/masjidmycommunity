@@ -143,12 +143,18 @@ function Jobs() {
     return () => clearTimeout(handle);
   }, [q, category, jobType, experienceRequired, workMode, hasSalary, selectedSkills, skipLocation, page]);
 
-  const runSearch = (e) => {
-    e?.preventDefault();
-    setQ(searchInput);
-    setSkipLocation(false);
-    setPage(1);
-  };
+  // Auto-search — debounces the typed text straight into `q`, no separate
+  // submit step, matching ExploreMasjids.jsx's own search field behavior.
+  useEffect(() => {
+    if (searchInput === q) return;
+    const handle = setTimeout(() => {
+      setQ(searchInput);
+      setSkipLocation(false);
+      setPage(1);
+    }, 400);
+    return () => clearTimeout(handle);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchInput]);
 
   const broadenWithoutLocation = () => {
     setSkipLocation(true);
@@ -290,7 +296,7 @@ function Jobs() {
             {closingSoon.map((j) => <JobCard job={j} userLocation={coords} key={j.id} />)}
           </JobRail>
 
-          <form className="job-search-row" onSubmit={runSearch}>
+          <div className="job-search-row">
             <div className="msj-search">
               <Icon name="search" size={16} />
               <input
@@ -301,7 +307,6 @@ function Jobs() {
               />
               <MicButton onTranscript={(text) => setSearchInput(text)} />
             </div>
-            <button type="submit" className="btn btn-gold">{t("jobs.hero.searchButton", "Search")}</button>
 
             <button
               type="button"
@@ -323,7 +328,7 @@ function Jobs() {
                 <Icon name="map" size={15} /> {t("jobs.view.map", "Map")}
               </button>
             </div>
-          </form>
+          </div>
 
           {understoodBits.length > 0 && (
             <div className="job-ai-understood">
