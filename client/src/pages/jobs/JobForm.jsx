@@ -91,14 +91,9 @@ function JobForm({ embedded = false }) {
       <Link to={backTo} className="msj-back-link"><Icon name="chevronLeft" size={16} /> {backLabel}</Link>
 
       <div className="msj-wizard-center">
-        <div className="section-head" style={{ marginTop: 16, maxWidth: "none" }}>
-          <span className="eyebrow">{isEdit ? "Edit Job" : "Add a Job"}</span>
-          <h2>{isEdit ? "Update this listing" : "Post an opening to the community"}</h2>
-        </div>
+        {errors.form && <div className="auth-alert" style={{ marginTop: 16, marginBottom: 20 }}><Icon name="info" size={17} />{errors.form}</div>}
 
-        {errors.form && <div className="auth-alert" style={{ marginBottom: 20 }}><Icon name="info" size={17} />{errors.form}</div>}
-
-        <form onSubmit={submit}>
+        <form onSubmit={submit} style={{ marginTop: 20 }}>
           <div className="card msj-step-card">
             <Field label="Job Title" required error={errors.title}>
               <input value={form.title} onChange={setField("title")} placeholder="e.g. Weekend Qur'an Teacher" maxLength={150} />
