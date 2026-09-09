@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { API_BASE } from "../config.js";
 import { Icon } from "../components/Icons.jsx";
@@ -11,7 +11,6 @@ import JobFiltersSidebar from "../components/job/JobFiltersSidebar.jsx";
 import JobsMap from "./jobs/JobsMap.jsx";
 import JobsList from "./jobs/JobsList.jsx";
 import publicJobApi from "../services/publicJobApi.js";
-import jobApi from "../services/jobApi.js";
 import { getStoredUser } from "../utils/userAuthStorage.js";
 import { useTranslation } from "../i18n/LanguageContext.jsx";
 
@@ -51,7 +50,6 @@ function Jobs() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
 
-  const [myApplications, setMyApplications] = useState([]);
   const [recommended, setRecommended] = useState([]);
   const [bySkills, setBySkills] = useState([]);
   const [closingSoon, setClosingSoon] = useState([]);
@@ -91,7 +89,6 @@ function Jobs() {
 
     if (isLoggedIn) {
       publicJobApi.get("/liked/mine", { params: { pageSize: 1 } }).then(({ data }) => setSavedTotal(data.total)).catch(() => {});
-      jobApi.get("/mine/applications").then(({ data }) => setMyApplications(data.applications.slice(0, 10))).catch(() => {});
       publicJobApi.get("/recommended", { params: { limit: 10 } }).then(({ data }) => setRecommended(data.jobs)).catch(() => {});
       publicJobApi.get("/by-skills", { params: { limit: 10 } }).then(({ data }) => setBySkills(data.jobs)).catch(() => {});
     }
@@ -290,22 +287,6 @@ function Jobs() {
             {nearYou.map((j) => <JobCard job={j} userLocation={coords} key={j.id} />)}
           </JobRail>
 
-          <JobRail
-            icon="mail"
-            title={t("jobs.rails.applications.title", "My Applications")}
-            subtitle={t("jobs.rails.applications.subtitle", "Where your recent applications stand")}
-            count={myApplications.length}
-          >
-            {myApplications.map((a) => (
-              <Link to={`/job/${a.job.slug}`} className="job-rail-app-item" key={a.id}>
-                <h4>{a.job.title}</h4>
-                <p><Icon name="mapPin" size={12} /> {a.job.location}</p>
-                <span className={`acct-status-pill ${a.status === "hired" ? "active" : a.status === "rejected" ? "rejected" : a.status === "shortlisted" ? "approved" : "submitted"}`}>
-                  {t(`jobApply.status.${a.status === "under_review" ? "underReview" : a.status}`, a.status)}
-                </span>
-              </Link>
-            ))}
-          </JobRail>
 
           <JobRail
             icon="clock"

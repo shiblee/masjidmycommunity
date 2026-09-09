@@ -3428,12 +3428,6 @@ footer{
 .job-rail-track::-webkit-scrollbar{ height:6px; }
 .job-rail-track::-webkit-scrollbar-thumb{ background:var(--line); border-radius:100px; }
 .job-rail-track > .job-card{ flex:0 0 300px; scroll-snap-align:start; }
-.job-rail-app-item{
-  flex:0 0 260px; scroll-snap-align:start; background:#fff; border:1px solid var(--line); border-radius:14px; padding:16px;
-  display:flex; flex-direction:column; gap:6px;
-}
-.job-rail-app-item h4{ font-size:14.5px; color:var(--text-on-paper); }
-.job-rail-app-item p{ font-size:12px; color:var(--text-on-paper-dim); }
 
 .job-search-row{ display:flex; align-items:center; gap:16px; flex-wrap:wrap; margin-bottom:20px; }
 .job-search-row .msj-search{ flex:1; min-width:240px; }
