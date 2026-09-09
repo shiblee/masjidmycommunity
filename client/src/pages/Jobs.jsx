@@ -4,13 +4,21 @@ import axios from "axios";
 import { API_BASE } from "../config.js";
 import { Icon } from "../components/Icons.jsx";
 import { formatDate } from "../utils/formatDateTime.js";
+import SkillsFilter from "./jobs/SkillsFilter.jsx";
 
 const PAGE_SIZE = 12;
 
 function Jobs() {
   const [q, setQ] = useState("");
   const [jobType, setJobType] = useState("");
+  const [experienceRequired, setExperienceRequired] = useState("");
+  const [hasSalary, setHasSalary] = useState(false);
+  const [selectedSkills, setSelectedSkills] = useState([]);
+
   const [jobTypes, setJobTypes] = useState([]);
+  const [experienceLevels, setExperienceLevels] = useState([]);
+  const [skills, setSkills] = useState([]);
+
   const [jobs, setJobs] = useState(null);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -18,13 +26,25 @@ function Jobs() {
 
   useEffect(() => {
     axios.get(`${API_BASE}/jobs/public/meta/job-types`).then(({ data }) => setJobTypes(data.employmentTypes)).catch(() => {});
+    axios.get(`${API_BASE}/jobs/public/meta/experience-levels`).then(({ data }) => setExperienceLevels(data.experienceLevels)).catch(() => {});
+    axios.get(`${API_BASE}/jobs/public/meta/skills`).then(({ data }) => setSkills(data.skills)).catch(() => {});
   }, []);
 
   useEffect(() => {
     const handle = setTimeout(() => {
       setLoading(true);
       axios
-        .get(`${API_BASE}/jobs/public`, { params: { q: q || undefined, jobType: jobType || undefined, page, pageSize: PAGE_SIZE } })
+        .get(`${API_BASE}/jobs/public`, {
+          params: {
+            q: q || undefined,
+            jobType: jobType || undefined,
+            experienceRequired: experienceRequired || undefined,
+            hasSalary: hasSalary || undefined,
+            skills: selectedSkills.length ? selectedSkills.join(",") : undefined,
+            page,
+            pageSize: PAGE_SIZE,
+          },
+        })
         .then(({ data }) => {
           setJobs((prev) => (page === 1 ? data.jobs : [...(prev || []), ...data.jobs]));
           setTotal(data.total);
@@ -33,10 +53,35 @@ function Jobs() {
         .finally(() => setLoading(false));
     }, q ? 300 : 0);
     return () => clearTimeout(handle);
-  }, [q, jobType, page]);
+  }, [q, jobType, experienceRequired, hasSalary, selectedSkills, page]);
 
   const changeType = (value) => { setJobType(value); setPage(1); };
+  const changeExperience = (value) => { setExperienceRequired(value); setPage(1); };
+  const toggleSalary = () => { setHasSalary((v) => !v); setPage(1); };
+  const changeSkills = (next) => { setSelectedSkills(next); setPage(1); };
   const canLoadMore = jobs && jobs.length < total;
+
+  const activeFilters = [
+    jobType && { key: "jobType", label: jobType },
+    experienceRequired && { key: "experience", label: experienceRequired },
+    hasSalary && { key: "salary", label: "Salary Listed" },
+    ...selectedSkills.map((s) => ({ key: `skill:${s}`, label: s, skill: s })),
+  ].filter(Boolean);
+
+  const removeFilter = (f) => {
+    if (f.key === "jobType") return changeType("");
+    if (f.key === "experience") return changeExperience("");
+    if (f.key === "salary") return toggleSalary();
+    if (f.skill) return changeSkills(selectedSkills.filter((s) => s !== f.skill));
+  };
+
+  const clearAll = () => {
+    setJobType("");
+    setExperienceRequired("");
+    setHasSalary(false);
+    setSelectedSkills([]);
+    setPage(1);
+  };
 
   return (
     <main className="msj-page">
@@ -50,7 +95,7 @@ function Jobs() {
 
       <section className="py-md msj-explore-content">
         <div className="wrap">
-          <div className="campaign-filters" style={{ margin: "0 0 16px" }}>
+          <div className="campaign-filters" style={{ margin: "0 0 12px" }}>
             <button className={`filter-chip${jobType === "" ? " active" : ""}`} onClick={() => changeType("")}>All Types</button>
             {jobTypes.map((t) => (
               <button key={t.id} className={`filter-chip${jobType === t.name ? " active" : ""}`} onClick={() => changeType(t.name)}>
@@ -59,12 +104,37 @@ function Jobs() {
             ))}
           </div>
 
-          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 20 }}>
-            <div className="msj-search" style={{ flex: "0 1 360px" }}>
+          <div className="campaign-filters" style={{ margin: "0 0 16px" }}>
+            <button className={`filter-chip${experienceRequired === "" ? " active" : ""}`} onClick={() => changeExperience("")}>Any Experience</button>
+            {experienceLevels.map((lvl) => (
+              <button key={lvl.id} className={`filter-chip${experienceRequired === lvl.name ? " active" : ""}`} onClick={() => changeExperience(lvl.name)}>
+                {lvl.name}
+              </button>
+            ))}
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", marginBottom: 20 }}>
+            <SkillsFilter skills={skills} selected={selectedSkills} onChange={changeSkills} />
+            <button type="button" className={`filter-chip${hasSalary ? " active" : ""}`} onClick={toggleSalary}>
+              Salary Listed
+            </button>
+            <div className="msj-search" style={{ flex: "0 1 360px", marginLeft: "auto" }}>
               <Icon name="search" size={16} />
               <input type="text" placeholder="Search jobs…" value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} />
             </div>
           </div>
+
+          {activeFilters.length > 0 && (
+            <div className="msj-active-filters">
+              {activeFilters.map((f) => (
+                <span className="msj-active-filter-chip" key={f.key}>
+                  {f.label}
+                  <button type="button" onClick={() => removeFilter(f)}><Icon name="x" size={11} /></button>
+                </span>
+              ))}
+              <button type="button" className="msj-clear-all" onClick={clearAll}>Clear All Filters</button>
+            </div>
+          )}
 
           <div className="filter-count">
             {loading && page === 1 ? "Loading jobs…" : `Showing ${jobs?.length || 0} of ${total} jobs`}
@@ -72,7 +142,7 @@ function Jobs() {
 
           {!loading && jobs?.length === 0 ? (
             <div className="campaign-empty">
-              <p>{q || jobType ? "No jobs match your search right now." : "No open jobs right now — check back soon."}</p>
+              <p>{q || jobType || experienceRequired || hasSalary || selectedSkills.length ? "No jobs match your filters right now." : "No open jobs right now — check back soon."}</p>
             </div>
           ) : (
             <div className="msj-list-grid" style={{ marginTop: 12 }}>
