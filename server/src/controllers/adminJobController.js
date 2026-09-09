@@ -1,10 +1,13 @@
+import fs from "fs";
+import path from "path";
 import { Op } from "sequelize";
 import Job from "../models/Job.js";
 import JobHistory from "../models/JobHistory.js";
+import JobApplication from "../models/JobApplication.js";
 import User from "../models/User.js";
 import { generateUniqueSlug } from "../utils/slugify.js";
 import { firstRestrictedField, RESTRICTED_CONTENT_MESSAGE } from "../utils/contentModeration.js";
-import { validateFields, normalizeSkills, logJobHistory } from "./jobController.js";
+import { validateFields, normalizeSkills, logJobHistory, serializeApplication, applyApplicationStatusChange } from "./jobController.js";
 import { PLATFORM_EMAIL } from "../seed/platformUserDefaults.js";
 import { recordJobPostedActivity } from "../services/communityActivityService.js";
 
@@ -170,6 +173,56 @@ export const updateModeration = async (req, res) => {
     await job.save();
     await logJobHistory(job.id, "moderation_changed", moderationStatus === "active" ? "Restored to public view" : "Hidden from public view", "admin", req.user.email);
     res.json({ job });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Full admin visibility/management of applicants — same underlying
+// JobApplication data as the job creator's own /account/my-jobs/:id/applications
+// screen (jobController.js's listApplicants/updateApplicationStatus), just
+// without the ownership gate.
+export const listApplications = async (req, res) => {
+  try {
+    const job = await Job.findByPk(req.params.id);
+    if (!job) return res.status(404).json({ message: "Job not found." });
+
+    const applications = await JobApplication.findAll({ where: { jobId: job.id }, order: [["createdAt", "DESC"]] });
+    const applicantIds = applications.map((a) => a.applicantUserId);
+    const applicants = applicantIds.length
+      ? await User.findAll({ where: { id: applicantIds }, attributes: ["id", "fullName", "email", "mobile", "username"] })
+      : [];
+    const applicantById = new Map(applicants.map((u) => [u.id, u]));
+    res.json({ applications: applications.map((a) => serializeApplication(a, applicantById.get(a.applicantUserId))) });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const updateApplicationStatus = async (req, res) => {
+  try {
+    const job = await Job.findByPk(req.params.id);
+    if (!job) return res.status(404).json({ message: "Job not found." });
+    const application = await JobApplication.findOne({ where: { id: req.params.appId, jobId: job.id } });
+    if (!application) return res.status(404).json({ message: "Application not found." });
+
+    const error = await applyApplicationStatusChange(application, job, { ...req.body, actorType: "admin", actorName: req.user.email });
+    if (error) return res.status(400).json({ message: error });
+
+    const applicant = await User.findByPk(application.applicantUserId, { attributes: ["id", "fullName", "email", "mobile", "username"] });
+    res.json({ application: serializeApplication(application, applicant) });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const downloadApplicantResume = async (req, res) => {
+  try {
+    const job = await Job.findByPk(req.params.id);
+    if (!job) return res.status(404).json({ message: "Job not found." });
+    const application = await JobApplication.findOne({ where: { id: req.params.appId, jobId: job.id } });
+    if (!application?.resumePath || !fs.existsSync(application.resumePath)) return res.status(404).json({ message: "No resume on file." });
+    res.download(path.resolve(application.resumePath), application.resumeFileName || "resume");
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

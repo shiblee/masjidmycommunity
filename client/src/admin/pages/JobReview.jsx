@@ -9,6 +9,8 @@ import { formatDate, formatDateTime } from "../../utils/formatDateTime.js";
 
 const DESCRIPTION_MAX = 3000;
 const STATUSES = ["active", "closed", "expired", "deleted"];
+const APPLICATION_STATUS_LABEL = { applied: "Applied", under_review: "Under Review", shortlisted: "Shortlisted", rejected: "Rejected", hired: "Selected / Hired" };
+const APPLICATION_STATUSES = Object.keys(APPLICATION_STATUS_LABEL);
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10);
@@ -187,6 +189,95 @@ function JobDetailsForm({ id, job, onSaved, showToast }) {
   );
 }
 
+// Same underlying JobApplication data as the job creator's own
+// /account/my-jobs/:id/applications screen — full admin visibility and the
+// same status-management action, just via the admin-scoped route.
+function ApplicationRow({ id, application, onUpdated }) {
+  const [status, setStatus] = useState(application.status);
+  const [remarks, setRemarks] = useState(application.remarks || "");
+  const [saving, setSaving] = useState(false);
+  const dirty = status !== application.status || remarks !== (application.remarks || "");
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      const { data } = await adminApi.patch(`/jobs/${id}/applications/${application.id}`, { status, remarks });
+      onUpdated(data.application);
+    } catch {
+      // Row-level failure — status/remarks simply stay unsaved; the admin can retry.
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const downloadResume = async () => {
+    try {
+      const res = await adminApi.get(`/jobs/${id}/applications/${application.id}/resume`, { responseType: "blob" });
+      const url = window.URL.createObjectURL(res.data);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = application.resumeFileName || "resume";
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      // No resume on file, or the download failed — nothing to clean up.
+    }
+  };
+
+  return (
+    <div style={{ padding: "14px 0", borderBottom: "1px solid var(--a-border)" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+        <div>
+          <strong>{application.applicant?.fullName || "A candidate"}</strong>
+          <span className="amx-panel-sub" style={{ marginLeft: 8 }}>{application.applicant?.email}</span>
+        </div>
+        <span className="amx-panel-sub">{formatDateTime(application.createdAt)}</span>
+      </div>
+      {application.coverNote && <p style={{ marginTop: 6, whiteSpace: "pre-wrap" }}>{application.coverNote}</p>}
+      {application.hasResume && (
+        <button type="button" className="amx-btn amx-btn-sm amx-btn-outline" style={{ marginTop: 8 }} onClick={downloadResume}>
+          Download Resume
+        </button>
+      )}
+      <div style={{ display: "flex", gap: 10, marginTop: 10, flexWrap: "wrap", alignItems: "flex-end" }}>
+        <select value={status} onChange={(e) => setStatus(e.target.value)}>
+          {APPLICATION_STATUSES.map((s) => <option key={s} value={s}>{APPLICATION_STATUS_LABEL[s]}</option>)}
+        </select>
+        <input
+          type="text"
+          value={remarks}
+          onChange={(e) => setRemarks(e.target.value)}
+          placeholder="Internal remarks…"
+          style={{ flex: 1, minWidth: 180 }}
+        />
+        <button type="button" className="amx-btn amx-btn-sm amx-btn-accent" disabled={!dirty || saving} onClick={save}>
+          {saving ? "Saving…" : "Save"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ApplicationsSection({ id }) {
+  const [applications, setApplications] = useState(null);
+
+  useEffect(() => {
+    adminApi.get(`/jobs/${id}/applications`).then(({ data }) => setApplications(data.applications)).catch(() => setApplications([]));
+  }, [id]);
+
+  const onUpdated = (updated) => {
+    setApplications((list) => list.map((a) => (a.id === updated.id ? updated : a)));
+  };
+
+  return (
+    <Section title={`Applications${applications ? ` (${applications.length})` : ""}`}>
+      {applications?.map((a) => <ApplicationRow key={a.id} id={id} application={a} onUpdated={onUpdated} />)}
+      {applications?.length === 0 && <p>No applications yet.</p>}
+      {!applications && <p>Loading…</p>}
+    </Section>
+  );
+}
+
 function JobReview() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -266,6 +357,8 @@ function JobReview() {
       <div className="amx-editor-layout">
         <div>
           <JobDetailsForm id={id} job={job} onSaved={setJob} showToast={showToast} />
+
+          <ApplicationsSection id={id} />
 
           <Section title="Job History">
             {history.map((h) => (

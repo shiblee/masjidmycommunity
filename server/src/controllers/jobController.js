@@ -190,7 +190,10 @@ export const reopenJob = async (req, res) => {
   }
 };
 
-function serializeApplication(application, applicant) {
+// Exported for adminJobController.js's own listApplications/updateStatus
+// routes, so admin sees applications in the exact same shape the job
+// creator does.
+export function serializeApplication(application, applicant) {
   const json = application.toJSON();
   delete json.resumePath; // server-side disk path only — never sent to the client
   json.hasResume = !!application.resumePath;

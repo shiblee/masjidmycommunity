@@ -31,6 +31,10 @@ const TYPE_LABEL = {
   contact_message_admin: "New Contact Message – Admin Notification",
   password_changed: "Password Changed",
   email_changed: "Email Address Changed",
+  job_application_submitted_applicant: "Job Application – Applicant Confirmation",
+  job_application_submitted_creator: "Job Application – Job Creator Notification",
+  job_application_submitted_admin: "Job Application – Admin Notification",
+  job_application_status_updated_applicant: "Job Application Status Updated",
 };
 
 function Toggle({ on, onClick, disabled }) {
