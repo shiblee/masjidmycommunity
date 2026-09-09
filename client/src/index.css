@@ -3419,19 +3419,19 @@ footer{
 }
 .job-ai-understood svg{ flex-shrink:0; }
 
-.job-rail{ margin-bottom:26px; }
-.job-rail-head{ display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+.job-rail{
+  margin-bottom:26px; background:var(--paper-dim); border-radius:18px; padding:20px;
+}
+.job-rail-head{ display:flex; align-items:center; gap:10px; margin-bottom:14px; }
 .job-rail-head svg{ color:var(--teal-deep); flex-shrink:0; }
 .job-rail-head h3{ font-size:16px; color:var(--text-on-paper); }
 .job-rail-head span{ display:block; font-size:12.5px; color:var(--text-on-paper-dim); margin-top:1px; }
-/* width:fit-content + max-width:100% — a rail with only 1-2 cards shrinks
-   to just what it holds (no large empty gap trailing off to the right),
-   while a rail with more cards than fit the viewport still caps at the
-   container width and scrolls internally, exactly like before. */
-.job-rail-track{ display:flex; gap:16px; overflow-x:auto; padding-bottom:6px; scroll-snap-type:x proximity; width:fit-content; max-width:100%; }
-.job-rail-track::-webkit-scrollbar{ height:6px; }
-.job-rail-track::-webkit-scrollbar-thumb{ background:var(--line); border-radius:100px; }
-.job-rail-track > .job-card{ flex:0 0 300px; scroll-snap-align:start; }
+/* Cards wrap onto new rows instead of scrolling off-screen, and the
+   .job-rail panel above gives the whole section a visible, intentional
+   boundary — so 1-2 cards read as "a small shelf that's exactly this
+   size," not a mostly-empty strip floating in blank page background. */
+.job-rail-track{ display:flex; flex-wrap:wrap; gap:16px; }
+.job-rail-track > .job-card{ flex:1 1 300px; max-width:340px; }
 
 .job-search-row{ display:flex; align-items:center; gap:16px; flex-wrap:wrap; margin-bottom:20px; }
 .job-search-row .msj-search{ flex:1; min-width:240px; }
