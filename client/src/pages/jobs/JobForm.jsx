@@ -3,6 +3,7 @@ import { useNavigate, useParams, Link } from "react-router-dom";
 import { Icon } from "../../components/Icons.jsx";
 import { Field } from "../../components/masjid/ContactPersonForm.jsx";
 import { WizardShell } from "../../components/wizard/WizardShell.jsx";
+import MicButton from "../../components/MicButton.jsx";
 import jobApi from "../../services/jobApi.js";
 
 const JOB_TYPES = [
@@ -12,6 +13,8 @@ const JOB_TYPES = [
   { value: "internship", label: "Internship" },
   { value: "volunteer", label: "Volunteer" },
 ];
+
+const DESCRIPTION_MAX = 3000;
 
 function emptyForm() {
   return { title: "", description: "", jobType: "full_time", experienceRequired: "", skills: "", location: "", salary: "", applicationDeadline: "", contactMethod: "" };
@@ -99,8 +102,28 @@ function JobForm({ embedded = false }) {
               <input value={form.title} onChange={setField("title")} placeholder="e.g. Weekend Qur'an Teacher" maxLength={150} />
             </Field>
 
-            <Field label="Job Description" required error={errors.description}>
-              <textarea rows={6} value={form.description} onChange={setField("description")} placeholder="Describe the role, responsibilities, and what makes a good fit" />
+            <Field
+              label="Job Description"
+              required
+              error={errors.description}
+              labelExtra={<span className="pf-char-counter">{form.description.length}/{DESCRIPTION_MAX}</span>}
+            >
+              <div className="msj-about-wrap">
+                <textarea
+                  rows={6}
+                  maxLength={DESCRIPTION_MAX}
+                  value={form.description}
+                  onChange={setField("description")}
+                  placeholder="Describe the role, responsibilities, and what makes a good fit"
+                />
+                <MicButton
+                  onTranscript={(text) => {
+                    setForm((f) => ({ ...f, description: text.slice(0, DESCRIPTION_MAX) }));
+                    setErrors((er) => ({ ...er, description: null, form: null }));
+                  }}
+                  className="msj-about-mic"
+                />
+              </div>
             </Field>
 
             <div className="msj-field-row">
