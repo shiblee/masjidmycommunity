@@ -70,7 +70,12 @@ function Navbar() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const goToCampaigns = useLoginGatedNav();
-  const isLinkActive = (href) => !href.startsWith("#") && pathname === href;
+  // A nav item also stays highlighted on that section's own detail pages —
+  // /masjid/:slug and /campaign/:slug aren't sub-paths of the plural list
+  // pages (/explore-masjids, /campaigns) they belong to, so an exact match
+  // alone would leave "Masjids"/"Campaign" unhighlighted on every profile page.
+  const ACTIVE_PREFIXES = { "/explore-masjids": "/masjid/", "/campaigns": "/campaign/" };
+  const isLinkActive = (href) => !href.startsWith("#") && (pathname === href || pathname.startsWith(ACTIVE_PREFIXES[href] || "\0"));
 
   useClickOutside(menuRef, () => setMenuOpen(false));
   useClickOutside(notifRef, () => setNotifOpen(false));
