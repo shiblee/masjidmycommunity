@@ -30,6 +30,7 @@ import { listActive as listActiveInstitutions } from "../controllers/adminInstit
 import { listActive as listActiveFieldsOfStudy } from "../controllers/adminFieldOfStudyController.js";
 import { listActive as listActiveCompanies } from "../controllers/adminCompanyController.js";
 import { listActive as listActiveEmploymentTypes } from "../controllers/adminEmploymentTypeController.js";
+import { listActive as listActiveExperienceLevels } from "../controllers/adminExperienceLevelController.js";
 import auth, { requireUser } from "../middleware/auth.js";
 import { uploadProfilePhoto } from "../middleware/upload.js";
 
@@ -79,6 +80,7 @@ router.get("/meta/institutions", auth, requireUser, listActiveInstitutions);
 router.get("/meta/fields-of-study", auth, requireUser, listActiveFieldsOfStudy);
 router.get("/meta/companies", auth, requireUser, listActiveCompanies);
 router.get("/meta/employment-types", auth, requireUser, listActiveEmploymentTypes);
+router.get("/meta/experience-levels", auth, requireUser, listActiveExperienceLevels);
 router.get("/me/hobbies", auth, requireUser, hobbies.listMine);
 router.post("/me/hobbies", auth, requireUser, hobbies.create);
 router.delete("/me/hobbies/:id", auth, requireUser, hobbies.remove);

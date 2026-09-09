@@ -6,7 +6,6 @@ import { Icon } from "../Icons.jsx";
 import { formatDate } from "../../utils/formatDateTime.js";
 
 const RAIL_SIZE = 20;
-const JOB_TYPE_LABEL = { full_time: "Full-Time", part_time: "Part-Time", contract: "Contract", internship: "Internship", volunteer: "Volunteer" };
 
 // Left column of the job detail page — every other open job, mirroring
 // RunningCampaignsRail.jsx's exact pattern (search, sticky, excludes the
@@ -45,7 +44,7 @@ function LatestJobsRail({ currentSlug, excludeId }) {
               <div className="camp-rail-card-loc">{j.postedBy} · {j.location}</div>
               <div className="camp-rail-card-title">{j.title}</div>
               <div className="camp-rail-card-meta">
-                <span>{JOB_TYPE_LABEL[j.jobType]}</span>
+                <span>{j.jobType}</span>
                 <span>{formatDate(j.createdAt)}</span>
               </div>
             </div>

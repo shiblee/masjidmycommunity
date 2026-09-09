@@ -8,7 +8,6 @@ import LatestJobsRail from "../components/job/LatestJobsRail.jsx";
 import JobApplyPanel from "../components/job/JobApplyPanel.jsx";
 
 const API = `${API_BASE}/jobs/public`;
-const JOB_TYPE_LABEL = { full_time: "Full-Time", part_time: "Part-Time", contract: "Contract", internship: "Internship", volunteer: "Volunteer" };
 
 function JobProfile() {
   const { slug } = useParams();
@@ -45,7 +44,7 @@ function JobProfile() {
     <main className="msj-page">
       <section className="cw-hero msj-explore-hero on-ink">
         <div className="wrap">
-          <span className="eyebrow">{JOB_TYPE_LABEL[job.jobType]}</span>
+          <span className="eyebrow">{job.jobType}</span>
           <h1>{job.title}</h1>
           <p>
             <Icon name="mapPin" size={14} /> {job.location} · Posted by {poster?.fullName || "a community member"} · {formatDate(job.createdAt)}
@@ -64,12 +63,14 @@ function JobProfile() {
             </div>
             <p className="msj-profile-about" style={{ whiteSpace: "pre-line" }}>{job.description}</p>
 
-            {job.skills && (
+            {job.skills?.length > 0 && (
               <>
                 <div className="section-head" style={{ marginTop: 32, marginBottom: 8 }}>
                   <span className="eyebrow">Skills & Qualifications</span>
                 </div>
-                <p className="msj-profile-about">{job.skills}</p>
+                <div className="profile-chip-row">
+                  {job.skills.map((skill) => <span className="filter-chip active profile-chip" key={skill}>{skill}</span>)}
+                </div>
               </>
             )}
 

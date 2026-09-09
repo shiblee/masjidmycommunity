@@ -27,6 +27,7 @@ import { ensureInstitutionDefaults } from "./seed/institutionDefaults.js";
 import { ensureFieldOfStudyDefaults } from "./seed/fieldOfStudyDefaults.js";
 import { ensureCompanyDefaults } from "./seed/companyDefaults.js";
 import { ensureEmploymentTypeDefaults } from "./seed/employmentTypeDefaults.js";
+import { ensureExperienceLevelDefaults } from "./seed/experienceLevelDefaults.js";
 import { ensureHobbyDefaults } from "./seed/hobbyDefaults.js";
 import { ensureSkillDefaults } from "./seed/skillDefaults.js";
 import { ensureCampaignCategoryDefaults } from "./seed/campaignCategoryDefaults.js";
@@ -71,6 +72,7 @@ connectDB()
       ensureFieldOfStudyDefaults(),
       ensureCompanyDefaults(),
       ensureEmploymentTypeDefaults(),
+      ensureExperienceLevelDefaults(),
       ensureHobbyDefaults(),
       ensureSkillDefaults(),
       ensureCampaignCategoryDefaults(),

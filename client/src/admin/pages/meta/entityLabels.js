@@ -26,4 +26,5 @@ export const META_ENTITY_LABELS = {
   "field-of-study": "Field of Study",
   company: "Company / Organization",
   "employment-type": "Employment Type",
+  "experience-level": "Experience Level",
 };

@@ -16,13 +16,21 @@ const Job = sequelize.define(
     slug: { type: DataTypes.STRING, allowNull: false },
     description: { type: DataTypes.TEXT, allowNull: false },
 
-    jobType: {
-      type: DataTypes.ENUM("full_time", "part_time", "contract", "internship", "volunteer"),
-      allowNull: false,
-      defaultValue: "full_time",
-    },
+    // Free text (the selected EmploymentType's own name, e.g. "Full-time") —
+    // admin-managed under Admin Panel -> Meta -> Employment Types, the same
+    // master data already used for a user's Work Experience entries, rather
+    // than a second, parallel "job type" list. Not a foreign key: kept
+    // denormalized like Donation.bankName, so a job's own record is
+    // unaffected if that master list is later renamed/removed.
+    jobType: { type: DataTypes.STRING, allowNull: false, defaultValue: "Full-time" },
+    // Same denormalized-string approach as jobType, sourced from Admin Panel
+    // -> Meta -> Experience Level.
     experienceRequired: { type: DataTypes.STRING, allowNull: true },
-    skills: { type: DataTypes.STRING, allowNull: true },
+    // Array of skill names (admin-managed under Meta -> Skill, same master
+    // list a user's own profile Skills picker already uses) — a job can list
+    // more than one, so this is JSON rather than the single denormalized
+    // string jobType/experienceRequired use.
+    skills: { type: DataTypes.JSON, allowNull: false, defaultValue: [] },
     location: { type: DataTypes.STRING, allowNull: false },
     salary: { type: DataTypes.STRING, allowNull: true },
     applicationDeadline: { type: DataTypes.DATEONLY, allowNull: true },

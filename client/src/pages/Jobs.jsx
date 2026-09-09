@@ -6,23 +6,19 @@ import { Icon } from "../components/Icons.jsx";
 import { formatDate } from "../utils/formatDateTime.js";
 
 const PAGE_SIZE = 12;
-const JOB_TYPES = [
-  { value: "", label: "All Types" },
-  { value: "full_time", label: "Full-Time" },
-  { value: "part_time", label: "Part-Time" },
-  { value: "contract", label: "Contract" },
-  { value: "internship", label: "Internship" },
-  { value: "volunteer", label: "Volunteer" },
-];
-const JOB_TYPE_LABEL = Object.fromEntries(JOB_TYPES.filter((t) => t.value).map((t) => [t.value, t.label]));
 
 function Jobs() {
   const [q, setQ] = useState("");
   const [jobType, setJobType] = useState("");
+  const [jobTypes, setJobTypes] = useState([]);
   const [jobs, setJobs] = useState(null);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    axios.get(`${API_BASE}/jobs/public/meta/job-types`).then(({ data }) => setJobTypes(data.employmentTypes)).catch(() => {});
+  }, []);
 
   useEffect(() => {
     const handle = setTimeout(() => {
@@ -55,9 +51,10 @@ function Jobs() {
       <section className="py-md msj-explore-content">
         <div className="wrap">
           <div className="campaign-filters" style={{ margin: "0 0 16px" }}>
-            {JOB_TYPES.map((t) => (
-              <button key={t.value} className={`filter-chip${jobType === t.value ? " active" : ""}`} onClick={() => changeType(t.value)}>
-                {t.label}
+            <button className={`filter-chip${jobType === "" ? " active" : ""}`} onClick={() => changeType("")}>All Types</button>
+            {jobTypes.map((t) => (
+              <button key={t.id} className={`filter-chip${jobType === t.name ? " active" : ""}`} onClick={() => changeType(t.name)}>
+                {t.name}
               </button>
             ))}
           </div>
@@ -84,7 +81,7 @@ function Jobs() {
                   <div className="msj-list-body">
                     <div className="msj-list-top">
                       <h3>{j.title}</h3>
-                      <span className="acct-status-pill">{JOB_TYPE_LABEL[j.jobType]}</span>
+                      <span className="acct-status-pill">{j.jobType}</span>
                     </div>
                     <p className="msj-list-meta"><Icon name="mapPin" size={13} /> {j.location}{j.experienceRequired ? ` · ${j.experienceRequired}` : ""}</p>
                     {j.salary && <p className="msj-list-meta">{j.salary}</p>}

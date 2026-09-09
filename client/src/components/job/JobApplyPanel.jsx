@@ -2,8 +2,6 @@ import React from "react";
 import { Icon } from "../Icons.jsx";
 import { formatDate } from "../../utils/formatDateTime.js";
 
-const JOB_TYPE_LABEL = { full_time: "Full-Time", part_time: "Part-Time", contract: "Contract", internship: "Internship", volunteer: "Volunteer" };
-
 // Right column of the job detail page, mirroring CampaignDonationPanel.jsx's
 // structure (eyebrow, hero stats, primary CTA). The real Apply flow —
 // resume upload, profile auto-fill, duplicate prevention — is a later
@@ -18,7 +16,7 @@ function JobApplyPanel({ job }) {
       <h3>{job.title}</h3>
 
       <div className="camp-donate-substats" style={{ gridTemplateColumns: "1fr 1fr" }}>
-        <div><strong>{JOB_TYPE_LABEL[job.jobType]}</strong><span>Job Type</span></div>
+        <div><strong>{job.jobType}</strong><span>Job Type</span></div>
         <div><strong>{job.location}</strong><span>Location</span></div>
         {job.experienceRequired && <div><strong>{job.experienceRequired}</strong><span>Experience</span></div>}
         {job.salary && <div><strong>{job.salary}</strong><span>Compensation</span></div>}

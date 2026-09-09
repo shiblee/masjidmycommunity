@@ -2,8 +2,6 @@ import Job from "../models/Job.js";
 import { generateUniqueSlug } from "../utils/slugify.js";
 import { firstRestrictedField, RESTRICTED_CONTENT_MESSAGE } from "../utils/contentModeration.js";
 
-const JOB_TYPES = new Set(["full_time", "part_time", "contract", "internship", "volunteer"]);
-
 async function findOwnedJob(req, res) {
   const job = await Job.findOne({ where: { id: req.params.id, userId: req.user.id } });
   if (!job) {
@@ -13,12 +11,24 @@ async function findOwnedJob(req, res) {
   return job;
 }
 
+function todayStr() {
+  return new Date().toISOString().slice(0, 10);
+}
+
 function validateFields(body) {
   if (!body.title?.trim()) return "Job title is required.";
   if (!body.description?.trim()) return "Job description is required.";
   if (!body.location?.trim()) return "Location is required.";
-  if (body.jobType && !JOB_TYPES.has(body.jobType)) return "Select a valid job type.";
+  // Plain string comparison works here since both sides are YYYY-MM-DD.
+  if (body.applicationDeadline && body.applicationDeadline < todayStr()) {
+    return "Application deadline can't be in the past.";
+  }
   return null;
+}
+
+function normalizeSkills(skills) {
+  if (!Array.isArray(skills)) return [];
+  return [...new Set(skills.map((s) => String(s).trim()).filter(Boolean))].slice(0, 20);
 }
 
 export const listMine = async (req, res) => {
@@ -64,9 +74,9 @@ export const createJob = async (req, res) => {
       title: title.trim(),
       slug,
       description: description.trim(),
-      jobType: jobType || "full_time",
+      jobType: jobType?.trim() || "Full-time",
       experienceRequired: experienceRequired?.trim() || null,
-      skills: skills?.trim() || null,
+      skills: normalizeSkills(skills),
       location: location.trim(),
       salary: salary?.trim() || null,
       applicationDeadline: applicationDeadline || null,
@@ -102,9 +112,9 @@ export const updateJob = async (req, res) => {
     }
     if (title !== undefined) job.title = title.trim();
     if (description !== undefined) job.description = description.trim();
-    if (jobType !== undefined) job.jobType = jobType;
+    if (jobType !== undefined) job.jobType = jobType.trim() || job.jobType;
     if (experienceRequired !== undefined) job.experienceRequired = experienceRequired?.trim() || null;
-    if (skills !== undefined) job.skills = skills?.trim() || null;
+    if (skills !== undefined) job.skills = normalizeSkills(skills);
     if (location !== undefined) job.location = location.trim();
     if (salary !== undefined) job.salary = salary?.trim() || null;
     if (applicationDeadline !== undefined) job.applicationDeadline = applicationDeadline || null;

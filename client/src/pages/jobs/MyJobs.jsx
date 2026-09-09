@@ -9,8 +9,6 @@ const STATUS_LABEL = { active: "Active", closed: "Closed", expired: "Expired", d
 // elsewhere in the app, rather than adding new CSS for these two.
 const STATUS_PILL_CLASS = { active: "active", closed: "inactive", expired: "cancelled", deleted: "cancelled" };
 
-const JOB_TYPE_LABEL = { full_time: "Full-Time", part_time: "Part-Time", contract: "Contract", internship: "Internship", volunteer: "Volunteer" };
-
 function MyJobs() {
   const [jobs, setJobs] = useState(null);
   const [error, setError] = useState("");
@@ -74,7 +72,7 @@ function MyJobs() {
                     <span className={`acct-status-pill ${STATUS_PILL_CLASS[j.status]}`}>{STATUS_LABEL[j.status]}</span>
                   </div>
                   <p className="msj-list-meta">
-                    <Icon name="mapPin" size={13} /> {j.location} · {JOB_TYPE_LABEL[j.jobType]}
+                    <Icon name="mapPin" size={13} /> {j.location} · {j.jobType}
                     {j.experienceRequired && ` · ${j.experienceRequired}`}
                   </p>
                   <p className="msj-list-meta">{j.applicationCount} application{j.applicationCount === 1 ? "" : "s"} · Posted {formatDate(j.createdAt)}</p>

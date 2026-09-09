@@ -1,6 +1,20 @@
 import { Op } from "sequelize";
 import Job from "../models/Job.js";
 import User from "../models/User.js";
+import EmploymentType from "../models/EmploymentType.js";
+
+// The public Jobs board's filter chips need the same admin-managed job-type
+// list the posting form uses, but that list otherwise only has an
+// auth-gated endpoint (/users/meta/employment-types) — this page is
+// browsable while logged out, so it needs its own public read.
+export const listJobTypes = async (req, res) => {
+  try {
+    const employmentTypes = await EmploymentType.findAll({ where: { isActive: true }, order: [["sortOrder", "ASC"]] });
+    res.json({ employmentTypes });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 
 const PUBLIC_STATUSES = ["active"];
 
