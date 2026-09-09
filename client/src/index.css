@@ -3461,6 +3461,11 @@ footer{
 .job-filter-checkbox input{ accent-color:var(--teal-deep); width:16px; height:16px; }
 .job-filter-group .msj-category-filter{ width:100%; }
 .job-filter-group .msj-category-filter-trigger{ width:100%; justify-content:space-between; }
+/* The shared dropdown panel is a fixed 280px everywhere else it's used
+   (ExploreMasjids' top filter bar has room for that) — inside this narrower
+   sidebar column it overflowed past the card's own right edge, so here it
+   matches the trigger's own width instead. */
+.job-filter-group .msj-category-filter-panel{ width:100%; left:0; }
 
 @media (max-width:900px){
   .job-board-layout{ grid-template-columns:1fr; }
