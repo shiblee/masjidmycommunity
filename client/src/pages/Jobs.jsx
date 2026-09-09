@@ -51,7 +51,6 @@ function Jobs() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
 
-  const [savedJobs, setSavedJobs] = useState([]);
   const [myApplications, setMyApplications] = useState([]);
   const [recommended, setRecommended] = useState([]);
   const [bySkills, setBySkills] = useState([]);
@@ -91,7 +90,7 @@ function Jobs() {
     requestLocation();
 
     if (isLoggedIn) {
-      publicJobApi.get("/liked/mine", { params: { pageSize: 10 } }).then(({ data }) => { setSavedJobs(data.jobs); setSavedTotal(data.total); }).catch(() => {});
+      publicJobApi.get("/liked/mine", { params: { pageSize: 1 } }).then(({ data }) => setSavedTotal(data.total)).catch(() => {});
       jobApi.get("/mine/applications").then(({ data }) => setMyApplications(data.applications.slice(0, 10))).catch(() => {});
       publicJobApi.get("/recommended", { params: { limit: 10 } }).then(({ data }) => setRecommended(data.jobs)).catch(() => {});
       publicJobApi.get("/by-skills", { params: { limit: 10 } }).then(({ data }) => setBySkills(data.jobs)).catch(() => {});
@@ -289,15 +288,6 @@ function Jobs() {
             count={nearYou.length}
           >
             {nearYou.map((j) => <JobCard job={j} userLocation={coords} key={j.id} />)}
-          </JobRail>
-
-          <JobRail
-            icon="heart"
-            title={t("jobs.rails.saved.title", "Saved Jobs")}
-            subtitle={t("jobs.rails.saved.subtitle", "Jobs you've bookmarked to come back to")}
-            count={savedJobs.length}
-          >
-            {savedJobs.map((j) => <JobCard job={j} userLocation={coords} key={j.id} />)}
           </JobRail>
 
           <JobRail
