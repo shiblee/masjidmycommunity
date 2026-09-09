@@ -4,6 +4,7 @@ import communityApi from "../services/communityApi.js";
 import { Icon } from "./Icons.jsx";
 import MentionTextarea from "./MentionTextarea.jsx";
 import { API_ORIGIN } from "../config.js";
+import { useTranslation } from "../i18n/LanguageContext.jsx";
 
 function initialsOf(name) {
   if (!name) return "?";
@@ -15,6 +16,7 @@ function initialsOf(name) {
 // to that masjid — used by the Masjid Community Hub's Wall tab, where the
 // masjid is fixed by the page context rather than picked by the user.
 function PostComposer({ user, onPosted, maxLength = 2000, lockedMasjid }) {
+  const { t } = useTranslation();
   const [body, setBody] = useState("");
   const [images, setImages] = useState([]); // [{file, previewUrl}]
   const [video, setVideo] = useState(null); // {file, previewUrl}
@@ -32,8 +34,8 @@ function PostComposer({ user, onPosted, maxLength = 2000, lockedMasjid }) {
   if (!user) {
     return (
       <div className="cw-composer cw-composer-guest">
-        <p>Sign in to share an update with the community.</p>
-        <Link to="/auth" className="btn btn-gold">Sign In</Link>
+        <p>{t("postComposer.guest.prompt", "Sign in to share an update with the community.")}</p>
+        <Link to="/auth" className="btn btn-gold">{t("postComposer.guest.signIn", "Sign In")}</Link>
       </div>
     );
   }
@@ -87,7 +89,7 @@ function PostComposer({ user, onPosted, maxLength = 2000, lockedMasjid }) {
       if (video) URL.revokeObjectURL(video.previewUrl);
       setVideo(null);
     } catch (err) {
-      setError(err.response?.data?.message || "Couldn't publish your post. Please try again.");
+      setError(err.response?.data?.message || t("postComposer.errorPublish", "Couldn't publish your post. Please try again."));
     } finally {
       setPosting(false);
     }
@@ -104,17 +106,20 @@ function PostComposer({ user, onPosted, maxLength = 2000, lockedMasjid }) {
         <strong>{user.fullName}</strong>
       </div>
 
-      {lockedMasjid && (
-        <p className="cw-composer-locked-masjid">
-          <Icon name="mosque" size={13} /> This post will be shared with the <strong>{lockedMasjid.name}</strong> community.
-        </p>
-      )}
+      {lockedMasjid && (() => {
+        const [lockedPre, lockedPost] = t("postComposer.lockedMasjidNotice", "This post will be shared with the {masjid} community.").split("{masjid}");
+        return (
+          <p className="cw-composer-locked-masjid">
+            <Icon name="mosque" size={13} /> {lockedPre}<strong>{lockedMasjid.name}</strong>{lockedPost}
+          </p>
+        );
+      })()}
 
-      <label className="cw-composer-prompt" htmlFor="wall-composer-textarea">What would you like to share with the community?</label>
+      <label className="cw-composer-prompt" htmlFor="wall-composer-textarea">{t("postComposer.prompt", "What would you like to share with the community?")}</label>
       <MentionTextarea
         id="wall-composer-textarea"
         rows={3}
-        placeholder="What's happening in your community? Type @ to mention a masjid or campaign."
+        placeholder={t("postComposer.bodyPlaceholder", "What's happening in your community? Type @ to mention a masjid or campaign.")}
         value={body}
         onChange={setBody}
       />
@@ -142,14 +147,14 @@ function PostComposer({ user, onPosted, maxLength = 2000, lockedMasjid }) {
       <div className="cw-composer-actions">
         <div className="cw-composer-tools">
           <button type="button" className="cw-composer-tool" onClick={() => imageInputRef.current?.click()}>
-            <Icon name="imageIcon" size={16} /> Image
+            <Icon name="imageIcon" size={16} /> {t("postComposer.tool.image", "Image")}
           </button>
           <button type="button" className="cw-composer-tool" onClick={() => videoInputRef.current?.click()} disabled={!!video}>
-            <Icon name="play" size={16} /> Video
+            <Icon name="play" size={16} /> {t("postComposer.tool.video", "Video")}
           </button>
         </div>
         <button type="button" className="btn btn-gold" disabled={!canPublish} onClick={publish}>
-          {posting ? "Publishing…" : "Publish"}
+          {posting ? t("postComposer.publishing", "Publishing…") : t("postComposer.publish", "Publish")}
         </button>
       </div>
 

@@ -5,6 +5,7 @@ import { Icon } from "./Icons.jsx";
 import ReportModal from "./ReportModal.jsx";
 import MentionTextarea from "./MentionTextarea.jsx";
 import PostBodyText from "./PostBodyText.jsx";
+import { useTranslation } from "../i18n/LanguageContext.jsx";
 
 const TOP_LEVEL_PAGE = 10;
 const REPLY_PREVIEW = 3;
@@ -13,15 +14,15 @@ const REPLY_PREVIEW = 3;
 // itself has no depth limit, this is purely a rendering choice.
 const MAX_VISUAL_DEPTH = 6;
 
-function timeAgo(dateStr) {
+function timeAgo(dateStr, t) {
   const diffMs = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diffMs / 60000);
-  if (mins < 1) return "Just now";
-  if (mins < 60) return `${mins}m ago`;
+  if (mins < 1) return t("commentSection.time.justNow", "Just now");
+  if (mins < 60) return t("commentSection.time.minutesAgo", "{count}m ago").replace("{count}", mins);
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
+  if (hrs < 24) return t("commentSection.time.hoursAgo", "{count}h ago").replace("{count}", hrs);
   const days = Math.floor(hrs / 24);
-  return `${days}d ago`;
+  return t("commentSection.time.daysAgo", "{count}d ago").replace("{count}", days);
 }
 
 function initialsOf(name) {
@@ -68,6 +69,7 @@ function CommentVoteButtons({ comment, requireAuth, onVote }) {
 }
 
 function CommentComposer({ placeholder, autoFocus, busy, value, onChange, onSubmit, onCancel, submitLabel, maxLength }) {
+  const { t } = useTranslation();
   const overLimit = maxLength != null && value.length > maxLength;
   return (
     <div className="cmt-composer">
@@ -84,11 +86,11 @@ function CommentComposer({ placeholder, autoFocus, busy, value, onChange, onSubm
       <div className="cmt-composer-actions">
         {onCancel && (
           <button type="button" className="cmt-btn-text" onClick={onCancel} disabled={busy}>
-            Cancel
+            {t("commentSection.cancel", "Cancel")}
           </button>
         )}
         <button type="button" className="cmt-btn-post" onClick={onSubmit} disabled={busy || !value.trim() || overLimit}>
-          {busy ? "Posting…" : submitLabel || "Post"}
+          {busy ? t("commentSection.posting", "Posting…") : submitLabel || t("commentSection.post", "Post")}
         </button>
       </div>
     </div>
@@ -96,6 +98,7 @@ function CommentComposer({ placeholder, autoFocus, busy, value, onChange, onSubm
 }
 
 function CommentNode({ comment, childrenMap, depth, basePath, user, navigate, mutate, onReport, commentMaxLength, replyMaxLength }) {
+  const { t } = useTranslation();
   const [replying, setReplying] = useState(false);
   const [replyText, setReplyText] = useState("");
   const [replyBusy, setReplyBusy] = useState(false);
@@ -137,7 +140,7 @@ function CommentNode({ comment, childrenMap, depth, basePath, user, navigate, mu
       setReplying(false);
       setShowAllReplies(true);
     } catch (err) {
-      mutate.toast(err.response?.data?.message || "Couldn't post your reply. Please try again.");
+      mutate.toast(err.response?.data?.message || t("commentSection.errorPostReply", "Couldn't post your reply. Please try again."));
     } finally {
       setReplyBusy(false);
     }
@@ -151,7 +154,7 @@ function CommentNode({ comment, childrenMap, depth, basePath, user, navigate, mu
       mutate.update(comment.id, { body: data.comment.body, updatedAt: data.comment.updatedAt, edited: true });
       setEditing(false);
     } catch (err) {
-      mutate.toast(err.response?.data?.message || "Couldn't save your changes. Please try again.");
+      mutate.toast(err.response?.data?.message || t("commentSection.errorSaveEdit", "Couldn't save your changes. Please try again."));
     } finally {
       setEditBusy(false);
     }
@@ -164,7 +167,7 @@ function CommentNode({ comment, childrenMap, depth, basePath, user, navigate, mu
       mutate.update(comment.id, { status: "deleted", body: null });
       setConfirmDelete(false);
     } catch (err) {
-      mutate.toast(err.response?.data?.message || "Couldn't delete this comment. Please try again.");
+      mutate.toast(err.response?.data?.message || t("commentSection.errorDeleteComment", "Couldn't delete this comment. Please try again."));
     } finally {
       setDeleteBusy(false);
     }
@@ -176,39 +179,39 @@ function CommentNode({ comment, childrenMap, depth, basePath, user, navigate, mu
         <div className="cmt-avatar">{initialsOf(comment.author?.fullName)}</div>
         <div className="cmt-body-wrap">
           <div className="cmt-bubble">
-            <div className="cmt-author">{comment.author?.fullName || "Deleted User"}</div>
+            <div className="cmt-author">{comment.author?.fullName || t("commentSection.deletedUser", "Deleted User")}</div>
             {editing ? (
               <div className="cmt-edit-box">
                 <MentionTextarea rows={2} value={editText} onChange={setEditText} autoFocus />
                 <div className="cmt-composer-actions">
                   <button type="button" className="cmt-btn-text" onClick={() => { setEditing(false); setEditText(comment.body || ""); }} disabled={editBusy}>
-                    Cancel
+                    {t("commentSection.cancel", "Cancel")}
                   </button>
                   <button type="button" className="cmt-btn-post" onClick={submitEdit} disabled={editBusy || !editText.trim() || editOverLimit}>
-                    {editBusy ? "Saving…" : "Save"}
+                    {editBusy ? t("commentSection.saving", "Saving…") : t("commentSection.save", "Save")}
                   </button>
                 </div>
               </div>
             ) : (
               <p className={`cmt-text${isDeleted ? " cmt-text-deleted" : ""}`}>
-                {isDeleted ? "[Comment deleted]" : <PostBodyText text={comment.body} />}
+                {isDeleted ? t("commentSection.commentDeleted", "[Comment deleted]") : <PostBodyText text={comment.body} />}
               </p>
             )}
           </div>
 
           {!editing && (
             <div className="cmt-meta-row">
-              <span className="cmt-time">{timeAgo(comment.createdAt)}{comment.edited ? " · Edited" : ""}</span>
+              <span className="cmt-time">{timeAgo(comment.createdAt, t)}{comment.edited ? t("commentSection.editedSuffix", " · Edited") : ""}</span>
               {!isDeleted && <CommentVoteButtons comment={comment} requireAuth={requireAuth} onVote={mutate.vote} />}
               {!isDeleted && (
                 <button type="button" className="cmt-action" onClick={() => { if (requireAuth()) setReplying((r) => !r); }}>
-                  Reply
+                  {t("commentSection.reply", "Reply")}
                 </button>
               )}
               {!isDeleted && comment.isOwner && (
                 <>
-                  <button type="button" className="cmt-action" onClick={() => setEditing(true)}>Edit</button>
-                  <button type="button" className="cmt-action cmt-action-danger" onClick={() => setConfirmDelete(true)}>Delete</button>
+                  <button type="button" className="cmt-action" onClick={() => setEditing(true)}>{t("commentSection.edit", "Edit")}</button>
+                  <button type="button" className="cmt-action cmt-action-danger" onClick={() => setConfirmDelete(true)}>{t("commentSection.delete", "Delete")}</button>
                 </>
               )}
               {!isDeleted && !comment.isOwner && (
@@ -218,7 +221,7 @@ function CommentNode({ comment, childrenMap, depth, basePath, user, navigate, mu
                   disabled={comment.alreadyReported}
                   onClick={() => { if (requireAuth()) onReport(comment); }}
                 >
-                  {comment.alreadyReported ? "Reported" : "Report"}
+                  {comment.alreadyReported ? t("commentSection.reported", "Reported") : t("commentSection.report", "Report")}
                 </button>
               )}
             </div>
@@ -226,24 +229,24 @@ function CommentNode({ comment, childrenMap, depth, basePath, user, navigate, mu
 
           {confirmDelete && (
             <div className="cmt-confirm-delete">
-              <span>Delete this comment? This action cannot be undone.</span>
-              <button type="button" className="cmt-btn-text" onClick={() => setConfirmDelete(false)} disabled={deleteBusy}>Cancel</button>
+              <span>{t("commentSection.confirmDeleteMessage", "Delete this comment? This action cannot be undone.")}</span>
+              <button type="button" className="cmt-btn-text" onClick={() => setConfirmDelete(false)} disabled={deleteBusy}>{t("commentSection.cancel", "Cancel")}</button>
               <button type="button" className="cmt-btn-post cmt-btn-danger" onClick={confirmDeleteNow} disabled={deleteBusy}>
-                {deleteBusy ? "Deleting…" : "Delete"}
+                {deleteBusy ? t("commentSection.deleting", "Deleting…") : t("commentSection.delete", "Delete")}
               </button>
             </div>
           )}
 
           {replying && (
             <CommentComposer
-              placeholder={`Reply to ${comment.author?.fullName || "this comment"}…`}
+              placeholder={t("commentSection.replyPlaceholder", "Reply to {name}…").replace("{name}", comment.author?.fullName || t("commentSection.replyToFallbackName", "this comment"))}
               autoFocus
               busy={replyBusy}
               value={replyText}
               onChange={setReplyText}
               onSubmit={submitReply}
               onCancel={() => setReplying(false)}
-              submitLabel="Reply"
+              submitLabel={t("commentSection.reply", "Reply")}
               maxLength={replyMaxLength}
             />
           )}
@@ -266,7 +269,10 @@ function CommentNode({ comment, childrenMap, depth, basePath, user, navigate, mu
 
           {hiddenCount > 0 && (
             <button type="button" className="cmt-load-more" onClick={() => setShowAllReplies(true)}>
-              View {hiddenCount} more {hiddenCount === 1 ? "reply" : "replies"}
+              {(hiddenCount === 1
+                ? t("commentSection.viewMoreRepliesSingular", "View {count} more reply")
+                : t("commentSection.viewMoreRepliesPlural", "View {count} more replies")
+              ).replace("{count}", hiddenCount)}
             </button>
           )}
         </div>
@@ -279,6 +285,7 @@ function CommentNode({ comment, childrenMap, depth, basePath, user, navigate, mu
 // get that image's separate thread — same component, same tree/vote/report
 // behavior, just a different container id and API base path.
 function CommentSection({ activityId, imageId, user, navigate, onCountChange, commentMaxLength = 1000, replyMaxLength = 1000 }) {
+  const { t } = useTranslation();
   const mode = imageId != null ? "image" : "post";
   const basePath = mode === "image" ? `/images/${imageId}` : `/activities/${activityId}`;
 
@@ -298,7 +305,7 @@ function CommentSection({ activityId, imageId, user, navigate, onCountChange, co
     communityApi
       .get(`${basePath}/comments`)
       .then(({ data }) => setComments(data.comments))
-      .catch(() => setError("Couldn't load comments."));
+      .catch(() => setError(t("commentSection.errorLoadComments", "Couldn't load comments.")));
     reportApi.get("/reasons").then(({ data }) => setReportReasons(data.reasons)).catch(() => {});
   }, [basePath]);
 
@@ -368,7 +375,7 @@ function CommentSection({ activityId, imageId, user, navigate, onCountChange, co
       mutate.add(data.comment);
       setNewText("");
     } catch (err) {
-      showToast(err.response?.data?.message || "Couldn't post your comment. Please try again.");
+      showToast(err.response?.data?.message || t("commentSection.errorPostComment", "Couldn't post your comment. Please try again."));
     } finally {
       setPosting(false);
     }
@@ -382,7 +389,7 @@ function CommentSection({ activityId, imageId, user, navigate, onCountChange, co
       mutate.update(reportTarget.id, { alreadyReported: true });
       setReportSuccess(true);
     } catch (err) {
-      setReportError(err.response?.data?.message || "Couldn't submit this report. Please try again.");
+      setReportError(err.response?.data?.message || t("commentSection.errorSubmitReport", "Couldn't submit this report. Please try again."));
     } finally {
       setReportBusy(false);
     }
@@ -394,20 +401,20 @@ function CommentSection({ activityId, imageId, user, navigate, onCountChange, co
   return (
     <div className="cmt-section">
       <CommentComposer
-        placeholder="Write a comment…"
+        placeholder={t("commentSection.placeholderWriteComment", "Write a comment…")}
         busy={posting}
         value={newText}
         onChange={setNewText}
         onSubmit={submitTopLevel}
-        submitLabel="Post"
+        submitLabel={t("commentSection.post", "Post")}
         maxLength={commentMaxLength}
       />
 
       {error && <div className="cmt-error">{error}</div>}
 
-      {comments === null && !error && <div className="cmt-loading">Loading comments…</div>}
+      {comments === null && !error && <div className="cmt-loading">{t("commentSection.loading", "Loading comments…")}</div>}
 
-      {comments !== null && total === 0 && <div className="cmt-empty">Be the first to comment.</div>}
+      {comments !== null && total === 0 && <div className="cmt-empty">{t("commentSection.empty", "Be the first to comment.")}</div>}
 
       {visibleRoots.map((c) => (
         <CommentNode
@@ -427,13 +434,16 @@ function CommentSection({ activityId, imageId, user, navigate, onCountChange, co
 
       {moreRoots > 0 && (
         <button type="button" className="cmt-load-more" onClick={() => setVisibleTopLevel((n) => n + TOP_LEVEL_PAGE)}>
-          Load {Math.min(moreRoots, TOP_LEVEL_PAGE)} more comment{moreRoots === 1 ? "" : "s"}
+          {(moreRoots === 1
+            ? t("commentSection.loadMoreCommentsSingular", "Load {count} more comment")
+            : t("commentSection.loadMoreCommentsPlural", "Load {count} more comments")
+          ).replace("{count}", Math.min(moreRoots, TOP_LEVEL_PAGE))}
         </button>
       )}
 
       {reportTarget && (
         <ReportModal
-          title="Report Comment"
+          title={t("commentSection.reportModalTitle", "Report Comment")}
           reasons={reportReasons}
           busy={reportBusy}
           error={reportError}
