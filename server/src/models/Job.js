@@ -30,7 +30,13 @@ const Job = sequelize.define(
     // list a user's own profile Skills picker already uses) — a job can list
     // more than one, so this is JSON rather than the single denormalized
     // string jobType/experienceRequired use.
-    skills: { type: DataTypes.JSON, allowNull: false, defaultValue: [] },
+    // Nullable rather than NOT NULL + a default — MySQL's ALTER for a JSON
+    // column combined with a literal DEFAULT is what actually broke this
+    // migration in production (not the row data, which was already cleared
+    // to NULL and it still failed the same way). The app never persists
+    // null itself either way — jobController.js's normalizeSkills always
+    // writes at least [].
+    skills: { type: DataTypes.JSON, allowNull: true },
     location: { type: DataTypes.STRING, allowNull: false },
     salary: { type: DataTypes.STRING, allowNull: true },
     applicationDeadline: { type: DataTypes.DATEONLY, allowNull: true },
