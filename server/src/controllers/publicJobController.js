@@ -72,6 +72,7 @@ async function withCard(job, { favoritedIds, matchProfile } = {}) {
     salary: job.salary,
     applicationDeadline: job.applicationDeadline,
     applicantCount: job.applicationCount,
+    viewCount: job.viewCount,
     createdAt: job.createdAt,
     postedBy: poster?.fullName || "A community member",
     ...(favoritedIds ? { favorited: favoritedIds.has(job.id) } : {}),
@@ -223,6 +224,27 @@ export const getPublicOne = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+};
+
+/** Logs one page view — called once by the detail page each time a job is
+ * opened. Job has no separate view-log table the way Masjid does (no
+ * trend/analytics view built on it yet), so this is a plain running counter
+ * on the row itself. Fire-and-forget from the client: never blocks or
+ * affects what the visitor sees, so it fails silently (204 either way)
+ * rather than surfacing an error for something the visitor didn't initiate
+ * themselves. */
+export const trackView = async (req, res) => {
+  try {
+    const job = await Job.findOne({
+      where: { id: req.params.id, status: { [Op.in]: PUBLIC_STATUSES }, moderationStatus: "active" },
+      attributes: ["id"],
+    });
+    if (!job) return res.status(204).end();
+    await Job.increment("viewCount", { where: { id: job.id } });
+    res.status(204).end();
+  } catch {
+    res.status(204).end();
   }
 };
 

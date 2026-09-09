@@ -104,6 +104,11 @@ function JobCard({ job, userLocation }) {
             {job.applicantCount === 1 ? t("jobs.card.applicant", "applicant") : t("jobs.card.applicants", "applicants")}
           </span>
         )}
+        {job.viewCount > 0 && (
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+            <Icon name="eye" size={12} /> {job.viewCount}
+          </span>
+        )}
       </div>
     </Link>
   );

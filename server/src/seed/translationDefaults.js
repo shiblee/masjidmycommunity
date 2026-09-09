@@ -1985,6 +1985,10 @@ const DEFAULTS = [
   ["jobs", "jobs.empty.likedTitle", "No liked jobs yet", "अभी तक कोई नौकरी पसंद नहीं की गई", "ابھی تک کوئی ملازمت پسند نہیں کی گئی", "لا توجد وظائف أُعجب بها بعد"],
   ["jobs", "jobs.empty.likedBody", "Tap the heart on a job to keep track of it here.", "किसी नौकरी को यहाँ ट्रैक करने के लिए उस पर दिल पर टैप करें।", "کسی ملازمت کو یہاں ٹریک کرنے کے لیے اس پر دل پر ٹیپ کریں۔", "اضغط على أيقونة القلب في وظيفة لتتبعها هنا."],
 
+  // Jobs view-count (listing card + detail page)
+  ["jobProfile", "jobProfile.view", "view", "बार देखा गया", "بار دیکھا گیا", "مشاهدة"],
+  ["jobProfile", "jobProfile.views", "views", "बार देखा गया", "بار دیکھا گیا", "مشاهدات"],
+
   // Jobs redesign — left-hand filter sidebar + Grid/List/Map search row
   ["jobs", "jobs.view.list", "List", "सूची", "فہرست", "قائمة"],
   ["jobs", "jobs.sidebar.title", "Filters", "फ़िल्टर", "فلٹرز", "عوامل التصفية"],

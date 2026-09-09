@@ -64,6 +64,7 @@ function JobRow({ job, userLocation }) {
         <div className="msj-explore-row-meta">
           <span className="msj-list-meta">{t("jobs.card.posted", "Posted")} {formatDate(job.createdAt)}</span>
           {job.applicationDeadline && <span className="msj-list-meta job-card-deadline">{t("jobs.card.closes", "Closes")} {formatDate(job.applicationDeadline)}</span>}
+          {job.viewCount > 0 && <span className="msj-list-meta" style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><Icon name="eye" size={11} /> {job.viewCount}</span>}
           {distance != null && <span className="msj-distance-badge"><Icon name="mapPin" size={11} /> {formatDistance(distance)}</span>}
         </div>
       </div>

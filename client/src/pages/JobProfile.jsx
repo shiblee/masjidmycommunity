@@ -6,6 +6,7 @@ import LatestJobsRail from "../components/job/LatestJobsRail.jsx";
 import JobApplyPanel from "../components/job/JobApplyPanel.jsx";
 import JobPostSection from "../components/job/JobPostSection.jsx";
 import publicJobApi from "../services/publicJobApi.js";
+import { trackJobView } from "../utils/trackJobView.js";
 import { useTranslation } from "../i18n/LanguageContext.jsx";
 
 function JobProfile() {
@@ -19,7 +20,10 @@ function JobProfile() {
     setNotFound(false);
     publicJobApi
       .get(`/${slug}`)
-      .then(({ data }) => setData(data))
+      .then(({ data }) => {
+        setData(data);
+        trackJobView(data.job.id);
+      })
       .catch(() => setNotFound(true));
   }, [slug]);
 
@@ -48,6 +52,7 @@ function JobProfile() {
           <h1>{job.title}</h1>
           <p>
             <Icon name="mapPin" size={14} /> {job.location} · {t("jobProfile.postedBy", "Posted by")} {poster?.fullName || t("jobProfile.anonymousPoster", "a community member")} · {formatDate(job.createdAt)}
+            {job.viewCount > 0 && ` · ${job.viewCount} ${job.viewCount === 1 ? t("jobProfile.view", "view") : t("jobProfile.views", "views")}`}
           </p>
         </div>
       </section>
