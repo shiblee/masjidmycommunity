@@ -1,0 +1,29 @@
+name: Diagnose Server
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check pm2 status and recent logs
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+
+          ssh -i ~/.ssh/deploy_key "$DEPLOY_USER@$DEPLOY_HOST" '
+            echo "=== pm2 list ==="
+            pm2 list
+            echo "=== pm2 describe masjidmycommunity-api ==="
+            pm2 describe masjidmycommunity-api || true
+            echo "=== last 200 lines of error log ==="
+            pm2 logs masjidmycommunity-api --err --lines 200 --nostream || true
+            echo "=== last 100 lines of out log ==="
+            pm2 logs masjidmycommunity-api --out --lines 100 --nostream || true
+          '
