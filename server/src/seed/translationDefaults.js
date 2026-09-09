@@ -1975,6 +1975,16 @@ const DEFAULTS = [
   ["jobs", "jobs.map.notMappedYet", "Not mapped yet", "अभी मानचित्रित नहीं", "ابھی نقشہ پر نہیں", "لم يتم تحديد الموقع بعد"],
   ["jobs", "jobs.map.showMyLocation", "Show my location", "मेरा स्थान दिखाएं", "میرا مقام دکھائیں", "إظهار موقعي"],
   ["jobForm", "jobForm.hints.locationSearch", "Search for a real address, or type freely (e.g. \"Remote\")", "किसी वास्तविक पते के लिए खोजें, या स्वतंत्र रूप से टाइप करें (उदाहरण: \"रिमोट\")", "کسی حقیقی پتے کے لیے تلاش کریں، یا آزادانہ طور پر ٹائپ کریں (مثلاً \"ریموٹ\")", "ابحث عن عنوان حقيقي، أو اكتب بحرية (مثال: \"عن بُعد\")"],
+
+  // Jobs redesign — left-hand filter sidebar + Grid/List/Map search row
+  ["jobs", "jobs.view.list", "List", "सूची", "فہرست", "قائمة"],
+  ["jobs", "jobs.sidebar.title", "Filters", "फ़िल्टर", "فلٹرز", "عوامل التصفية"],
+  ["jobs", "jobs.sidebar.category", "Category", "श्रेणी", "قسم", "الفئة"],
+  ["jobs", "jobs.sidebar.allCategories", "All Categories", "सभी श्रेणियाँ", "تمام اقسام", "جميع الفئات"],
+  ["jobs", "jobs.sidebar.jobType", "Job Type", "नौकरी का प्रकार", "ملازمت کی قسم", "نوع الوظيفة"],
+  ["jobs", "jobs.sidebar.experience", "Experience", "अनुभव", "تجربہ", "الخبرة"],
+  ["jobs", "jobs.sidebar.workMode", "Work Mode", "कार्य मोड", "ورک موڈ", "نمط العمل"],
+  ["jobs", "jobs.sidebar.skills", "Skills", "कौशल", "مہارتیں", "المهارات"],
 ];
 
 // Additive, not "seed once": every deploy that adds new keys to DEFAULTS

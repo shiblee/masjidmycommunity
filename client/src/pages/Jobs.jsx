@@ -3,12 +3,14 @@ import { Link } from "react-router-dom";
 import axios from "axios";
 import { API_BASE } from "../config.js";
 import { Icon } from "../components/Icons.jsx";
-import SkillsFilter from "./jobs/SkillsFilter.jsx";
+import MicButton from "../components/MicButton.jsx";
 import JobCard from "../components/job/JobCard.jsx";
 import JobCardSkeleton from "../components/job/JobCardSkeleton.jsx";
 import JobRail from "../components/job/JobRail.jsx";
 import JobAiAssistant from "../components/job/JobAiAssistant.jsx";
+import JobFiltersSidebar from "../components/job/JobFiltersSidebar.jsx";
 import JobsMap from "./jobs/JobsMap.jsx";
+import JobsList from "./jobs/JobsList.jsx";
 import publicJobApi from "../services/publicJobApi.js";
 import jobApi from "../services/jobApi.js";
 import { getStoredUser } from "../utils/userAuthStorage.js";
@@ -34,7 +36,7 @@ function Jobs() {
   const [workMode, setWorkMode] = useState("");
   const [hasSalary, setHasSalary] = useState(false);
   const [selectedSkills, setSelectedSkills] = useState([]);
-  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [skipLocation, setSkipLocation] = useState(false);
 
   const [jobCategories, setJobCategories] = useState([]);
@@ -222,17 +224,6 @@ function Jobs() {
           <span className="eyebrow">{t("jobs.hero.eyebrow", "Jobs")}</span>
           <h1>{t("jobs.hero.title", "Openings from across the community.")}</h1>
           <p>{t("jobs.hero.subtitle", "Roles posted directly by community members — teaching, administration, and more.")}</p>
-
-          <form className="job-hero-search" onSubmit={runSearch}>
-            <Icon name="search" size={17} />
-            <input
-              type="text"
-              placeholder={t("jobs.hero.searchPlaceholder", "Search jobs, skills, companies, or locations…")}
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-            />
-            <button type="submit">{t("jobs.hero.searchButton", "Search")}</button>
-          </form>
         </div>
       </section>
 
@@ -302,67 +293,40 @@ function Jobs() {
             {closingSoon.map((j) => <JobCard job={j} userLocation={coords} key={j.id} />)}
           </JobRail>
 
-          {jobCategories.length > 0 && (
-            <div className="job-category-strip">
-              {jobCategories.map((c) => (
-                <button
-                  key={c.id}
-                  type="button"
-                  className={`job-category-pill${category === c.name ? " active" : ""}`}
-                  onClick={() => changeCategory(c.name)}
-                >
-                  <span className="job-category-pill-icon"><Icon name={c.icon || "briefcase"} size={13} /></span>
-                  {c.name}
-                </button>
-              ))}
+          <form className="job-search-row" onSubmit={runSearch}>
+            <div className="msj-search">
+              <Icon name="search" size={16} />
+              <input
+                type="text"
+                placeholder={t("jobs.hero.searchPlaceholder", "Search jobs, skills, companies, or locations…")}
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+              />
+              <MicButton onTranscript={(text) => setSearchInput(text)} />
             </div>
-          )}
-
-          <div className="job-filters-bar">
-            <div className="msj-view-switch">
-              <button type="button" className={view === "grid" ? "active" : ""} onClick={() => setView("grid")} title={t("jobs.view.grid", "Grid")}>
-                <Icon name="grid" size={15} /> {t("jobs.view.grid", "Grid")}
-              </button>
-              <button type="button" className={view === "map" ? "active" : ""} onClick={() => setView("map")} title={t("jobs.view.map", "Map")}>
-                <Icon name="map" size={15} /> {t("jobs.view.map", "Map")}
-              </button>
-            </div>
+            <button type="submit" className="btn btn-gold">{t("jobs.hero.searchButton", "Search")}</button>
 
             <button
               type="button"
-              className={`job-filters-toggle${filtersOpen ? " active" : ""}`}
-              onClick={() => setFiltersOpen((o) => !o)}
+              className={`job-filters-toggle${sidebarOpen ? " active" : ""}`}
+              onClick={() => setSidebarOpen((o) => !o)}
             >
               <Icon name="chevronDown" size={14} /> {t("jobs.filter.filtersToggle", "Filters")}
               {activeFilters.length > 0 && ` (${activeFilters.length})`}
             </button>
 
-            <div className={`job-filters-row${filtersOpen ? " open" : ""}`}>
-              <div className="campaign-filters" style={{ margin: 0 }}>
-                <button className={`filter-chip${jobType === "" ? " active" : ""}`} onClick={() => changeType("")}>{t("jobs.filter.allTypes", "All Types")}</button>
-                {jobTypes.map((jt) => (
-                  <button key={jt.id} className={`filter-chip${jobType === jt.name ? " active" : ""}`} onClick={() => changeType(jt.name)}>
-                    {jt.name}
-                  </button>
-                ))}
-              </div>
-
-              <select className="msj-select" value={experienceRequired} onChange={(e) => changeExperience(e.target.value)} style={{ border: "1px solid var(--line)", borderRadius: 100, padding: "9px 16px", fontSize: 14, background: "#fff" }}>
-                <option value="">{t("jobs.filter.anyExperience", "Any Experience")}</option>
-                {experienceLevels.map((lvl) => <option key={lvl.id} value={lvl.name}>{lvl.name}</option>)}
-              </select>
-
-              <select className="msj-select" value={workMode} onChange={(e) => changeWorkMode(e.target.value)} style={{ border: "1px solid var(--line)", borderRadius: 100, padding: "9px 16px", fontSize: 14, background: "#fff" }}>
-                <option value="">{t("jobs.filter.anyWorkMode", "Any Work Mode")}</option>
-                {WORK_MODES.map(([value, key, fallback]) => <option key={value} value={value}>{t(key, fallback)}</option>)}
-              </select>
-
-              <SkillsFilter skills={skills} selected={selectedSkills} onChange={changeSkills} />
-              <button type="button" className={`filter-chip${hasSalary ? " active" : ""}`} onClick={toggleSalary}>
-                {t("jobs.filter.salaryListed", "Salary Listed")}
+            <div className="msj-view-switch">
+              <button type="button" className={view === "grid" ? "active" : ""} onClick={() => setView("grid")} title={t("jobs.view.grid", "Grid")}>
+                <Icon name="grid" size={15} /> {t("jobs.view.grid", "Grid")}
+              </button>
+              <button type="button" className={view === "list" ? "active" : ""} onClick={() => setView("list")} title={t("jobs.view.list", "List")}>
+                <Icon name="list" size={15} /> {t("jobs.view.list", "List")}
+              </button>
+              <button type="button" className={view === "map" ? "active" : ""} onClick={() => setView("map")} title={t("jobs.view.map", "Map")}>
+                <Icon name="map" size={15} /> {t("jobs.view.map", "Map")}
               </button>
             </div>
-          </div>
+          </form>
 
           {understoodBits.length > 0 && (
             <div className="job-ai-understood">
@@ -383,53 +347,70 @@ function Jobs() {
             </div>
           )}
 
-          {view === "map" ? (
-            mapJobs === null ? (
-              <p className="msj-note">{t("jobs.filter.loadingJobs", "Loading jobs…")}</p>
-            ) : (
-              <JobsMap jobs={mapJobs} selectedId={selectedMapId} onSelect={setSelectedMapId} userLocation={coords} onLocateMe={requestLocation} />
-            )
-          ) : (
-            <>
-              <div className="filter-count">
-                {loading && page === 1
-                  ? t("jobs.filter.loadingJobs", "Loading jobs…")
-                  : `${t("jobs.filter.showing", "Showing")} ${jobs?.length || 0} ${t("jobs.filter.of", "of")} ${total} ${t("jobs.filter.jobsCount", "jobs")}`}
-              </div>
+          <div className="job-board-layout">
+            <JobFiltersSidebar
+              open={sidebarOpen}
+              jobCategories={jobCategories} category={category} onCategoryChange={changeCategory}
+              jobTypes={jobTypes} jobType={jobType} onJobTypeChange={changeType}
+              experienceLevels={experienceLevels} experienceRequired={experienceRequired} onExperienceChange={changeExperience}
+              workMode={workMode} onWorkModeChange={changeWorkMode}
+              hasSalary={hasSalary} onToggleSalary={toggleSalary}
+              skills={skills} selectedSkills={selectedSkills} onSkillsChange={changeSkills}
+              hasAnyFilter={hasAnyFilter} onClearAll={clearAll}
+            />
 
-              {loading && page === 1 ? (
-                <div className="msj-list-grid" style={{ marginTop: 12 }}>
-                  {Array.from({ length: SKELETON_COUNT }).map((_, i) => <JobCardSkeleton key={i} />)}
-                </div>
-              ) : jobs?.length === 0 ? (
-                <div className="msj-empty-state">
-                  <Icon name="briefcase" size={30} />
-                  <h3>{hasAnyFilter ? t("jobs.empty.filteredTitle", "No jobs match your filters") : t("jobs.empty.noneTitle", "No open jobs right now")}</h3>
-                  <p>{hasAnyFilter ? t("jobs.empty.filteredBody", "Try removing a filter or broadening your search.") : t("jobs.empty.noneBody", "Check back soon — new roles are posted by the community often.")}</p>
-                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center" }}>
-                    {appliedFilters?.location && !skipLocation && (
-                      <button type="button" className="btn btn-outline-ink" onClick={broadenWithoutLocation}>
-                        {t("jobs.empty.tryWithoutLocation", "Search without location")}
-                      </button>
-                    )}
-                    {hasAnyFilter && <button type="button" className="btn btn-outline-ink" onClick={clearAll}>{t("jobs.filter.clearAll", "Clear All Filters")}</button>}
-                  </div>
-                </div>
+            <div className="job-board-content">
+              {view === "map" ? (
+                mapJobs === null ? (
+                  <p className="msj-note">{t("jobs.filter.loadingJobs", "Loading jobs…")}</p>
+                ) : (
+                  <JobsMap jobs={mapJobs} selectedId={selectedMapId} onSelect={setSelectedMapId} userLocation={coords} onLocateMe={requestLocation} />
+                )
               ) : (
-                <div className="msj-list-grid" style={{ marginTop: 12 }}>
-                  {jobs?.map((j) => <JobCard job={j} userLocation={coords} key={j.id} />)}
-                </div>
-              )}
+                <>
+                  <div className="filter-count">
+                    {loading && page === 1
+                      ? t("jobs.filter.loadingJobs", "Loading jobs…")
+                      : `${t("jobs.filter.showing", "Showing")} ${jobs?.length || 0} ${t("jobs.filter.of", "of")} ${total} ${t("jobs.filter.jobsCount", "jobs")}`}
+                  </div>
 
-              {canLoadMore && (
-                <div style={{ textAlign: "center", marginTop: "36px" }}>
-                  <button className="btn btn-outline-ink" disabled={loading} onClick={() => setPage((p) => p + 1)}>
-                    {loading ? t("jobs.loadingEllipsis", "Loading…") : t("jobs.loadMore", "Load More Jobs")}
-                  </button>
-                </div>
+                  {loading && page === 1 ? (
+                    <div className="msj-list-grid" style={{ marginTop: 12 }}>
+                      {Array.from({ length: SKELETON_COUNT }).map((_, i) => <JobCardSkeleton key={i} />)}
+                    </div>
+                  ) : jobs?.length === 0 ? (
+                    <div className="msj-empty-state">
+                      <Icon name="briefcase" size={30} />
+                      <h3>{hasAnyFilter ? t("jobs.empty.filteredTitle", "No jobs match your filters") : t("jobs.empty.noneTitle", "No open jobs right now")}</h3>
+                      <p>{hasAnyFilter ? t("jobs.empty.filteredBody", "Try removing a filter or broadening your search.") : t("jobs.empty.noneBody", "Check back soon — new roles are posted by the community often.")}</p>
+                      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center" }}>
+                        {appliedFilters?.location && !skipLocation && (
+                          <button type="button" className="btn btn-outline-ink" onClick={broadenWithoutLocation}>
+                            {t("jobs.empty.tryWithoutLocation", "Search without location")}
+                          </button>
+                        )}
+                        {hasAnyFilter && <button type="button" className="btn btn-outline-ink" onClick={clearAll}>{t("jobs.filter.clearAll", "Clear All Filters")}</button>}
+                      </div>
+                    </div>
+                  ) : view === "list" ? (
+                    <JobsList jobs={jobs} userLocation={coords} />
+                  ) : (
+                    <div className="msj-list-grid" style={{ marginTop: 12 }}>
+                      {jobs?.map((j) => <JobCard job={j} userLocation={coords} key={j.id} />)}
+                    </div>
+                  )}
+
+                  {canLoadMore && (
+                    <div style={{ textAlign: "center", marginTop: "36px" }}>
+                      <button className="btn btn-outline-ink" disabled={loading} onClick={() => setPage((p) => p + 1)}>
+                        {loading ? t("jobs.loadingEllipsis", "Loading…") : t("jobs.loadMore", "Load More Jobs")}
+                      </button>
+                    </div>
+                  )}
+                </>
               )}
-            </>
-          )}
+            </div>
+          </div>
         </div>
       </section>
     </main>
