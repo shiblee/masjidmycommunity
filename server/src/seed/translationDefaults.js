@@ -1985,6 +1985,14 @@ const DEFAULTS = [
   ["jobs", "jobs.sidebar.experience", "Experience", "अनुभव", "تجربہ", "الخبرة"],
   ["jobs", "jobs.sidebar.workMode", "Work Mode", "कार्य मोड", "ورک موڈ", "نمط العمل"],
   ["jobs", "jobs.sidebar.skills", "Skills", "कौशल", "مہارتیں", "المهارات"],
+
+  // Jobs redesign — ♥ Saved filter toggle (mirrors ActiveCampaigns.jsx's own Saved chip)
+  ["jobs", "jobs.filter.saved", "Saved", "सहेजी गई", "محفوظ شدہ", "المحفوظة"],
+  ["jobs", "jobs.filter.savedCountSingular", "{count} saved job", "{count} सहेजी गई नौकरी", "{count} محفوظ شدہ ملازمت", "{count} وظيفة محفوظة"],
+  ["jobs", "jobs.filter.savedCountPlural", "{count} saved jobs", "{count} सहेजी गई नौकरियाँ", "{count} محفوظ شدہ ملازمتیں", "{count} وظائف محفوظة"],
+  ["jobs", "jobs.empty.savedTitle", "No saved jobs yet", "अभी तक कोई नौकरी सहेजी नहीं गई", "ابھی تک کوئی ملازمت محفوظ نہیں کی گئی", "لا توجد وظائف محفوظة بعد"],
+  ["jobs", "jobs.empty.savedBody", "Tap the heart on a job to keep track of it here.", "किसी नौकरी को यहाँ ट्रैक करने के लिए उस पर दिल पर टैप करें।", "کسی ملازمت کو یہاں ٹریک کرنے کے لیے اس پر دل پر ٹیپ کریں۔", "اضغط على أيقونة القلب في وظيفة لتتبعها هنا."],
+  ["jobs", "jobs.empty.browseAll", "Browse All Jobs", "सभी नौकरियाँ ब्राउज़ करें", "تمام ملازمتیں براؤز کریں", "تصفّح جميع الوظائف"],
 ];
 
 // Additive, not "seed once": every deploy that adds new keys to DEFAULTS

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { API_BASE } from "../config.js";
 import { Icon } from "../components/Icons.jsx";
@@ -26,6 +26,7 @@ const WORK_MODES = [
 
 function Jobs() {
   const { t, language } = useTranslation();
+  const navigate = useNavigate();
   const [searchInput, setSearchInput] = useState("");
   const [q, setQ] = useState("");
   const [appliedFilters, setAppliedFilters] = useState(null);
@@ -37,6 +38,8 @@ function Jobs() {
   const [selectedSkills, setSelectedSkills] = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [skipLocation, setSkipLocation] = useState(false);
+  const [savedOnly, setSavedOnly] = useState(false);
+  const [savedTotal, setSavedTotal] = useState(0);
 
   const [jobCategories, setJobCategories] = useState([]);
   const [jobTypes, setJobTypes] = useState([]);
@@ -88,7 +91,7 @@ function Jobs() {
     requestLocation();
 
     if (isLoggedIn) {
-      publicJobApi.get("/liked/mine", { params: { pageSize: 10 } }).then(({ data }) => setSavedJobs(data.jobs)).catch(() => {});
+      publicJobApi.get("/liked/mine", { params: { pageSize: 10 } }).then(({ data }) => { setSavedJobs(data.jobs); setSavedTotal(data.total); }).catch(() => {});
       jobApi.get("/mine/applications").then(({ data }) => setMyApplications(data.applications.slice(0, 10))).catch(() => {});
       publicJobApi.get("/recommended", { params: { limit: 10 } }).then(({ data }) => setRecommended(data.jobs)).catch(() => {});
       publicJobApi.get("/by-skills", { params: { limit: 10 } }).then(({ data }) => setBySkills(data.jobs)).catch(() => {});
@@ -114,6 +117,7 @@ function Jobs() {
   }, [view, q, category]);
 
   useEffect(() => {
+    if (savedOnly) return;
     const handle = setTimeout(() => {
       setLoading(true);
       axios
@@ -141,7 +145,25 @@ function Jobs() {
         .finally(() => setLoading(false));
     }, q ? 300 : 0);
     return () => clearTimeout(handle);
-  }, [q, category, jobType, experienceRequired, workMode, hasSalary, selectedSkills, skipLocation, page]);
+  }, [q, category, jobType, experienceRequired, workMode, hasSalary, selectedSkills, skipLocation, savedOnly, page]);
+
+  // "Saved" toggle — mirrors ActiveCampaigns.jsx's own ♥ Saved filter chip:
+  // clicking it replaces the regular filtered board with just the user's
+  // saved jobs (server-backed here via /liked/mine, rather than campaign's
+  // localStorage set, since jobs already have a real favorites table).
+  useEffect(() => {
+    if (!savedOnly) return;
+    setLoading(true);
+    publicJobApi
+      .get("/liked/mine", { params: { page, pageSize: PAGE_SIZE } })
+      .then(({ data }) => {
+        setJobs((prev) => (page === 1 ? data.jobs : [...(prev || []), ...data.jobs]));
+        setTotal(data.total);
+        setSavedTotal(data.total);
+      })
+      .catch(() => { if (page === 1) setJobs([]); })
+      .finally(() => setLoading(false));
+  }, [savedOnly, page]);
 
   // Auto-search — debounces the typed text straight into `q`, no separate
   // submit step, matching ExploreMasjids.jsx's own search field behavior.
@@ -150,6 +172,7 @@ function Jobs() {
     const handle = setTimeout(() => {
       setQ(searchInput);
       setSkipLocation(false);
+      setSavedOnly(false);
       setPage(1);
     }, 400);
     return () => clearTimeout(handle);
@@ -161,12 +184,18 @@ function Jobs() {
     setPage(1);
   };
 
-  const changeCategory = (value) => { setCategory((c) => (c === value ? "" : value)); setPage(1); };
-  const changeType = (value) => { setJobType(value); setPage(1); };
-  const changeExperience = (value) => { setExperienceRequired(value); setPage(1); };
-  const changeWorkMode = (value) => { setWorkMode((w) => (w === value ? "" : value)); setPage(1); };
-  const toggleSalary = () => { setHasSalary((v) => !v); setPage(1); };
-  const changeSkills = (next) => { setSelectedSkills(next); setPage(1); };
+  const changeCategory = (value) => { setSavedOnly(false); setCategory((c) => (c === value ? "" : value)); setPage(1); };
+  const changeType = (value) => { setSavedOnly(false); setJobType(value); setPage(1); };
+  const changeExperience = (value) => { setSavedOnly(false); setExperienceRequired(value); setPage(1); };
+  const changeWorkMode = (value) => { setSavedOnly(false); setWorkMode((w) => (w === value ? "" : value)); setPage(1); };
+  const toggleSalary = () => { setSavedOnly(false); setHasSalary((v) => !v); setPage(1); };
+  const changeSkills = (next) => { setSavedOnly(false); setSelectedSkills(next); setPage(1); };
+
+  const toggleSavedOnly = () => {
+    if (!isLoggedIn) { navigate("/auth"); return; }
+    setSavedOnly((v) => !v);
+    setPage(1);
+  };
   const canLoadMore = jobs && jobs.length < total;
   const hasAnyFilter = q || category || jobType || experienceRequired || workMode || hasSalary || selectedSkills.length > 0;
 
@@ -204,6 +233,7 @@ function Jobs() {
     setSelectedSkills([]);
     setAppliedFilters(null);
     setSkipLocation(false);
+    setSavedOnly(false);
     setPage(1);
   };
 
@@ -308,6 +338,10 @@ function Jobs() {
               <MicButton onTranscript={(text) => setSearchInput(text)} />
             </div>
 
+            <button type="button" className={`filter-chip saved-chip${savedOnly ? " active" : ""}`} onClick={toggleSavedOnly}>
+              ♥ {t("jobs.filter.saved", "Saved")}{savedTotal > 0 ? ` (${savedTotal})` : ""}
+            </button>
+
             <button
               type="button"
               className={`job-filters-toggle${sidebarOpen ? " active" : ""}`}
@@ -373,6 +407,11 @@ function Jobs() {
                   <div className="filter-count">
                     {loading && page === 1
                       ? t("jobs.filter.loadingJobs", "Loading jobs…")
+                      : savedOnly
+                      ? t(
+                          (jobs?.length || 0) === 1 ? "jobs.filter.savedCountSingular" : "jobs.filter.savedCountPlural",
+                          (jobs?.length || 0) === 1 ? "{count} saved job" : "{count} saved jobs"
+                        ).replace("{count}", jobs?.length || 0)
                       : `${t("jobs.filter.showing", "Showing")} ${jobs?.length || 0} ${t("jobs.filter.of", "of")} ${total} ${t("jobs.filter.jobsCount", "jobs")}`}
                   </div>
 
@@ -383,15 +422,16 @@ function Jobs() {
                   ) : jobs?.length === 0 ? (
                     <div className="msj-empty-state">
                       <Icon name="briefcase" size={30} />
-                      <h3>{hasAnyFilter ? t("jobs.empty.filteredTitle", "No jobs match your filters") : t("jobs.empty.noneTitle", "No open jobs right now")}</h3>
-                      <p>{hasAnyFilter ? t("jobs.empty.filteredBody", "Try removing a filter or broadening your search.") : t("jobs.empty.noneBody", "Check back soon — new roles are posted by the community often.")}</p>
+                      <h3>{savedOnly ? t("jobs.empty.savedTitle", "No saved jobs yet") : hasAnyFilter ? t("jobs.empty.filteredTitle", "No jobs match your filters") : t("jobs.empty.noneTitle", "No open jobs right now")}</h3>
+                      <p>{savedOnly ? t("jobs.empty.savedBody", "Tap the heart on a job to keep track of it here.") : hasAnyFilter ? t("jobs.empty.filteredBody", "Try removing a filter or broadening your search.") : t("jobs.empty.noneBody", "Check back soon — new roles are posted by the community often.")}</p>
                       <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center" }}>
                         {appliedFilters?.location && !skipLocation && (
                           <button type="button" className="btn btn-outline-ink" onClick={broadenWithoutLocation}>
                             {t("jobs.empty.tryWithoutLocation", "Search without location")}
                           </button>
                         )}
-                        {hasAnyFilter && <button type="button" className="btn btn-outline-ink" onClick={clearAll}>{t("jobs.filter.clearAll", "Clear All Filters")}</button>}
+                        {savedOnly && <button type="button" className="btn btn-outline-ink" onClick={() => setSavedOnly(false)}>{t("jobs.empty.browseAll", "Browse All Jobs")}</button>}
+                        {!savedOnly && hasAnyFilter && <button type="button" className="btn btn-outline-ink" onClick={clearAll}>{t("jobs.filter.clearAll", "Clear All Filters")}</button>}
                       </div>
                     </div>
                   ) : view === "list" ? (
