@@ -59,72 +59,68 @@ function computeUserRegistrationTrend(users) {
   };
 }
 
-const KPIS = [
-  {
-    label: "Verified Masjids",
-    value: "968",
-    sub: "75.4% of total",
-    delta: "+4.1%",
-    up: true,
-    icon: "verify",
-    color: "#5E9A2C",
-    spark: [760, 790, 820, 850, 880, 910, 940, 968],
-  },
-  {
-    label: "Active Campaigns",
-    value: "312",
-    delta: "+11.8%",
-    up: true,
-    icon: "campaign",
-    color: "#C9A227",
-    spark: [210, 230, 240, 260, 275, 290, 300, 312],
-  },
-  {
-    label: "Total Funds Raised",
-    value: "₹4.82M",
-    delta: "+18.4%",
-    up: true,
-    icon: "wallet",
-    color: "#5E9A2C",
-    spark: [2.1, 2.4, 2.8, 3.2, 3.6, 4.0, 4.4, 4.82],
-  },
-  {
-    label: "Total Donations",
-    value: "28,540",
-    delta: "+9.7%",
-    up: true,
-    icon: "donation",
-    color: "#C9A227",
-    spark: [19200, 20800, 22100, 23600, 24900, 26200, 27400, 28540],
-  },
-  {
-    label: "Total Donors",
-    value: "12,860",
-    delta: "+7.3%",
-    up: true,
-    icon: "donors",
-    color: "#5E9A2C",
-    spark: [9400, 9900, 10400, 10900, 11400, 11900, 12400, 12860],
-  },
-  {
-    label: "Ongoing Projects",
-    value: "146",
-    delta: "-2.1%",
-    up: false,
-    icon: "projects",
-    color: "#C24B3F",
-    spark: [168, 164, 160, 156, 152, 150, 148, 146],
-  },
-  {
-    label: "Completed Projects",
-    value: "892",
-    delta: "+14.5%",
-    up: true,
-    icon: "target",
-    color: "#5E9A2C",
-    spark: [640, 680, 720, 760, 800, 840, 870, 892],
-  },
-];
+// Weekly-bucketed cumulative count, the same shape computeUserRegistrationTrend
+// already produces for the one real KPI card — genericized so every other
+// card can compute a real trend from raw {createdAt} rows too, instead of
+// each inventing its own copy of this loop.
+function bucketWeekly(items, valueAt) {
+  const BUCKETS = 8;
+  const BUCKET_DAYS = 7;
+  const now = Date.now();
+  const spark = [];
+  for (let i = BUCKETS - 1; i >= 0; i--) {
+    const cutoff = now - i * BUCKET_DAYS * 24 * 60 * 60 * 1000;
+    spark.push(valueAt(cutoff));
+  }
+  const first = spark[0];
+  const last = spark[spark.length - 1];
+  const deltaPct = first > 0 ? ((last - first) / first) * 100 : last > 0 ? 100 : 0;
+  return { last, delta: `${deltaPct >= 0 ? "+" : ""}${deltaPct.toFixed(1)}%`, up: deltaPct >= 0, spark };
+}
+
+function computeCountTrend(items) {
+  const { last, delta, up, spark } = bucketWeekly(items, (cutoff) => items.filter((x) => new Date(x.createdAt).getTime() <= cutoff).length);
+  return { value: last.toLocaleString("en-IN"), delta, up, spark };
+}
+
+function computeSumTrend(items, amountField) {
+  const { last, delta, up, spark } = bucketWeekly(items, (cutoff) =>
+    items.filter((x) => new Date(x.createdAt).getTime() <= cutoff).reduce((s, x) => s + (x[amountField] || 0), 0)
+  );
+  return { value: `₹${last.toLocaleString("en-IN")}`, delta, up, spark };
+}
+
+// Distinct-by-key cumulative count (Total Donors) — a donor's very first
+// donation date is when they "join" the running distinct total.
+function computeDistinctCountTrend(items, keyField) {
+  const firstSeenAt = new Map();
+  for (const item of items) {
+    const key = item[keyField];
+    const t = new Date(item.createdAt).getTime();
+    if (!firstSeenAt.has(key) || t < firstSeenAt.get(key)) firstSeenAt.set(key, t);
+  }
+  const firstDates = [...firstSeenAt.values()];
+  const { last, delta, up, spark } = bucketWeekly(firstDates, (cutoff) => firstDates.filter((t) => t <= cutoff).length);
+  return { value: last.toLocaleString("en-IN"), delta, up, spark };
+}
+
+function buildKpis(dashStats) {
+  if (!dashStats) return [];
+  const verified = computeCountTrend(dashStats.verifiedMasjids);
+  const campaigns = computeCountTrend(dashStats.activeCampaigns);
+  const funds = computeSumTrend(dashStats.donations, "amount");
+  const donationCount = computeCountTrend(dashStats.donations);
+  const donors = computeDistinctCountTrend(dashStats.donations, "donorKey");
+  const verifiedPct = dashStats.totalMasjidsCount > 0 ? ((dashStats.verifiedMasjids.length / dashStats.totalMasjidsCount) * 100).toFixed(1) : "0.0";
+
+  return [
+    { label: "Verified Masjids", sub: `${verifiedPct}% of total`, icon: "verify", color: "#5E9A2C", ...verified },
+    { label: "Active Campaigns", icon: "campaign", color: "#C9A227", ...campaigns },
+    { label: "Total Funds Raised", icon: "wallet", color: "#5E9A2C", ...funds },
+    { label: "Total Donations", icon: "donation", color: "#C9A227", ...donationCount },
+    { label: "Total Donors", icon: "donors", color: "#5E9A2C", ...donors },
+  ];
+}
 
 const CAMPAIGNS = [
   { name: "Winter Relief Drive", masjid: "Masjid Al-Falah, London", raised: 186400, goal: 200000 },
@@ -179,6 +175,7 @@ function Dashboard() {
   const admin = getUser();
   const [registeredUsers, setRegisteredUsers] = useState([]);
   const [usersLoading, setUsersLoading] = useState(true);
+  const [dashStats, setDashStats] = useState(null);
 
   useEffect(() => {
     adminApi
@@ -186,6 +183,10 @@ function Dashboard() {
       .then(({ data }) => setRegisteredUsers(data.users))
       .catch(() => {})
       .finally(() => setUsersLoading(false));
+  }, []);
+
+  useEffect(() => {
+    adminApi.get("/dashboard/stats").then(({ data }) => setDashStats(data)).catch(() => {});
   }, []);
 
   const userCounts = {
@@ -209,7 +210,7 @@ function Dashboard() {
       spark: userTrend.spark.some((v) => v > 0) ? userTrend.spark : [0, 0, 0, 0, 0, 0, 0, 1],
       to: "/admin/registered-users",
     },
-    ...KPIS,
+    ...buildKpis(dashStats),
   ];
 
   return (
