@@ -6,6 +6,7 @@ import { API_BASE } from "../config.js";
 import { formatDate } from "../utils/formatDateTime.js";
 import LatestJobsRail from "../components/job/LatestJobsRail.jsx";
 import JobApplyPanel from "../components/job/JobApplyPanel.jsx";
+import JobPostSection from "../components/job/JobPostSection.jsx";
 
 const API = `${API_BASE}/jobs/public`;
 
@@ -80,6 +81,8 @@ function JobProfile() {
             {job.applicationDeadline && (
               <p className="msj-note" style={{ marginTop: 6 }}><strong>Application deadline:</strong> {formatDate(job.applicationDeadline)}</p>
             )}
+
+            <JobPostSection jobId={job.id} />
           </div>
 
           <aside className="msj-profile-side camp-profile-side">

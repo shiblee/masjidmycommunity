@@ -44,7 +44,7 @@ const JOB_STATUS_PILL_CLASS = { active: "active", closed: "inactive", expired: "
 const COMMUNITY_SECTIONS = [
   { key: "masjid", labelKey: "community.explore.masjid", label: "Masjid", icon: "mosque", wallFilter: "masjid_update" },
   { key: "campaign", labelKey: "community.explore.campaign", label: "Campaign", icon: "flag", wallFilter: "fundraising" },
-  { key: "jobs", labelKey: "community.explore.jobs", label: "Jobs", icon: "building", wallFilter: null },
+  { key: "jobs", labelKey: "community.explore.jobs", label: "Jobs", icon: "building", wallFilter: "job_posted" },
 ];
 
 const SIDE_LIST_PREVIEW_COUNT = 3;
@@ -57,6 +57,7 @@ const FILTERS = [
   { key: "fundraising", label: "Fundraising" },
   { key: "project_update", label: "Project Updates" },
   { key: "community_story", label: "Community Stories" },
+  { key: "job_posted", label: "Jobs" },
 ];
 
 function matchesFilter(post, key) {

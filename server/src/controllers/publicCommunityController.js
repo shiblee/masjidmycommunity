@@ -10,6 +10,7 @@ import ContentReport from "../models/ContentReport.js";
 import User from "../models/User.js";
 import Masjid from "../models/Masjid.js";
 import Campaign from "../models/Campaign.js";
+import Job from "../models/Job.js";
 import Donation from "../models/Donation.js";
 import { maskEmail, maskMobile } from "../utils/mask.js";
 import { mediaTypeOf, IMAGE_MAX_BYTES } from "../middleware/upload.js";
@@ -28,26 +29,30 @@ function notifyReply({ parentUserId, actorId, actorName, body, link }) {
   }).catch(() => {});
 }
 
-// `@[masjid:<id>:<name>]` / `@[campaign:<slug>:<title>]` tokens are inserted
-// by MentionTextarea's autocomplete (see mentionSearch above) — this is the
-// write-side counterpart, notifying whoever owns the mentioned masjid/campaign.
-const MENTION_TOKEN_RE = /@\[(masjid|campaign):([^\]:]+):[^\]]+\]/g;
+// `@[masjid:<id>:<name>]` / `@[campaign:<slug>:<title>]` / `@[job:<slug>:<title>]`
+// tokens are inserted by MentionTextarea's autocomplete (see mentionSearch
+// above) — this is the write-side counterpart, notifying whoever owns the
+// mentioned masjid/campaign/job.
+const MENTION_TOKEN_RE = /@\[(masjid|campaign|job):([^\]:]+):[^\]]+\]/g;
 
 async function notifyMentions(body, { actorId, actorName }) {
   if (!body) return;
   const masjidIds = new Set();
   const campaignSlugs = new Set();
+  const jobSlugs = new Set();
   let m;
   MENTION_TOKEN_RE.lastIndex = 0;
   while ((m = MENTION_TOKEN_RE.exec(body))) {
     if (m[1] === "masjid") masjidIds.add(Number(m[2]));
-    else campaignSlugs.add(m[2]);
+    else if (m[1] === "campaign") campaignSlugs.add(m[2]);
+    else jobSlugs.add(m[2]);
   }
-  if (!masjidIds.size && !campaignSlugs.size) return;
+  if (!masjidIds.size && !campaignSlugs.size && !jobSlugs.size) return;
 
-  const [masjids, campaigns] = await Promise.all([
+  const [masjids, campaigns, jobs] = await Promise.all([
     masjidIds.size ? Masjid.findAll({ where: { id: { [Op.in]: [...masjidIds] } }, attributes: ["id", "userId", "name"] }) : [],
     campaignSlugs.size ? Campaign.findAll({ where: { slug: { [Op.in]: [...campaignSlugs] } }, attributes: ["id", "createdBy", "title"] }) : [],
+    jobSlugs.size ? Job.findAll({ where: { slug: { [Op.in]: [...jobSlugs] } }, attributes: ["id", "userId", "title"] }) : [],
   ]);
 
   const link = "/my-community";
@@ -71,6 +76,16 @@ async function notifyMentions(body, { actorId, actorName }) {
       body: `${actorName} mentioned "${campaign.title}" in a Wall post.`,
       link,
       relatedCampaignId: campaign.id,
+    }).catch(() => {});
+  }
+  for (const job of jobs) {
+    if (job.userId === actorId) continue;
+    notifyUser({
+      userId: job.userId,
+      type: "wall_mention",
+      title: "Your job posting was mentioned on the Community Wall",
+      body: `${actorName} mentioned "${job.title}" in a Wall post.`,
+      link,
     }).catch(() => {});
   }
 }
@@ -126,10 +141,10 @@ export const getCommunityStats = async (req, res) => {
 export const mentionSearch = async (req, res) => {
   try {
     const q = (req.query.q || "").trim();
-    if (!q) return res.json({ masjids: [], campaigns: [] });
+    if (!q) return res.json({ masjids: [], campaigns: [], jobs: [] });
 
     const like = { [Op.like]: `%${q}%` };
-    const [masjids, campaigns] = await Promise.all([
+    const [masjids, campaigns, jobs] = await Promise.all([
       Masjid.findAll({
         where: { status: "approved", moderationStatus: "active", name: like },
         attributes: ["id", "name", "city", "country"],
@@ -142,9 +157,15 @@ export const mentionSearch = async (req, res) => {
         order: [["title", "ASC"]],
         limit: 5,
       }),
+      Job.findAll({
+        where: { status: "active", moderationStatus: "active", title: like },
+        attributes: ["id", "slug", "title"],
+        order: [["title", "ASC"]],
+        limit: 5,
+      }),
     ]);
 
-    res.json({ masjids, campaigns });
+    res.json({ masjids, campaigns, jobs });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -195,6 +216,12 @@ export const listPublished = async (req, res) => {
       where.relatedCampaignId = req.query.campaignId;
     }
 
+    // The Job Detail Page's embedded post — same query shape as campaignId
+    // above, filtered to one job's "job_posted" activity.
+    if (req.query.jobId) {
+      where.relatedJobId = req.query.jobId;
+    }
+
     // Hashtag filtering is a plain substring prefilter here (cheap, no extra
     // table) — the exact word-boundary match happens once more in JS below
     // so "#Community" doesn't also match "#CommunityXYZ".
@@ -224,7 +251,9 @@ export const listPublished = async (req, res) => {
 
     const userIds = [
       ...new Set(
-        activities.filter((a) => (a.type === "new_user" || a.type === "community_post") && a.relatedUserId).map((a) => a.relatedUserId)
+        activities
+          .filter((a) => (a.type === "new_user" || a.type === "community_post" || a.type === "job_posted") && a.relatedUserId)
+          .map((a) => a.relatedUserId)
       ),
     ];
     const users = userIds.length ? await User.findAll({ where: { id: { [Op.in]: userIds } } }) : [];
@@ -330,6 +359,10 @@ export const listPublished = async (req, res) => {
               registeredAt: u.createdAt,
             }
           : { fullName: a.metadata?.fullName || null, username: a.metadata?.username || null };
+      }
+      if (a.type === "job_posted" && a.relatedUserId) {
+        const u = userById.get(a.relatedUserId);
+        json.user = u ? { id: u.id, fullName: u.fullName } : null;
       }
       if (a.type === "community_post" && a.relatedUserId) {
         const u = userById.get(a.relatedUserId);

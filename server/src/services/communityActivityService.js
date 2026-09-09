@@ -13,6 +13,7 @@ export async function recordActivity({
   relatedMasjidId = null,
   relatedUserId = null,
   relatedCampaignId = null,
+  relatedJobId = null,
   metadata = null,
   autoPublish = true,
 }) {
@@ -25,6 +26,7 @@ export async function recordActivity({
       relatedMasjidId,
       relatedUserId,
       relatedCampaignId,
+      relatedJobId,
       metadata,
       status: autoPublish ? "published" : "pending_review",
       publishedAt: autoPublish ? new Date() : null,
@@ -69,6 +71,20 @@ export async function recordCampaignApprovedActivity(campaign, masjid, coverPhot
     relatedMasjidId: campaign.masjidId,
     relatedCampaignId: campaign.id,
     metadata: { campaignTitle: campaign.title, campaignSlug: campaign.slug, masjidName: masjid?.name || null },
+  });
+}
+
+// Unlike recordCampaignApprovedActivity (fired on admin approval), a Job has
+// no approval lifecycle — createJob calls this immediately after Job.create,
+// the same point logJobHistory's "posted" entry already fires from.
+export async function recordJobPostedActivity(job, poster) {
+  return recordActivity({
+    type: "job_posted",
+    title: `New opening: ${job.title}`,
+    body: job.description?.slice(0, 280) || `A new job posting from ${poster?.fullName || "a community member"}.`,
+    relatedUserId: job.userId,
+    relatedJobId: job.id,
+    metadata: { jobTitle: job.title, jobSlug: job.slug, location: job.location, jobType: job.jobType },
   });
 }
 

@@ -6,7 +6,7 @@ const MENTION_TOKEN_RE = /@\[([^\]]+)\]/g;
 
 function labelForToken(inner) {
   const bits = inner.split(":");
-  if (bits.length >= 3 && (bits[0] === "masjid" || bits[0] === "campaign")) return bits.slice(2).join(":");
+  if (bits.length >= 3 && (bits[0] === "masjid" || bits[0] === "campaign" || bits[0] === "job")) return bits.slice(2).join(":");
   return inner; // legacy @[City] token
 }
 
@@ -106,7 +106,7 @@ function MentionTextarea({ value, onChange, onKeyDown, rows = 3, placeholder, au
   const [focused, setFocused] = useState(false);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState({ masjids: [], campaigns: [] });
+  const [results, setResults] = useState({ masjids: [], campaigns: [], jobs: [] });
   const [loading, setLoading] = useState(false);
 
   const showingPlaceholder = !value && !focused;
@@ -141,7 +141,7 @@ function MentionTextarea({ value, onChange, onKeyDown, rows = 3, placeholder, au
 
   useEffect(() => {
     if (!open || !query) {
-      setResults({ masjids: [], campaigns: [] });
+      setResults({ masjids: [], campaigns: [], jobs: [] });
       setLoading(false);
       return;
     }
@@ -149,8 +149,8 @@ function MentionTextarea({ value, onChange, onKeyDown, rows = 3, placeholder, au
     const handle = setTimeout(() => {
       axios
         .get(`${API_BASE}/community/mention-search`, { params: { q: query } })
-        .then(({ data }) => setResults({ masjids: data.masjids || [], campaigns: data.campaigns || [] }))
-        .catch(() => setResults({ masjids: [], campaigns: [] }))
+        .then(({ data }) => setResults({ masjids: data.masjids || [], campaigns: data.campaigns || [], jobs: data.jobs || [] }))
+        .catch(() => setResults({ masjids: [], campaigns: [], jobs: [] }))
         .finally(() => setLoading(false));
     }, 250);
     return () => clearTimeout(handle);
@@ -211,7 +211,7 @@ function MentionTextarea({ value, onChange, onKeyDown, rows = 3, placeholder, au
     syncFromDom();
   };
 
-  const hasResults = results.masjids.length > 0 || results.campaigns.length > 0;
+  const hasResults = results.masjids.length > 0 || results.campaigns.length > 0 || results.jobs.length > 0;
 
   return (
     <div className="cw-mention-input-wrap">
@@ -252,7 +252,7 @@ function MentionTextarea({ value, onChange, onKeyDown, rows = 3, placeholder, au
       {open && query && (
         <div className="cw-mention-dropdown">
           {loading && <div className="cw-mention-empty">Searching…</div>}
-          {!loading && !hasResults && <div className="cw-mention-empty">No matching masjids or campaigns.</div>}
+          {!loading && !hasResults && <div className="cw-mention-empty">No matching masjids, campaigns, or jobs.</div>}
           {!loading && results.masjids.length > 0 && (
             <div className="cw-mention-group">
               <span className="cw-mention-group-label">Masjids</span>
@@ -270,6 +270,16 @@ function MentionTextarea({ value, onChange, onKeyDown, rows = 3, placeholder, au
               {results.campaigns.map((c) => (
                 <button type="button" key={`c-${c.id}`} onMouseDown={(e) => e.preventDefault()} onClick={() => pick("campaign", c)}>
                   {c.title}
+                </button>
+              ))}
+            </div>
+          )}
+          {!loading && results.jobs.length > 0 && (
+            <div className="cw-mention-group">
+              <span className="cw-mention-group-label">Jobs</span>
+              {results.jobs.map((j) => (
+                <button type="button" key={`j-${j.id}`} onMouseDown={(e) => e.preventDefault()} onClick={() => pick("job", j)}>
+                  {j.title}
                 </button>
               ))}
             </div>

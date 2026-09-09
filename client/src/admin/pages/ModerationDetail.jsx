@@ -91,6 +91,12 @@ function ModerationDetail() {
                 <Row label="Location" value={[content.raw.city, content.raw.country].filter(Boolean).join(", ")} />
               </>
             )}
+            {content.targetType === "job" && (
+              <>
+                <Row label="Job Status" value={content.raw.status} />
+                <Row label="Location" value={content.raw.location} />
+              </>
+            )}
             <Row label="Moderation Status" value={content.status === "under_review" ? "Under Review / Temporarily Hidden" : "Active"} />
             <Row label="Last Reviewed" value={content.moderationReviewedAt ? formatDateTime(content.moderationReviewedAt) : "Not yet reviewed"} />
           </Section>

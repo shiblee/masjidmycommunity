@@ -1,7 +1,9 @@
 import Job from "../models/Job.js";
 import JobHistory from "../models/JobHistory.js";
+import User from "../models/User.js";
 import { generateUniqueSlug } from "../utils/slugify.js";
 import { firstRestrictedField, RESTRICTED_CONTENT_MESSAGE } from "../utils/contentModeration.js";
+import { recordJobPostedActivity } from "../services/communityActivityService.js";
 
 async function findOwnedJob(req, res) {
   const job = await Job.findOne({ where: { id: req.params.id, userId: req.user.id } });
@@ -95,6 +97,8 @@ export const createJob = async (req, res) => {
       contactMethod: contactMethod?.trim() || null,
     });
     await logJobHistory(job.id, "posted", `${job.title} — ${job.location}`, "user", null);
+    const poster = await User.findByPk(job.userId, { attributes: ["fullName"] });
+    recordJobPostedActivity(job, poster).catch(() => {});
 
     res.status(201).json({ job });
   } catch (error) {

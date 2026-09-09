@@ -3,6 +3,7 @@ import ContentReport from "../models/ContentReport.js";
 import ModerationSettings from "../models/ModerationSettings.js";
 import Masjid from "../models/Masjid.js";
 import Campaign from "../models/Campaign.js";
+import Job from "../models/Job.js";
 import CommunityActivity from "../models/CommunityActivity.js";
 import Comment from "../models/Comment.js";
 import PostImage from "../models/PostImage.js";
@@ -18,8 +19,8 @@ export const listReportReasons = async (req, res) => {
   }
 };
 
-const TARGET_MODEL = { masjid: Masjid, campaign: Campaign, activity: CommunityActivity, comment: Comment, image: PostImage };
-const CONTENT_TYPE_LABEL = { masjid: "Masjid", campaign: "Campaign", activity: "Wall Post", comment: "Comment", image: "Image" };
+const TARGET_MODEL = { masjid: Masjid, campaign: Campaign, job: Job, activity: CommunityActivity, comment: Comment, image: PostImage };
+const CONTENT_TYPE_LABEL = { masjid: "Masjid", campaign: "Campaign", job: "Job", activity: "Wall Post", comment: "Comment", image: "Image" };
 // masjid/campaign gate public visibility via moderationStatus (separate from
 // their approval workflow); activity/comment/image have no such second
 // status, so hiding them just flips their own status field directly.
@@ -28,6 +29,7 @@ const STATUS_FIELD_TYPES = new Set(["activity", "comment", "image"]);
 async function contentNameFor(targetType, target) {
   if (targetType === "masjid") return target.name;
   if (targetType === "campaign") return target.title;
+  if (targetType === "job") return target.title;
   if (targetType === "comment") {
     const author = await User.findByPk(target.userId, { attributes: ["fullName"] });
     return `Comment by ${author?.fullName || "a user"}: "${target.body?.slice(0, 60) || ""}"`;

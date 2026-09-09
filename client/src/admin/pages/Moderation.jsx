@@ -5,7 +5,7 @@ import StatusBadge from "../components/StatusBadge.jsx";
 import adminApi from "../services/adminApi.js";
 import { formatDateTime } from "../../utils/formatDateTime.js";
 
-const TYPE_LABEL = { masjid: "Masjid", campaign: "Campaign", activity: "Wall Post", comment: "Comment" };
+const TYPE_LABEL = { masjid: "Masjid", campaign: "Campaign", job: "Job", activity: "Wall Post", comment: "Comment" };
 
 function Moderation() {
   const [content, setContent] = useState(null);
@@ -25,7 +25,7 @@ function Moderation() {
         <div>
           <span className="amx-crumb">Trust &amp; Safety</span>
           <h1>Reported Content</h1>
-          <p>Masjids, campaigns, Wall posts, and comments that community members have reported</p>
+          <p>Masjids, campaigns, jobs, Wall posts, and comments that community members have reported</p>
         </div>
       </div>
 
@@ -35,6 +35,7 @@ function Moderation() {
             { key: "all", label: "All" },
             { key: "masjid", label: "Masjids" },
             { key: "campaign", label: "Campaigns" },
+            { key: "job", label: "Jobs" },
             { key: "activity", label: "Wall Posts" },
             { key: "comment", label: "Comments" },
           ].map((t) => (

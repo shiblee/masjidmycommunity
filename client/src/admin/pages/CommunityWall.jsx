@@ -10,6 +10,7 @@ const TYPES = [
   { key: "all", label: "All Types" },
   { key: "community_post", label: "Community Post" },
   { key: "campaign_approved", label: "Campaign Approved" },
+  { key: "job_posted", label: "Job Posted" },
   { key: "donation", label: "Donation" },
   { key: "milestone", label: "Fundraising Milestone" },
   { key: "masjid_approved", label: "Masjid Approved" },

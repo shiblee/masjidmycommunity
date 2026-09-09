@@ -13,7 +13,8 @@ const CommunityActivity = sequelize.define(
         "milestone",
         "project_update",
         "announcement",
-        "community_post"
+        "community_post",
+        "job_posted"
       ),
       allowNull: false,
     },
@@ -29,6 +30,10 @@ const CommunityActivity = sequelize.define(
     relatedMasjidId: { type: DataTypes.INTEGER, allowNull: true },
     relatedUserId: { type: DataTypes.INTEGER, allowNull: true },
     relatedCampaignId: { type: DataTypes.INTEGER, allowNull: true },
+    // Nullable, no default — appended after the fact like relatedCampaignId
+    // originally was; see the skills-column incident note on Job.js for why
+    // this matters (no NOT NULL+DEFAULT on an ALTERed column).
+    relatedJobId: { type: DataTypes.INTEGER, allowNull: true },
 
     metadata: { type: DataTypes.JSON, allowNull: true },
 

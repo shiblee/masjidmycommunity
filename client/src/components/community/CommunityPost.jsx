@@ -27,6 +27,7 @@ const LIVE_TYPE_MAP = {
   donation: "donation",
   milestone: "milestone",
   new_user: "new_member",
+  job_posted: "job_posted",
 };
 
 export function mapLiveActivity(a) {
@@ -34,13 +35,16 @@ export function mapLiveActivity(a) {
   const isCampaignEvent = a.type === "campaign_approved" || a.type === "donation" || a.type === "milestone";
   const isNewMember = a.type === "new_user";
   const isCommunityPost = a.type === "community_post";
+  const isJobPost = a.type === "job_posted";
   const campaignCta = a.metadata?.campaignSlug ? { label: "View Campaign", href: `/campaign/${a.metadata.campaignSlug}` } : undefined;
+  const jobCta = a.metadata?.jobSlug ? { label: "View Job", href: `/job/${a.metadata.jobSlug}` } : undefined;
 
   return {
     id: `live-${a.id}`,
     activityId: a.id,
     relatedMasjidId: a.relatedMasjidId || null,
     relatedCampaignId: a.relatedCampaignId || null,
+    relatedJobId: a.relatedJobId || null,
     relatedUserId: a.relatedUserId || null,
     author: a.author || null,
     likeCount: a.likeCount || 0,
@@ -57,6 +61,8 @@ export function mapLiveActivity(a) {
         ? a.user?.fullName || a.metadata?.fullName || "A new member"
         : isCommunityPost
         ? a.author?.fullName || "Community Member"
+        : isJobPost
+        ? a.user?.fullName || "A community member"
         : "Masjid My Community",
       verified: isMasjid,
       location: isNewMember ? a.user?.maskedEmail || a.user?.maskedMobile || "" : a.metadata?.location || "",
@@ -76,7 +82,7 @@ export function mapLiveActivity(a) {
       ? [{ id: null, url: `${API_ORIGIN}${a.imageUrl}` }]
       : undefined,
     videoUrl: a.mediaVideoUrl ? `${API_ORIGIN}${a.mediaVideoUrl}` : undefined,
-    cta: isMasjid && a.relatedMasjidId ? { label: "View Masjid", href: `/masjid/${a.relatedMasjidId}` } : campaignCta,
+    cta: isMasjid && a.relatedMasjidId ? { label: "View Masjid", href: `/masjid/${a.relatedMasjidId}` } : isJobPost ? jobCta : campaignCta,
   };
 }
 
@@ -89,6 +95,7 @@ const TYPE_META = {
   community_story: { tag: "Community" },
   new_member: { tag: "New Member" },
   community_post: { tag: "Community Post" },
+  job_posted: { tag: "New Job" },
 };
 
 function currency(n) {

@@ -40,6 +40,14 @@ function PostBodyText({ text, onHashtagClick }) {
               </Link>
             );
           }
+          if (bits.length >= 3 && bits[0] === "job") {
+            const [, slug, ...rest] = bits;
+            return (
+              <Link key={i} to={`/job/${slug}`} className="cw-mention">
+                @{rest.join(":")}
+              </Link>
+            );
+          }
           const city = inner;
           return (
             <Link key={i} to={`/explore-masjids?city=${encodeURIComponent(city)}`} className="cw-mention">

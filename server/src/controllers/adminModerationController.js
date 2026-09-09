@@ -3,13 +3,14 @@ import ModerationSettings from "../models/ModerationSettings.js";
 import ContentReport from "../models/ContentReport.js";
 import Masjid from "../models/Masjid.js";
 import Campaign from "../models/Campaign.js";
+import Job from "../models/Job.js";
 import CommunityActivity from "../models/CommunityActivity.js";
 import Comment from "../models/Comment.js";
 import PostImage from "../models/PostImage.js";
 import User from "../models/User.js";
 
-const TARGET_MODEL = { masjid: Masjid, campaign: Campaign, activity: CommunityActivity, comment: Comment, image: PostImage };
-const CONTENT_TYPE_LABEL = { masjid: "Masjid", campaign: "Campaign", activity: "Wall Post", comment: "Comment", image: "Image" };
+const TARGET_MODEL = { masjid: Masjid, campaign: Campaign, job: Job, activity: CommunityActivity, comment: Comment, image: PostImage };
+const CONTENT_TYPE_LABEL = { masjid: "Masjid", campaign: "Campaign", job: "Job", activity: "Wall Post", comment: "Comment", image: "Image" };
 // masjid/campaign gate visibility via a separate moderationStatus field;
 // activity/comment/image have no approval workflow to protect, so their own
 // status field doubles as the moderation flag directly.
@@ -50,9 +51,10 @@ export const listReportedContent = async (req, res) => {
     const settings = await ModerationSettings.findByPk(1);
     const threshold = settings?.reportThreshold ?? 10;
 
-    const [masjids, campaigns, activities, comments, images] = await Promise.all([
+    const [masjids, campaigns, jobs, activities, comments, images] = await Promise.all([
       Masjid.findAll({ where: { reportCount: { [Op.gt]: 0 } }, order: [["reportCount", "DESC"]] }),
       Campaign.findAll({ where: { reportCount: { [Op.gt]: 0 } }, order: [["reportCount", "DESC"]] }),
+      Job.findAll({ where: { reportCount: { [Op.gt]: 0 } }, order: [["reportCount", "DESC"]] }),
       CommunityActivity.findAll({ where: { reportCount: { [Op.gt]: 0 } }, order: [["reportCount", "DESC"]] }),
       Comment.findAll({ where: { reportCount: { [Op.gt]: 0 } }, order: [["reportCount", "DESC"]] }),
       PostImage.findAll({ where: { reportCount: { [Op.gt]: 0 } }, order: [["reportCount", "DESC"]] }),
@@ -76,6 +78,15 @@ export const listReportedContent = async (req, res) => {
         threshold,
         status: statusFor("campaign", c),
         updatedAt: c.updatedAt,
+      })),
+      ...jobs.map((j) => ({
+        targetType: "job",
+        targetId: j.id,
+        name: j.title,
+        reportCount: j.reportCount,
+        threshold,
+        status: statusFor("job", j),
+        updatedAt: j.updatedAt,
       })),
       ...activities.map((a) => ({
         targetType: "activity",
@@ -129,6 +140,7 @@ export const getContentDetail = async (req, res) => {
     let owner = null;
     if (targetType === "masjid") owner = await User.findByPk(target.userId, { attributes: ["id", "fullName", "email"] });
     else if (targetType === "campaign") owner = await User.findByPk(target.createdBy, { attributes: ["id", "fullName", "email"] });
+    else if (targetType === "job") owner = await User.findByPk(target.userId, { attributes: ["id", "fullName", "email"] });
     else if (targetType === "comment") owner = await User.findByPk(target.userId, { attributes: ["id", "fullName", "email"] });
     else if (targetType === "image") {
       const post = await CommunityActivity.findByPk(target.activityId, { attributes: ["relatedUserId"] });
@@ -144,7 +156,7 @@ export const getContentDetail = async (req, res) => {
         name:
           targetType === "masjid"
             ? target.name
-            : targetType === "campaign"
+            : targetType === "campaign" || targetType === "job"
             ? target.title
             : targetType === "image"
             ? `Image on post #${target.activityId}`
@@ -206,6 +218,8 @@ export const takeAction = async (req, res) => {
         target.deletionReason = "Removed by admin — content moderation";
       } else if (targetType === "campaign") {
         target.status = "cancelled";
+      } else if (targetType === "job") {
+        target.status = "closed";
       } else {
         target.status = "hidden";
       }

@@ -10,7 +10,7 @@ import { sequelize } from "../config/db.js";
 const ContentReport = sequelize.define(
   "ContentReport",
   {
-    targetType: { type: DataTypes.ENUM("masjid", "campaign", "activity", "comment", "image"), allowNull: false },
+    targetType: { type: DataTypes.ENUM("masjid", "campaign", "activity", "comment", "image", "job"), allowNull: false },
     targetId: { type: DataTypes.INTEGER, allowNull: false },
     activityId: { type: DataTypes.INTEGER, allowNull: true },
     reporterId: { type: DataTypes.INTEGER, allowNull: false },
