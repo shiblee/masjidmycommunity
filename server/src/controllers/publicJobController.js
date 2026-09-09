@@ -7,6 +7,7 @@ import ExperienceLevel from "../models/ExperienceLevel.js";
 import Skill from "../models/Skill.js";
 import JobCategory from "../models/JobCategory.js";
 import JobFavorite from "../models/JobFavorite.js";
+import { getUserMatchProfile, computeMatchScore } from "../services/jobMatchingService.js";
 
 // The public Jobs board's filter chips need the same admin-managed master
 // lists the posting form uses, but those otherwise only have auth-gated
@@ -50,8 +51,9 @@ export const listJobCategories = async (req, res) => {
 
 const PUBLIC_STATUSES = ["active"];
 
-async function withCard(job, favoritedIds) {
+async function withCard(job, { favoritedIds, matchProfile } = {}) {
   const poster = await User.findByPk(job.userId, { attributes: ["id", "fullName", "locationCity", "locationCountry"] });
+  const match = matchProfile ? computeMatchScore(job, matchProfile) : null;
   return {
     id: job.id,
     slug: job.slug,
@@ -68,6 +70,7 @@ async function withCard(job, favoritedIds) {
     createdAt: job.createdAt,
     postedBy: poster?.fullName || "A community member",
     ...(favoritedIds ? { favorited: favoritedIds.has(job.id) } : {}),
+    ...(match ? { matchScore: match.score, matchedSkills: match.matchedSkills } : {}),
   };
 }
 
@@ -83,7 +86,7 @@ async function getFavoritedIds(userId, jobIds) {
 
 export const listPublic = async (req, res) => {
   try {
-    const { q, jobType, experienceRequired, category, workMode, hasSalary, skills, location, excludeId, page = 1, pageSize = 12 } = req.query;
+    const { q, jobType, experienceRequired, category, workMode, hasSalary, skills, location, excludeId, sort, page = 1, pageSize = 12 } = req.query;
     const where = { status: { [Op.in]: PUBLIC_STATUSES }, moderationStatus: "active" };
     if (jobType) where.jobType = jobType;
     if (experienceRequired) where.experienceRequired = experienceRequired;
@@ -104,12 +107,24 @@ export const listPublic = async (req, res) => {
       ];
     }
 
+    // "Closing Soon" — only jobs with a real deadline still in the future,
+    // soonest first. A DB-level sort/filter (unlike match score), so it
+    // stays correct across pagination.
+    let order = [["createdAt", "DESC"]];
+    if (sort === "deadline") {
+      where.applicationDeadline = { [Op.ne]: null, [Op.gte]: new Date().toISOString().slice(0, 10) };
+      order = [["applicationDeadline", "ASC"]];
+    }
+
     const limit = Math.min(Number(pageSize) || 12, 48);
     const offset = (Math.max(Number(page) || 1, 1) - 1) * limit;
 
-    const { rows, count } = await Job.findAndCountAll({ where, order: [["createdAt", "DESC"]], limit, offset });
-    const favoritedIds = await getFavoritedIds(req.user?.id, rows.map((j) => j.id));
-    const jobs = await Promise.all(rows.map((j) => withCard(j, favoritedIds)));
+    const { rows, count } = await Job.findAndCountAll({ where, order, limit, offset });
+    const [favoritedIds, matchProfile] = await Promise.all([
+      getFavoritedIds(req.user?.id, rows.map((j) => j.id)),
+      req.user?.id ? getUserMatchProfile(req.user.id) : null,
+    ]);
+    const jobs = await Promise.all(rows.map((j) => withCard(j, { favoritedIds, matchProfile })));
 
     res.json({ jobs, total: count, page: Number(page) || 1, pageSize: limit });
   } catch (error) {
@@ -123,9 +138,70 @@ export const getPublicOne = async (req, res) => {
     if (!job) return res.status(404).json({ message: "Job not found." });
 
     const poster = await User.findByPk(job.userId, { attributes: ["id", "fullName", "profilePhoto", "locationCity", "locationCountry"] });
-    const favoritedIds = await getFavoritedIds(req.user?.id, [job.id]);
+    const [favoritedIds, matchProfile] = await Promise.all([
+      getFavoritedIds(req.user?.id, [job.id]),
+      req.user?.id ? getUserMatchProfile(req.user.id) : null,
+    ]);
+    const match = matchProfile ? computeMatchScore(job, matchProfile) : null;
 
-    res.json({ job: { ...job.toJSON(), favorited: favoritedIds.has(job.id) }, poster });
+    res.json({
+      job: { ...job.toJSON(), favorited: favoritedIds.has(job.id), ...(match ? { matchScore: match.score, matchedSkills: match.matchedSkills } : {}) },
+      poster,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+/** Top matches for the current user among currently-open jobs — powers
+ * "Recommended for You" / "Best Matches". Scores a bounded recent pool
+ * (matching an entire growing board per request isn't necessary — a
+ * meaningful match is almost always recent) rather than the whole table. */
+export const listRecommended = async (req, res) => {
+  try {
+    const matchProfile = await getUserMatchProfile(req.user.id);
+    const limit = Math.min(Number(req.query.limit) || 10, 24);
+    const pool = await Job.findAll({
+      where: { status: { [Op.in]: PUBLIC_STATUSES }, moderationStatus: "active", userId: { [Op.ne]: req.user.id } },
+      order: [["createdAt", "DESC"]],
+      limit: 150,
+    });
+    const scored = pool
+      .map((job) => ({ job, match: computeMatchScore(job, matchProfile) }))
+      .filter((r) => r.match && r.match.score >= 40)
+      .sort((a, b) => b.match.score - a.match.score)
+      .slice(0, limit);
+
+    const favoritedIds = await getFavoritedIds(req.user.id, scored.map((r) => r.job.id));
+    const jobs = await Promise.all(scored.map((r) => withCard(r.job, { favoritedIds, matchProfile })));
+    res.json({ jobs });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+/** Jobs sharing at least one skill with the current user's profile —
+ * powers "Based on Your Skills", ordered by how many skills overlap. */
+export const listBySkills = async (req, res) => {
+  try {
+    const matchProfile = await getUserMatchProfile(req.user.id);
+    const limit = Math.min(Number(req.query.limit) || 10, 24);
+    if (!matchProfile.skillNames.size) return res.json({ jobs: [] });
+
+    const pool = await Job.findAll({
+      where: { status: { [Op.in]: PUBLIC_STATUSES }, moderationStatus: "active", userId: { [Op.ne]: req.user.id } },
+      order: [["createdAt", "DESC"]],
+      limit: 150,
+    });
+    const scored = pool
+      .map((job) => ({ job, match: computeMatchScore(job, matchProfile) }))
+      .filter((r) => r.match && r.match.matchedSkills.length > 0)
+      .sort((a, b) => b.match.matchedSkills.length - a.match.matchedSkills.length)
+      .slice(0, limit);
+
+    const favoritedIds = await getFavoritedIds(req.user.id, scored.map((r) => r.job.id));
+    const jobs = await Promise.all(scored.map((r) => withCard(r.job, { favoritedIds, matchProfile })));
+    res.json({ jobs });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -151,7 +227,7 @@ export const listMyLiked = async (req, res) => {
     const total = ordered.length;
     const pageRows = ordered.slice((page - 1) * limit, page * limit);
     const favoritedIds = new Set(pageRows.map((j) => j.id));
-    const jobs = await Promise.all(pageRows.map((j) => withCard(j, favoritedIds)));
+    const jobs = await Promise.all(pageRows.map((j) => withCard(j, { favoritedIds })));
 
     res.json({ jobs, total, page, pageSize: limit });
   } catch (error) {

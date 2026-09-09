@@ -12,6 +12,7 @@ const WORK_MODE_KEY = {
 };
 
 const MAX_SKILL_CHIPS = 4;
+const BEST_MATCH_THRESHOLD = 75;
 
 // Reusable job-card, shared by Jobs.jsx's main grid, "Recommended"/"Saved"/
 // etc. rails as they land in later phases — one shape, one place that knows
@@ -34,10 +35,19 @@ function JobCard({ job }) {
     if (result.needsLogin) navigate("/auth");
   };
 
+  const hasMatch = typeof job.matchScore === "number";
+  const isBestMatch = hasMatch && job.matchScore >= BEST_MATCH_THRESHOLD;
+
   return (
     <Link to={`/job/${job.slug}`} className="job-card">
+      {isBestMatch && (
+        <span className="job-card-best-match"><Icon name="sparkle" size={12} /> {t("jobs.card.bestMatch", "Best Match")}</span>
+      )}
       <div className="job-card-top">
         <span className="job-card-type">{job.jobType}</span>
+        {hasMatch && !isBestMatch && (
+          <span className="job-card-match-chip">{t("jobs.card.matchPercent", "{percent}% match").replace("{percent}", job.matchScore)}</span>
+        )}
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginLeft: "auto" }}>
           {job.category && <span className="job-card-category">{job.category}</span>}
           <button

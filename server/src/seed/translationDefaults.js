@@ -1935,6 +1935,16 @@ const DEFAULTS = [
   ["myApplications", "myApplications.empty.title", "You haven't applied to any jobs yet", "आपने अभी तक किसी नौकरी के लिए आवेदन नहीं किया है", "آپ نے ابھی تک کسی ملازمت کے لیے درخواست نہیں دی", "لم تتقدم لأي وظيفة بعد"],
   ["myApplications", "myApplications.empty.body", "Browse open roles from across the community and apply in a minute.", "समुदाय भर की खुली भूमिकाएँ ब्राउज़ करें और एक मिनट में आवेदन करें।", "کمیونٹی بھر کی خالی آسامیاں براؤز کریں اور ایک منٹ میں درخواست دیں۔", "تصفّح الوظائف الشاغرة من جميع أنحاء المجتمع وتقدّم خلال دقيقة."],
   ["myApplications", "myApplications.appliedOn", "Applied {date}", "{date} को आवेदन किया", "{date} کو درخواست دی گئی", "تم التقديم في {date}"],
+
+  // Jobs redesign — Phase 3 (deterministic matching: Best Match, Recommended, Based on Skills, Closing Soon)
+  ["jobs", "jobs.card.bestMatch", "Best Match", "सर्वश्रेष्ठ मेल", "بہترین مماثلت", "أفضل تطابق"],
+  ["jobs", "jobs.card.matchPercent", "{percent}% match", "{percent}% मेल", "{percent}% مماثلت", "تطابق {percent}%"],
+  ["jobs", "jobs.rails.recommended.title", "Recommended for You", "आपके लिए अनुशंसित", "آپ کے لیے تجویز کردہ", "موصى بها لك"],
+  ["jobs", "jobs.rails.recommended.subtitle", "Based on your skills, experience, and location", "आपके कौशल, अनुभव और स्थान के आधार पर", "آپ کی مہارتوں، تجربے اور مقام کی بنیاد پر", "بناءً على مهاراتك وخبرتك وموقعك"],
+  ["jobs", "jobs.rails.bySkills.title", "Based on Your Skills", "आपके कौशल के आधार पर", "آپ کی مہارتوں کی بنیاد پر", "بناءً على مهاراتك"],
+  ["jobs", "jobs.rails.bySkills.subtitle", "Jobs that share at least one skill with your profile", "वे नौकरियाँ जो आपकी प्रोफ़ाइल से कम से कम एक कौशल साझा करती हैं", "وہ ملازمتیں جو آپ کی پروفائل سے کم از کم ایک مہارت مشترک رکھتی ہیں", "الوظائف التي تشترك في مهارة واحدة على الأقل مع ملفك الشخصي"],
+  ["jobs", "jobs.rails.closingSoon.title", "Closing Soon", "जल्द बंद हो रही हैं", "جلد بند ہو رہی ہیں", "تُغلق قريبًا"],
+  ["jobs", "jobs.rails.closingSoon.subtitle", "Roles with an application deadline coming up", "वे भूमिकाएँ जिनकी आवेदन की अंतिम तिथि नज़दीक है", "وہ آسامیاں جن کی درخواست کی آخری تاریخ قریب ہے", "وظائف يقترب موعدها النهائي للتقديم"],
 ];
 
 // Additive, not "seed once": every deploy that adds new keys to DEFAULTS

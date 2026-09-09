@@ -3469,8 +3469,16 @@ footer{
 .job-filters-row{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; flex:1; }
 
 .job-card{
-  display:flex; flex-direction:column; background:#fff; border:1px solid var(--line); border-radius:16px; padding:20px;
+  position:relative; display:flex; flex-direction:column; background:#fff; border:1px solid var(--line); border-radius:16px; padding:20px;
   transition:transform .22s var(--ease), box-shadow .22s var(--ease), border-color .22s var(--ease);
+}
+.job-card-best-match{
+  position:absolute; top:-10px; left:16px; display:flex; align-items:center; gap:5px; background:linear-gradient(90deg,var(--teal),var(--gold));
+  color:#0b1f1e; font-size:10.5px; font-weight:800; letter-spacing:.02em; text-transform:uppercase; padding:4px 10px; border-radius:100px;
+  box-shadow:0 6px 14px -6px rgba(11,31,30,.4);
+}
+.job-card-match-chip{
+  font-size:11px; font-weight:700; color:var(--teal-deep); background:rgba(141,198,63,.14); padding:3px 9px; border-radius:100px;
 }
 .job-card:hover{ transform:translateY(-3px); box-shadow:0 22px 40px -26px rgba(11,31,30,.25); border-color:transparent; }
 .job-card-top{ display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; }

@@ -45,6 +45,9 @@ function Jobs() {
 
   const [savedJobs, setSavedJobs] = useState([]);
   const [myApplications, setMyApplications] = useState([]);
+  const [recommended, setRecommended] = useState([]);
+  const [bySkills, setBySkills] = useState([]);
+  const [closingSoon, setClosingSoon] = useState([]);
   const isLoggedIn = !!getStoredUser();
 
   useEffect(() => {
@@ -52,10 +55,13 @@ function Jobs() {
     axios.get(`${API_BASE}/jobs/public/meta/job-types`).then(({ data }) => setJobTypes(data.employmentTypes)).catch(() => {});
     axios.get(`${API_BASE}/jobs/public/meta/experience-levels`).then(({ data }) => setExperienceLevels(data.experienceLevels)).catch(() => {});
     axios.get(`${API_BASE}/jobs/public/meta/skills`).then(({ data }) => setSkills(data.skills)).catch(() => {});
+    publicJobApi.get("/", { params: { sort: "deadline", pageSize: 8 } }).then(({ data }) => setClosingSoon(data.jobs)).catch(() => {});
 
     if (isLoggedIn) {
       publicJobApi.get("/liked/mine", { params: { pageSize: 10 } }).then(({ data }) => setSavedJobs(data.jobs)).catch(() => {});
       jobApi.get("/mine/applications").then(({ data }) => setMyApplications(data.applications.slice(0, 10))).catch(() => {});
+      publicJobApi.get("/recommended", { params: { limit: 10 } }).then(({ data }) => setRecommended(data.jobs)).catch(() => {});
+      publicJobApi.get("/by-skills", { params: { limit: 10 } }).then(({ data }) => setBySkills(data.jobs)).catch(() => {});
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -161,6 +167,24 @@ function Jobs() {
       <section className="py-md msj-explore-content">
         <div className="wrap">
           <JobRail
+            icon="sparkle"
+            title={t("jobs.rails.recommended.title", "Recommended for You")}
+            subtitle={t("jobs.rails.recommended.subtitle", "Based on your skills, experience, and location")}
+            count={recommended.length}
+          >
+            {recommended.map((j) => <JobCard job={j} key={j.id} />)}
+          </JobRail>
+
+          <JobRail
+            icon="target"
+            title={t("jobs.rails.bySkills.title", "Based on Your Skills")}
+            subtitle={t("jobs.rails.bySkills.subtitle", "Jobs that share at least one skill with your profile")}
+            count={bySkills.length}
+          >
+            {bySkills.map((j) => <JobCard job={j} key={j.id} />)}
+          </JobRail>
+
+          <JobRail
             icon="heart"
             title={t("jobs.rails.saved.title", "Saved Jobs")}
             subtitle={t("jobs.rails.saved.subtitle", "Jobs you've bookmarked to come back to")}
@@ -184,6 +208,15 @@ function Jobs() {
                 </span>
               </Link>
             ))}
+          </JobRail>
+
+          <JobRail
+            icon="clock"
+            title={t("jobs.rails.closingSoon.title", "Closing Soon")}
+            subtitle={t("jobs.rails.closingSoon.subtitle", "Roles with an application deadline coming up")}
+            count={closingSoon.length}
+          >
+            {closingSoon.map((j) => <JobCard job={j} key={j.id} />)}
           </JobRail>
 
           {jobCategories.length > 0 && (
