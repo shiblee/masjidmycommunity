@@ -16,6 +16,19 @@ export function useJobFavorite(jobId, { favorited: initialFavorited = false } = 
 
   useEffect(() => setFavorited(initialFavorited), [initialFavorited]);
 
+  // The same job can render in more than one place at once (the main grid
+  // and a "Recommended"/"Closing Soon" rail, Grid vs List view, ...) — each
+  // mounts its own instance of this hook. Toggling one instance dispatches
+  // the event above; every other instance for the same jobId listens here
+  // and mirrors the change immediately, no refetch needed.
+  useEffect(() => {
+    const onFavoriteChanged = (e) => {
+      if (e.detail.jobId === jobId) setFavorited(e.detail.favorited);
+    };
+    window.addEventListener(JOB_FAVORITE_CHANGED_EVENT, onFavoriteChanged);
+    return () => window.removeEventListener(JOB_FAVORITE_CHANGED_EVENT, onFavoriteChanged);
+  }, [jobId]);
+
   const toggle = useCallback(async () => {
     if (busy || !jobId) return { ok: false };
     if (!getUserToken()) return { ok: false, needsLogin: true };
