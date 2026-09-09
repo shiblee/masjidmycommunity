@@ -8,6 +8,7 @@ import Hobby from "../models/Hobby.js";
 import UserHobby from "../models/UserHobby.js";
 import Masjid from "../models/Masjid.js";
 import Campaign from "../models/Campaign.js";
+import Job from "../models/Job.js";
 
 const PUBLIC_MASJID_STATUS = "approved";
 const PUBLIC_CAMPAIGN_STATUSES = ["active", "paused", "goal_reached", "completed"];
@@ -46,7 +47,7 @@ export const getPublicProfile = async (req, res) => {
       return res.status(404).json({ message: "Profile not found." });
     }
 
-    const [education, workExperience, skillEntries, hobbyEntries, masjids, campaigns] = await Promise.all([
+    const [education, workExperience, skillEntries, hobbyEntries, masjids, campaigns, jobs] = await Promise.all([
       Education.findAll({ where: { userId: user.id }, order: [["endYear", "DESC"], ["startYear", "DESC"]] }),
       WorkExperience.findAll({ where: { userId: user.id, isActive: true }, order: [["startDate", "DESC"]] }),
       UserSkill.findAll({ where: { userId: user.id }, order: [["sortOrder", "ASC"]] }),
@@ -63,6 +64,13 @@ export const getPublicProfile = async (req, res) => {
           isOwner || isAdmin
             ? { createdBy: user.id }
             : { createdBy: user.id, status: { [Op.in]: PUBLIC_CAMPAIGN_STATUSES }, moderationStatus: "active" },
+        order: [["createdAt", "DESC"]],
+      }),
+      Job.findAll({
+        where:
+          isOwner || isAdmin
+            ? { userId: user.id, status: { [Op.ne]: "deleted" } }
+            : { userId: user.id, status: "active", moderationStatus: "active" },
         order: [["createdAt", "DESC"]],
       }),
     ]);
@@ -105,6 +113,7 @@ export const getPublicProfile = async (req, res) => {
       hobbies,
       masjids: masjids.map((m) => m.toJSON()),
       campaigns: campaigns.map((c) => c.toJSON()),
+      jobs: jobs.map((j) => j.toJSON()),
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

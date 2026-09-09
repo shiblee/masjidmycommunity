@@ -24,6 +24,7 @@ const CAMPAIGN_STATUS_LABEL = {
   approved: "Approved", active: "Active", paused: "Paused", goal_reached: "Goal Reached",
   completed: "Completed", rejected: "Rejected", cancelled: "Cancelled",
 };
+const JOB_STATUS_LABEL = { active: "Active", closed: "Closed", expired: "Expired" };
 const SIDE_LIST_PREVIEW_COUNT = 3;
 const POSTS_PAGE_SIZE = 10;
 
@@ -139,6 +140,7 @@ function Profile() {
   const [hobbies, setHobbies] = useState([]);
   const [masjids, setMasjids] = useState([]);
   const [campaigns, setCampaigns] = useState([]);
+  const [jobs, setJobs] = useState([]);
   const [posts, setPosts] = useState([]);
   const [postsHasMore, setPostsHasMore] = useState(false);
   const [postsLoading, setPostsLoading] = useState(false);
@@ -146,6 +148,7 @@ function Profile() {
   const [notFound, setNotFound] = useState(false);
   const [showAllMasjids, setShowAllMasjids] = useState(false);
   const [showAllCampaigns, setShowAllCampaigns] = useState(false);
+  const [showAllJobs, setShowAllJobs] = useState(false);
   const activeSection = PROFILE_NAV_KEYS.includes(section) ? section : "personal";
 
   useEffect(() => {
@@ -161,6 +164,7 @@ function Profile() {
         setHobbies(data.hobbies);
         setMasjids(data.masjids);
         setCampaigns(data.campaigns);
+        setJobs(data.jobs);
         // Keep the navbar/session copy of "my own" data in sync if I'm
         // looking at my own profile (e.g. after an admin edited it elsewhere).
         if (data.user.isOwner && viewer) updateStoredUser({ ...viewer, ...data.user });
@@ -357,6 +361,27 @@ function Profile() {
                 linkBase={isOwner ? "/account/my-campaigns" : "/campaign"}
                 linkKey={isOwner ? "id" : "slug"}
                 icon="flag"
+              />
+
+              {isOwner && (
+                <div className="cw-side-card cw-side-card-cta">
+                  <h4>Post a Job Opening</h4>
+                  <p className="cw-side-card-sub">Reach the community looking for their next role.</p>
+                  <Link to="/account/my-jobs/new" className="btn btn-gold" style={{ width: "100%", justifyContent: "center" }}>
+                    <Icon name="plus" size={16} /> Add a Job
+                  </Link>
+                </div>
+              )}
+              <OwnedAssetList
+                title="My Jobs"
+                items={jobs}
+                showAll={showAllJobs}
+                onToggleShowAll={() => setShowAllJobs((v) => !v)}
+                statusLabel={JOB_STATUS_LABEL}
+                nameKey="title"
+                linkBase={isOwner ? "/account/my-jobs" : "/job"}
+                linkKey={isOwner ? "id" : "slug"}
+                icon="building"
               />
             </aside>
           </div>
