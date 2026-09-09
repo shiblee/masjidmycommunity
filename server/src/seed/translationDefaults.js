@@ -1268,6 +1268,7 @@ const DEFAULTS = [
   ["jobProfile", "jobProfile.section.skills", "Skills & Qualifications", "कौशल एवं योग्यताएँ", "مہارتیں اور قابلیت", "المهارات والمؤهلات"],
   ["jobProfile", "jobProfile.experienceLabel", "Experience required:", "आवश्यक अनुभव:", "درکار تجربہ:", "الخبرة المطلوبة:"],
   ["jobProfile", "jobProfile.deadlineLabel", "Application deadline:", "आवेदन की अंतिम तिथि:", "درخواست کی آخری تاریخ:", "الموعد النهائي للتقديم:"],
+  ["jobProfile", "jobProfile.share", "Share", "साझा करें", "شیئر کریں", "مشاركة"],
   ["jobProfile", "jobProfile.rail.eyebrow", "Latest Jobs", "नवीनतम नौकरियाँ", "تازہ ترین ملازمتیں", "أحدث الوظائف"],
   ["jobProfile", "jobProfile.rail.searchPlaceholder", "Search jobs…", "नौकरियाँ खोजें…", "ملازمتیں تلاش کریں…", "ابحث عن الوظائف…"],
   ["jobProfile", "jobProfile.rail.loading", "Loading…", "लोड हो रहा है…", "لوڈ ہو رہا ہے…", "جارٍ التحميل…"],

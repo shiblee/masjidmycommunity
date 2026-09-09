@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Icon } from "../components/Icons.jsx";
 import { formatDate } from "../utils/formatDateTime.js";
 import LatestJobsRail from "../components/job/LatestJobsRail.jsx";
 import JobApplyPanel from "../components/job/JobApplyPanel.jsx";
 import JobPostSection from "../components/job/JobPostSection.jsx";
+import ShareMenu from "../components/ShareMenu.jsx";
 import publicJobApi from "../services/publicJobApi.js";
 import { trackJobView } from "../utils/trackJobView.js";
 import { useTranslation } from "../i18n/LanguageContext.jsx";
@@ -14,6 +15,8 @@ function JobProfile() {
   const { slug } = useParams();
   const [data, setData] = useState(null);
   const [notFound, setNotFound] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+  const shareBtnRef = useRef(null);
 
   useEffect(() => {
     setData(null);
@@ -54,6 +57,20 @@ function JobProfile() {
             <Icon name="mapPin" size={14} /> {job.location} · {t("jobProfile.postedBy", "Posted by")} {poster?.fullName || t("jobProfile.anonymousPoster", "a community member")} · {formatDate(job.createdAt)}
             {job.viewCount > 0 && ` · ${job.viewCount} ${job.viewCount === 1 ? t("jobProfile.view", "view") : t("jobProfile.views", "views")}`}
           </p>
+
+          <div className="msj-hub-actions-row">
+            <button type="button" ref={shareBtnRef} className="msj-hub-action-btn" onClick={() => setShareOpen((v) => !v)}>
+              <Icon name="link" size={16} /> {t("jobProfile.share", "Share")}
+            </button>
+            <ShareMenu
+              open={shareOpen}
+              onClose={() => setShareOpen(false)}
+              anchorRef={shareBtnRef}
+              url={`${window.location.origin}/job/${job.slug}`}
+              title={job.title}
+              text={`${job.title} — ${job.location}`}
+            />
+          </div>
         </div>
       </section>
 
