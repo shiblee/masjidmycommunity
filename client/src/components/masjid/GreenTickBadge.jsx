@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import { Icon } from "../Icons.jsx";
+import { useTranslation } from "../../i18n/LanguageContext.jsx";
 
 const POPOVER_WIDTH = 270;
 
@@ -13,6 +14,7 @@ const POPOVER_WIDTH = 270;
 // specific to configure beyond `variant`, which only changes icon size and
 // whether the "Verified" label is spelled out.
 function GreenTickBadge({ masjid, variant = "list", className = "" }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [coords, setCoords] = useState(null);
   const ref = useRef(null);
@@ -64,11 +66,11 @@ function GreenTickBadge({ masjid, variant = "list", className = "" }) {
         type="button"
         className="msj-greentick-badge-trigger"
         onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen((v) => !v); }}
-        aria-label="Green Tick verified — view details"
+        aria-label={t("masjidProfile.greenTick.ariaLabel", "Green Tick verified — view details")}
         aria-expanded={open}
       >
         <span className="msj-greentick-badge-icon"><Icon name="check" size={iconSize} /></span>
-        {verbose && <span className="msj-greentick-badge-text">Verified</span>}
+        {verbose && <span className="msj-greentick-badge-text">{t("masjidProfile.greenTick.verified", "Verified")}</span>}
       </button>
 
       {open &&
@@ -81,18 +83,20 @@ function GreenTickBadge({ masjid, variant = "list", className = "" }) {
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
           >
             <div className="msj-greentick-badge-popover-title">
-              <span className="msj-greentick-badge-icon"><Icon name="check" size={11} /></span> Verified
+              <span className="msj-greentick-badge-icon"><Icon name="check" size={11} /></span> {t("masjidProfile.greenTick.verified", "Verified")}
             </div>
             <p>
-              Masjid My Community has completed its defined verification process for this masjid and its
-              authorized representatives, based on the information and documents reviewed.
+              {t(
+                "masjidProfile.greenTick.description",
+                "Masjid My Community has completed its defined verification process for this masjid and its authorized representatives, based on the information and documents reviewed."
+              )}
             </p>
             <div className="msj-greentick-badge-popover-meta">
-              <span>ID <strong>{masjid.verificationId}</strong></span>
-              {masjid.issuedAt && <span>Since {new Date(masjid.issuedAt).toLocaleDateString()}</span>}
+              <span>{t("masjidProfile.greenTick.idLabel", "ID")} <strong>{masjid.verificationId}</strong></span>
+              {masjid.issuedAt && <span>{t("masjidProfile.greenTick.since", "Since")} {new Date(masjid.issuedAt).toLocaleDateString()}</span>}
             </div>
             <Link to={`/verify-masjid/${masjid.verificationId}`} onClick={(e) => e.stopPropagation()}>
-              View public certificate →
+              {t("masjidProfile.greenTick.viewCertificate", "View public certificate →")}
             </Link>
           </div>,
           document.body

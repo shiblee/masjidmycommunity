@@ -1,9 +1,11 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Icon } from "../../components/Icons.jsx";
+import { useTranslation } from "../../i18n/LanguageContext.jsx";
 
 /** Multi-select checkbox dropdown for the masjid category filter — selecting
  * more than one category is an OR (any selected category matches), not AND. */
 function CategoryFilter({ categories, selected, onChange }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const wrapRef = useRef(null);
 
@@ -20,7 +22,12 @@ function CategoryFilter({ categories, selected, onChange }) {
     else onChange([...selected, name]);
   };
 
-  const label = selected.length === 0 ? "All Categories" : selected.length === 1 ? selected[0] : `${selected.length} Categories`;
+  const label =
+    selected.length === 0
+      ? t("exploreMasjidsPage.categoryFilter.all", "All Categories")
+      : selected.length === 1
+      ? selected[0]
+      : t("exploreMasjidsPage.categoryFilter.countLabel", "{count} Categories").replace("{count}", selected.length);
 
   return (
     <div className="msj-category-filter" ref={wrapRef}>
@@ -31,9 +38,9 @@ function CategoryFilter({ categories, selected, onChange }) {
       {open && (
         <div className="msj-category-filter-panel">
           <div className="msj-category-filter-head">
-            <span>Masjid Categories</span>
+            <span>{t("exploreMasjidsPage.categoryFilter.heading", "Masjid Categories")}</span>
             {selected.length > 0 && (
-              <button type="button" className="msj-clear-all" onClick={() => onChange([])}>Clear All</button>
+              <button type="button" className="msj-clear-all" onClick={() => onChange([])}>{t("exploreMasjidsPage.categoryFilter.clearAll", "Clear All")}</button>
             )}
           </div>
           <ul className="msj-category-filter-list">

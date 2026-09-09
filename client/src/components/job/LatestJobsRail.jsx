@@ -4,6 +4,7 @@ import axios from "axios";
 import { API_BASE } from "../../config.js";
 import { Icon } from "../Icons.jsx";
 import { formatDate } from "../../utils/formatDateTime.js";
+import { useTranslation } from "../../i18n/LanguageContext.jsx";
 
 const RAIL_SIZE = 20;
 
@@ -11,6 +12,7 @@ const RAIL_SIZE = 20;
 // RunningCampaignsRail.jsx's exact pattern (search, sticky, excludes the
 // current item, plain client-side route change on click).
 function LatestJobsRail({ currentSlug, excludeId }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [q, setQ] = useState("");
   const [jobs, setJobs] = useState(null);
@@ -28,16 +30,16 @@ function LatestJobsRail({ currentSlug, excludeId }) {
   return (
     <aside className="camp-rail">
       <div className="camp-rail-head">
-        <span className="eyebrow">Latest Jobs</span>
+        <span className="eyebrow">{t("jobProfile.rail.eyebrow", "Latest Jobs")}</span>
       </div>
       <div className="msj-search camp-rail-search">
         <Icon name="search" size={14} />
-        <input type="text" placeholder="Search jobs…" value={q} onChange={(e) => setQ(e.target.value)} />
+        <input type="text" placeholder={t("jobProfile.rail.searchPlaceholder", "Search jobs…")} value={q} onChange={(e) => setQ(e.target.value)} />
       </div>
 
       <div className="camp-rail-list">
-        {jobs === null && <p className="msj-note">Loading…</p>}
-        {jobs && jobs.length === 0 && <p className="msj-note">No other jobs right now.</p>}
+        {jobs === null && <p className="msj-note">{t("jobProfile.rail.loading", "Loading…")}</p>}
+        {jobs && jobs.length === 0 && <p className="msj-note">{t("jobProfile.rail.empty", "No other jobs right now.")}</p>}
         {jobs?.map((j) => (
           <button key={j.id} type="button" className="camp-rail-card" onClick={() => navigate(`/job/${j.slug}`)}>
             <div className="camp-rail-card-body">

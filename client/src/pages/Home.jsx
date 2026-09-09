@@ -4,6 +4,7 @@ import axios from "axios";
 import { API_BASE, API_ORIGIN } from "../config.js";
 import { toCardShape } from "../utils/campaignCardShape.js";
 import { useLoginGatedNav } from "../hooks/useLoginGatedNav.js";
+import { useTranslation } from "../i18n/LanguageContext.jsx";
 
 const masjidData = [
   { name: "Masjid An-Noor", loc: "Dhaka, Bangladesh", flag: "🇧🇩", year: 2009, camps: 2, served: "3,200", img: "https://images.unsplash.com/photo-1549526725-5c188c251c37?auto=format&fit=crop&w=500&q=75" },
@@ -13,99 +14,106 @@ const masjidData = [
 ];
 
 const heroStats = [
-  { count: 1250, suffix: "", label: "Masjids Registered" },
-  { count: 2500000, prefix: "₹", suffix: "+", label: "Funds Raised" },
-  { count: 45, suffix: "+", label: "Countries" },
-  { count: 18000, suffix: "+", label: "Supporters" },
+  { count: 1250, suffix: "", label: "Masjids Registered", key: "masjidsRegistered" },
+  { count: 2500000, prefix: "₹", suffix: "+", label: "Funds Raised", key: "fundsRaised" },
+  { count: 45, suffix: "+", label: "Countries", key: "countries" },
+  { count: 18000, suffix: "+", label: "Supporters", key: "supporters" },
 ];
 
 const trustItems = [
-  { label: "Verified Masjids", d: ["M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z"] },
-  { label: "Transparent Fund Tracking", d: ["M3 12h18M3 6h18M3 18h18"] },
-  { label: "Secure Donations", rect: { x: 3, y: 11, width: 18, height: 10, rx: 1 }, d: ["M7 11V7a5 5 0 0110 0v4"] },
-  { label: "Regular Project Updates", d: ["M4 4v16h16", "M4 15l4-5 4 3 8-9"] },
-  { label: "Global Community", circle: { cx: 12, cy: 12, r: 9 }, d: ["M3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18"] },
+  { label: "Verified Masjids", key: "verifiedMasjids", d: ["M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z"] },
+  { label: "Transparent Fund Tracking", key: "transparentFundTracking", d: ["M3 12h18M3 6h18M3 18h18"] },
+  { label: "Secure Donations", key: "secureDonations", rect: { x: 3, y: 11, width: 18, height: 10, rx: 1 }, d: ["M7 11V7a5 5 0 0110 0v4"] },
+  { label: "Regular Project Updates", key: "regularProjectUpdates", d: ["M4 4v16h16", "M4 15l4-5 4 3 8-9"] },
+  { label: "Global Community", key: "globalCommunity", circle: { cx: 12, cy: 12, r: 9 }, d: ["M3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18"] },
 ];
 
 const categories = [
-  { name: "Construction", desc: "New prayer halls, minarets and community spaces built from the ground up.", d: ["M4 21V11l8-6 8 6v10", "M9 21v-6a3 3 0 016 0v6", "M12 5V2"] },
-  { name: "Renovation", desc: "Restoring historic masjids and repairing structural wear.", d: ["M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"] },
-  { name: "Education", desc: "Islamic schools, libraries and learning programs for all ages.", d: ["M2 4h7a3 3 0 013 3v13a2 2 0 00-2-2H2z", "M22 4h-7a3 3 0 00-3 3v13a2 2 0 012-2h8z"] },
-  { name: "Solar Energy", desc: "Cutting electricity costs with clean, sustainable power.", circle: { cx: 12, cy: 12, r: 4 }, d: ["M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"] },
-  { name: "Water", desc: "Clean water access and wudu facilities for the community.", d: ["M12 2.5S5 11 5 15.5a7 7 0 0014 0C19 11 12 2.5 12 2.5z"] },
-  { name: "Digital Facilities", desc: "Sound systems, streaming and digital infrastructure.", rect: { x: 2, y: 4, width: 20, height: 14, rx: 2 }, d: ["M8 21h8M12 18v3"] },
-  { name: "Community Welfare", desc: "Food, shelter and support programs for families in need.", circle: { cx: 9, cy: 7, r: 4 }, d: ["M17 21v-2a4 4 0 00-4-4H7a4 4 0 00-4 4v2", "M23 21v-2a4 4 0 00-3-3.87", "M16 3.13a4 4 0 010 7.75"] },
-  { name: "Emergency Support", desc: "Rapid response funding after disasters and urgent damage.", d: ["M22 12h-4l-3 9L9 3l-3 9H2"] },
+  { name: "Construction", key: "construction", desc: "New prayer halls, minarets and community spaces built from the ground up.", d: ["M4 21V11l8-6 8 6v10", "M9 21v-6a3 3 0 016 0v6", "M12 5V2"] },
+  { name: "Renovation", key: "renovation", desc: "Restoring historic masjids and repairing structural wear.", d: ["M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"] },
+  { name: "Education", key: "education", desc: "Islamic schools, libraries and learning programs for all ages.", d: ["M2 4h7a3 3 0 013 3v13a2 2 0 00-2-2H2z", "M22 4h-7a3 3 0 00-3 3v13a2 2 0 012-2h8z"] },
+  { name: "Solar Energy", key: "solarEnergy", desc: "Cutting electricity costs with clean, sustainable power.", circle: { cx: 12, cy: 12, r: 4 }, d: ["M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"] },
+  { name: "Water", key: "water", desc: "Clean water access and wudu facilities for the community.", d: ["M12 2.5S5 11 5 15.5a7 7 0 0014 0C19 11 12 2.5 12 2.5z"] },
+  { name: "Digital Facilities", key: "digitalFacilities", desc: "Sound systems, streaming and digital infrastructure.", rect: { x: 2, y: 4, width: 20, height: 14, rx: 2 }, d: ["M8 21h8M12 18v3"] },
+  { name: "Community Welfare", key: "communityWelfare", desc: "Food, shelter and support programs for families in need.", circle: { cx: 9, cy: 7, r: 4 }, d: ["M17 21v-2a4 4 0 00-4-4H7a4 4 0 00-4 4v2", "M23 21v-2a4 4 0 00-3-3.87", "M16 3.13a4 4 0 010 7.75"] },
+  { name: "Emergency Support", key: "emergencySupport", desc: "Rapid response funding after disasters and urgent damage.", d: ["M22 12h-4l-3 9L9 3l-3 9H2"] },
 ];
 
 const stepsByAudience = {
   masjid: [
-    { title: "Register", body: "Create your masjid profile with location, capacity and community details." },
-    { title: "Get verified", body: "Submit registration documents and committee details for review." },
-    { title: "Create a campaign", body: "Tell your story, set a target and explain exactly what funds cover." },
-    { title: "Receive support", body: "Connect with donors from your city and around the world." },
-    { title: "Share progress", body: "Post photo updates and expense breakdowns as work continues." },
+    { key: "register", title: "Register", body: "Create your masjid profile with location, capacity and community details." },
+    { key: "getVerified", title: "Get verified", body: "Submit registration documents and committee details for review." },
+    { key: "createCampaign", title: "Create a campaign", body: "Tell your story, set a target and explain exactly what funds cover." },
+    { key: "receiveSupport", title: "Receive support", body: "Connect with donors from your city and around the world." },
+    { key: "shareProgress", title: "Share progress", body: "Post photo updates and expense breakdowns as work continues." },
   ],
   donor: [
-    { title: "Discover", body: "Browse verified campaigns by category, country or urgency." },
-    { title: "Choose", body: "Read the campaign story and see exactly what the funds will do." },
-    { title: "Donate", body: "Give securely as Zakat or Sadaqah, in your local currency." },
-    { title: "Track", body: "Follow milestones and expense updates from your dashboard." },
-    { title: "See the impact", body: "Watch the finished project and read the community's story." },
+    { key: "discover", title: "Discover", body: "Browse verified campaigns by category, country or urgency." },
+    { key: "choose", title: "Choose", body: "Read the campaign story and see exactly what the funds will do." },
+    { key: "donate", title: "Donate", body: "Give securely as Zakat or Sadaqah, in your local currency." },
+    { key: "track", title: "Track", body: "Follow milestones and expense updates from your dashboard." },
+    { key: "seeImpact", title: "See the impact", body: "Watch the finished project and read the community's story." },
   ],
 };
 
 const empowerCards = [
-  { mark: "01 / Digital", title: "Digital Empowerment", desc: "Helping masjids adopt websites, communication tools and digital record-keeping.", stat: "180+", statLabel: "masjid websites live", rect: { x: 2, y: 4, width: 20, height: 14, rx: 2 }, d: ["M8 21h8M12 18v3"] },
-  { mark: "02 / Financial", title: "Financial Empowerment", desc: "Building transparent fundraising and financial reporting systems that donors trust.", stat: "₹410K+", statLabel: "tracked transparently", d: ["M3 3v18h18", "M8 17V11", "M13 17V7", "M18 17v-4"] },
-  { mark: "03 / Learning", title: "Education & Learning", desc: "Supporting educational programs, libraries and Islamic learning initiatives.", stat: "60+", statLabel: "education programs supported", d: ["M2 4h7a3 3 0 013 3v13a2 2 0 00-2-2H2z", "M22 4h-7a3 3 0 00-3 3v13a2 2 0 012-2h8z"] },
-  { mark: "04 / Sustainability", title: "Sustainability", desc: "Encouraging solar power, water conservation and lower-impact operations.", stat: "35", statLabel: "masjids switched to solar", circle: { cx: 12, cy: 12, r: 4 }, d: ["M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"] },
-  { mark: "05 / Community", title: "Community Development", desc: "Supporting youth, women, families and volunteers who keep the masjid running.", stat: "2,400+", statLabel: "volunteers engaged", circle: { cx: 9, cy: 7, r: 4 }, d: ["M17 21v-2a4 4 0 00-4-4H7a4 4 0 00-4 4v2", "M23 21v-2a4 4 0 00-3-3.87", "M16 3.13a4 4 0 010 7.75"] },
-  { mark: "06 / Visibility", title: "Global Visibility", desc: "Helping masjids share their story and connect with supporters worldwide.", stat: "45", statLabel: "countries reached", circle: { cx: 12, cy: 12, r: 9 }, d: ["M3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18"] },
+  { key: "digital", mark: "01 / Digital", title: "Digital Empowerment", desc: "Helping masjids adopt websites, communication tools and digital record-keeping.", stat: "180+", statLabel: "masjid websites live", rect: { x: 2, y: 4, width: 20, height: 14, rx: 2 }, d: ["M8 21h8M12 18v3"] },
+  { key: "financial", mark: "02 / Financial", title: "Financial Empowerment", desc: "Building transparent fundraising and financial reporting systems that donors trust.", stat: "₹410K+", statLabel: "tracked transparently", d: ["M3 3v18h18", "M8 17V11", "M13 17V7", "M18 17v-4"] },
+  { key: "learning", mark: "03 / Learning", title: "Education & Learning", desc: "Supporting educational programs, libraries and Islamic learning initiatives.", stat: "60+", statLabel: "education programs supported", d: ["M2 4h7a3 3 0 013 3v13a2 2 0 00-2-2H2z", "M22 4h-7a3 3 0 00-3 3v13a2 2 0 012-2h8z"] },
+  { key: "sustainability", mark: "04 / Sustainability", title: "Sustainability", desc: "Encouraging solar power, water conservation and lower-impact operations.", stat: "35", statLabel: "masjids switched to solar", circle: { cx: 12, cy: 12, r: 4 }, d: ["M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"] },
+  { key: "community", mark: "05 / Community", title: "Community Development", desc: "Supporting youth, women, families and volunteers who keep the masjid running.", stat: "2,400+", statLabel: "volunteers engaged", circle: { cx: 9, cy: 7, r: 4 }, d: ["M17 21v-2a4 4 0 00-4-4H7a4 4 0 00-4 4v2", "M23 21v-2a4 4 0 00-3-3.87", "M16 3.13a4 4 0 010 7.75"] },
+  { key: "visibility", mark: "06 / Visibility", title: "Global Visibility", desc: "Helping masjids share their story and connect with supporters worldwide.", stat: "45", statLabel: "countries reached", circle: { cx: 12, cy: 12, r: 9 }, d: ["M3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18"] },
 ];
 
 const donorReasons = [
-  { title: "Support verified masjids, not anonymous requests", detail: "Every masjid completes ID and committee verification before their campaign goes live." },
-  { title: "Discover meaningful, clearly-explained projects", detail: "Each campaign spells out exactly what the funds will build or fix." },
-  { title: "Donate securely, tagged as Zakat or Sadaqah", detail: "Choose your fund type at checkout so it's recorded correctly for your records." },
-  { title: "Track progress with real photo updates", detail: "Committees post dated photos as construction and spending happen." },
-  { title: "See the real-world impact of your contribution", detail: "Follow the campaign through to completion and read the finished story." },
+  { key: "verifiedNotAnonymous", title: "Support verified masjids, not anonymous requests", detail: "Every masjid completes ID and committee verification before their campaign goes live." },
+  { key: "meaningfulProjects", title: "Discover meaningful, clearly-explained projects", detail: "Each campaign spells out exactly what the funds will build or fix." },
+  { key: "secureZakatSadaqah", title: "Donate securely, tagged as Zakat or Sadaqah", detail: "Choose your fund type at checkout so it's recorded correctly for your records." },
+  { key: "trackProgress", title: "Track progress with real photo updates", detail: "Committees post dated photos as construction and spending happen." },
+  { key: "realImpact", title: "See the real-world impact of your contribution", detail: "Follow the campaign through to completion and read the finished story." },
 ];
 const masjidReasons = [
-  { title: "Reach a global audience of donors", detail: "Your campaign is discoverable by donors across 46+ countries." },
-  { title: "Raise funds transparently, campaign after campaign", detail: "Publish itemized expense reports that build trust with every donor." },
-  { title: "Build lasting donor trust with clear reporting", detail: "Verified badges and milestone updates keep supporters confident." },
-  { title: "Access digital and financial empowerment programs", detail: "Free websites, reporting tools and matched funding as you grow." },
-  { title: "Showcase your community's story and impact", detail: "Share photos, testimonials and finished projects with the world." },
+  { key: "globalAudience", title: "Reach a global audience of donors", detail: "Your campaign is discoverable by donors across 46+ countries." },
+  { key: "transparentFunds", title: "Raise funds transparently, campaign after campaign", detail: "Publish itemized expense reports that build trust with every donor." },
+  { key: "donorTrust", title: "Build lasting donor trust with clear reporting", detail: "Verified badges and milestone updates keep supporters confident." },
+  { key: "empowermentPrograms", title: "Access digital and financial empowerment programs", detail: "Free websites, reporting tools and matched funding as you grow." },
+  { key: "showcaseStory", title: "Showcase your community's story and impact", detail: "Share photos, testimonials and finished projects with the world." },
 ];
 
 const stories = [
-  { cat: "Clean Water", title: "A well that changed daily life in rural Senegal", text: "Masjid Al-Ihsan needed a working well before it could hold consistent prayers. In ten weeks, 640 donors across 22 countries funded the full project.", figs: [{ n: 8400, prefix: "₹", label: "raised" }, { n: 640, label: "supporters" }, { n: 1200, label: "people served" }], img: "https://images.unsplash.com/photo-1705923620684-683a7473b504?auto=format&fit=crop&w=800&q=75" },
-  { cat: "Education", title: "A learning center built for 300 students in Karachi", text: "What began as a single classroom request grew into a full learning center, funded largely by families who once studied at the same masjid.", figs: [{ n: 21000, prefix: "₹", label: "raised" }, { n: 980, label: "supporters" }, { n: 300, label: "students enrolled" }], img: "https://images.unsplash.com/photo-1554720372-43797b5b4a70?auto=format&fit=crop&w=800&q=75" },
+  { key: "cleanWater", cat: "Clean Water", title: "A well that changed daily life in rural Senegal", text: "Masjid Al-Ihsan needed a working well before it could hold consistent prayers. In ten weeks, 640 donors across 22 countries funded the full project.", figs: [{ key: "raised", n: 8400, prefix: "₹", label: "raised" }, { key: "supporters", n: 640, label: "supporters" }, { key: "peopleServed", n: 1200, label: "people served" }], img: "https://images.unsplash.com/photo-1705923620684-683a7473b504?auto=format&fit=crop&w=800&q=75" },
+  { key: "education", cat: "Education", title: "A learning center built for 300 students in Karachi", text: "What began as a single classroom request grew into a full learning center, funded largely by families who once studied at the same masjid.", figs: [{ key: "raised", n: 21000, prefix: "₹", label: "raised" }, { key: "supporters", n: 980, label: "supporters" }, { key: "studentsEnrolled", n: 300, label: "students enrolled" }], img: "https://images.unsplash.com/photo-1554720372-43797b5b4a70?auto=format&fit=crop&w=800&q=75" },
 ];
 
 const testimonials = [
-  { quote: "For the first time, our donors could see exactly where each dollar went. Contributions doubled within a season.", who: "Imam Yusuf Rahman — Masjid Committee Chair, Nairobi", initials: "YR" },
-  { quote: "I gave Zakat through Masjid My Community and got photo updates every few weeks. It felt like I was part of building the wall myself.", who: "Amina K. — Donor, London", initials: "AK" },
-  { quote: "We coordinated volunteers across three continents for one project. Masjid My Community made that logistics work manageable.", who: "Farhan S. — Volunteer Coordinator, Toronto", initials: "FS" },
+  { key: "1", quote: "For the first time, our donors could see exactly where each dollar went. Contributions doubled within a season.", who: "Imam Yusuf Rahman — Masjid Committee Chair, Nairobi", initials: "YR" },
+  { key: "2", quote: "I gave Zakat through Masjid My Community and got photo updates every few weeks. It felt like I was part of building the wall myself.", who: "Amina K. — Donor, London", initials: "AK" },
+  { key: "3", quote: "We coordinated volunteers across three continents for one project. Masjid My Community made that logistics work manageable.", who: "Farhan S. — Volunteer Coordinator, Toronto", initials: "FS" },
 ];
 
 const programs = [
-  { tag: "01", title: "Digital Masjid Program", desc: "Free websites and communication tools for newly-verified masjids.", status: "Now Live", live: true, interest: 128 },
-  { tag: "02", title: "Sustainability Initiative", desc: "Matched funding for solar and water-efficiency projects.", status: "Piloting", live: false, interest: 94 },
-  { tag: "03", title: "Education Fund", desc: "Grants for libraries, Islamic studies and after-school learning.", status: "Now Live", live: true, interest: 156 },
-  { tag: "04", title: "Community Innovation Program", desc: "Seed funding for community-led ideas outside standard categories.", status: "Accepting Proposals", live: false, interest: 41 },
-  { tag: "05", title: "Youth Empowerment", desc: "Mentorship and small grants for youth-run masjid initiatives.", status: "Piloting", live: false, interest: 73 },
-  { tag: "06", title: "Women & Family Support", desc: "Dedicated spaces, programs and resources for women and families.", status: "Launching Soon", live: false, interest: 62 },
+  { key: "digitalMasjid", tag: "01", title: "Digital Masjid Program", desc: "Free websites and communication tools for newly-verified masjids.", status: "Now Live", statusKey: "statusNowLive", live: true, interest: 128 },
+  { key: "sustainabilityInitiative", tag: "02", title: "Sustainability Initiative", desc: "Matched funding for solar and water-efficiency projects.", status: "Piloting", statusKey: "statusPiloting", live: false, interest: 94 },
+  { key: "educationFund", tag: "03", title: "Education Fund", desc: "Grants for libraries, Islamic studies and after-school learning.", status: "Now Live", statusKey: "statusNowLive", live: true, interest: 156 },
+  { key: "communityInnovation", tag: "04", title: "Community Innovation Program", desc: "Seed funding for community-led ideas outside standard categories.", status: "Accepting Proposals", statusKey: "statusAcceptingProposals", live: false, interest: 41 },
+  { key: "youthEmpowerment", tag: "05", title: "Youth Empowerment", desc: "Mentorship and small grants for youth-run masjid initiatives.", status: "Piloting", statusKey: "statusPiloting", live: false, interest: 73 },
+  { key: "womenFamily", tag: "06", title: "Women & Family Support", desc: "Dedicated spaces, programs and resources for women and families.", status: "Launching Soon", statusKey: "statusLaunchingSoon", live: false, interest: 62 },
 ];
 
+const RESOURCE_TYPE_KEYS = {
+  Guide: "home.resources.typeGuide",
+  Video: "home.resources.typeVideo",
+  Article: "home.resources.typeArticle",
+  Download: "home.resources.typeDownload",
+};
+
 const resources = [
-  { type: "Guide", title: "How to write a campaign that earns trust", cta: "Read guide", meta: "6 min read" },
-  { type: "Guide", title: "Financial transparency guidelines for committees", cta: "Read guide", meta: "8 min read" },
-  { type: "Video", title: "Digital transformation for smaller masjids", cta: "Watch video", meta: "12 min watch" },
-  { type: "Article", title: "Fundraising best practices from top campaigns", cta: "Read article", meta: "5 min read" },
-  { type: "Article", title: "Building sustainable masjid communities", cta: "Read article", meta: "7 min read" },
-  { type: "Download", title: "Community engagement strategy checklist", cta: "Download PDF", meta: "PDF · 2 pages" },
+  { key: "campaignTrustGuide", type: "Guide", title: "How to write a campaign that earns trust", cta: "Read guide", ctaKey: "ctaReadGuide", meta: "6 min read" },
+  { key: "financialTransparencyGuide", type: "Guide", title: "Financial transparency guidelines for committees", cta: "Read guide", ctaKey: "ctaReadGuide", meta: "8 min read" },
+  { key: "digitalTransformationVideo", type: "Video", title: "Digital transformation for smaller masjids", cta: "Watch video", ctaKey: "ctaWatchVideo", meta: "12 min watch" },
+  { key: "fundraisingArticle", type: "Article", title: "Fundraising best practices from top campaigns", cta: "Read article", ctaKey: "ctaReadArticle", meta: "5 min read" },
+  { key: "sustainableCommunitiesArticle", type: "Article", title: "Building sustainable masjid communities", cta: "Read article", ctaKey: "ctaReadArticle", meta: "7 min read" },
+  { key: "engagementChecklist", type: "Download", title: "Community engagement strategy checklist", cta: "Download PDF", ctaKey: "ctaDownloadPdf", meta: "PDF · 2 pages" },
 ];
 
 const RESOURCE_STYLES = {
@@ -395,6 +403,7 @@ function handleCatMouseMove(e) {
 }
 
 function Home() {
+  const { t } = useTranslation();
   const goToCampaigns = useLoginGatedNav();
   const [tab, setTab] = useState("masjid");
   const [activeStep, setActiveStep] = useState(0);
@@ -536,24 +545,26 @@ function Home() {
         <Particles />
         <div className="wrap hero-grid">
           <div>
-            <span className="eyebrow">Global masjid crowdfunding &amp; empowerment</span>
+            <span className="eyebrow">{t("home.hero.eyebrow", "Global masjid crowdfunding & empowerment")}</span>
             <h1>
-              Every masjid has a need.
+              {t("home.hero.title.line1", "Every masjid has a need.")}
               <br />
-              Every <span className="accent">good deed</span>
+              {t("home.hero.title.line2a", "Every ")}<span className="accent">{t("home.hero.title.accent", "good deed")}</span>
               <br />
-              can make a difference.
+              {t("home.hero.title.line3", "can make a difference.")}
             </h1>
             <p className="lede">
-              Masjid My Community connects verified masjids with people who want to support meaningful projects — construction,
-              education, clean water, solar power — with full visibility into where every contribution goes.
+              {t(
+                "home.hero.lede",
+                "Masjid My Community connects verified masjids with people who want to support meaningful projects — construction, education, clean water, solar power — with full visibility into where every contribution goes."
+              )}
             </p>
             <div className="hero-ctas">
               <a href="/explore-campaigns" className="btn btn-gold" onClick={(e) => { e.preventDefault(); goToCampaigns("/explore-campaigns"); }}>
-                Explore Campaigns <span className="btn-arrow">→</span>
+                {t("home.cta.exploreCampaigns", "Explore Campaigns")} <span className="btn-arrow">→</span>
               </a>
               <a href="#register" className="btn btn-outline-paper">
-                Register Your Masjid
+                {t("home.cta.registerYourMasjid", "Register Your Masjid")}
               </a>
             </div>
           </div>
@@ -561,7 +572,7 @@ function Home() {
             {heroStats.map((s) => (
               <div key={s.label}>
                 <StatNum stat={s} />
-                <div className="stat-label">{s.label}</div>
+                <div className="stat-label">{t(`home.hero.stat.${s.key}`, s.label)}</div>
               </div>
             ))}
           </div>
@@ -571,10 +582,10 @@ function Home() {
       {/* TRUST STRIP */}
       <section className="trust">
         <div className="wrap trust-inner">
-          {trustItems.map((t) => (
-            <div className="trust-item" key={t.label}>
-              <Icon item={t} />
-              {t.label}
+          {trustItems.map((item) => (
+            <div className="trust-item" key={item.label}>
+              <Icon item={item} />
+              {t(`home.trust.${item.key}`, item.label)}
             </div>
           ))}
         </div>
@@ -584,8 +595,8 @@ function Home() {
       <section className="py" id="campaigns">
         <div className="wrap">
           <div className="section-head reveal" style={{ marginBottom: "22px" }}>
-            <span className="eyebrow">Featured campaigns</span>
-            <h2>Projects raising funds right now</h2>
+            <span className="eyebrow">{t("home.campaigns.eyebrow", "Featured campaigns")}</span>
+            <h2>{t("home.campaigns.heading", "Projects raising funds right now")}</h2>
           </div>
 
           <div className="campaign-filters reveal">
@@ -593,7 +604,7 @@ function Home() {
               className={`filter-chip${campaignFilter === "All" ? " active" : ""}`}
               onClick={() => setCampaignFilter("All")}
             >
-              All
+              {t("home.filters.all", "All")}
             </button>
             {campaignCats.map((cat) => (
               <button
@@ -608,24 +619,31 @@ function Home() {
               className={`filter-chip saved-chip${campaignFilter === "__saved__" ? " active" : ""}`}
               onClick={() => setCampaignFilter("__saved__")}
             >
-              ♥ Saved{saved.size > 0 ? ` (${saved.size})` : ""}
+              {t("home.campaigns.savedChip", "♥ Saved")}{saved.size > 0 ? ` (${saved.size})` : ""}
             </button>
           </div>
           <div className="filter-count">
-            {liveCampaigns === null ? "Loading campaigns…" : `Showing ${filteredCampaigns.length} of ${campaignData.length} campaigns`}
+            {liveCampaigns === null
+              ? t("home.campaigns.loading", "Loading campaigns…")
+              : t("home.campaigns.showingCount", "Showing {shown} of {total} campaigns")
+                  .replace("{shown}", filteredCampaigns.length)
+                  .replace("{total}", campaignData.length)}
           </div>
 
           {liveCampaigns !== null && filteredCampaigns.length === 0 ? (
             <div className="campaign-empty">
               <p>
                 {campaignFilter === "__saved__"
-                  ? "No saved campaigns yet — tap the heart on a card to keep track of one."
+                  ? t("home.campaigns.emptySaved", "No saved campaigns yet — tap the heart on a card to keep track of one.")
                   : campaignData.length === 0
-                  ? "No live campaigns right now — check back soon."
-                  : `No live campaigns in ${campaignFilter} right now — check back soon.`}
+                  ? t("home.campaigns.emptyNone", "No live campaigns right now — check back soon.")
+                  : t("home.campaigns.emptyInCategory", "No live campaigns in {category} right now — check back soon.").replace(
+                      "{category}",
+                      campaignFilter
+                    )}
               </p>
               <button className="btn btn-outline-ink" style={{ marginTop: "16px" }} onClick={() => setCampaignFilter("All")}>
-                Browse All Campaigns
+                {t("home.campaigns.browseAll", "Browse All Campaigns")}
               </button>
             </div>
           ) : (
@@ -637,12 +655,12 @@ function Home() {
                 return (
                   <Link to={`/campaign/${c.slug}`} className="campaign-card" style={{ animationDelay: `${i * 0.06}s` }} key={c.id}>
                     <div className="campaign-img">
-                      <CardImg src={c.img} seed={i} alt="Masjid campaign" />
+                      <CardImg src={c.img} seed={i} alt={t("home.campaigns.cardAlt", "Masjid campaign")} />
                       <span className="campaign-badge">✓ {c.badge}</span>
                       <span className="campaign-cat">{c.cat}</span>
                       <button
                         className={`campaign-save${isSaved ? " active" : ""}`}
-                        aria-label={isSaved ? "Remove from saved campaigns" : "Save campaign"}
+                        aria-label={isSaved ? t("home.campaigns.removeSaved", "Remove from saved campaigns") : t("home.campaigns.saveCampaign", "Save campaign")}
                         aria-pressed={isSaved}
                         onClick={(e) => { e.preventDefault(); toggleSaved(c.id); }}
                       >
@@ -656,13 +674,19 @@ function Home() {
                       <div className="campaign-title">{c.title}</div>
                       <ProgressBar pct={pct} />
                       <div className="campaign-meta">
-                        <span className="raised">₹{c.raised.toLocaleString("en-US")} raised</span>
-                        <span className="goal">of ₹{c.goal.toLocaleString("en-US")}</span>
+                        <span className="raised">
+                          {t("home.campaigns.raisedAmount", "{amount} raised").replace("{amount}", `₹${c.raised.toLocaleString("en-US")}`)}
+                        </span>
+                        <span className="goal">
+                          {t("home.campaigns.ofGoal", "of {goal}").replace("{goal}", `₹${c.goal.toLocaleString("en-US")}`)}
+                        </span>
                       </div>
                       <div className="campaign-foot">
-                        <span>{c.supporters} supporters</span>
+                        <span>{t("home.campaigns.supportersCount", "{count} supporters").replace("{count}", c.supporters)}</span>
                         <span className={urgent ? "urgent" : ""}>
-                          {c.days > 0 ? `${c.days} days left` : "Fully funded"}
+                          {c.days > 0
+                            ? t("home.campaigns.daysLeft", "{days} days left").replace("{days}", c.days)
+                            : t("home.campaigns.fullyFunded", "Fully funded")}
                         </span>
                       </div>
                     </div>
@@ -674,7 +698,7 @@ function Home() {
 
           <div style={{ textAlign: "center", marginTop: "44px" }}>
             <Link to="/campaigns" className="btn btn-outline-ink">
-              View All Campaigns <span className="btn-arrow">→</span>
+              {t("home.campaigns.viewAll", "View All Campaigns")} <span className="btn-arrow">→</span>
             </Link>
           </div>
         </div>
@@ -684,9 +708,9 @@ function Home() {
       <section className="py cat-strip" id="categories">
         <div className="wrap">
           <div className="section-head on-ink reveal">
-            <span className="eyebrow">Explore by category</span>
-            <h2>Fund the need that speaks to you</h2>
-            <p>Tap a category to jump straight to matching campaigns.</p>
+            <span className="eyebrow">{t("home.categories.eyebrow", "Explore by category")}</span>
+            <h2>{t("home.categories.heading", "Fund the need that speaks to you")}</h2>
+            <p>{t("home.categories.subtext", "Tap a category to jump straight to matching campaigns.")}</p>
           </div>
           <div className="cat-grid reveal">
             {categories.map((c) => {
@@ -704,13 +728,18 @@ function Home() {
                   <div className="cat-icon">
                     <Icon item={c} size={27} />
                   </div>
-                  <div className="cat-name">{c.name}</div>
-                  <div className="cat-desc">{c.desc}</div>
+                  <div className="cat-name">{t(`home.categories.${c.key}.name`, c.name)}</div>
+                  <div className="cat-desc">{t(`home.categories.${c.key}.desc`, c.desc)}</div>
                   <span className="cat-count">
-                    {count > 0 ? `${count} live campaign${count > 1 ? "s" : ""}` : "New category"}
+                    {count > 0
+                      ? t(
+                          count > 1 ? "home.categories.liveCampaignsPlural" : "home.categories.liveCampaignsSingular",
+                          `{count} live campaign${count > 1 ? "s" : ""}`
+                        ).replace("{count}", count)
+                      : t("home.categories.newCategory", "New category")}
                   </span>
                   <span className="cat-arrow">
-                    Explore campaigns
+                    {t("home.categories.exploreCampaigns", "Explore campaigns")}
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M5 12h14M13 6l6 6-6 6" />
                     </svg>
@@ -726,15 +755,15 @@ function Home() {
       <section className="py" id="how">
         <div className="wrap">
           <div className="section-head reveal">
-            <span className="eyebrow">How Masjid My Community works</span>
-            <h2>From registration to real-world impact</h2>
+            <span className="eyebrow">{t("home.how.eyebrow", "How Masjid My Community works")}</span>
+            <h2>{t("home.how.heading", "From registration to real-world impact")}</h2>
           </div>
           <div className="hiw-tabs reveal">
             <button className={`hiw-tab${tab === "masjid" ? " active" : ""}`} onClick={() => setTab("masjid")}>
-              For Masjids
+              {t("home.how.tabMasjids", "For Masjids")}
             </button>
             <button className={`hiw-tab${tab === "donor" ? " active" : ""}`} onClick={() => setTab("donor")}>
-              For Donors
+              {t("home.how.tabDonors", "For Donors")}
             </button>
           </div>
           <div className="hiw-panel active" key={tab}>
@@ -746,8 +775,8 @@ function Home() {
                 onClick={() => setActiveStep(i)}
               >
                 <div className="step-num">0{i + 1}</div>
-                <div className="step-title">{s.title}</div>
-                <div className="step-desc">{s.body}</div>
+                <div className="step-title">{t(`home.how.step.${s.key}.title`, s.title)}</div>
+                <div className="step-desc">{t(`home.how.step.${s.key}.body`, s.body)}</div>
               </div>
             ))}
           </div>
@@ -758,11 +787,13 @@ function Home() {
       <section className="py cat-strip" id="empower">
         <div className="wrap">
           <div className="section-head on-ink reveal">
-            <span className="eyebrow">Beyond fundraising</span>
-            <h2>Building stronger masjids</h2>
+            <span className="eyebrow">{t("home.empower.eyebrow", "Beyond fundraising")}</span>
+            <h2>{t("home.empower.heading", "Building stronger masjids")}</h2>
             <p>
-              Masjid My Community isn't only about raising money. It's a long-term commitment to helping masjids become
-              resilient, connected centers for their communities. Tap a card to see the impact.
+              {t(
+                "home.empower.subtext",
+                "Masjid My Community isn't only about raising money. It's a long-term commitment to helping masjids become resilient, connected centers for their communities. Tap a card to see the impact."
+              )}
             </p>
           </div>
           <div className="empower-grid reveal">
@@ -784,11 +815,11 @@ function Home() {
                         <Icon item={c} size={24} />
                       </div>
                       <div>
-                        <span className="empower-mark">{c.mark}</span>
-                        <div className="empower-title">{c.title}</div>
+                        <span className="empower-mark">{t(`home.empower.${c.key}.mark`, c.mark)}</span>
+                        <div className="empower-title">{t(`home.empower.${c.key}.title`, c.title)}</div>
                       </div>
                       <span className="empower-hint">
-                        Tap for impact
+                        {t("home.empower.tapForImpact", "Tap for impact")}
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M5 12h14M13 6l6 6-6 6" />
                         </svg>
@@ -797,14 +828,14 @@ function Home() {
                     <div className="empower-face empower-back">
                       <div>
                         <div className="empower-stat">{c.stat}</div>
-                        <div className="empower-stat-label">{c.statLabel}</div>
+                        <div className="empower-stat-label">{t(`home.empower.${c.key}.statLabel`, c.statLabel)}</div>
                       </div>
-                      <p className="empower-desc">{c.desc}</p>
+                      <p className="empower-desc">{t(`home.empower.${c.key}.desc`, c.desc)}</p>
                       <span className="empower-hint">
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M19 12H5M11 6l-6 6 6 6" />
                         </svg>
-                        Back
+                        {t("home.empower.back", "Back")}
                       </span>
                     </div>
                   </div>
@@ -824,8 +855,8 @@ function Home() {
                 <path d="M12 21s-6.7-4.35-9.3-8.1C.8 10.1 1.4 6.8 4 5.2c2-1.2 4.4-.6 5.7 1 .7.8 1.4 1.8 2.3 1.8s1.6-1 2.3-1.8c1.3-1.6 3.7-2.2 5.7-1 2.6 1.6 3.2 4.9 1.3 7.7C18.7 16.65 12 21 12 21z" />
               </svg>
             </div>
-            <span className="eyebrow">For donors</span>
-            <h2 style={{ fontSize: "clamp(28px,3.2vw,38px)", marginTop: "14px" }}>Why donate through Masjid My Community</h2>
+            <span className="eyebrow">{t("home.why.donorEyebrow", "For donors")}</span>
+            <h2 style={{ fontSize: "clamp(28px,3.2vw,38px)", marginTop: "14px" }}>{t("home.why.donorHeading", "Why donate through Masjid My Community")}</h2>
             <ul className="reason-list">
               {donorReasons.map((r, i) => (
                 <li className={`reason-item${openDonorReason === i ? " open" : ""}`} key={r.title}>
@@ -833,17 +864,17 @@ function Home() {
                     <span className="reason-check">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M20 6L9 17l-5-5" /></svg>
                     </span>
-                    <span>{r.title}</span>
+                    <span>{t(`home.why.donorReason.${r.key}.title`, r.title)}</span>
                     <span className="reason-plus">+</span>
                   </button>
                   <div className="reason-a" style={{ maxHeight: openDonorReason === i ? "80px" : "0" }}>
-                    <p>{r.detail}</p>
+                    <p>{t(`home.why.donorReason.${r.key}.detail`, r.detail)}</p>
                   </div>
                 </li>
               ))}
             </ul>
             <a href="#campaigns" className="btn btn-outline-ink" style={{ marginTop: "28px" }}>
-              Start Making an Impact <span className="btn-arrow">→</span>
+              {t("home.why.startImpact", "Start Making an Impact")} <span className="btn-arrow">→</span>
             </a>
           </div>
           <div className="why-card why-card-masjid reveal" id="register">
@@ -854,8 +885,8 @@ function Home() {
                 <path d="M12 5V2" />
               </svg>
             </div>
-            <span className="eyebrow">For masjids</span>
-            <h2 style={{ fontSize: "clamp(28px,3.2vw,38px)", marginTop: "14px" }}>Why register your masjid</h2>
+            <span className="eyebrow">{t("home.why.masjidEyebrow", "For masjids")}</span>
+            <h2 style={{ fontSize: "clamp(28px,3.2vw,38px)", marginTop: "14px" }}>{t("home.why.masjidHeading", "Why register your masjid")}</h2>
             <ul className="reason-list">
               {masjidReasons.map((r, i) => (
                 <li className={`reason-item${openMasjidReason === i ? " open" : ""}`} key={r.title}>
@@ -863,17 +894,17 @@ function Home() {
                     <span className="reason-check">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M20 6L9 17l-5-5" /></svg>
                     </span>
-                    <span>{r.title}</span>
+                    <span>{t(`home.why.masjidReason.${r.key}.title`, r.title)}</span>
                     <span className="reason-plus">+</span>
                   </button>
                   <div className="reason-a" style={{ maxHeight: openMasjidReason === i ? "80px" : "0" }}>
-                    <p>{r.detail}</p>
+                    <p>{t(`home.why.masjidReason.${r.key}.detail`, r.detail)}</p>
                   </div>
                 </li>
               ))}
             </ul>
             <a href="#" className="btn btn-gold" style={{ marginTop: "28px" }}>
-              Register Your Masjid <span className="btn-arrow">→</span>
+              {t("home.cta.registerYourMasjid", "Register Your Masjid")} <span className="btn-arrow">→</span>
             </a>
           </div>
         </div>
@@ -883,8 +914,8 @@ function Home() {
       <section className="py-sm" id="masjids" style={{ background: "var(--paper-dim)" }}>
         <div className="wrap">
           <div className="section-head reveal">
-            <span className="eyebrow">Featured masjids</span>
-            <h2>Verified communities on Masjid My Community</h2>
+            <span className="eyebrow">{t("home.masjids.eyebrow", "Featured masjids")}</span>
+            <h2>{t("home.masjids.heading", "Verified communities on Masjid My Community")}</h2>
           </div>
           <div className="masjid-grid">
             {masjidData.map((m, i) => {
@@ -892,11 +923,11 @@ function Home() {
               return (
                 <div className="masjid-card" style={{ animationDelay: `${i * 0.08}s` }} key={m.name}>
                   <div className="masjid-img">
-                    <CardImg src={m.img} seed={i + 2} alt="Masjid" />
-                    <span className="masjid-verified">✓ Verified</span>
+                    <CardImg src={m.img} seed={i + 2} alt={t("home.masjids.altText", "Masjid")} />
+                    <span className="masjid-verified">✓ {t("home.masjids.verified", "Verified")}</span>
                     <button
                       className={`masjid-follow${isFollowed ? " active" : ""}`}
-                      aria-label={isFollowed ? "Unfollow this masjid" : "Follow this masjid"}
+                      aria-label={isFollowed ? t("home.masjids.unfollow", "Unfollow this masjid") : t("home.masjids.follow", "Follow this masjid")}
                       aria-pressed={isFollowed}
                       onClick={() => toggleFollowed(m.name)}
                     >
@@ -906,16 +937,23 @@ function Home() {
                     </button>
                     <div className="masjid-overlay">
                       <div className="masjid-name">{m.name}</div>
-                      <div className="masjid-loc">{m.flag} {m.loc} · est. {m.year}</div>
+                      <div className="masjid-loc">
+                        {m.flag} {m.loc} · {t("home.masjids.estYear", "est. {year}").replace("{year}", m.year)}
+                      </div>
                     </div>
                   </div>
                   <div className="masjid-body">
                     <div className="masjid-stats">
-                      <span>{m.camps} campaign{m.camps > 1 ? "s" : ""}</span>
-                      <span>{m.served} served</span>
+                      <span>
+                        {t(m.camps > 1 ? "home.masjids.campaignPlural" : "home.masjids.campaignSingular", `{count} campaign${m.camps > 1 ? "s" : ""}`).replace(
+                          "{count}",
+                          m.camps
+                        )}
+                      </span>
+                      <span>{t("home.masjids.served", "{count} served").replace("{count}", m.served)}</span>
                     </div>
                     <a href="#" className="masjid-view">
-                      View Profile <span className="btn-arrow">→</span>
+                      {t("home.masjids.viewProfile", "View Profile")} <span className="btn-arrow">→</span>
                     </a>
                   </div>
                 </div>
@@ -924,7 +962,7 @@ function Home() {
           </div>
           <div style={{ textAlign: "center", marginTop: "36px" }}>
             <a href="#" className="btn btn-outline-ink">
-              Explore All Masjids <span className="btn-arrow">→</span>
+              {t("home.masjids.exploreAll", "Explore All Masjids")} <span className="btn-arrow">→</span>
             </a>
           </div>
         </div>
@@ -934,27 +972,27 @@ function Home() {
       <section className="py" id="stories">
         <div className="wrap">
           <div className="section-head reveal">
-            <span className="eyebrow">Success stories</span>
-            <h2>Projects that reached completion</h2>
+            <span className="eyebrow">{t("home.stories.eyebrow", "Success stories")}</span>
+            <h2>{t("home.stories.heading", "Projects that reached completion")}</h2>
           </div>
           <div className="story-grid">
             {stories.map((s, i) => (
               <div className="story-card reveal" key={s.title}>
-                <CompareSlider seed={i} afterSrc={s.img} alt={s.title} />
+                <CompareSlider seed={i} afterSrc={s.img} alt={t(`home.stories.${s.key}.title`, s.title)} />
                 <div className="story-body">
-                  <span className="story-cat">{s.cat}</span>
-                  <h3 className="story-title">{s.title}</h3>
-                  <p className="story-text">{s.text}</p>
+                  <span className="story-cat">{t(`home.stories.${s.key}.cat`, s.cat)}</span>
+                  <h3 className="story-title">{t(`home.stories.${s.key}.title`, s.title)}</h3>
+                  <p className="story-text">{t(`home.stories.${s.key}.text`, s.text)}</p>
                   <div className="story-figs">
                     {s.figs.map((f) => (
                       <div key={f.label}>
                         <FigNum n={f.n} prefix={f.prefix} />
-                        <span>{f.label}</span>
+                        <span>{t(`home.stories.fig.${f.key}`, f.label)}</span>
                       </div>
                     ))}
                   </div>
                   <a href="#" className="story-link">
-                    Read the full story <span className="btn-arrow">→</span>
+                    {t("home.stories.readFull", "Read the full story")} <span className="btn-arrow">→</span>
                   </a>
                 </div>
               </div>
@@ -967,8 +1005,8 @@ function Home() {
       <section className="py cat-strip" id="testimonials">
         <div className="wrap">
           <div className="section-head on-ink center reveal" style={{ margin: "0 auto" }}>
-            <span className="eyebrow">In their words</span>
-            <h2>From administrators, donors and volunteers</h2>
+            <span className="eyebrow">{t("home.testimonials.eyebrow", "In their words")}</span>
+            <h2>{t("home.testimonials.heading", "From administrators, donors and volunteers")}</h2>
           </div>
           <div
             className="testi-wrap reveal"
@@ -983,24 +1021,29 @@ function Home() {
               touchStartX.current = null;
             }}
           >
-            <button className="testi-arrow testi-arrow-prev" onClick={prevTesti} aria-label="Previous testimonial">
+            <button className="testi-arrow testi-arrow-prev" onClick={prevTesti} aria-label={t("home.testimonials.prev", "Previous testimonial")}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 6l-6 6 6 6" /></svg>
             </button>
-            <button className="testi-arrow testi-arrow-next" onClick={nextTesti} aria-label="Next testimonial">
+            <button className="testi-arrow testi-arrow-next" onClick={nextTesti} aria-label={t("home.testimonials.next", "Next testimonial")}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 6l6 6-6 6" /></svg>
             </button>
-            {testimonials.map((t, i) => (
-              <div className={`testi-slide${i === testiIdx ? " active" : ""}`} key={t.who}>
-                <p className="testi-quote" style={{ color: "var(--text-on-ink)" }}>{t.quote}</p>
+            {testimonials.map((item, i) => (
+              <div className={`testi-slide${i === testiIdx ? " active" : ""}`} key={item.who}>
+                <p className="testi-quote" style={{ color: "var(--text-on-ink)" }}>{t(`home.testimonials.${item.key}.quote`, item.quote)}</p>
                 <div className="testi-person">
-                  <span className="testi-avatar">{t.initials}</span>
-                  <div className="testi-who" style={{ color: "var(--text-on-ink-dim)" }}>{t.who}</div>
+                  <span className="testi-avatar">{item.initials}</span>
+                  <div className="testi-who" style={{ color: "var(--text-on-ink-dim)" }}>{t(`home.testimonials.${item.key}.who`, item.who)}</div>
                 </div>
               </div>
             ))}
             <div className="testi-dots">
-              {testimonials.map((t, i) => (
-                <button key={t.who} className={i === testiIdx ? "active" : ""} onClick={() => setTestiIdx(i)} aria-label={`Show testimonial ${i + 1}`}>
+              {testimonials.map((item, i) => (
+                <button
+                  key={item.who}
+                  className={i === testiIdx ? "active" : ""}
+                  onClick={() => setTestiIdx(i)}
+                  aria-label={t("home.testimonials.showNth", "Show testimonial {n}").replace("{n}", i + 1)}
+                >
                   <span className="testi-fill" />
                 </button>
               ))}
@@ -1013,8 +1056,8 @@ function Home() {
       <section className="py" id="programs">
         <div className="wrap">
           <div className="section-head reveal">
-            <span className="eyebrow">Empowerment programs</span>
-            <h2>What's next for the Masjid My Community ecosystem</h2>
+            <span className="eyebrow">{t("home.programs.eyebrow", "Empowerment programs")}</span>
+            <h2>{t("home.programs.heading", "What's next for the Masjid My Community ecosystem")}</h2>
           </div>
           <div className="programs-grid reveal">
             {programs.map((p) => {
@@ -1024,15 +1067,15 @@ function Home() {
                 <div className="program-card" onMouseMove={handleProgramTilt} onMouseLeave={resetProgramTilt} key={p.title}>
                   <div className="program-top">
                     <div className="program-tag">{p.tag}</div>
-                    <span className={`program-status${p.live ? " live" : ""}`}>{p.status}</span>
+                    <span className={`program-status${p.live ? " live" : ""}`}>{t(`home.programs.${p.statusKey}`, p.status)}</span>
                   </div>
-                  <div className="program-title">{p.title}</div>
-                  <p className="program-desc">{p.desc}</p>
+                  <div className="program-title">{t(`home.programs.${p.key}.title`, p.title)}</div>
+                  <p className="program-desc">{t(`home.programs.${p.key}.desc`, p.desc)}</p>
                   <button className={`program-interest${isInterested ? " active" : ""}`} onClick={() => toggleInterested(p.title)}>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M12 2.5l2.9 6.9 7.1.6-5.4 4.9 1.6 7.1L12 17.8 5.8 21.5l1.6-7.1L2 9.5l7.1-.6z" />
                     </svg>
-                    {count.toLocaleString("en-US")} interested
+                    {t("home.programs.interestedCount", "{count} interested").replace("{count}", count.toLocaleString("en-US"))}
                   </button>
                 </div>
               );
@@ -1045,23 +1088,23 @@ function Home() {
       <section className="py-sm" id="resources" style={{ background: "var(--paper-dim)" }}>
         <div className="wrap">
           <div className="section-head reveal">
-            <span className="eyebrow">Resources &amp; learning</span>
-            <h2>Guidance for masjids and donors</h2>
+            <span className="eyebrow">{t("home.resources.eyebrow", "Resources & learning")}</span>
+            <h2>{t("home.resources.heading", "Guidance for masjids and donors")}</h2>
           </div>
           <div className="campaign-filters reveal" style={{ marginTop: "8px" }}>
             <button
               className={`filter-chip${resourceFilter === "All" ? " active" : ""}`}
               onClick={() => setResourceFilter("All")}
             >
-              All
+              {t("home.filters.all", "All")}
             </button>
-            {resourceTypes.map((t) => (
+            {resourceTypes.map((rt) => (
               <button
-                key={t}
-                className={`filter-chip${resourceFilter === t ? " active" : ""}`}
-                onClick={() => setResourceFilter(t)}
+                key={rt}
+                className={`filter-chip${resourceFilter === rt ? " active" : ""}`}
+                onClick={() => setResourceFilter(rt)}
               >
-                {t}
+                {t(RESOURCE_TYPE_KEYS[rt], rt)}
               </button>
             ))}
           </div>
@@ -1075,11 +1118,11 @@ function Home() {
                     <div className="resource-icon" style={{ background: style.bg, color: style.color }}>
                       <ResourceIcon type={r.type} />
                     </div>
-                    <span className="resource-type" style={{ color: style.color }}>{r.type}</span>
-                    <h3 className="resource-title">{r.title}</h3>
-                    <span className="resource-meta">{r.meta}</span>
+                    <span className="resource-type" style={{ color: style.color }}>{t(RESOURCE_TYPE_KEYS[r.type], r.type)}</span>
+                    <h3 className="resource-title">{t(`home.resources.${r.key}.title`, r.title)}</h3>
+                    <span className="resource-meta">{t(`home.resources.${r.key}.meta`, r.meta)}</span>
                     <a href="#" className="resource-link">
-                      {r.cta} <span className="btn-arrow">→</span>
+                      {t(`home.resources.${r.ctaKey}`, r.cta)} <span className="btn-arrow">→</span>
                     </a>
                   </div>
                 );
@@ -1093,9 +1136,9 @@ function Home() {
         <section className="py" id="faq">
           <div className="wrap">
             <div className="section-head center reveal" style={{ margin: "0 auto" }}>
-              <span className="eyebrow">Frequently asked</span>
-              <h2>Popular questions</h2>
-              <p>A few common questions — or ask our AI assistant anything about Masjid My Community.</p>
+              <span className="eyebrow">{t("home.faq.eyebrow", "Frequently asked")}</span>
+              <h2>{t("home.faq.heading", "Popular questions")}</h2>
+              <p>{t("home.faq.subtext", "A few common questions — or ask our AI assistant anything about Masjid My Community.")}</p>
             </div>
             <div className="faq-popular-grid reveal">
               {featuredFaqs.map((f) => (
@@ -1107,7 +1150,7 @@ function Home() {
             </div>
             <div style={{ textAlign: "center", marginTop: "32px" }}>
               <Link to="/faq" className="btn btn-gold">
-                Ask our AI Assistant <span className="btn-arrow">→</span>
+                {t("home.faq.askAi", "Ask our AI Assistant")} <span className="btn-arrow">→</span>
               </Link>
             </div>
           </div>
@@ -1118,24 +1161,24 @@ function Home() {
       <section className="final-cta">
         <Particles count={14} />
         <div className="wrap">
-          <span className="eyebrow">Join the movement</span>
-          <h2>A stronger masjid can build a stronger community.</h2>
-          <p>Whether you represent a masjid or want to support one, your contribution can help create meaningful, lasting impact.</p>
+          <span className="eyebrow">{t("home.finalCta.eyebrow", "Join the movement")}</span>
+          <h2>{t("home.finalCta.heading", "A stronger masjid can build a stronger community.")}</h2>
+          <p>{t("home.finalCta.subtext", "Whether you represent a masjid or want to support one, your contribution can help create meaningful, lasting impact.")}</p>
           <div className="cta-count-line">
-            <span ref={ctaCountRef} className="mono">{ctaCountText}</span> supporters already making a difference
+            <span ref={ctaCountRef} className="mono">{ctaCountText}</span> {t("home.finalCta.countLine", "supporters already making a difference")}
           </div>
           <div className="cta-audience">
             <button
               className={`cta-audience-btn${ctaAudience === "masjid" ? " active" : ""}`}
               onClick={() => setCtaAudience(ctaAudience === "masjid" ? null : "masjid")}
             >
-              I'm a Masjid
+              {t("home.finalCta.imMasjid", "I'm a Masjid")}
             </button>
             <button
               className={`cta-audience-btn${ctaAudience === "donor" ? " active" : ""}`}
               onClick={() => setCtaAudience(ctaAudience === "donor" ? null : "donor")}
             >
-              I'm a Donor
+              {t("home.finalCta.imDonor", "I'm a Donor")}
             </button>
           </div>
           <div className="ctas">
@@ -1143,14 +1186,14 @@ function Home() {
               href="#"
               className={`btn btn-gold cta-pulse${ctaAudience === "masjid" ? " cta-emphasized" : ""}${ctaAudience === "donor" ? " cta-dimmed" : ""}`}
             >
-              Register Your Masjid <span className="btn-arrow">→</span>
+              {t("home.cta.registerYourMasjid", "Register Your Masjid")} <span className="btn-arrow">→</span>
             </a>
             <a
               href="/explore-campaigns"
               className={`btn btn-outline-paper${ctaAudience === "donor" ? " cta-emphasized" : ""}${ctaAudience === "masjid" ? " cta-dimmed" : ""}`}
               onClick={(e) => { e.preventDefault(); goToCampaigns("/explore-campaigns"); }}
             >
-              Explore Campaigns <span className="btn-arrow">→</span>
+              {t("home.cta.exploreCampaigns", "Explore Campaigns")} <span className="btn-arrow">→</span>
             </a>
           </div>
         </div>
@@ -1158,8 +1201,13 @@ function Home() {
 
       {/* MOBILE DONATE BAR */}
       <div className="mobile-donate">
-        <div className="txt"><strong>Fund a masjid today</strong>45+ countries · fully transparent</div>
-        <a href="#campaigns" className="btn btn-gold" style={{ padding: "11px 18px", fontSize: "13px" }}>Donate</a>
+        <div className="txt">
+          <strong>{t("home.mobileDonate.title", "Fund a masjid today")}</strong>
+          {t("home.mobileDonate.subtext", "45+ countries · fully transparent")}
+        </div>
+        <a href="#campaigns" className="btn btn-gold" style={{ padding: "11px 18px", fontSize: "13px" }}>
+          {t("home.mobileDonate.cta", "Donate")}
+        </a>
       </div>
     </main>
   );

@@ -7,10 +7,12 @@ import { formatDate } from "../utils/formatDateTime.js";
 import LatestJobsRail from "../components/job/LatestJobsRail.jsx";
 import JobApplyPanel from "../components/job/JobApplyPanel.jsx";
 import JobPostSection from "../components/job/JobPostSection.jsx";
+import { useTranslation } from "../i18n/LanguageContext.jsx";
 
 const API = `${API_BASE}/jobs/public`;
 
 function JobProfile() {
+  const { t } = useTranslation();
   const { slug } = useParams();
   const [data, setData] = useState(null);
   const [notFound, setNotFound] = useState(false);
@@ -29,15 +31,15 @@ function JobProfile() {
       <main className="msj-page">
         <div className="wrap py-lg msj-empty-state">
           <Icon name="building" size={30} />
-          <h3>This job isn't available</h3>
-          <p>It may have closed, or the link may be incorrect.</p>
-          <Link to="/jobs" className="btn btn-gold">Browse Jobs</Link>
+          <h3>{t("jobProfile.notFound.title", "This job isn't available")}</h3>
+          <p>{t("jobProfile.notFound.body", "It may have closed, or the link may be incorrect.")}</p>
+          <Link to="/jobs" className="btn btn-gold">{t("jobProfile.notFound.cta", "Browse Jobs")}</Link>
         </div>
       </main>
     );
   }
 
-  if (!data) return <main className="msj-page"><div className="wrap py-lg"><p>Loading…</p></div></main>;
+  if (!data) return <main className="msj-page"><div className="wrap py-lg"><p>{t("jobProfile.loading", "Loading…")}</p></div></main>;
 
   const { job, poster } = data;
 
@@ -48,7 +50,7 @@ function JobProfile() {
           <span className="eyebrow">{job.jobType}</span>
           <h1>{job.title}</h1>
           <p>
-            <Icon name="mapPin" size={14} /> {job.location} · Posted by {poster?.fullName || "a community member"} · {formatDate(job.createdAt)}
+            <Icon name="mapPin" size={14} /> {job.location} · {t("jobProfile.postedBy", "Posted by")} {poster?.fullName || t("jobProfile.anonymousPoster", "a community member")} · {formatDate(job.createdAt)}
           </p>
         </div>
       </section>
@@ -59,7 +61,7 @@ function JobProfile() {
 
           <div>
             <div className="section-head" style={{ marginTop: 0 }}>
-              <span className="eyebrow">Job Description</span>
+              <span className="eyebrow">{t("jobProfile.section.description", "Job Description")}</span>
               <h2>{job.title}</h2>
             </div>
             <p className="msj-profile-about" style={{ whiteSpace: "pre-line" }}>{job.description}</p>
@@ -67,7 +69,7 @@ function JobProfile() {
             {job.skills?.length > 0 && (
               <>
                 <div className="section-head" style={{ marginTop: 32, marginBottom: 8 }}>
-                  <span className="eyebrow">Skills & Qualifications</span>
+                  <span className="eyebrow">{t("jobProfile.section.skills", "Skills & Qualifications")}</span>
                 </div>
                 <div className="profile-chip-row">
                   {job.skills.map((skill) => <span className="filter-chip active profile-chip" key={skill}>{skill}</span>)}
@@ -76,10 +78,10 @@ function JobProfile() {
             )}
 
             {job.experienceRequired && (
-              <p className="msj-note" style={{ marginTop: 12 }}><strong>Experience required:</strong> {job.experienceRequired}</p>
+              <p className="msj-note" style={{ marginTop: 12 }}><strong>{t("jobProfile.experienceLabel", "Experience required:")}</strong> {job.experienceRequired}</p>
             )}
             {job.applicationDeadline && (
-              <p className="msj-note" style={{ marginTop: 6 }}><strong>Application deadline:</strong> {formatDate(job.applicationDeadline)}</p>
+              <p className="msj-note" style={{ marginTop: 6 }}><strong>{t("jobProfile.deadlineLabel", "Application deadline:")}</strong> {formatDate(job.applicationDeadline)}</p>
             )}
 
             <JobPostSection jobId={job.id} />

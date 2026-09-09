@@ -11,10 +11,12 @@ import RunningCampaignsRail from "../components/campaign/RunningCampaignsRail.js
 import CampaignDonationPanel from "../components/campaign/CampaignDonationPanel.jsx";
 import CampaignDonorsList from "../components/campaign/CampaignDonorsList.jsx";
 import CampaignPostSection from "../components/campaign/CampaignPostSection.jsx";
+import { useTranslation } from "../i18n/LanguageContext.jsx";
 
 const API = `${API_BASE}/campaigns/public`;
 
 function CampaignProfile() {
+  const { t } = useTranslation();
   const { slug } = useParams();
   const [data, setData] = useState(null);
   const [notFound, setNotFound] = useState(false);
@@ -36,15 +38,15 @@ function CampaignProfile() {
       <main className="msj-page">
         <div className="wrap py-lg msj-empty-state">
           <Icon name="flag" size={30} />
-          <h3>This campaign isn't available</h3>
-          <p>It may not be live yet, or the link may be incorrect.</p>
-          <Link to="/explore-campaigns" className="btn btn-gold">Explore Campaigns</Link>
+          <h3>{t("campaignProfile.notFound.title", "This campaign isn't available")}</h3>
+          <p>{t("campaignProfile.notFound.body", "It may not be live yet, or the link may be incorrect.")}</p>
+          <Link to="/explore-campaigns" className="btn btn-gold">{t("campaignProfile.exploreCampaigns", "Explore Campaigns")}</Link>
         </div>
       </main>
     );
   }
 
-  if (!data) return <main className="msj-page"><div className="wrap py-lg"><p>Loading…</p></div></main>;
+  if (!data) return <main className="msj-page"><div className="wrap py-lg"><p>{t("campaignProfile.loading", "Loading…")}</p></div></main>;
 
   const { campaign, photos, budgetItems, updates, masjid, category, donationAccount } = data;
   const cover = photos[active] || photos[0];
@@ -86,15 +88,15 @@ function CampaignProfile() {
               </div>
             )}
 
-            {campaign.donationType === "Zakat" && <span className="camp-zakat-badge" style={{ marginTop: 32 }}><Icon name="check" size={12} /> Zakat Eligible</span>}
+            {campaign.donationType === "Zakat" && <span className="camp-zakat-badge" style={{ marginTop: 32 }}><Icon name="check" size={12} /> {t("campaignProfile.zakatEligible", "Zakat Eligible")}</span>}
 
             <div className="section-head" style={{ marginTop: campaign.donationType === "Zakat" ? 12 : 32 }}>
-              <span className="eyebrow">About This Campaign</span>
+              <span className="eyebrow">{t("campaignProfile.about.eyebrow", "About This Campaign")}</span>
               <h2>{campaign.title}</h2>
             </div>
             <p className="msj-profile-about">{campaign.description}</p>
             {campaign.donationType === "Zakat" && campaign.zakatEligibilityNote && (
-              <p className="msj-note" style={{ marginTop: 12 }}><strong>Zakat eligibility:</strong> {campaign.zakatEligibilityNote}</p>
+              <p className="msj-note" style={{ marginTop: 12 }}><strong>{t("campaignProfile.zakatEligibilityLabel", "Zakat eligibility:")}</strong> {campaign.zakatEligibilityNote}</p>
             )}
 
             <CampaignPostSection campaignId={campaign.id} />
@@ -102,8 +104,8 @@ function CampaignProfile() {
             {budgetItems.length > 0 && (
               <>
                 <div className="section-head" style={{ marginTop: 40, marginBottom: 0 }}>
-                  <span className="eyebrow">Funding Breakdown</span>
-                  <h2>Where the funds go</h2>
+                  <span className="eyebrow">{t("campaignProfile.funding.eyebrow", "Funding Breakdown")}</span>
+                  <h2>{t("campaignProfile.funding.title", "Where the funds go")}</h2>
                 </div>
                 <table className="camp-budget-table">
                   <tbody>
@@ -118,8 +120,8 @@ function CampaignProfile() {
             {updates.length > 0 && (
               <>
                 <div className="section-head" style={{ marginTop: 40, marginBottom: 0 }}>
-                  <span className="eyebrow">Progress</span>
-                  <h2>Campaign Updates</h2>
+                  <span className="eyebrow">{t("campaignProfile.updates.eyebrow", "Progress")}</span>
+                  <h2>{t("campaignProfile.updates.title", "Campaign Updates")}</h2>
                 </div>
                 <div style={{ marginTop: 12 }}>
                   {updates.map((u) => (

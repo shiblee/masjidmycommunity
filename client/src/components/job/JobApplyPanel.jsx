@@ -5,8 +5,8 @@ import { formatDate } from "../../utils/formatDateTime.js";
 import { getStoredUser } from "../../utils/userAuthStorage.js";
 import jobApi from "../../services/jobApi.js";
 import MicButton from "../MicButton.jsx";
+import { useTranslation } from "../../i18n/LanguageContext.jsx";
 
-const STATUS_LABEL = { applied: "Applied", under_review: "Under Review", shortlisted: "Shortlisted", rejected: "Not Selected", hired: "Selected / Hired" };
 const COVER_NOTE_MAX = 1000;
 
 // Auto-fetches the applicant's profile (jobController.js's applyToJob pulls
@@ -15,6 +15,7 @@ const COVER_NOTE_MAX = 1000;
 // optional cover note and an optional resume re-upload, then let the user
 // review before submitting.
 function ApplyModal({ job, onCancel, onSubmitted }) {
+  const { t } = useTranslation();
   const [coverNote, setCoverNote] = useState("");
   const [resumeFile, setResumeFile] = useState(null);
   const [error, setError] = useState("");
@@ -31,7 +32,7 @@ function ApplyModal({ job, onCancel, onSubmitted }) {
       const { data } = await jobApi.post(`/${job.id}/apply`, fd);
       onSubmitted(data.application);
     } catch (err) {
-      setError(err.response?.data?.message || "Couldn't submit your application. Please try again.");
+      setError(err.response?.data?.message || t("jobApply.modal.error", "Couldn't submit your application. Please try again."));
       setSaving(false);
     }
   };
@@ -39,22 +40,22 @@ function ApplyModal({ job, onCancel, onSubmitted }) {
   return (
     <div className="msj-modal-overlay" onClick={saving ? undefined : onCancel}>
       <div className="msj-modal msj-modal-wide" onClick={(e) => e.stopPropagation()}>
-        {!saving && <button className="msj-modal-close" onClick={onCancel} aria-label="Close"><Icon name="x" size={16} /></button>}
-        <h3>Apply for {job.title}</h3>
+        {!saving && <button className="msj-modal-close" onClick={onCancel} aria-label={t("jobApply.modal.close", "Close")}><Icon name="x" size={16} /></button>}
+        <h3>{t("jobApply.modal.title", "Apply for")} {job.title}</h3>
         <p className="msj-modal-sub">
-          Your name, contact details, education, work experience, skills, and bio from your profile will be included automatically. Review and submit below.
+          {t("jobApply.modal.subtitle", "Your name, contact details, education, work experience, skills, and bio from your profile will be included automatically. Review and submit below.")}
         </p>
         <form onSubmit={submit}>
           <div className="auth-field">
-            <label>Resume / CV (optional)</label>
+            <label>{t("jobApply.modal.resumeLabel", "Resume / CV (optional)")}</label>
             <input type="file" accept=".pdf,.doc,.docx,image/jpeg,image/png" onChange={(e) => setResumeFile(e.target.files?.[0] || null)} />
             <span className="msj-note" style={{ display: "block", marginTop: 6 }}>
-              Leave blank to use the resume already on your profile, if any. Uploading here also updates your standing profile resume.
+              {t("jobApply.modal.resumeNote", "Leave blank to use the resume already on your profile, if any. Uploading here also updates your standing profile resume.")}
             </span>
           </div>
           <div className="auth-field">
             <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 10 }}>
-              <label>Note to the job creator (optional)</label>
+              <label>{t("jobApply.modal.noteLabel", "Note to the job creator (optional)")}</label>
               <span className="pf-char-counter">{coverNote.length}/{COVER_NOTE_MAX}</span>
             </div>
             <div className="msj-about-wrap">
@@ -63,15 +64,15 @@ function ApplyModal({ job, onCancel, onSubmitted }) {
                 maxLength={COVER_NOTE_MAX}
                 value={coverNote}
                 onChange={(e) => setCoverNote(e.target.value)}
-                placeholder="Anything you'd like to add…"
+                placeholder={t("jobApply.modal.notePlaceholder", "Anything you'd like to add…")}
               />
               <MicButton onTranscript={(text) => setCoverNote(text.slice(0, COVER_NOTE_MAX))} className="msj-about-mic" />
             </div>
           </div>
           {error && <div className="auth-alert" style={{ marginBottom: 16 }}><Icon name="info" size={17} />{error}</div>}
           <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
-            <button type="button" className="btn btn-outline-ink" style={{ flex: 1, justifyContent: "center" }} onClick={onCancel} disabled={saving}>Cancel</button>
-            <button type="submit" className="btn btn-gold" style={{ flex: 1, justifyContent: "center" }} disabled={saving}>{saving ? "Submitting…" : "Submit Application"}</button>
+            <button type="button" className="btn btn-outline-ink" style={{ flex: 1, justifyContent: "center" }} onClick={onCancel} disabled={saving}>{t("jobApply.modal.cancel", "Cancel")}</button>
+            <button type="submit" className="btn btn-gold" style={{ flex: 1, justifyContent: "center" }} disabled={saving}>{saving ? t("jobApply.modal.submitting", "Submitting…") : t("jobApply.modal.submit", "Submit Application")}</button>
           </div>
         </form>
       </div>
@@ -80,6 +81,7 @@ function ApplyModal({ job, onCancel, onSubmitted }) {
 }
 
 function JobApplyPanel({ job, posterId }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [user, setUser] = useState(() => getStoredUser());
   const [myApplication, setMyApplication] = useState(undefined); // undefined = loading, null = none
@@ -97,6 +99,14 @@ function JobApplyPanel({ job, posterId }) {
     jobApi.get(`/${job.id}/my-application`).then(({ data }) => setMyApplication(data.application)).catch(() => setMyApplication(null));
   }, [job.id, user]);
 
+  const statusLabel = {
+    applied: t("jobApply.status.applied", "Applied"),
+    under_review: t("jobApply.status.underReview", "Under Review"),
+    shortlisted: t("jobApply.status.shortlisted", "Shortlisted"),
+    rejected: t("jobApply.status.rejected", "Not Selected"),
+    hired: t("jobApply.status.hired", "Selected / Hired"),
+  };
+
   const isOwnJob = user && posterId && user.id === posterId;
 
   const openApply = () => {
@@ -107,40 +117,40 @@ function JobApplyPanel({ job, posterId }) {
   return (
     <div className="card msj-profile-card camp-donate-panel">
       <div className="camp-donate-panel-head">
-        <span className="camp-donate-eyebrow">This Opening</span>
+        <span className="camp-donate-eyebrow">{t("jobApply.panel.eyebrow", "This Opening")}</span>
       </div>
       <h3>{job.title}</h3>
 
       <div className="camp-donate-substats" style={{ gridTemplateColumns: "1fr 1fr" }}>
-        <div><strong>{job.jobType}</strong><span>Job Type</span></div>
-        <div><strong>{job.location}</strong><span>Location</span></div>
-        {job.experienceRequired && <div><strong>{job.experienceRequired}</strong><span>Experience</span></div>}
-        {job.salary && <div><strong>{job.salary}</strong><span>Compensation</span></div>}
-        {job.applicationDeadline && <div><strong>{formatDate(job.applicationDeadline)}</strong><span>Apply By</span></div>}
+        <div><strong>{job.jobType}</strong><span>{t("jobApply.panel.jobType", "Job Type")}</span></div>
+        <div><strong>{job.location}</strong><span>{t("jobApply.panel.location", "Location")}</span></div>
+        {job.experienceRequired && <div><strong>{job.experienceRequired}</strong><span>{t("jobApply.panel.experience", "Experience")}</span></div>}
+        {job.salary && <div><strong>{job.salary}</strong><span>{t("jobApply.panel.compensation", "Compensation")}</span></div>}
+        {job.applicationDeadline && <div><strong>{formatDate(job.applicationDeadline)}</strong><span>{t("jobApply.panel.applyBy", "Apply By")}</span></div>}
       </div>
 
       {isOwnJob ? (
-        <p className="msj-note" style={{ marginTop: 10, textAlign: "center" }}>This is your own job posting.</p>
+        <p className="msj-note" style={{ marginTop: 10, textAlign: "center" }}>{t("jobApply.panel.ownJob", "This is your own job posting.")}</p>
       ) : justSubmitted || myApplication ? (
         <>
           <button type="button" className="btn btn-gold camp-donate-cta" disabled>
-            <Icon name="check" size={16} /> Application {STATUS_LABEL[myApplication?.status || "applied"]}
+            <Icon name="check" size={16} /> {t("jobApply.panel.applicationPrefix", "Application")} {statusLabel[myApplication?.status || "applied"]}
           </button>
           <p className="msj-note" style={{ marginTop: 10, textAlign: "center" }}>
-            You applied to this job{myApplication?.createdAt ? ` on ${formatDate(myApplication.createdAt)}` : ""}.
+            {t("jobApply.panel.appliedText", "You applied to this job")}{myApplication?.createdAt ? ` ${t("jobApply.panel.appliedOn", "on")} ${formatDate(myApplication.createdAt)}` : ""}.
           </p>
         </>
       ) : (
         <>
           <button type="button" className="btn btn-gold camp-donate-cta" onClick={openApply} disabled={job.status !== "active"}>
-            <Icon name="mail" size={16} /> Apply for Job
+            <Icon name="mail" size={16} /> {t("jobApply.panel.applyCta", "Apply for Job")}
           </button>
           <p className="msj-note" style={{ marginTop: 10, textAlign: "center" }}>
             {job.status !== "active"
-              ? "This job is no longer accepting applications."
+              ? t("jobApply.panel.closedNote", "This job is no longer accepting applications.")
               : job.contactMethod
-              ? `Prefer to reach out directly? ${job.contactMethod}`
-              : "Applying takes less than a minute — your profile fills in the details."}
+              ? `${t("jobApply.panel.contactPrefix", "Prefer to reach out directly?")} ${job.contactMethod}`
+              : t("jobApply.panel.applyHint", "Applying takes less than a minute — your profile fills in the details.")}
           </p>
         </>
       )}

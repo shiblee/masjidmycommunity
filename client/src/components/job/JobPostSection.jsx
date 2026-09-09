@@ -6,6 +6,7 @@ import { getStoredUser } from "../../utils/userAuthStorage.js";
 import ReportModal from "../ReportModal.jsx";
 import ImageViewer from "../ImageViewer.jsx";
 import CommunityPost, { mapLiveActivity } from "../community/CommunityPost.jsx";
+import { useTranslation } from "../../i18n/LanguageContext.jsx";
 
 // The job IS a Community Wall post — the "job_posted" activity created once,
 // at posting time (recordJobPostedActivity, called from jobController.js's
@@ -15,6 +16,7 @@ import CommunityPost, { mapLiveActivity } from "../community/CommunityPost.jsx";
 // comments/replies live on the one shared activityId — no separate copy of
 // this data on the job detail page to drift out of sync.
 function JobPostSection({ jobId }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [user, setUser] = useState(() => getStoredUser());
   const [post, setPost] = useState(undefined); // undefined = loading, null = none found
@@ -88,7 +90,7 @@ function JobPostSection({ jobId }) {
       await reportApi.post("/", { targetType: "job", targetId: post.relatedJobId, activityId: post.activityId, reason, comment });
       setReportSuccess(true);
     } catch (err) {
-      setReportError(err.response?.data?.message || "Couldn't submit this report. Please try again.");
+      setReportError(err.response?.data?.message || t("jobPost.report.error", "Couldn't submit this report. Please try again."));
     } finally {
       setReportBusy(false);
     }
@@ -115,7 +117,7 @@ function JobPostSection({ jobId }) {
 
       {reportOpen && (
         <ReportModal
-          title="Report Post"
+          title={t("jobPost.report.title", "Report Post")}
           reasons={reportReasons}
           busy={reportBusy}
           error={reportError}

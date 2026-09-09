@@ -105,14 +105,14 @@ function MasjidReviewModal({ masjid, initialTab = "overview", onClose }) {
   return (
     <div className="msj-modal-overlay" onClick={onClose}>
       <div className="msj-modal msj-modal-wide msj-review-modal" onClick={(e) => e.stopPropagation()}>
-        <button className="msj-modal-close" onClick={onClose} aria-label="Close"><Icon name="x" size={16} /></button>
+        <button className="msj-modal-close" onClick={onClose} aria-label={t("exploreMasjidsPage.modal.close", "Close")}><Icon name="x" size={16} /></button>
 
         {tab === "overview" ? (
           <div className="msj-review-photo-wrap">
             <MediaThumb src={masjid.coverPhotoUrl ? `${API_ORIGIN}${masjid.coverPhotoUrl}` : null} className="msj-review-modal-photo" />
             {masjid.photoCount > 0 && (
               <Link to={`/masjid/${masjid.slug || masjid.id}`} className="msj-review-see-photos">
-                <Icon name="imageIcon" size={14} /> See Photos
+                <Icon name="imageIcon" size={14} /> {t("exploreMasjidsPage.modal.seePhotos", "See Photos")}
               </Link>
             )}
           </div>
@@ -126,7 +126,7 @@ function MasjidReviewModal({ masjid, initialTab = "overview", onClose }) {
               </span>
               <div className="msj-review-modal-rating">
                 <StarRating value={data?.average || 0} size={16} />
-                {data && <span>{data.average.toFixed(1)} ({data.count} review{data.count === 1 ? "" : "s"})</span>}
+                {data && <span>{data.average.toFixed(1)} ({data.count} {data.count === 1 ? t("exploreMasjidsPage.modal.reviewSingular", "review") : t("exploreMasjidsPage.modal.reviewPlural", "reviews")})</span>}
               </div>
               <p className="msj-list-loc"><Icon name="mapPin" size={13} /> {locationOf(masjid)}</p>
             </div>
@@ -141,9 +141,9 @@ function MasjidReviewModal({ masjid, initialTab = "overview", onClose }) {
             </span>
             <div className="msj-review-modal-rating">
               <StarRating value={data?.average || 0} size={16} />
-              {data && <span>{data.average.toFixed(1)} ({data.count} review{data.count === 1 ? "" : "s"})</span>}
+              {data && <span>{data.average.toFixed(1)} ({data.count} {data.count === 1 ? t("exploreMasjidsPage.modal.reviewSingular", "review") : t("exploreMasjidsPage.modal.reviewPlural", "reviews")})</span>}
               {masjid.viewCount > 0 && (
-                <span className="msj-review-modal-views"><Icon name="eye" size={13} /> {formatCompactNumber(masjid.viewCount)} views</span>
+                <span className="msj-review-modal-views"><Icon name="eye" size={13} /> {formatCompactNumber(masjid.viewCount)} {t("exploreMasjidsPage.modal.views", "views")}</span>
               )}
             </div>
             <p className="msj-list-loc"><Icon name="mapPin" size={13} /> {locationOf(masjid)}</p>
@@ -151,9 +151,9 @@ function MasjidReviewModal({ masjid, initialTab = "overview", onClose }) {
         )}
 
         <div className="msj-review-tabs">
-          <button type="button" className={tab === "overview" ? "active" : ""} onClick={() => setTab("overview")}>Overview</button>
-          <button type="button" className={tab === "reviews" ? "active" : ""} onClick={() => setTab("reviews")}>Reviews</button>
-          <button type="button" className={tab === "about" ? "active" : ""} onClick={() => setTab("about")}>About</button>
+          <button type="button" className={tab === "overview" ? "active" : ""} onClick={() => setTab("overview")}>{t("exploreMasjidsPage.tabs.overview", "Overview")}</button>
+          <button type="button" className={tab === "reviews" ? "active" : ""} onClick={() => setTab("reviews")}>{t("exploreMasjidsPage.tabs.reviews", "Reviews")}</button>
+          <button type="button" className={tab === "about" ? "active" : ""} onClick={() => setTab("about")}>{t("exploreMasjidsPage.tabs.about", "About")}</button>
         </div>
 
         {tab === "overview" && (
@@ -162,21 +162,21 @@ function MasjidReviewModal({ masjid, initialTab = "overview", onClose }) {
               {directionsUrl(masjid) ? (
                 <a href={directionsUrl(masjid)} target="_blank" rel="noopener noreferrer" className="msj-review-action-btn">
                   <span className="msj-review-action-icon"><Icon name="compass" size={20} /></span>
-                  Directions
+                  {t("exploreMasjidsPage.modal.directions", "Directions")}
                 </a>
               ) : (
-                <span className="msj-review-action-btn disabled" title="Location not set for this masjid">
+                <span className="msj-review-action-btn disabled" title={t("exploreMasjidsPage.modal.locationNotSet", "Location not set for this masjid")}>
                   <span className="msj-review-action-icon"><Icon name="compass" size={20} /></span>
-                  Directions
+                  {t("exploreMasjidsPage.modal.directions", "Directions")}
                 </span>
               )}
               <button type="button" className={`msj-review-action-btn ${favorited ? "active" : ""}`} onClick={toggleFavorite} disabled={favBusy}>
                 <span className="msj-review-action-icon"><HeartIcon filled={favorited} /></span>
-                {favorited ? "Liked" : "Like"}{likeCount > 0 ? ` · ${formatCompactNumber(likeCount)}` : ""}
+                {favorited ? t("exploreMasjidsPage.modal.liked", "Liked") : t("exploreMasjidsPage.modal.like", "Like")}{likeCount > 0 ? ` · ${formatCompactNumber(likeCount)}` : ""}
               </button>
               <button type="button" ref={shareBtnRef} className="msj-review-action-btn" onClick={() => setShareOpen((v) => !v)}>
                 <span className="msj-review-action-icon"><ShareIcon /></span>
-                Share
+                {t("exploreMasjidsPage.modal.share", "Share")}
               </button>
               <ShareMenu
                 open={shareOpen}
@@ -191,19 +191,19 @@ function MasjidReviewModal({ masjid, initialTab = "overview", onClose }) {
               <p className="msj-review-address"><Icon name="mapPin" size={15} /> {masjid.formattedAddress || masjid.address}</p>
             )}
 
-            <Link to={`/masjid/${masjid.slug || masjid.id}`} className="btn btn-outline-ink msj-review-view-profile">View Full Profile</Link>
+            <Link to={`/masjid/${masjid.slug || masjid.id}`} className="btn btn-outline-ink msj-review-view-profile">{t("exploreMasjidsPage.modal.viewFullProfile", "View Full Profile")}</Link>
 
             <div className="msj-suggest-edit">
               {suggestSent ? (
-                <p className="msj-suggest-edit-sent"><Icon name="check" size={15} /> Thanks! Your correction request has been sent for review.</p>
+                <p className="msj-suggest-edit-sent"><Icon name="check" size={15} /> {t("exploreMasjidsPage.modal.suggestSent", "Thanks! Your correction request has been sent for review.")}</p>
               ) : showSuggest ? (
                 loggedIn ? (
                   <SuggestEditForm masjid={masjid} onDone={() => { setShowSuggest(false); setSuggestSent(true); }} onCancel={() => setShowSuggest(false)} />
                 ) : (
-                  <p className="msj-review-login-prompt"><Link to="/auth">Sign in</Link> to suggest an edit.</p>
+                  <p className="msj-review-login-prompt"><Link to="/auth">{t("exploreMasjidsPage.modal.signIn", "Sign in")}</Link> {t("exploreMasjidsPage.modal.signInSuggestSuffix", "to suggest an edit.")}</p>
                 )
               ) : (
-                <button type="button" className="msj-suggest-edit-link" onClick={() => setShowSuggest(true)}>Suggest an edit</button>
+                <button type="button" className="msj-suggest-edit-link" onClick={() => setShowSuggest(true)}>{t("exploreMasjidsPage.modal.suggestEdit", "Suggest an edit")}</button>
               )}
             </div>
           </div>
@@ -227,10 +227,10 @@ function MasjidReviewModal({ masjid, initialTab = "overview", onClose }) {
             {!showForm && (
               loggedIn ? (
                 <button type="button" className="btn btn-gold" onClick={() => setShowForm(true)}>
-                  {myReview ? "Edit Your Review" : "Write a Review"}
+                  {myReview ? t("exploreMasjidsPage.modal.editReview", "Edit Your Review") : t("exploreMasjidsPage.modal.writeReview", "Write a Review")}
                 </button>
               ) : (
-                <p className="msj-review-login-prompt"><Link to="/auth">Sign in</Link> to write a review.</p>
+                <p className="msj-review-login-prompt"><Link to="/auth">{t("exploreMasjidsPage.modal.signIn", "Sign in")}</Link> {t("exploreMasjidsPage.modal.signInReviewSuffix", "to write a review.")}</p>
               )
             )}
 
@@ -239,7 +239,7 @@ function MasjidReviewModal({ masjid, initialTab = "overview", onClose }) {
             )}
 
             <div className="msj-review-list">
-              {data?.reviews.length === 0 && <p className="msj-review-empty">No reviews yet — be the first to share your experience.</p>}
+              {data?.reviews.length === 0 && <p className="msj-review-empty">{t("exploreMasjidsPage.modal.noReviewsYet", "No reviews yet — be the first to share your experience.")}</p>}
               {data?.reviews.map((r) => <ReviewRow review={r} key={r.id} />)}
             </div>
           </div>
@@ -251,11 +251,11 @@ function MasjidReviewModal({ masjid, initialTab = "overview", onClose }) {
             {masjid.category && <span className="msj-category-badge">{masjid.category}</span>}
             {masjid.about ? (
               <>
-                <h4 className="msj-review-about-heading">About the Masjid</h4>
+                <h4 className="msj-review-about-heading">{t("exploreMasjidsPage.modal.aboutMasjid", "About the Masjid")}</h4>
                 <p className="msj-review-about">{masjid.about}</p>
               </>
             ) : (
-              <p className="msj-review-empty">No description added yet.</p>
+              <p className="msj-review-empty">{t("exploreMasjidsPage.modal.noDescription", "No description added yet.")}</p>
             )}
 
             {prayerRoster.length > 0 && (
@@ -274,7 +274,7 @@ function MasjidReviewModal({ masjid, initialTab = "overview", onClose }) {
 
             {contacts.length > 0 && (
               <div className="msj-review-contacts">
-                <h4 className="msj-review-about-heading">Community Members</h4>
+                <h4 className="msj-review-about-heading">{t("exploreMasjidsPage.modal.communityMembers", "Community Members")}</h4>
                 <div className="msj-review-contact-list">
                   {contacts.map((c) => (
                     <div key={c.id} className="msj-review-contact-card">

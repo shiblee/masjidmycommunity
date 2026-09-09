@@ -9,16 +9,19 @@ import ExploreMasjidsList from "./exploreMasjids/ExploreMasjidsList.jsx";
 import ExploreMasjidsMap from "./exploreMasjids/ExploreMasjidsMap.jsx";
 import MasjidReviewModal from "./exploreMasjids/MasjidReviewModal.jsx";
 import CategoryFilter from "./exploreMasjids/CategoryFilter.jsx";
+import { useTranslation } from "../i18n/LanguageContext.jsx";
 
 const API = `${API_BASE}/masjids/public`;
-const VIEWS = [
-  { key: "grid", label: "Grid", icon: "grid" },
-  { key: "list", label: "List", icon: "list" },
-  { key: "map", label: "Map", icon: "map" },
+const VIEW_KEYS = [
+  { key: "grid", fallback: "Grid", icon: "grid" },
+  { key: "list", fallback: "List", icon: "list" },
+  { key: "map", fallback: "Map", icon: "map" },
 ];
 const PAGE_SIZE = 12;
 
 function ExploreMasjids() {
+  const { t } = useTranslation();
+  const VIEWS = VIEW_KEYS.map((v) => ({ ...v, label: t(`exploreMasjidsPage.view.${v.key}`, v.fallback) }));
   const [searchParams, setSearchParams] = useSearchParams();
   const view = VIEWS.some((v) => v.key === searchParams.get("view")) ? searchParams.get("view") : "grid";
   const q = searchParams.get("q") || "";
@@ -109,7 +112,7 @@ function ExploreMasjids() {
   }, []);
 
   const activeFilters = [
-    q && { key: "q", label: `Search: "${q}"` },
+    q && { key: "q", label: t('exploreMasjidsPage.filters.searchLabel', 'Search: "{q}"').replace("{q}", q) },
     ...selectedCategories.map((c) => ({ key: `category:${c}`, label: c, category: c })),
   ].filter(Boolean);
 
@@ -135,9 +138,9 @@ function ExploreMasjids() {
     <main className="msj-page">
       <section className="cw-hero msj-explore-hero on-ink">
         <div className="wrap">
-          <span className="eyebrow">Masjids</span>
-          <h1>Verified masjids across the community</h1>
-          <p>Every masjid listed here has been reviewed and approved by our team — trusted, transparent, and part of the Masjid My Community network.</p>
+          <span className="eyebrow">{t("exploreMasjidsPage.hero.eyebrow", "Masjids")}</span>
+          <h1>{t("exploreMasjidsPage.hero.title", "Verified masjids across the community")}</h1>
+          <p>{t("exploreMasjidsPage.hero.intro", "Every masjid listed here has been reviewed and approved by our team — trusted, transparent, and part of the Masjid My Community network.")}</p>
         </div>
       </section>
 
@@ -146,7 +149,7 @@ function ExploreMasjids() {
           <div className="msj-explore-filters">
             <div className="msj-search">
               <Icon name="search" size={16} />
-              <input value={rawQ} onChange={(e) => setRawQ(e.target.value)} placeholder="Search by name, location, or category…" />
+              <input value={rawQ} onChange={(e) => setRawQ(e.target.value)} placeholder={t("exploreMasjidsPage.search.placeholder", "Search by name, location, or category…")} />
               <MicButton onTranscript={(text, isFinal) => { setRawQ(text); if (isFinal) setParam({ q: text }); }} />
             </div>
             <CategoryFilter
@@ -171,16 +174,16 @@ function ExploreMasjids() {
                   <button type="button" onClick={() => removeFilter(f)}><Icon name="x" size={11} /></button>
                 </span>
               ))}
-              <button type="button" className="msj-clear-all" onClick={clearAll}>Clear All Filters</button>
+              <button type="button" className="msj-clear-all" onClick={clearAll}>{t("exploreMasjidsPage.filters.clearAll", "Clear All Filters")}</button>
             </div>
           )}
 
           {hasNoResults && view !== "map" && (
             <div className="msj-empty-state">
               <Icon name="mosque" size={30} />
-              <h3>No masjids found</h3>
-              <p>Try changing your search or removing some filters.</p>
-              <button type="button" className="btn btn-gold" onClick={clearAll}>Clear Filters</button>
+              <h3>{t("exploreMasjidsPage.empty.title", "No masjids found")}</h3>
+              <p>{t("exploreMasjidsPage.empty.body", "Try changing your search or removing some filters.")}</p>
+              <button type="button" className="btn btn-gold" onClick={clearAll}>{t("exploreMasjidsPage.empty.clear", "Clear Filters")}</button>
             </div>
           )}
 
@@ -188,7 +191,7 @@ function ExploreMasjids() {
             <>
               <ExploreMasjidsGrid masjids={masjids} userLocation={coords} onOpenReviews={openReviews} />
               {masjids.length < total && (
-                <div className="msj-load-more"><button type="button" className="btn btn-outline-ink" onClick={loadMore} disabled={loadingMore}>{loadingMore ? "Loading…" : "Load More"}</button></div>
+                <div className="msj-load-more"><button type="button" className="btn btn-outline-ink" onClick={loadMore} disabled={loadingMore}>{loadingMore ? t("exploreMasjidsPage.loading", "Loading…") : t("exploreMasjidsPage.loadMore", "Load More")}</button></div>
               )}
             </>
           )}
@@ -197,14 +200,14 @@ function ExploreMasjids() {
             <>
               <ExploreMasjidsList masjids={masjids} onViewOnMap={handleViewOnMap} userLocation={coords} onOpenReviews={openReviews} />
               {masjids.length < total && (
-                <div className="msj-load-more"><button type="button" className="btn btn-outline-ink" onClick={loadMore} disabled={loadingMore}>{loadingMore ? "Loading…" : "Load More"}</button></div>
+                <div className="msj-load-more"><button type="button" className="btn btn-outline-ink" onClick={loadMore} disabled={loadingMore}>{loadingMore ? t("exploreMasjidsPage.loading", "Loading…") : t("exploreMasjidsPage.loadMore", "Load More")}</button></div>
               )}
             </>
           )}
 
           {view === "map" && (
             mapMasjids == null
-              ? <p className="msj-explore-map-loading">Loading map…</p>
+              ? <p className="msj-explore-map-loading">{t("exploreMasjidsPage.map.loading", "Loading map…")}</p>
               : <ExploreMasjidsMap masjids={mapMasjids} selectedId={selectedId} onSelect={setSelectedId} userLocation={coords} onLocateMe={requestLocation} onOpenReviews={openReviews} />
           )}
         </div>

@@ -4,8 +4,10 @@ import { Icon } from "../Icons.jsx";
 import ShareMenu from "../ShareMenu.jsx";
 import DonateModal from "./DonateModal.jsx";
 import { getStoredUser } from "../../utils/userAuthStorage.js";
+import { useTranslation } from "../../i18n/LanguageContext.jsx";
 
 function CampaignDonationPanel({ campaign, category, donationAccount, slug }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [user, setUser] = useState(() => getStoredUser());
@@ -52,8 +54,8 @@ function CampaignDonationPanel({ campaign, category, donationAccount, slug }) {
   return (
     <div className="card msj-profile-card camp-donate-panel">
       <div className="camp-donate-panel-head">
-        <span className="camp-donate-eyebrow">Support this campaign</span>
-        <button type="button" ref={shareBtnRef} className="camp-icon-btn" onClick={() => setShareOpen((s) => !s)} aria-label="Share campaign">
+        <span className="camp-donate-eyebrow">{t("campaignProfile.donate.eyebrow", "Support this campaign")}</span>
+        <button type="button" ref={shareBtnRef} className="camp-icon-btn" onClick={() => setShareOpen((s) => !s)} aria-label={t("campaignProfile.donate.shareAriaLabel", "Share campaign")}>
           <Icon name="link" size={14} />
         </button>
       </div>
@@ -61,21 +63,25 @@ function CampaignDonationPanel({ campaign, category, donationAccount, slug }) {
 
       <div className="camp-donate-hero-stat">
         <strong>₹{raised.toLocaleString("en-IN")}</strong>
-        <span>{goal != null ? `raised of ₹${goal.toLocaleString("en-IN")} goal` : "raised"}</span>
+        <span>
+          {goal != null
+            ? <>{t("campaignProfile.donate.raisedOfPrefix", "raised of")} ₹{goal.toLocaleString("en-IN")} {t("campaignProfile.donate.goalSuffix", "goal")}</>
+            : t("campaignProfile.donate.raisedOnly", "raised")}
+        </span>
       </div>
       <div className="progress-track camp-donate-progress"><div className="progress-fill" style={{ width: `${pct}%` }} /></div>
       <div className="camp-donate-progress-meta">
-        <span>{pct.toFixed(pct % 1 === 0 ? 0 : 1)}% funded</span>
-        {remaining != null && <span>₹{remaining.toLocaleString("en-IN")} to go</span>}
+        <span>{pct.toFixed(pct % 1 === 0 ? 0 : 1)}% {t("campaignProfile.donate.funded", "funded")}</span>
+        {remaining != null && <span>₹{remaining.toLocaleString("en-IN")} {t("campaignProfile.donate.toGo", "to go")}</span>}
       </div>
 
       <div className="camp-donate-substats">
-        <div><strong>{campaign.donorCount ?? 0}</strong><span>{(campaign.donorCount ?? 0) === 1 ? "Donor" : "Donors"}</span></div>
-        <div><strong>{category?.name || campaign.donationType}</strong><span>Category</span></div>
+        <div><strong>{campaign.donorCount ?? 0}</strong><span>{(campaign.donorCount ?? 0) === 1 ? t("campaignProfile.donate.donorSingular", "Donor") : t("campaignProfile.donate.donorPlural", "Donors")}</span></div>
+        <div><strong>{category?.name || campaign.donationType}</strong><span>{t("campaignProfile.donate.category", "Category")}</span></div>
       </div>
 
       <button type="button" className="btn btn-gold camp-donate-cta" onClick={openDonate}>
-        <Icon name="heart" size={16} /> Donate to This Campaign
+        <Icon name="heart" size={16} /> {t("campaignProfile.donate.cta", "Donate to This Campaign")}
       </button>
 
       <ShareMenu open={shareOpen} onClose={() => setShareOpen(false)} anchorRef={shareBtnRef} url={url} title={campaign.title} text={campaign.shortDescription || ""} />

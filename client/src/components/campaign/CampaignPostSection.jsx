@@ -6,6 +6,7 @@ import { getStoredUser } from "../../utils/userAuthStorage.js";
 import ReportModal from "../ReportModal.jsx";
 import ImageViewer from "../ImageViewer.jsx";
 import CommunityPost, { mapLiveActivity } from "../community/CommunityPost.jsx";
+import { useTranslation } from "../../i18n/LanguageContext.jsx";
 
 // The campaign IS a Community Wall post — the "campaign_approved" activity
 // created once, at approval time (recordCampaignApprovedActivity, called
@@ -18,6 +19,7 @@ import CommunityPost, { mapLiveActivity } from "../community/CommunityPost.jsx";
 // activity failed to record) simply has no post to show, so this renders
 // nothing rather than fabricating one.
 function CampaignPostSection({ campaignId }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [user, setUser] = useState(() => getStoredUser());
   const [post, setPost] = useState(undefined); // undefined = loading, null = none found
@@ -91,7 +93,7 @@ function CampaignPostSection({ campaignId }) {
       await reportApi.post("/", { targetType: "campaign", targetId: post.relatedCampaignId, activityId: post.activityId, reason, comment });
       setReportSuccess(true);
     } catch (err) {
-      setReportError(err.response?.data?.message || "Couldn't submit this report. Please try again.");
+      setReportError(err.response?.data?.message || t("campaignProfile.post.reportError", "Couldn't submit this report. Please try again."));
     } finally {
       setReportBusy(false);
     }
@@ -118,7 +120,7 @@ function CampaignPostSection({ campaignId }) {
 
       {reportOpen && (
         <ReportModal
-          title="Report Post"
+          title={t("campaignProfile.post.reportTitle", "Report Post")}
           reasons={reportReasons}
           busy={reportBusy}
           error={reportError}

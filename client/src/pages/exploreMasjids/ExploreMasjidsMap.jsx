@@ -11,6 +11,7 @@ import { locationOf, distanceToMasjid, formatDistance, directionsUrl, GetDirecti
 import EngagementRow from "../../components/masjid/EngagementRow.jsx";
 import GreenTickBadge from "../../components/masjid/GreenTickBadge.jsx";
 import { formatCompactNumber } from "../../utils/formatCompactNumber.js";
+import { useTranslation } from "../../i18n/LanguageContext.jsx";
 
 // Same path data as Icons.jsx's "compass" — hand-embedded because this
 // popup is raw HTML (a Leaflet popup, outside the React tree).
@@ -52,7 +53,7 @@ const userIcon = L.divIcon({
   iconAnchor: [9, 9],
 });
 
-function popupHtml(m, distanceLabel) {
+function popupHtml(m, distanceLabel, t) {
   const cover = m.coverPhotoUrl ? `${API_ORIGIN}${m.coverPhotoUrl}` : null;
   const url = directionsUrl(m);
   const engagementParts = [];
@@ -62,6 +63,9 @@ function popupHtml(m, distanceLabel) {
   const engagementHtml = engagementParts.length
     ? `<p class="msj-map-popup-engagement">${engagementParts.join('<span class="msj-map-popup-engagement-dot">·</span>')}</p>`
     : "";
+  const verifiedLabel = t("exploreMasjidsPage.map.verified", "Verified");
+  const fromYouLabel = t("exploreMasjidsPage.map.fromYou", "from you");
+  const getDirectionsLabel = t("exploreMasjidsPage.map.getDirections", "Get Directions");
   // Two sibling <a> tags, not nested — an <a> can't validly contain another <a>,
   // and since this is raw HTML (a Leaflet popup, outside React) the browser would
   // silently mangle the nesting rather than React catching it.
@@ -70,21 +74,22 @@ function popupHtml(m, distanceLabel) {
       <a href="/masjid/${m.slug || m.id}" class="msj-map-popup-linkarea">
         ${cover ? `<img src="${cover}" alt="" class="msj-map-popup-thumb" />` : ""}
         <div class="msj-map-popup-body">
-          <h4>${m.name}${m.isGreenTick ? ` <span class="msj-map-popup-greentick" title="Verified">${SHIELD_SVG}</span>` : ""}</h4>
+          <h4>${m.name}${m.isGreenTick ? ` <span class="msj-map-popup-greentick" title="${verifiedLabel}">${SHIELD_SVG}</span>` : ""}</h4>
           <div class="msj-map-popup-meta">
             ${m.category ? `<span class="msj-category-badge">${m.category}</span>` : ""}
           </div>
           <p>${locationOf(m)}</p>
-          ${distanceLabel ? `<p class="msj-map-popup-distance">📍 ${distanceLabel} from you</p>` : ""}
+          ${distanceLabel ? `<p class="msj-map-popup-distance">📍 ${distanceLabel} ${fromYouLabel}</p>` : ""}
           ${engagementHtml}
         </div>
       </a>
-      ${url ? `<a href="${url}" target="_blank" rel="noopener noreferrer" class="msj-directions-btn msj-map-popup-directions">${COMPASS_SVG} Get Directions</a>` : ""}
+      ${url ? `<a href="${url}" target="_blank" rel="noopener noreferrer" class="msj-directions-btn msj-map-popup-directions">${COMPASS_SVG} ${getDirectionsLabel}</a>` : ""}
     </div>
   `;
 }
 
 function ExploreMasjidsMap({ masjids, selectedId, onSelect, userLocation, onLocateMe, onOpenReviews }) {
+  const { t } = useTranslation();
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const clusterRef = useRef(null);
@@ -130,7 +135,7 @@ function ExploreMasjidsMap({ masjids, selectedId, onSelect, userLocation, onLoca
     mapped.forEach((m) => {
       const marker = L.marker([Number(m.latitude), Number(m.longitude)], { icon: pinIcon });
       const distance = distanceToMasjid(userLocationRef.current, m);
-      marker.bindPopup(popupHtml(m, distance != null ? formatDistance(distance) : null));
+      marker.bindPopup(popupHtml(m, distance != null ? formatDistance(distance) : null, t));
       marker.on("click", () => onSelectRef.current?.(m.id));
       cluster.addLayer(marker);
       markersById.current.set(m.id, marker);
@@ -160,7 +165,7 @@ function ExploreMasjidsMap({ masjids, selectedId, onSelect, userLocation, onLoca
     if (userMarkerRef.current) { userMarkerRef.current.remove(); userMarkerRef.current = null; }
     if (!userLocation) return;
     const marker = L.marker([userLocation.lat, userLocation.lng], { icon: userIcon, zIndexOffset: 1000 });
-    marker.bindPopup('<div class="msj-map-popup"><div class="msj-map-popup-body"><h4>You are here</h4></div></div>');
+    marker.bindPopup(`<div class="msj-map-popup"><div class="msj-map-popup-body"><h4>${t("exploreMasjidsPage.map.youAreHere", "You are here")}</h4></div></div>`);
     marker.addTo(map);
     userMarkerRef.current = marker;
   }, [userLocation]);
@@ -184,7 +189,7 @@ function ExploreMasjidsMap({ masjids, selectedId, onSelect, userLocation, onLoca
   return (
     <div className="msj-explore-map-layout">
       <div className="msj-explore-map-panel">
-        {masjids.length === 0 && <p className="msj-explore-map-empty">No masjids match your search.</p>}
+        {masjids.length === 0 && <p className="msj-explore-map-empty">{t("exploreMasjidsPage.map.noMatch", "No masjids match your search.")}</p>}
         {masjids.map((m) => (
           <button
             type="button"
@@ -202,7 +207,7 @@ function ExploreMasjidsMap({ masjids, selectedId, onSelect, userLocation, onLoca
                 <GreenTickBadge masjid={m} variant="map" />
               </span>
               <p><Icon name="mapPin" size={12} /> {locationOf(m)}</p>
-              {(m.latitude == null || m.longitude == null) && <span className="msj-explore-map-item-flag">Not mapped yet</span>}
+              {(m.latitude == null || m.longitude == null) && <span className="msj-explore-map-item-flag">{t("exploreMasjidsPage.map.notMappedYet", "Not mapped yet")}</span>}
               {(() => {
                 const d = distanceToMasjid(userLocation, m);
                 return d != null && <span className="msj-explore-map-item-distance">{formatDistance(d)}</span>;
@@ -215,7 +220,7 @@ function ExploreMasjidsMap({ masjids, selectedId, onSelect, userLocation, onLoca
       </div>
       <div className="msj-map-canvas-wrap msj-explore-map-canvas-wrap">
         <div ref={containerRef} className="msj-map-canvas msj-explore-map-canvas" />
-        <button type="button" className="msj-locate-me-btn" onClick={onLocateMe} title="Show my location">
+        <button type="button" className="msj-locate-me-btn" onClick={onLocateMe} title={t("exploreMasjidsPage.map.showMyLocation", "Show my location")}>
           <Icon name="mapPin" size={16} />
         </button>
       </div>

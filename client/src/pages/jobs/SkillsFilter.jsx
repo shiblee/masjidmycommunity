@@ -1,11 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Icon } from "../../components/Icons.jsx";
+import { useTranslation } from "../../i18n/LanguageContext.jsx";
 
 // Multi-select checkbox dropdown for the Jobs board's Skills filter — mirrors
 // exploreMasjids/CategoryFilter.jsx exactly (same reusable shape, {id,name}
 // options). Selecting more than one skill is an OR (any selected skill
 // matches), not AND.
 function SkillsFilter({ skills, selected, onChange }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const wrapRef = useRef(null);
 
@@ -22,7 +24,12 @@ function SkillsFilter({ skills, selected, onChange }) {
     else onChange([...selected, name]);
   };
 
-  const label = selected.length === 0 ? "Any Skills" : selected.length === 1 ? selected[0] : `${selected.length} Skills`;
+  const label =
+    selected.length === 0
+      ? t("jobs.skillsFilter.any", "Any Skills")
+      : selected.length === 1
+      ? selected[0]
+      : `${selected.length} ${t("jobs.skillsFilter.countSuffix", "Skills")}`;
 
   return (
     <div className="msj-category-filter" ref={wrapRef}>
@@ -33,9 +40,9 @@ function SkillsFilter({ skills, selected, onChange }) {
       {open && (
         <div className="msj-category-filter-panel">
           <div className="msj-category-filter-head">
-            <span>Skills / Qualifications</span>
+            <span>{t("jobs.skillsFilter.heading", "Skills / Qualifications")}</span>
             {selected.length > 0 && (
-              <button type="button" className="msj-clear-all" onClick={() => onChange([])}>Clear All</button>
+              <button type="button" className="msj-clear-all" onClick={() => onChange([])}>{t("jobs.skillsFilter.clearAll", "Clear All")}</button>
             )}
           </div>
           <ul className="msj-category-filter-list">
