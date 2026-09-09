@@ -18,6 +18,7 @@ import ReportModal from "../components/ReportModal.jsx";
 import ImageViewer from "../components/ImageViewer.jsx";
 import PostComposer from "../components/PostComposer.jsx";
 import CampaignWizard from "./campaign/CampaignWizard.jsx";
+import JobForm from "./jobs/JobForm.jsx";
 import CommunityPost, { mapLiveActivity, timeAgo, EditCommunityPostModal, DeleteCommunityPostModal } from "../components/community/CommunityPost.jsx";
 
 
@@ -300,6 +301,7 @@ function Community() {
   // same embedded-in-the-wall experience.
   const showMasjidWizard = !showGreenTickWizard && (location.pathname === "/account/my-masjids/new" || (location.pathname.startsWith("/account/my-masjids/") && !!idParam));
   const showCampaignWizard = location.pathname === "/account/my-campaigns/new" || (location.pathname.startsWith("/account/my-campaigns/") && !!idParam);
+  const showJobForm = location.pathname === "/account/my-jobs/new" || (location.pathname.startsWith("/account/my-jobs/") && !!idParam);
   const [searchParams, setSearchParams] = useSearchParams();
   const filterParam = searchParams.get("filter");
   const filter = FILTERS.some((f) => f.key === filterParam) ? filterParam : "all";
@@ -312,6 +314,8 @@ function Community() {
     ? "masjid"
     : showCampaignWizard
     ? "campaign"
+    : showJobForm
+    ? "jobs"
     : COMMUNITY_SECTIONS.some((s) => s.key === sectionParam)
     ? sectionParam
     : null;
@@ -319,7 +323,7 @@ function Community() {
   const selectSection = (key) => {
     // A wizard occupies cw-main and pins the sidebar to its own section —
     // picking another section only makes sense back on the wall itself.
-    if (showMasjidWizard || showCampaignWizard || showGreenTickWizard) {
+    if (showMasjidWizard || showCampaignWizard || showGreenTickWizard || showJobForm) {
       const cfg = COMMUNITY_SECTIONS.find((s) => s.key === key);
       const next = new URLSearchParams();
       next.set("section", key);
@@ -636,6 +640,10 @@ function Community() {
               ) : showCampaignWizard ? (
                 <RequireUserAuth>
                   <CampaignWizard embedded />
+                </RequireUserAuth>
+              ) : showJobForm ? (
+                <RequireUserAuth>
+                  <JobForm embedded />
                 </RequireUserAuth>
               ) : (
                 <>

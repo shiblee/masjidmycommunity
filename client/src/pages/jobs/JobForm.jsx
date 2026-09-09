@@ -19,11 +19,16 @@ function emptyForm() {
 
 // A single full-page form, not a multi-step wizard like Masjid/Campaign —
 // a job has no draft/submit/review lifecycle to step through (it publishes
-// the moment it's saved), so one step is all there is.
-function JobForm() {
+// the moment it's saved), so one step is all there is. `embedded` mirrors
+// MasjidWizard/CampaignWizard: rendered inline in My Community's own wall
+// column (via Community.jsx, for /account/my-jobs/new and /:id) rather than
+// as its own standalone page.
+function JobForm({ embedded = false }) {
   const navigate = useNavigate();
   const { id } = useParams();
   const isEdit = !!id;
+  const backTo = embedded ? "/my-community" : "/account/my-jobs";
+  const backLabel = embedded ? "Back to Community Wall" : "Back to My Jobs";
   const [form, setForm] = useState(emptyForm);
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
@@ -79,11 +84,11 @@ function JobForm() {
     }
   };
 
-  if (loading) return <WizardShell><p>Loading…</p></WizardShell>;
+  if (loading) return <WizardShell embedded={embedded}><p>Loading…</p></WizardShell>;
 
   return (
-    <WizardShell>
-      <Link to="/account/my-jobs" className="msj-back-link"><Icon name="chevronLeft" size={16} /> Back to My Jobs</Link>
+    <WizardShell embedded={embedded}>
+      <Link to={backTo} className="msj-back-link"><Icon name="chevronLeft" size={16} /> {backLabel}</Link>
 
       <div className="msj-wizard-center">
         <div className="section-head" style={{ marginTop: 16, maxWidth: "none" }}>
@@ -137,7 +142,7 @@ function JobForm() {
             </Field>
 
             <div className="msj-prayer-savebar" style={{ marginTop: 8 }}>
-              <Link to="/account/my-jobs" className="btn btn-outline-ink">Cancel</Link>
+              <Link to={backTo} className="btn btn-outline-ink">Cancel</Link>
               <button type="submit" className="btn btn-gold" disabled={saving}>
                 {saving ? "Saving…" : isEdit ? "Save Changes" : "Post Job"} <span className="btn-arrow">→</span>
               </button>
