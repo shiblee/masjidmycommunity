@@ -8,6 +8,8 @@ import Skill from "../models/Skill.js";
 import JobCategory from "../models/JobCategory.js";
 import JobFavorite from "../models/JobFavorite.js";
 import { getUserMatchProfile, computeMatchScore } from "../services/jobMatchingService.js";
+import { resolveSearchFilters } from "../services/jobSearchService.js";
+import { aiProviderConfigured } from "../services/aiProviderService.js";
 
 // The public Jobs board's filter chips need the same admin-managed master
 // lists the posting form uses, but those otherwise only have auth-gated
@@ -86,21 +88,47 @@ async function getFavoritedIds(userId, jobIds) {
 
 export const listPublic = async (req, res) => {
   try {
-    const { q, jobType, experienceRequired, category, workMode, hasSalary, skills, location, excludeId, sort, page = 1, pageSize = 12 } = req.query;
+    const { q, jobType, experienceRequired, category, workMode, hasSalary, skills, location, excludeId, sort, nlQuery, lang, skipLocation, page = 1, pageSize = 12 } = req.query;
     const where = { status: { [Op.in]: PUBLIC_STATUSES }, moderationStatus: "active" };
-    if (jobType) where.jobType = jobType;
-    if (experienceRequired) where.experienceRequired = experienceRequired;
+
+    // Natural-language search — parses free text into structured filters
+    // (jobSearchService.js), applied only where the caller hasn't already
+    // set an explicit filter of that kind. Unconfigured/failed AI falls back
+    // to treating nlQuery as plain keyword text, same as `q` — search never
+    // breaks, it just loses the natural-language understanding.
+    let appliedFilters = null;
+    let nlFallbackKeyword = null;
+    if (nlQuery?.trim()) {
+      if (aiProviderConfigured) {
+        const resolved = await resolveSearchFilters({ nlQuery, languageCode: lang || "en" });
+        if (resolved) appliedFilters = resolved;
+        else nlFallbackKeyword = nlQuery.trim();
+      } else {
+        nlFallbackKeyword = nlQuery.trim();
+      }
+    }
+    if (skipLocation === "true" && appliedFilters) appliedFilters = { ...appliedFilters, location: null };
+
+    const effectiveJobType = jobType || appliedFilters?.jobType;
+    const effectiveExperience = experienceRequired || appliedFilters?.experienceLevel;
+    const effectiveWorkMode = workMode || appliedFilters?.workMode;
+    const effectiveLocation = skipLocation === "true" ? location : location || appliedFilters?.location;
+
+    if (effectiveJobType) where.jobType = jobType ? jobType : { [Op.like]: `%${effectiveJobType}%` };
+    if (effectiveExperience) where.experienceRequired = experienceRequired ? experienceRequired : { [Op.like]: `%${effectiveExperience}%` };
     if (category) where.category = category;
-    if (workMode) where.workMode = workMode;
+    if (effectiveWorkMode) where.workMode = effectiveWorkMode;
     if (hasSalary === "true") where.salary = { [Op.ne]: null };
-    if (location) where.location = { [Op.like]: `%${location}%` };
+    if (effectiveLocation) where.location = { [Op.like]: `%${effectiveLocation}%` };
     if (excludeId) where.id = { [Op.ne]: excludeId };
-    if (q) where[Op.or] = [{ title: { [Op.like]: `%${q}%` } }, { description: { [Op.like]: `%${q}%` } }];
+
+    const keywordText = q || nlFallbackKeyword || (appliedFilters?.keywords || []).join(" ");
+    if (keywordText) where[Op.or] = [{ title: { [Op.like]: `%${keywordText}%` } }, { description: { [Op.like]: `%${keywordText}%` } }];
 
     // Any selected skill matches (OR) — the JSON array column has no native
     // Sequelize "contains one of" operator, so this ORs a JSON_CONTAINS per
     // skill (MySQL: candidate must be quoted JSON, i.e. '"Tajweed"').
-    const skillList = skills ? skills.split(",").map((s) => s.trim()).filter(Boolean) : [];
+    const skillList = skills ? skills.split(",").map((s) => s.trim()).filter(Boolean) : appliedFilters?.skills || [];
     if (skillList.length) {
       where[Op.and] = [
         { [Op.or]: skillList.map((name) => sequelize.where(sequelize.fn("JSON_CONTAINS", sequelize.col("skills"), JSON.stringify(name)), true)) },
@@ -126,7 +154,7 @@ export const listPublic = async (req, res) => {
     ]);
     const jobs = await Promise.all(rows.map((j) => withCard(j, { favoritedIds, matchProfile })));
 
-    res.json({ jobs, total: count, page: Number(page) || 1, pageSize: limit });
+    res.json({ jobs, total: count, page: Number(page) || 1, pageSize: limit, appliedFilters });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

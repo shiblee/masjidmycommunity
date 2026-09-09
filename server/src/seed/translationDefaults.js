@@ -1945,6 +1945,23 @@ const DEFAULTS = [
   ["jobs", "jobs.rails.bySkills.subtitle", "Jobs that share at least one skill with your profile", "वे नौकरियाँ जो आपकी प्रोफ़ाइल से कम से कम एक कौशल साझा करती हैं", "وہ ملازمتیں جو آپ کی پروفائل سے کم از کم ایک مہارت مشترک رکھتی ہیں", "الوظائف التي تشترك في مهارة واحدة على الأقل مع ملفك الشخصي"],
   ["jobs", "jobs.rails.closingSoon.title", "Closing Soon", "जल्द बंद हो रही हैं", "جلد بند ہو رہی ہیں", "تُغلق قريبًا"],
   ["jobs", "jobs.rails.closingSoon.subtitle", "Roles with an application deadline coming up", "वे भूमिकाएँ जिनकी आवेदन की अंतिम तिथि नज़दीक है", "وہ آسامیاں جن کی درخواست کی آخری تاریخ قریب ہے", "وظائف يقترب موعدها النهائي للتقديم"],
+
+  // Jobs redesign — Phase 4 (AI-powered natural-language search + AI Job Assistant)
+  ["jobs", "jobs.ai.understood", "Showing results for", "इसके लिए परिणाम दिखाए जा रहे हैं", "اس کے لیے نتائج دکھائے جا رہے ہیں", "عرض النتائج لـ"],
+  ["jobs", "jobs.ai.near", "near", "के पास", "کے قریب", "بالقرب من"],
+  ["jobs", "jobs.empty.tryWithoutLocation", "Search without location", "स्थान के बिना खोजें", "مقام کے بغیر تلاش کریں", "البحث بدون تحديد الموقع"],
+  ["jobAi", "jobAi.toggleTitle", "Ask AI about jobs", "नौकरियों के बारे में AI से पूछें", "ملازمتوں کے بارے میں AI سے پوچھیں", "اسأل الذكاء الاصطناعي عن الوظائف"],
+  ["jobAi", "jobAi.toggleSubtitle", "Find the right opening in plain language", "सामान्य भाषा में सही अवसर खोजें", "سادہ زبان میں صحیح موقع تلاش کریں", "ابحث عن الوظيفة المناسبة بلغة بسيطة"],
+  ["jobAi", "jobAi.example1", "What jobs are open right now?", "अभी कौन सी नौकरियाँ खुली हैं?", "ابھی کون سی ملازمتیں خالی ہیں؟", "ما هي الوظائف الشاغرة حاليًا؟"],
+  ["jobAi", "jobAi.example2", "Are there any remote openings?", "क्या कोई रिमोट अवसर हैं?", "کیا کوئی ریموٹ آسامیاں ہیں؟", "هل توجد وظائف عن بُعد؟"],
+  ["jobAi", "jobAi.example3", "What jobs match my skills?", "मेरे कौशल से कौन सी नौकरियाँ मेल खाती हैं?", "میری مہارتوں سے کون سی ملازمتیں مماثل ہیں؟", "ما هي الوظائف التي تناسب مهاراتي؟"],
+  ["jobAi", "jobAi.example4", "Do you have any teaching roles?", "क्या आपके पास शिक्षण से जुड़ी कोई भूमिकाएँ हैं?", "کیا آپ کے پاس تدریسی آسامیاں ہیں؟", "هل لديكم وظائف تدريس؟"],
+  ["jobAi", "jobAi.genericError", "Something went wrong. Please try again.", "कुछ गलत हो गया। कृपया पुनः प्रयास करें।", "کچھ غلط ہو گیا۔ براہ کرم دوبارہ کوشش کریں۔", "حدث خطأ ما. يرجى المحاولة مرة أخرى."],
+  ["jobAi", "jobAi.notConfigured", "The job assistant isn't available right now — try browsing with the filters above instead.", "जॉब असिस्टेंट अभी उपलब्ध नहीं है — इसके बजाय ऊपर दिए गए फ़िल्टर से ब्राउज़ करें।", "جاب اسسٹنٹ ابھی دستیاب نہیں ہے — اس کے بجائے اوپر دیے گئے فلٹرز سے براؤز کریں۔", "مساعد الوظائف غير متاح حاليًا — جرّب التصفح باستخدام عوامل التصفية أعلاه بدلاً من ذلك."],
+  ["jobAi", "jobAi.unavailable", "The assistant is temporarily unavailable. Please try again shortly.", "असिस्टेंट अस्थायी रूप से अनुपलब्ध है। कृपया कुछ देर बाद पुनः प्रयास करें।", "اسسٹنٹ عارضی طور پر دستیاب نہیں ہے۔ براہ کرم تھوڑی دیر بعد دوبارہ کوشش کریں۔", "المساعد غير متاح مؤقتًا. يرجى المحاولة مرة أخرى بعد قليل."],
+  ["jobAi", "jobAi.inputPlaceholder", "Ask about open jobs…", "खुली नौकरियों के बारे में पूछें…", "خالی ملازمتوں کے بارے میں پوچھیں…", "اسأل عن الوظائف الشاغرة…"],
+  ["jobAi", "jobAi.askingBtn", "Asking…", "पूछ रहे हैं…", "پوچھا جا رہا ہے…", "جارٍ السؤال…"],
+  ["jobAi", "jobAi.askBtn", "Ask", "पूछें", "پوچھیں", "اسأل"],
 ];
 
 // Additive, not "seed once": every deploy that adds new keys to DEFAULTS

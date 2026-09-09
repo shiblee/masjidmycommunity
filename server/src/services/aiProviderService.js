@@ -630,3 +630,101 @@ export async function generateTranslation({ text, targetLanguageCode }) {
     return null;
   }
 }
+
+const JobSearchQuerySchema = z.object({
+  keywords: z.array(z.string()).max(6),
+  location: z.string().nullable(),
+  jobType: z.string().nullable(),
+  experienceLevel: z.string().nullable(),
+  workMode: z.enum(["remote", "on_site", "hybrid"]).nullable(),
+  skills: z.array(z.string()).max(6),
+});
+
+function jobSearchQuerySystemPrompt(languageCode) {
+  return [
+    "You extract structured job-search filters from one natural-language query typed into a jobs board's search bar.",
+    "Only include a field when it is stated or clearly implied by the query — never invent a location, job type, experience level, work mode, or skill that isn't present.",
+    "'keywords': the core topical search terms (a job title, subject, or organization named in the query), with any location/jobType/experienceLevel/skill/workMode words removed — return an empty list if the whole query was just filters (e.g. 'remote jobs in Lucknow').",
+    "'location': a place name if one is mentioned, else null.",
+    "'jobType': a general employment type in plain words if mentioned (e.g. Full-time, Part-time, Internship, Volunteer), else null.",
+    "'experienceLevel': a seniority description in plain words if mentioned (e.g. entry level, senior), else null.",
+    "'workMode': exactly one of remote/on_site/hybrid ONLY if explicitly implied by words like 'remote', 'work from home', 'on-site', 'in-person', 'hybrid' — else null.",
+    "'skills': specific named skills, tools, or technologies mentioned — else an empty list.",
+    `The query may be written in any language; understand it regardless, but the query itself is presumed to be in or near this language: ${languageCode}.`,
+  ].join(" ");
+}
+
+async function callClaudeJobSearchQuery({ query, languageCode }) {
+  const response = await anthropic.messages.parse({
+    model: AI_MODEL,
+    max_tokens: 300,
+    system: [{ type: "text", text: jobSearchQuerySystemPrompt(languageCode), cache_control: { type: "ephemeral" } }],
+    output_config: { format: zodOutputFormat(JobSearchQuerySchema), effort: AI_EFFORT },
+    messages: [{ role: "user", content: `Query: ${query}` }],
+  });
+  return response.parsed_output;
+}
+
+// Thin natural-language-understanding layer in front of the Jobs board's
+// existing filter machinery (jobSearchService.js applies whatever this
+// returns via listPublic's own where-clause building) — not a second search
+// engine. Same null-on-failure contract as every other function here; the
+// caller always falls back to a plain keyword search.
+export async function parseJobSearchQuery({ query, languageCode }) {
+  if (!aiProviderConfigured || AI_PROVIDER !== "claude" || !query?.trim()) return null;
+  try {
+    const parsed = await callClaudeJobSearchQuery({ query: query.trim(), languageCode: languageCode || "en" });
+    if (!parsed) return null;
+    return parsed;
+  } catch (error) {
+    console.error("AI provider job search query parsing failed:", error.message);
+    return null;
+  }
+}
+
+const JobAnswerSchema = z.object({
+  answer: z.string(),
+  keyPoints: z.array(z.string()).max(4),
+  referencedJobIds: z.array(z.number()).max(6),
+});
+
+function jobAssistantSystemPrompt(languageCode) {
+  return [
+    "You are the Masjid My Community Job Assistant. Answer strictly and only using the Context below, which lists the jobs currently open on the platform (and, if given, the asker's own profile summary) — never use outside knowledge and never invent a job, employer, salary, or detail that isn't in the Context.",
+    "If nothing in the Context is relevant to the question, say plainly that you don't see a matching opening right now — do not guess or recommend a job that isn't listed.",
+    "When you reference a specific job, use its exact title as given, and list its numeric id in 'referencedJobIds' (only ids that are actually in the Context).",
+    `Respond in this language: ${languageCode}.`,
+    "Keep 'answer' to 2-4 short sentences and 'keyPoints' to at most 4 short bullet phrases (use fewer, or none, if not needed).",
+    "Do not mention that you were given a 'Context' — write as if you simply know the current listings.",
+  ].join(" ");
+}
+
+async function callClaudeJobAssistant({ question, contextText, history, languageCode }) {
+  const response = await anthropic.messages.parse({
+    model: AI_MODEL,
+    max_tokens: 700,
+    system: [{ type: "text", text: jobAssistantSystemPrompt(languageCode), cache_control: { type: "ephemeral" } }],
+    output_config: { format: zodOutputFormat(JobAnswerSchema), effort: AI_EFFORT },
+    messages: [
+      ...(history || []),
+      { role: "user", content: `Context:\n${contextText || "(no open jobs found)"}\n\nQuestion: ${question}` },
+    ],
+  });
+  return response.parsed_output;
+}
+
+// Same grounded-Q&A shape as generateGroundedAnswer (the FAQ assistant),
+// pointed at a jobs-board context instead of the knowledge base. Same
+// null-on-failure contract; the caller shows an honest "not available"
+// state rather than fabricating an answer.
+export async function generateGroundedJobAnswer({ question, contextText, history, languageCode }) {
+  if (!aiProviderConfigured || AI_PROVIDER !== "claude") return null;
+  try {
+    const parsed = await callClaudeJobAssistant({ question, contextText, history, languageCode: languageCode || "en" });
+    if (!parsed) return null;
+    return { answer: parsed.answer, keyPoints: parsed.keyPoints || [], referencedJobIds: parsed.referencedJobIds || [] };
+  } catch (error) {
+    console.error("AI provider job assistant call failed:", error.message);
+    return null;
+  }
+}

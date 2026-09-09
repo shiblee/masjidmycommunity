@@ -7,6 +7,7 @@ import SkillsFilter from "./jobs/SkillsFilter.jsx";
 import JobCard from "../components/job/JobCard.jsx";
 import JobCardSkeleton from "../components/job/JobCardSkeleton.jsx";
 import JobRail from "../components/job/JobRail.jsx";
+import JobAiAssistant from "../components/job/JobAiAssistant.jsx";
 import publicJobApi from "../services/publicJobApi.js";
 import jobApi from "../services/jobApi.js";
 import { getStoredUser } from "../utils/userAuthStorage.js";
@@ -22,9 +23,10 @@ const WORK_MODES = [
 ];
 
 function Jobs() {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const [searchInput, setSearchInput] = useState("");
   const [q, setQ] = useState("");
+  const [appliedFilters, setAppliedFilters] = useState(null);
   const [category, setCategory] = useState("");
   const [jobType, setJobType] = useState("");
   const [experienceRequired, setExperienceRequired] = useState("");
@@ -32,6 +34,7 @@ function Jobs() {
   const [hasSalary, setHasSalary] = useState(false);
   const [selectedSkills, setSelectedSkills] = useState([]);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [skipLocation, setSkipLocation] = useState(false);
 
   const [jobCategories, setJobCategories] = useState([]);
   const [jobTypes, setJobTypes] = useState([]);
@@ -72,13 +75,15 @@ function Jobs() {
       axios
         .get(`${API_BASE}/jobs/public`, {
           params: {
-            q: q || undefined,
+            nlQuery: q || undefined,
+            lang: language || undefined,
             category: category || undefined,
             jobType: jobType || undefined,
             experienceRequired: experienceRequired || undefined,
             workMode: workMode || undefined,
             hasSalary: hasSalary || undefined,
             skills: selectedSkills.length ? selectedSkills.join(",") : undefined,
+            skipLocation: skipLocation || undefined,
             page,
             pageSize: PAGE_SIZE,
           },
@@ -86,16 +91,23 @@ function Jobs() {
         .then(({ data }) => {
           setJobs((prev) => (page === 1 ? data.jobs : [...(prev || []), ...data.jobs]));
           setTotal(data.total);
+          setAppliedFilters(data.appliedFilters || null);
         })
         .catch(() => { if (page === 1) setJobs([]); })
         .finally(() => setLoading(false));
     }, q ? 300 : 0);
     return () => clearTimeout(handle);
-  }, [q, category, jobType, experienceRequired, workMode, hasSalary, selectedSkills, page]);
+  }, [q, category, jobType, experienceRequired, workMode, hasSalary, selectedSkills, skipLocation, page]);
 
   const runSearch = (e) => {
     e?.preventDefault();
     setQ(searchInput);
+    setSkipLocation(false);
+    setPage(1);
+  };
+
+  const broadenWithoutLocation = () => {
+    setSkipLocation(true);
     setPage(1);
   };
 
@@ -140,8 +152,25 @@ function Jobs() {
     setWorkMode("");
     setHasSalary(false);
     setSelectedSkills([]);
+    setAppliedFilters(null);
+    setSkipLocation(false);
     setPage(1);
   };
+
+  // Deterministic, honest reflection of what the natural-language search
+  // understood — no extra AI call, just the structured filters the last
+  // response already returned, so the user can see (and correct) the
+  // interpretation rather than a silent black box.
+  const understoodBits = appliedFilters
+    ? [
+        appliedFilters.keywords?.length && appliedFilters.keywords.join(" "),
+        appliedFilters.jobType,
+        appliedFilters.experienceLevel,
+        appliedFilters.workMode && workModeLabel(appliedFilters.workMode),
+        appliedFilters.location && `${t("jobs.ai.near", "near")} ${appliedFilters.location}`,
+        appliedFilters.skills?.length && appliedFilters.skills.join(", "),
+      ].filter(Boolean)
+    : [];
 
   return (
     <main className="msj-page">
@@ -166,6 +195,8 @@ function Jobs() {
 
       <section className="py-md msj-explore-content">
         <div className="wrap">
+          <JobAiAssistant />
+
           <JobRail
             icon="sparkle"
             title={t("jobs.rails.recommended.title", "Recommended for You")}
@@ -272,6 +303,13 @@ function Jobs() {
             </div>
           </div>
 
+          {understoodBits.length > 0 && (
+            <div className="job-ai-understood">
+              <Icon name="sparkle" size={13} />
+              <span>{t("jobs.ai.understood", "Showing results for")}: {understoodBits.join(", ")}</span>
+            </div>
+          )}
+
           {activeFilters.length > 0 && (
             <div className="msj-active-filters">
               {activeFilters.map((f) => (
@@ -299,7 +337,14 @@ function Jobs() {
               <Icon name="briefcase" size={30} />
               <h3>{hasAnyFilter ? t("jobs.empty.filteredTitle", "No jobs match your filters") : t("jobs.empty.noneTitle", "No open jobs right now")}</h3>
               <p>{hasAnyFilter ? t("jobs.empty.filteredBody", "Try removing a filter or broadening your search.") : t("jobs.empty.noneBody", "Check back soon — new roles are posted by the community often.")}</p>
-              {hasAnyFilter && <button type="button" className="btn btn-outline-ink" onClick={clearAll}>{t("jobs.filter.clearAll", "Clear All Filters")}</button>}
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center" }}>
+                {appliedFilters?.location && !skipLocation && (
+                  <button type="button" className="btn btn-outline-ink" onClick={broadenWithoutLocation}>
+                    {t("jobs.empty.tryWithoutLocation", "Search without location")}
+                  </button>
+                )}
+                {hasAnyFilter && <button type="button" className="btn btn-outline-ink" onClick={clearAll}>{t("jobs.filter.clearAll", "Clear All Filters")}</button>}
+              </div>
             </div>
           ) : (
             <div className="msj-list-grid" style={{ marginTop: 12 }}>
