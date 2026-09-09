@@ -45,6 +45,13 @@ const ICONS = {
   map: { d: ["M1 6l7-4 8 4 7-4v16l-7 4-8-4-7 4z", "M8 2v16", "M16 6v16"] },
   clock: { circle: { cx: 12, cy: 12, r: 9 }, d: ["M12 7v5l3.5 2"] },
   calendar: { rect: { x: 3, y: 4, width: 18, height: 17, rx: 2 }, d: ["M16 2v4M8 2v4M3 10h18"] },
+  content: { d: ["M4 4h16v16H4z", "M8 9h8M8 13h5"] },
+  megaphone: { d: ["M3 11v2a1 1 0 001 1h2l3.5 5V5L6 10H4a1 1 0 00-1 1z", "M14 7a5 5 0 010 10", "M18 4a9 9 0 010 16"] },
+  trendUp: { d: ["M23 6l-9.5 9.5-5-5L1 18", "M17 6h6v6"] },
+  briefcase: { d: ["M3 7h18v12a2 2 0 01-2 2H5a2 2 0 01-2-2V7z", "M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2", "M3 13h18"] },
+  target: { d: ["M12 22a10 10 0 100-20 10 10 0 000 20z", "M12 17a5 5 0 100-10 5 5 0 000 10z", "M12 13a1 1 0 100-2 1 1 0 000 2z"] },
+  layers: { d: ["M12 2l9 5-9 5-9-5 9-5z", "M3 12l9 5 9-5", "M3 17l9 5 9-5"] },
+  fileText: { d: ["M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z", "M14 2v6h6", "M9 13h6M9 17h6"] },
 };
 
 export function Icon({ name, size = 24 }) {

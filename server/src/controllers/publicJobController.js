@@ -5,6 +5,7 @@ import User from "../models/User.js";
 import EmploymentType from "../models/EmploymentType.js";
 import ExperienceLevel from "../models/ExperienceLevel.js";
 import Skill from "../models/Skill.js";
+import JobCategory from "../models/JobCategory.js";
 
 // The public Jobs board's filter chips need the same admin-managed master
 // lists the posting form uses, but those otherwise only have auth-gated
@@ -37,6 +38,15 @@ export const listSkills = async (req, res) => {
   }
 };
 
+export const listJobCategories = async (req, res) => {
+  try {
+    const jobCategories = await JobCategory.findAll({ where: { isActive: true }, order: [["sortOrder", "ASC"]] });
+    res.json({ jobCategories });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 const PUBLIC_STATUSES = ["active"];
 
 async function withCard(job) {
@@ -47,9 +57,13 @@ async function withCard(job) {
     title: job.title,
     jobType: job.jobType,
     experienceRequired: job.experienceRequired,
+    category: job.category,
+    workMode: job.workMode,
+    skills: job.skills || [],
     location: job.location,
     salary: job.salary,
     applicationDeadline: job.applicationDeadline,
+    applicantCount: job.applicationCount,
     createdAt: job.createdAt,
     postedBy: poster?.fullName || "A community member",
   };
@@ -57,10 +71,12 @@ async function withCard(job) {
 
 export const listPublic = async (req, res) => {
   try {
-    const { q, jobType, experienceRequired, hasSalary, skills, location, excludeId, page = 1, pageSize = 12 } = req.query;
+    const { q, jobType, experienceRequired, category, workMode, hasSalary, skills, location, excludeId, page = 1, pageSize = 12 } = req.query;
     const where = { status: { [Op.in]: PUBLIC_STATUSES }, moderationStatus: "active" };
     if (jobType) where.jobType = jobType;
     if (experienceRequired) where.experienceRequired = experienceRequired;
+    if (category) where.category = category;
+    if (workMode) where.workMode = workMode;
     if (hasSalary === "true") where.salary = { [Op.ne]: null };
     if (location) where.location = { [Op.like]: `%${location}%` };
     if (excludeId) where.id = { [Op.ne]: excludeId };

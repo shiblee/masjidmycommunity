@@ -24,6 +24,7 @@ import FieldOfStudyPanel from "./meta/FieldOfStudyPanel.jsx";
 import CompanyPanel from "./meta/CompanyPanel.jsx";
 import EmploymentTypePanel from "./meta/EmploymentTypePanel.jsx";
 import ExperienceLevelPanel from "./meta/ExperienceLevelPanel.jsx";
+import JobCategoryPanel from "./meta/JobCategoryPanel.jsx";
 import MetaChangeLogPanel from "./meta/MetaChangeLogPanel.jsx";
 import { META_ENTITY_LABELS } from "./meta/entityLabels.js";
 import Icon from "../components/Icons.jsx";
@@ -57,6 +58,7 @@ const META_ENTITIES = [
   { key: "company", label: META_ENTITY_LABELS.company, icon: "briefcase", Component: CompanyPanel, path: "companies", countKey: "companies" },
   { key: "employment-type", label: META_ENTITY_LABELS["employment-type"], icon: "clock", Component: EmploymentTypePanel, path: "employment-types", countKey: "employmentTypes" },
   { key: "experience-level", label: META_ENTITY_LABELS["experience-level"], icon: "trendUp", Component: ExperienceLevelPanel, path: "experience-levels", countKey: "experienceLevels" },
+  { key: "job-category", label: META_ENTITY_LABELS["job-category"], icon: "briefcase", Component: JobCategoryPanel, path: "job-categories", countKey: "jobCategories" },
   { key: "change-log", label: "Change Log", icon: "activity", Component: MetaChangeLogPanel },
 ];
 

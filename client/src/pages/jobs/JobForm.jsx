@@ -16,7 +16,7 @@ function todayStr() {
 }
 
 function emptyForm() {
-  return { title: "", description: "", jobType: "", experienceRequired: "", skills: [], location: "", salary: "", applicationDeadline: "", contactMethod: "" };
+  return { title: "", description: "", jobType: "", experienceRequired: "", category: "", workMode: "", skills: [], location: "", salary: "", applicationDeadline: "", contactMethod: "" };
 }
 
 // A single full-page form, not a multi-step wizard like Masjid/Campaign —
@@ -46,6 +46,7 @@ function JobForm({ embedded = false }) {
   const [jobTypes, setJobTypes] = useState([]);
   const [experienceLevels, setExperienceLevels] = useState([]);
   const [masterSkills, setMasterSkills] = useState([]);
+  const [jobCategories, setJobCategories] = useState([]);
 
   useEffect(() => {
     userApi.get("/meta/employment-types").then(({ data }) => {
@@ -54,6 +55,7 @@ function JobForm({ embedded = false }) {
     }).catch(() => {});
     userApi.get("/meta/experience-levels").then(({ data }) => setExperienceLevels(data.experienceLevels)).catch(() => {});
     userApi.get("/meta/skills").then(({ data }) => setMasterSkills(data.skills)).catch(() => {});
+    userApi.get("/meta/job-categories").then(({ data }) => setJobCategories(data.jobCategories)).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -63,6 +65,7 @@ function JobForm({ embedded = false }) {
       setForm({
         title: j.title, description: j.description, jobType: j.jobType,
         experienceRequired: j.experienceRequired || "",
+        category: j.category || "", workMode: j.workMode || "",
         skills: (j.skills || []).map((name, i) => ({ id: `existing-${i}`, name })),
         location: j.location, salary: j.salary || "",
         applicationDeadline: j.applicationDeadline || "", contactMethod: j.contactMethod || "",
@@ -171,6 +174,23 @@ function JobForm({ embedded = false }) {
               </Field>
               <Field label={t("jobForm.fields.salary", "Salary / Compensation")} hint={t("jobForm.hints.optionalLeaveBlank", "Optional — leave blank if not applicable")}>
                 <input value={form.salary} onChange={setField("salary")} placeholder={t("jobForm.fields.salaryPlaceholder", "e.g. ₹25,000-₹35,000/month or Volunteer")} maxLength={100} />
+              </Field>
+            </div>
+
+            <div className="msj-field-row">
+              <Field label={t("jobForm.fields.category", "Job Category")} hint={t("jobForm.hints.optional", "Optional")}>
+                <select value={form.category} onChange={setField("category")}>
+                  <option value="">{t("jobForm.fields.notSpecified", "Not specified")}</option>
+                  {jobCategories.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
+                </select>
+              </Field>
+              <Field label={t("jobForm.fields.workMode", "Work Mode")} hint={t("jobForm.hints.optional", "Optional")}>
+                <select value={form.workMode} onChange={setField("workMode")}>
+                  <option value="">{t("jobForm.fields.notSpecified", "Not specified")}</option>
+                  <option value="on_site">{t("jobForm.workMode.onSite", "On-site")}</option>
+                  <option value="remote">{t("jobForm.workMode.remote", "Remote")}</option>
+                  <option value="hybrid">{t("jobForm.workMode.hybrid", "Hybrid")}</option>
+                </select>
               </Field>
             </div>
 

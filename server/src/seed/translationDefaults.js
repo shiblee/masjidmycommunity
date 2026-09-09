@@ -1886,6 +1886,29 @@ const DEFAULTS = [
   ["myMasjidsShared", "myMasjidsShared.delete", "Delete", "हटाएं", "حذف کریں", "حذف"],
   ["myMasjidsShared", "myMasjidsShared.campaignsLabel", "Campaigns:", "अभियान:", "مہمات:", "الحملات:"],
   ["myMasjidsShared", "myMasjidsShared.registered", "Registered {date}", "{date} को पंजीकृत", "{date} کو رجسٹرڈ", "سُجّل في {date}"],
+
+  // Jobs redesign — Phase 1 (hero search, category strip, richer cards, skeletons, empty states)
+  ["jobs", "jobs.hero.searchPlaceholder", "Search jobs, skills, companies, or locations…", "नौकरियाँ, कौशल, कंपनियाँ या स्थान खोजें…", "ملازمتیں، مہارتیں، کمپنیاں یا مقامات تلاش کریں…", "ابحث عن الوظائف أو المهارات أو الشركات أو المواقع…"],
+  ["jobs", "jobs.hero.searchButton", "Search", "खोजें", "تلاش کریں", "بحث"],
+  ["jobs", "jobs.filter.filtersToggle", "Filters", "फ़िल्टर", "فلٹرز", "عوامل التصفية"],
+  ["jobs", "jobs.filter.anyWorkMode", "Any Work Mode", "कोई भी कार्य मोड", "کوئی بھی ورک موڈ", "أي نمط عمل"],
+  ["jobs", "jobs.card.onSite", "On-site", "ऑन-साइट", "آن سائٹ", "في الموقع"],
+  ["jobs", "jobs.card.remote", "Remote", "रिमोट", "ریموٹ", "عن بُعد"],
+  ["jobs", "jobs.card.hybrid", "Hybrid", "हाइब्रिड", "ہائبرڈ", "هجين"],
+  ["jobs", "jobs.card.closes", "Closes", "समाप्ति", "اختتام", "ينتهي"],
+  ["jobs", "jobs.card.applicant", "applicant", "आवेदक", "درخواست دہندہ", "متقدم"],
+  ["jobs", "jobs.card.applicants", "applicants", "आवेदक", "درخواست دہندگان", "متقدمون"],
+  ["jobs", "jobs.empty.filteredTitle", "No jobs match your filters", "आपके फ़िल्टर से कोई नौकरी मेल नहीं खाती", "آپ کے فلٹرز سے کوئی ملازمت مماثل نہیں", "لا توجد وظائف مطابقة لعوامل التصفية"],
+  ["jobs", "jobs.empty.filteredBody", "Try removing a filter or broadening your search.", "एक फ़िल्टर हटाकर या खोज को व्यापक बनाकर देखें।", "ایک فلٹر ہٹا کر یا اپنی تلاش کو وسیع کر کے دیکھیں۔", "جرّب إزالة أحد عوامل التصفية أو توسيع نطاق بحثك."],
+  ["jobs", "jobs.empty.noneTitle", "No open jobs right now", "फ़िलहाल कोई खुली नौकरी नहीं है", "فی الحال کوئی خالی آسامی نہیں", "لا توجد وظائف شاغرة حاليًا"],
+  ["jobs", "jobs.empty.noneBody", "Check back soon — new roles are posted by the community often.", "जल्द ही फिर से देखें — समुदाय द्वारा अक्सर नई भूमिकाएँ पोस्ट की जाती हैं।", "جلد دوبارہ ملاحظہ کریں — کمیونٹی کی جانب سے اکثر نئی آسامیاں پوسٹ کی جاتی ہیں۔", "تفقد الصفحة قريبًا — يقوم المجتمع بنشر أدوار جديدة باستمرار."],
+
+  // JobCategory meta entity + JobForm's new category/workMode fields
+  ["jobForm", "jobForm.fields.category", "Job Category", "नौकरी की श्रेणी", "ملازمت کی قسم", "فئة الوظيفة"],
+  ["jobForm", "jobForm.fields.workMode", "Work Mode", "कार्य मोड", "ورک موڈ", "نمط العمل"],
+  ["jobForm", "jobForm.workMode.onSite", "On-site", "ऑन-साइट", "آن سائٹ", "في الموقع"],
+  ["jobForm", "jobForm.workMode.remote", "Remote", "रिमोट", "ریموٹ", "عن بُعد"],
+  ["jobForm", "jobForm.workMode.hybrid", "Hybrid", "हाइब्रिड", "ہائبرڈ", "هجين"],
 ];
 
 // Additive, not "seed once": every deploy that adds new keys to DEFAULTS

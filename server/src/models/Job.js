@@ -42,6 +42,13 @@ const Job = sequelize.define(
     // null itself either way — jobController.js's normalizeSkills always
     // writes at least [].
     skills: { type: DataTypes.JSON, allowNull: true },
+    // Free text (the selected JobCategory's own name) — same denormalized
+    // approach as jobType/experienceRequired, sourced from Admin Panel ->
+    // Meta -> Job Category. Powers the Jobs page's category quick-pick strip.
+    category: { type: DataTypes.STRING, allowNull: true },
+    // Nullable, no default — additive column on an existing table, same
+    // safety profile as every other column added this session.
+    workMode: { type: DataTypes.ENUM("on_site", "remote", "hybrid"), allowNull: true },
     location: { type: DataTypes.STRING, allowNull: false },
     salary: { type: DataTypes.STRING, allowNull: true },
     applicationDeadline: { type: DataTypes.DATEONLY, allowNull: true },

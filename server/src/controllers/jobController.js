@@ -91,7 +91,7 @@ export const createJob = async (req, res) => {
     const error = validateFields(req.body);
     if (error) return res.status(400).json({ message: error });
 
-    const { title, description, jobType, experienceRequired, skills, location, salary, applicationDeadline, contactMethod } = req.body;
+    const { title, description, jobType, experienceRequired, category, workMode, skills, location, salary, applicationDeadline, contactMethod } = req.body;
 
     const restrictedField = await firstRestrictedField({ title: title.trim(), description: description.trim() });
     if (restrictedField) {
@@ -107,6 +107,8 @@ export const createJob = async (req, res) => {
       description: description.trim(),
       jobType: jobType?.trim() || "Full-time",
       experienceRequired: experienceRequired?.trim() || null,
+      category: category?.trim() || null,
+      workMode: workMode || null,
       skills: normalizeSkills(skills),
       location: location.trim(),
       salary: salary?.trim() || null,
@@ -134,7 +136,7 @@ export const updateJob = async (req, res) => {
     const error = validateFields({ ...job.toJSON(), ...req.body });
     if (error) return res.status(400).json({ message: error });
 
-    const { title, description, jobType, experienceRequired, skills, location, salary, applicationDeadline, contactMethod } = req.body;
+    const { title, description, jobType, experienceRequired, category, workMode, skills, location, salary, applicationDeadline, contactMethod } = req.body;
 
     const restrictedField = await firstRestrictedField({ title: (title ?? job.title).trim(), description: (description ?? job.description).trim() });
     if (restrictedField) {
@@ -148,6 +150,8 @@ export const updateJob = async (req, res) => {
     if (description !== undefined) job.description = description.trim();
     if (jobType !== undefined) job.jobType = jobType.trim() || job.jobType;
     if (experienceRequired !== undefined) job.experienceRequired = experienceRequired?.trim() || null;
+    if (category !== undefined) job.category = category?.trim() || null;
+    if (workMode !== undefined) job.workMode = workMode || null;
     if (skills !== undefined) job.skills = normalizeSkills(skills);
     if (location !== undefined) job.location = location.trim();
     if (salary !== undefined) job.salary = salary?.trim() || null;
