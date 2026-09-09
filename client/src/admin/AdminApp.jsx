@@ -10,6 +10,8 @@ import MasjidReview from "./pages/MasjidReview.jsx";
 import CommunityWall from "./pages/CommunityWall.jsx";
 import Campaigns from "./pages/Campaigns.jsx";
 import CampaignReview from "./pages/CampaignReview.jsx";
+import Jobs from "./pages/Jobs.jsx";
+import JobReview from "./pages/JobReview.jsx";
 import FundUtilization from "./pages/FundUtilization.jsx";
 import ReportsAnalytics from "./pages/ReportsAnalytics.jsx";
 import GreenTickApplications from "./pages/GreenTickApplications.jsx";
@@ -57,6 +59,8 @@ function AdminApp() {
         <Route path="campaigns" element={<Campaigns />} />
         <Route path="campaigns/:id" element={<CampaignReview />} />
         <Route path="campaigns/:id/:tab" element={<CampaignReview />} />
+        <Route path="jobs" element={<Jobs />} />
+        <Route path="jobs/:id" element={<JobReview />} />
         <Route path="verification" element={<GreenTickApplications />} />
         <Route path="fund-utilization" element={<FundUtilization />} />
         <Route path="reports" element={<ReportsAnalytics />} />

@@ -43,6 +43,7 @@ const NAV_ITEMS = [
   },
   { to: "/admin/masjids", label: "Masjids", icon: "mosque" },
   { to: "/admin/campaigns", label: "Campaigns", icon: "campaign" },
+  { to: "/admin/jobs", label: "Jobs", icon: "briefcase" },
   {
     label: "Support & Help",
     icon: "shield",

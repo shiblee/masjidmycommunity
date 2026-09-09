@@ -26,6 +26,7 @@ import adminCampaignCategoryRoutes from "./routes/adminCampaignCategoryRoutes.js
 import adminCampaignClassificationRoutes from "./routes/adminCampaignClassificationRoutes.js";
 import jobRoutes from "./routes/jobRoutes.js";
 import publicJobRoutes from "./routes/publicJobRoutes.js";
+import adminJobRoutes from "./routes/adminJobRoutes.js";
 import publicConcernRoutes from "./routes/publicConcernRoutes.js";
 import adminConcernRoutes from "./routes/adminConcernRoutes.js";
 import adminConcernTypeRoutes from "./routes/adminConcernTypeRoutes.js";
@@ -153,6 +154,7 @@ app.use("/api/admin/campaign-categories", adminCampaignCategoryRoutes);
 app.use("/api/admin/campaign-classifications", adminCampaignClassificationRoutes);
 app.use("/api/jobs/public", publicJobRoutes);
 app.use("/api/jobs", jobRoutes);
+app.use("/api/admin/jobs", adminJobRoutes);
 app.use("/api/concerns/public", publicConcernRoutes);
 app.use("/api/admin/concerns", adminConcernRoutes);
 app.use("/api/admin/concern-types", adminConcernTypeRoutes);

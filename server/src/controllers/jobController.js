@@ -1,4 +1,5 @@
 import Job from "../models/Job.js";
+import JobHistory from "../models/JobHistory.js";
 import { generateUniqueSlug } from "../utils/slugify.js";
 import { firstRestrictedField, RESTRICTED_CONTENT_MESSAGE } from "../utils/contentModeration.js";
 
@@ -11,11 +12,22 @@ async function findOwnedJob(req, res) {
   return job;
 }
 
-function todayStr() {
+// Shared with adminJobController.js so an admin edit/status change is
+// tracked in the exact same table/shape as an owner's own — one history
+// list per job, not two systems to reconcile on the detail page.
+export async function logJobHistory(jobId, action, note, actorType, actorName) {
+  await JobHistory.create({ jobId, action, actorType, actorName: actorName || (actorType === "admin" ? "Admin" : "Owner"), note: note || null });
+}
+
+export function todayStr() {
   return new Date().toISOString().slice(0, 10);
 }
 
-function validateFields(body) {
+// Exported so adminJobController.js's create/update run the identical
+// checks instead of a second, drifting copy — "use the same ... validation
+// as the user-side Add Job functionality" from the admin task applies
+// literally here.
+export function validateFields(body) {
   if (!body.title?.trim()) return "Job title is required.";
   if (!body.description?.trim()) return "Job description is required.";
   if (!body.location?.trim()) return "Location is required.";
@@ -26,7 +38,7 @@ function validateFields(body) {
   return null;
 }
 
-function normalizeSkills(skills) {
+export function normalizeSkills(skills) {
   if (!Array.isArray(skills)) return [];
   return [...new Set(skills.map((s) => String(s).trim()).filter(Boolean))].slice(0, 20);
 }
@@ -82,6 +94,7 @@ export const createJob = async (req, res) => {
       applicationDeadline: applicationDeadline || null,
       contactMethod: contactMethod?.trim() || null,
     });
+    await logJobHistory(job.id, "posted", `${job.title} — ${job.location}`, "user", null);
 
     res.status(201).json({ job });
   } catch (error) {
@@ -121,6 +134,7 @@ export const updateJob = async (req, res) => {
     if (contactMethod !== undefined) job.contactMethod = contactMethod?.trim() || null;
 
     await job.save();
+    await logJobHistory(job.id, "updated", null, "user", null);
     res.json({ job });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -134,6 +148,7 @@ export const closeJob = async (req, res) => {
     if (job.status !== "active") return res.status(400).json({ message: "Only an active job can be closed." });
     job.status = "closed";
     await job.save();
+    await logJobHistory(job.id, "status_changed", "active → closed", "user", null);
     res.json({ job });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -147,6 +162,7 @@ export const reopenJob = async (req, res) => {
     if (job.status !== "closed") return res.status(400).json({ message: "Only a closed job can be reopened." });
     job.status = "active";
     await job.save();
+    await logJobHistory(job.id, "status_changed", "closed → active", "user", null);
     res.json({ job });
   } catch (error) {
     res.status(500).json({ message: error.message });

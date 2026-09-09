@@ -10,6 +10,11 @@ import { sequelize } from "../config/db.js";
 const Job = sequelize.define(
   "Job",
   {
+    // An admin-created job is attributed to the platform account (PLATFORM_EMAIL
+    // in seed/platformUserDefaults.js), same as adminCampaignController.js's
+    // create() — never a null userId, so nothing downstream (poster lookups,
+    // "My Jobs" ownership checks) needs a null-user special case. Which
+    // ones were admin-created is recorded in JobHistory instead ("admin_created").
     userId: { type: DataTypes.INTEGER, allowNull: false },
 
     title: { type: DataTypes.STRING, allowNull: false },

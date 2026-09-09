@@ -1,0 +1,174 @@
+import { Op } from "sequelize";
+import Job from "../models/Job.js";
+import JobHistory from "../models/JobHistory.js";
+import User from "../models/User.js";
+import { generateUniqueSlug } from "../utils/slugify.js";
+import { firstRestrictedField, RESTRICTED_CONTENT_MESSAGE } from "../utils/contentModeration.js";
+import { validateFields, normalizeSkills, logJobHistory } from "./jobController.js";
+import { PLATFORM_EMAIL } from "../seed/platformUserDefaults.js";
+
+const STATUSES = ["active", "closed", "expired", "deleted"];
+
+export const listAll = async (req, res) => {
+  try {
+    const { status, jobType, q, page = 1, pageSize = 20, sortBy = "createdAt", sortDir = "desc" } = req.query;
+    const where = {};
+    if (status && status !== "all") where.status = status;
+    if (jobType) where.jobType = jobType;
+    if (q) {
+      const term = q.trim();
+      where[Op.or] = [{ title: { [Op.like]: `%${term}%` } }, { location: { [Op.like]: `%${term}%` } }];
+    }
+
+    const limit = Math.min(Number(pageSize) || 20, 100);
+    const offset = (Math.max(Number(page) || 1, 1) - 1) * limit;
+    const order = [[["title", "location", "createdAt", "applicationDeadline", "status"].includes(sortBy) ? sortBy : "createdAt", sortDir === "asc" ? "ASC" : "DESC"]];
+
+    const { rows, count } = await Job.findAndCountAll({ where, order, limit, offset });
+    const posterIds = [...new Set(rows.map((j) => j.userId))];
+    const posters = await User.findAll({ where: { id: posterIds }, attributes: ["id", "fullName", "email"] });
+    const posterById = new Map(posters.map((u) => [u.id, u]));
+
+    const jobs = rows.map((j) => ({ ...j.toJSON(), poster: posterById.get(j.userId) || null }));
+
+    const counts = {};
+    for (const s of STATUSES) counts[s] = await Job.count({ where: { status: s } });
+
+    res.json({ jobs, total: count, page: Number(page) || 1, pageSize: limit, counts });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const getOne = async (req, res) => {
+  try {
+    const job = await Job.findByPk(req.params.id);
+    if (!job) return res.status(404).json({ message: "Job not found." });
+
+    const [poster, history] = await Promise.all([
+      User.findByPk(job.userId, { attributes: ["id", "fullName", "email", "mobile", "createdAt"] }),
+      JobHistory.findAll({ where: { jobId: job.id }, order: [["createdAt", "DESC"]] }),
+    ]);
+
+    res.json({ job, poster, history });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Attributed to the platform account (same as adminCampaignController.js's
+// create()) rather than a null/fake user — "Created by Admin" is recorded
+// in JobHistory ("admin_created") and surfaced on the detail page from
+// there, not by inventing a userId-less job row.
+export const create = async (req, res) => {
+  try {
+    const error = validateFields(req.body);
+    if (error) return res.status(400).json({ message: error });
+
+    const { title, description, jobType, experienceRequired, skills, location, salary, applicationDeadline, contactMethod } = req.body;
+
+    const restrictedField = await firstRestrictedField({ title: title.trim(), description: description.trim() });
+    if (restrictedField) {
+      return res.status(400).json({ field: restrictedField, message: RESTRICTED_CONTENT_MESSAGE });
+    }
+
+    const platformUser = await User.findOne({ where: { email: PLATFORM_EMAIL } });
+    if (!platformUser) return res.status(500).json({ message: "Platform account is not configured." });
+
+    const slug = await generateUniqueSlug(Job, title.trim(), { fallback: "job" });
+
+    const job = await Job.create({
+      userId: platformUser.id,
+      title: title.trim(),
+      slug,
+      description: description.trim(),
+      jobType: jobType?.trim() || "Full-time",
+      experienceRequired: experienceRequired?.trim() || null,
+      skills: normalizeSkills(skills),
+      location: location.trim(),
+      salary: salary?.trim() || null,
+      applicationDeadline: applicationDeadline || null,
+      contactMethod: contactMethod?.trim() || null,
+    });
+    await logJobHistory(job.id, "admin_created", `${job.title} — ${job.location}`, "admin", req.user.email);
+
+    res.status(201).json({ job });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Unlike the owner's own updateJob, admin can edit any field regardless of
+// status — a closed/expired listing is still fully editable from here.
+export const update = async (req, res) => {
+  try {
+    const job = await Job.findByPk(req.params.id);
+    if (!job) return res.status(404).json({ message: "Job not found." });
+
+    const error = validateFields({ ...job.toJSON(), ...req.body });
+    if (error) return res.status(400).json({ message: error });
+
+    const { title, description, jobType, experienceRequired, skills, location, salary, applicationDeadline, contactMethod } = req.body;
+
+    const restrictedField = await firstRestrictedField({ title: (title ?? job.title).trim(), description: (description ?? job.description).trim() });
+    if (restrictedField) {
+      return res.status(400).json({ field: restrictedField, message: RESTRICTED_CONTENT_MESSAGE });
+    }
+
+    if (title !== undefined && title.trim() !== job.title) {
+      job.slug = await generateUniqueSlug(Job, title.trim(), { fallback: "job", excludeId: job.id });
+    }
+    if (title !== undefined) job.title = title.trim();
+    if (description !== undefined) job.description = description.trim();
+    if (jobType !== undefined) job.jobType = jobType.trim() || job.jobType;
+    if (experienceRequired !== undefined) job.experienceRequired = experienceRequired?.trim() || null;
+    if (skills !== undefined) job.skills = normalizeSkills(skills);
+    if (location !== undefined) job.location = location.trim();
+    if (salary !== undefined) job.salary = salary?.trim() || null;
+    if (applicationDeadline !== undefined) job.applicationDeadline = applicationDeadline || null;
+    if (contactMethod !== undefined) job.contactMethod = contactMethod?.trim() || null;
+
+    await job.save();
+    await logJobHistory(job.id, "admin_updated", null, "admin", req.user.email);
+    res.json({ job });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const updateStatus = async (req, res) => {
+  try {
+    const job = await Job.findByPk(req.params.id);
+    if (!job) return res.status(404).json({ message: "Job not found." });
+
+    const { status } = req.body;
+    if (!STATUSES.includes(status)) return res.status(400).json({ message: "Select a valid status." });
+    if (status === job.status) return res.status(400).json({ message: `This job is already ${status}.` });
+
+    const from = job.status;
+    job.status = status;
+    await job.save();
+    await logJobHistory(job.id, "status_changed", `${from} → ${status}`, "admin", req.user.email);
+    res.json({ job });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const updateModeration = async (req, res) => {
+  try {
+    const job = await Job.findByPk(req.params.id);
+    if (!job) return res.status(404).json({ message: "Job not found." });
+
+    const { moderationStatus } = req.body;
+    if (!["active", "under_review"].includes(moderationStatus)) return res.status(400).json({ message: "Select a valid moderation status." });
+
+    job.moderationStatus = moderationStatus;
+    job.moderationReviewedAt = new Date();
+    await job.save();
+    await logJobHistory(job.id, "moderation_changed", moderationStatus === "active" ? "Restored to public view" : "Hidden from public view", "admin", req.user.email);
+    res.json({ job });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

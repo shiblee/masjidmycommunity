@@ -33,6 +33,7 @@ const MAP = {
 
   inactive: { cls: "amx-badge-neutral", label: "Inactive" },
   closed: { cls: "amx-badge-neutral", label: "Closed" },
+  expired: { cls: "amx-badge-neutral", label: "Expired" },
   neutral: { cls: "amx-badge-neutral", label: "—" },
 };
 
