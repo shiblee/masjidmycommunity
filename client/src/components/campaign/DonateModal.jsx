@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import campaignApi from "../../services/campaignApi.js";
 import { Icon } from "../Icons.jsx";
 import { useBodyScrollLock } from "../../hooks/useBodyScrollLock.js";
+import { useTranslation } from "../../i18n/LanguageContext.jsx";
 
 const PRESET_AMOUNTS = [500, 1000, 2500, 5000, 10000];
 
@@ -21,6 +22,7 @@ const PRESET_AMOUNTS = [500, 1000, 2500, 5000, 10000];
 // is tied to a real account, not just free-text a visitor could fake.
 function DonateModal({ campaign, donationAccount, slug, user, onClose }) {
   useBodyScrollLock();
+  const { t } = useTranslation();
   const [amount, setAmount] = useState(PRESET_AMOUNTS[1]);
   const [custom, setCustom] = useState("");
   const [step, setStep] = useState("amount"); // "amount" | "claim" | "done"
@@ -29,6 +31,8 @@ function DonateModal({ campaign, donationAccount, slug, user, onClose }) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const effectiveAmount = custom ? Number(custom) : amount;
+  const closeLabel = t("donateModal.close", "Close");
+  const sentItLabel = t("donateModal.sentIt", "I've Sent It");
 
   const submitClaim = async () => {
     setSubmitting(true);
@@ -42,7 +46,7 @@ function DonateModal({ campaign, donationAccount, slug, user, onClose }) {
       });
       setStep("done");
     } catch (err) {
-      setError(err.response?.data?.message || "Couldn't submit this — please try again.");
+      setError(err.response?.data?.message || t("donateModal.error", "Couldn't submit this — please try again."));
     } finally {
       setSubmitting(false);
     }
@@ -53,12 +57,12 @@ function DonateModal({ campaign, donationAccount, slug, user, onClose }) {
       <div className="msj-modal-overlay" onClick={onClose}>
         <div className="msj-modal" onClick={(e) => e.stopPropagation()} style={{ textAlign: "center" }}>
           <div className="msj-confirm-icon" style={{ margin: "0 auto 16px" }}><Icon name="check" size={28} /></div>
-          <h3>Thank you!</h3>
+          <h3>{t("donateModal.thankYouTitle", "Thank you!")}</h3>
           <p className="msj-modal-sub">
-            Your ₹{effectiveAmount.toLocaleString("en-IN")} contribution has been recorded and now counts toward this campaign's total.
+            {t("donateModal.thankYouBody", "Your ₹{amount} contribution has been recorded and now counts toward this campaign's total.").replace("{amount}", effectiveAmount.toLocaleString("en-IN"))}
           </p>
           <button className="btn btn-gold" style={{ width: "100%", justifyContent: "center" }} onClick={onClose} type="button">
-            Close
+            {closeLabel}
           </button>
         </div>
       </div>
@@ -69,18 +73,18 @@ function DonateModal({ campaign, donationAccount, slug, user, onClose }) {
     return (
       <div className="msj-modal-overlay" onClick={onClose}>
         <div className="msj-modal" onClick={(e) => e.stopPropagation()} style={{ textAlign: "center" }}>
-          <button className="msj-modal-close" onClick={onClose} aria-label="Close"><Icon name="x" size={16} /></button>
+          <button className="msj-modal-close" onClick={onClose} aria-label={closeLabel}><Icon name="x" size={16} /></button>
           <div className="msj-confirm-icon" style={{ margin: "0 auto 16px" }}><Icon name="heart" size={26} /></div>
-          <h3>Sign in to confirm your donation</h3>
+          <h3>{t("donateModal.signInTitle", "Sign in to confirm your donation")}</h3>
           <p className="msj-modal-sub">
-            Letting the masjid know you've sent ₹{effectiveAmount.toLocaleString("en-IN")} needs an account, so your claim is tied to someone real and not just anonymous text.
+            {t("donateModal.signInBody", "Letting the masjid know you've sent ₹{amount} needs an account, so your claim is tied to someone real and not just anonymous text.").replace("{amount}", effectiveAmount.toLocaleString("en-IN"))}
           </p>
           <Link
             to={`/auth?redirect=${encodeURIComponent(`/campaign/${slug}?donate=1`)}`}
             className="btn btn-gold"
             style={{ width: "100%", justifyContent: "center" }}
           >
-            Sign In
+            {t("donateModal.signIn", "Sign In")}
           </Link>
         </div>
       </div>
@@ -91,21 +95,21 @@ function DonateModal({ campaign, donationAccount, slug, user, onClose }) {
     return (
       <div className="msj-modal-overlay" onClick={submitting ? undefined : onClose}>
         <div className="msj-modal" onClick={(e) => e.stopPropagation()}>
-          {!submitting && <button className="msj-modal-close" onClick={onClose} aria-label="Close"><Icon name="x" size={16} /></button>}
-          <h3>Let the masjid know</h3>
-          <p className="msj-modal-sub">Once you've sent ₹{effectiveAmount.toLocaleString("en-IN")}, confirm the claim below.</p>
+          {!submitting && <button className="msj-modal-close" onClick={onClose} aria-label={closeLabel}><Icon name="x" size={16} /></button>}
+          <h3>{t("donateModal.claimTitle", "Let the masjid know")}</h3>
+          <p className="msj-modal-sub">{t("donateModal.claimBody", "Once you've sent ₹{amount}, confirm the claim below.").replace("{amount}", effectiveAmount.toLocaleString("en-IN"))}</p>
 
           <div className="camp-donate-account" style={{ marginBottom: 16 }}>
-            <div><span>Donating as</span><strong>{isAnonymous ? "Anonymous" : (user?.fullName || "You")}</strong></div>
+            <div><span>{t("donateModal.donatingAs", "Donating as")}</span><strong>{isAnonymous ? t("donateModal.anonymous", "Anonymous") : (user?.fullName || t("donateModal.you", "You"))}</strong></div>
           </div>
 
           <label className="msj-ack-row" style={{ marginTop: 0, marginBottom: 16 }}>
             <input type="checkbox" checked={isAnonymous} onChange={(e) => setIsAnonymous(e.target.checked)} />
-            Donate Anonymously — don't show my name publicly on this campaign's donor list or activity feed. Your account is still kept on file for payment, compliance and audit purposes.
+            {t("donateModal.anonymousCheckboxLabel", "Donate Anonymously — don't show my name publicly on this campaign's donor list or activity feed. Your account is still kept on file for payment, compliance and audit purposes.")}
           </label>
 
           <div className="auth-field">
-            <label>Email (optional, for follow-up)</label>
+            <label>{t("donateModal.emailLabel", "Email (optional, for follow-up)")}</label>
             <input type="email" value={donorEmail} onChange={(e) => setDonorEmail(e.target.value)} maxLength={180} />
           </div>
 
@@ -113,10 +117,10 @@ function DonateModal({ campaign, donationAccount, slug, user, onClose }) {
 
           <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
             <button className="btn btn-outline-ink" style={{ flex: 1, justifyContent: "center" }} onClick={() => setStep("amount")} disabled={submitting} type="button">
-              Back
+              {t("donateModal.back", "Back")}
             </button>
             <button className="btn btn-gold" style={{ flex: 1, justifyContent: "center" }} onClick={submitClaim} disabled={submitting} type="button">
-              {submitting ? "Submitting…" : "I've Sent It"}
+              {submitting ? t("donateModal.submitting", "Submitting…") : sentItLabel}
             </button>
           </div>
         </div>
@@ -127,9 +131,9 @@ function DonateModal({ campaign, donationAccount, slug, user, onClose }) {
   return (
     <div className="msj-modal-overlay" onClick={onClose}>
       <div className="msj-modal" onClick={(e) => e.stopPropagation()}>
-        <button className="msj-modal-close" onClick={onClose} aria-label="Close"><Icon name="x" size={16} /></button>
-        <h3>Donate to {campaign.title}</h3>
-        <p className="msj-modal-sub">Pick an amount for your own reference, then transfer it using the masjid's verified details below.</p>
+        <button className="msj-modal-close" onClick={onClose} aria-label={closeLabel}><Icon name="x" size={16} /></button>
+        <h3>{t("donateModal.donateToTitle", "Donate to {title}").replace("{title}", campaign.title)}</h3>
+        <p className="msj-modal-sub">{t("donateModal.pickAmountBody", "Pick an amount for your own reference, then transfer it using the masjid's verified details below.")}</p>
 
         <div className="camp-donate-amounts">
           {PRESET_AMOUNTS.map((a) => (
@@ -144,31 +148,31 @@ function DonateModal({ campaign, donationAccount, slug, user, onClose }) {
           ))}
         </div>
         <div className="auth-field" style={{ marginTop: 12 }}>
-          <label>Or enter a custom amount (INR)</label>
-          <input type="number" min="1" value={custom} onChange={(e) => setCustom(e.target.value)} placeholder="e.g. 7500" />
+          <label>{t("donateModal.customAmountLabel", "Or enter a custom amount (INR)")}</label>
+          <input type="number" min="1" value={custom} onChange={(e) => setCustom(e.target.value)} placeholder={t("donateModal.customAmountPlaceholder", "e.g. 7500")} />
         </div>
 
         {donationAccount ? (
           <div className="camp-donate-account" style={{ marginTop: 16 }}>
-            {effectiveAmount > 0 && <p className="msj-note" style={{ marginBottom: 10 }}>Amount to transfer: <strong>₹{effectiveAmount.toLocaleString("en-IN")}</strong></p>}
-            {donationAccount.upiId && <div><span>UPI ID</span><strong>{donationAccount.upiId}</strong></div>}
-            {donationAccount.upiAccountHolder && <div><span>UPI Holder</span><strong>{donationAccount.upiAccountHolder}</strong></div>}
-            {donationAccount.bankName && <div><span>Bank</span><strong>{donationAccount.bankName}</strong></div>}
-            {donationAccount.accountHolderName && <div><span>Account Holder</span><strong>{donationAccount.accountHolderName}</strong></div>}
-            {donationAccount.accountNumberMasked && <div><span>Account No.</span><strong>{donationAccount.accountNumberMasked}</strong></div>}
-            {donationAccount.ifscCode && <div><span>IFSC</span><strong>{donationAccount.ifscCode}</strong></div>}
+            {effectiveAmount > 0 && <p className="msj-note" style={{ marginBottom: 10 }}>{t("donateModal.amountToTransfer", "Amount to transfer:")} <strong>₹{effectiveAmount.toLocaleString("en-IN")}</strong></p>}
+            {donationAccount.upiId && <div><span>{t("donationAccount.upiIdLabel", "UPI ID")}</span><strong>{donationAccount.upiId}</strong></div>}
+            {donationAccount.upiAccountHolder && <div><span>{t("donationAccount.upiHolderLabel", "UPI Holder")}</span><strong>{donationAccount.upiAccountHolder}</strong></div>}
+            {donationAccount.bankName && <div><span>{t("donationAccount.bankLabel", "Bank")}</span><strong>{donationAccount.bankName}</strong></div>}
+            {donationAccount.accountHolderName && <div><span>{t("donationAccount.accountHolderLabel", "Account Holder")}</span><strong>{donationAccount.accountHolderName}</strong></div>}
+            {donationAccount.accountNumberMasked && <div><span>{t("donationAccount.accountNoLabel", "Account No.")}</span><strong>{donationAccount.accountNumberMasked}</strong></div>}
+            {donationAccount.ifscCode && <div><span>{t("donationAccount.ifscLabel", "IFSC")}</span><strong>{donationAccount.ifscCode}</strong></div>}
           </div>
         ) : (
-          <p className="msj-note" style={{ marginTop: 16 }}>This masjid hasn't published verified donation details yet — check back soon.</p>
+          <p className="msj-note" style={{ marginTop: 16 }}>{t("donateModal.noAccountYet", "This masjid hasn't published verified donation details yet — check back soon.")}</p>
         )}
 
         <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
           <button className="btn btn-outline-ink" style={{ flex: 1, justifyContent: "center" }} onClick={onClose} type="button">
-            Close
+            {closeLabel}
           </button>
           {donationAccount && (
             <button className="btn btn-gold" style={{ flex: 1, justifyContent: "center" }} disabled={!(effectiveAmount > 0)} onClick={() => setStep("claim")} type="button">
-              I've Sent It
+              {sentItLabel}
             </button>
           )}
         </div>

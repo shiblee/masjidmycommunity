@@ -22,18 +22,27 @@ import JobForm from "./jobs/JobForm.jsx";
 import CommunityPost, { mapLiveActivity, timeAgo, EditCommunityPostModal, DeleteCommunityPostModal } from "../components/community/CommunityPost.jsx";
 
 
-const MASJID_STATUS_LABEL = {
-  draft: "Draft", submitted: "Submitted", under_review: "Under Review",
-  changes_requested: "Changes Requested", approved: "Approved", rejected: "Rejected", inactive: "Inactive",
+// Every acct-status-pill value that can show up across the masjid/campaign/job
+// sidebar lists, mapped to its i18n key + English fallback — looked up via the
+// statusLabel() helper inside the component (needs t(), so it can't live at
+// module scope).
+const STATUS_LABEL_ENTRIES = {
+  draft: ["communityWall.status.draft", "Draft"],
+  submitted: ["communityWall.status.submitted", "Submitted"],
+  under_review: ["communityWall.status.underReview", "Under Review"],
+  changes_requested: ["communityWall.status.changesRequested", "Changes Requested"],
+  approved: ["communityWall.status.approved", "Approved"],
+  rejected: ["communityWall.status.rejected", "Rejected"],
+  inactive: ["communityWall.status.inactive", "Inactive"],
+  active: ["communityWall.status.active", "Active"],
+  paused: ["communityWall.status.paused", "Paused"],
+  goal_reached: ["communityWall.status.goalReached", "Goal Reached"],
+  completed: ["communityWall.status.completed", "Completed"],
+  cancelled: ["communityWall.status.cancelled", "Cancelled"],
+  closed: ["communityWall.status.closed", "Closed"],
+  expired: ["communityWall.status.expired", "Expired"],
+  deleted: ["communityWall.status.deleted", "Deleted"],
 };
-
-const CAMPAIGN_STATUS_LABEL = {
-  draft: "Draft", submitted: "Submitted", under_review: "Under Review", changes_requested: "Changes Requested",
-  approved: "Approved", active: "Active", paused: "Paused", goal_reached: "Goal Reached",
-  completed: "Completed", rejected: "Rejected", cancelled: "Cancelled",
-};
-
-const JOB_STATUS_LABEL = { active: "Active", closed: "Closed", expired: "Expired", deleted: "Deleted" };
 // Reuses the acct-status-pill classes already styled for other statuses,
 // same mapping as pages/jobs/MyJobs.jsx, rather than adding new CSS.
 const JOB_STATUS_PILL_CLASS = { active: "active", closed: "inactive", expired: "cancelled", deleted: "cancelled" };
@@ -289,6 +298,10 @@ const posts = [
 
 function Community() {
   const { t } = useTranslation();
+  const statusLabel = (status) => {
+    const entry = STATUS_LABEL_ENTRIES[status];
+    return entry ? t(entry[0], entry[1]) : status;
+  };
   const navigate = useNavigate();
   const location = useLocation();
   const { id: idParam } = useParams();
@@ -408,7 +421,7 @@ function Community() {
     masjidApi
       .get("/mine")
       .then(({ data }) => setMyMasjids(data.masjids))
-      .catch(() => setMyMasjidsError("Couldn't load your masjids."));
+      .catch(() => setMyMasjidsError(t("communityWall.masjid.loadError", "Couldn't load your masjids.")));
   }, [user]);
 
   useEffect(() => {
@@ -422,7 +435,7 @@ function Community() {
     campaignApi
       .get("/mine")
       .then(({ data }) => setMyCampaigns(data.campaigns))
-      .catch(() => setMyCampaignsError("Couldn't load your campaigns."));
+      .catch(() => setMyCampaignsError(t("communityWall.campaign.loadError", "Couldn't load your campaigns.")));
   }, [user]);
 
   useEffect(() => {
@@ -433,7 +446,7 @@ function Community() {
     jobApi
       .get("/mine")
       .then(({ data }) => setMyJobs(data.jobs))
-      .catch(() => setMyJobsError("Couldn't load your jobs."));
+      .catch(() => setMyJobsError(t("communityWall.jobs.loadError", "Couldn't load your jobs.")));
   }, [user]);
 
   const ownedMasjidIds = useMemo(() => new Set((myMasjids || []).map((m) => m.id)), [myMasjids]);
@@ -502,7 +515,7 @@ function Community() {
       setLiveActivities((acts) => acts.map((a) => (a.activityId === postModal.post.activityId ? { ...a, text: body } : a)));
       closePostModal();
     } catch (err) {
-      setPostError(err.response?.data?.message || "Couldn't save this post. Please try again.");
+      setPostError(err.response?.data?.message || t("communityWall.editPost.saveError", "Couldn't save this post. Please try again."));
     } finally {
       setPostBusy(false);
     }
@@ -516,7 +529,7 @@ function Community() {
       setLiveActivities((acts) => acts.filter((a) => a.activityId !== postModal.post.activityId));
       closePostModal();
     } catch (err) {
-      setPostError(err.response?.data?.message || "Couldn't delete this post. Please try again.");
+      setPostError(err.response?.data?.message || t("communityWall.editPost.deleteError", "Couldn't delete this post. Please try again."));
     } finally {
       setPostBusy(false);
     }
@@ -537,7 +550,7 @@ function Community() {
       await reportApi.post("/", { targetType, targetId, activityId: post.activityId, reason, comment });
       setReportSuccess(true);
     } catch (err) {
-      setPostError(err.response?.data?.message || "Couldn't submit this report. Please try again.");
+      setPostError(err.response?.data?.message || t("campaignProfile.post.reportError", "Couldn't submit this report. Please try again."));
     } finally {
       setPostBusy(false);
     }
@@ -607,23 +620,23 @@ function Community() {
           <div className="cw-layout">
             <aside className="cw-side">
               <div className="cw-side-card">
-                <h4>Community Impact</h4>
+                <h4>{t("communityWall.impact.heading", "Community Impact")}</h4>
                 <div className="cw-side-stats">
                   <div>
                     <strong>{communityStats ? communityStats.masjidCount.toLocaleString("en-IN") : "—"}</strong>
-                    <span>Verified Masjids</span>
+                    <span>{t("communityWall.impact.verifiedMasjids", "Verified Masjids")}</span>
                   </div>
                   <div>
                     <strong>{communityStats ? communityStats.campaignCount.toLocaleString("en-IN") : "—"}</strong>
-                    <span>Active Campaigns</span>
+                    <span>{t("communityWall.impact.activeCampaigns", "Active Campaigns")}</span>
                   </div>
                   <div>
                     <strong>{communityStats ? communityStats.memberCount.toLocaleString("en-IN") : "—"}</strong>
-                    <span>Community Members</span>
+                    <span>{t("communityWall.impact.communityMembers", "Community Members")}</span>
                   </div>
                   <div>
                     <strong>{communityStats ? `₹${communityStats.totalRaised.toLocaleString("en-IN")}` : "—"}</strong>
-                    <span>Total Raised</span>
+                    <span>{t("communityWall.impact.totalRaised", "Total Raised")}</span>
                   </div>
                 </div>
               </div>
@@ -652,8 +665,8 @@ function Community() {
 
                   {hashtag && (
                     <div className="cw-hashtag-banner">
-                      <span>Posts tagged <strong>#{hashtag}</strong></span>
-                      <button type="button" onClick={clearHashtag}>Clear <Icon name="x" size={13} /></button>
+                      <span>{t("communityWall.hashtag.postsTagged", "Posts tagged")} <strong>#{hashtag}</strong></span>
+                      <button type="button" onClick={clearHashtag}>{t("communityWall.hashtag.clear", "Clear")} <Icon name="x" size={13} /></button>
                     </div>
                   )}
 
@@ -681,7 +694,7 @@ function Community() {
                   </div>
 
                   <div className="cw-feed-end">
-                    <span>You're all caught up — check back soon for new activity.</span>
+                    <span>{t("communityWall.feedEnd", "You're all caught up — check back soon for new activity.")}</span>
                   </div>
                 </>
               )}
@@ -707,19 +720,19 @@ function Community() {
               {section === "masjid" && (
                 <>
                   <div className="cw-side-card cw-side-card-cta">
-                    <h4>Register Your Masjid</h4>
-                    <p className="cw-side-card-sub">Get verified and featured on the wall.</p>
+                    <h4>{t("communityWall.masjid.registerHeading", "Register Your Masjid")}</h4>
+                    <p className="cw-side-card-sub">{t("communityWall.masjid.registerSub", "Get verified and featured on the wall.")}</p>
                     <Link to="/account/my-masjids/new" className="btn btn-gold" style={{ width: "100%", justifyContent: "center" }}>
-                      <Icon name="plus" size={16} /> Add a Masjid
+                      <Icon name="plus" size={16} /> {t("communityWall.masjid.addMasjid", "Add a Masjid")}
                     </Link>
                   </div>
 
                   {user && (
                     <div className="cw-side-card">
-                      <h4>My Masjids</h4>
+                      <h4>{t("communityWall.masjid.myMasjidsHeading", "My Masjids")}</h4>
                       {myMasjidsError && <p className="cw-side-card-sub">{myMasjidsError}</p>}
                       {myMasjids && myMasjids.length === 0 && (
-                        <p className="cw-side-card-sub">You haven't registered a masjid yet — add one above to get started.</p>
+                        <p className="cw-side-card-sub">{t("communityWall.masjid.empty", "You haven't registered a masjid yet — add one above to get started.")}</p>
                       )}
                       {myMasjids && myMasjids.length > 0 && (
                         <>
@@ -732,7 +745,7 @@ function Community() {
                                   </span>
                                   <span className="cw-my-masjid-body">
                                     <span className="cw-my-masjid-name">{m.name}</span>
-                                    <span className={`acct-status-pill ${m.status}`}>{MASJID_STATUS_LABEL[m.status] || m.status}</span>
+                                    <span className={`acct-status-pill ${m.status}`}>{statusLabel(m.status)}</span>
                                   </span>
                                   <span className="cw-my-masjid-time">{timeAgo(m.createdAt)}</span>
                                 </Link>
@@ -741,7 +754,7 @@ function Community() {
                           </ul>
                           {myMasjids.length > SIDE_LIST_PREVIEW_COUNT && (
                             <button type="button" className="cw-side-link" onClick={() => setShowAllMasjids((v) => !v)}>
-                              {showAllMasjids ? "Show less" : `View All (${myMasjids.length})`} <span className="btn-arrow">{showAllMasjids ? "↑" : "→"}</span>
+                              {showAllMasjids ? t("communityWall.sideList.showLess", "Show less") : t("communityWall.sideList.viewAll", "View All ({count})").replace("{count}", myMasjids.length)} <span className="btn-arrow">{showAllMasjids ? "↑" : "→"}</span>
                             </button>
                           )}
                         </>
@@ -754,19 +767,19 @@ function Community() {
               {section === "campaign" && (
                 <>
                   <div className="cw-side-card cw-side-card-cta">
-                    <h4>Start a Campaign</h4>
-                    <p className="cw-side-card-sub">Raise funds for your masjid's next project.</p>
+                    <h4>{t("communityWall.campaign.startHeading", "Start a Campaign")}</h4>
+                    <p className="cw-side-card-sub">{t("communityWall.campaign.startSub", "Raise funds for your masjid's next project.")}</p>
                     <Link to="/account/my-campaigns/new" className="btn btn-gold" style={{ width: "100%", justifyContent: "center" }}>
-                      <Icon name="plus" size={16} /> Add a Campaign
+                      <Icon name="plus" size={16} /> {t("communityWall.campaign.addCampaign", "Add a Campaign")}
                     </Link>
                   </div>
 
                   {user && (
                     <div className="cw-side-card">
-                      <h4>My Campaigns</h4>
+                      <h4>{t("communityWall.campaign.myCampaignsHeading", "My Campaigns")}</h4>
                       {myCampaignsError && <p className="cw-side-card-sub">{myCampaignsError}</p>}
                       {myCampaigns && myCampaigns.length === 0 && (
-                        <p className="cw-side-card-sub">You haven't started a campaign yet — add one above to get started.</p>
+                        <p className="cw-side-card-sub">{t("communityWall.campaign.empty", "You haven't started a campaign yet — add one above to get started.")}</p>
                       )}
                       {myCampaigns && myCampaigns.length > 0 && (
                         <>
@@ -779,7 +792,7 @@ function Community() {
                                   </span>
                                   <span className="cw-my-masjid-body">
                                     <span className="cw-my-masjid-name">{c.title}</span>
-                                    <span className={`acct-status-pill ${c.status}`}>{CAMPAIGN_STATUS_LABEL[c.status] || c.status}</span>
+                                    <span className={`acct-status-pill ${c.status}`}>{statusLabel(c.status)}</span>
                                   </span>
                                   <span className="cw-my-masjid-time">{timeAgo(c.createdAt)}</span>
                                 </Link>
@@ -788,7 +801,7 @@ function Community() {
                           </ul>
                           {myCampaigns.length > SIDE_LIST_PREVIEW_COUNT && (
                             <button type="button" className="cw-side-link" onClick={() => setShowAllCampaigns((v) => !v)}>
-                              {showAllCampaigns ? "Show less" : `View All (${myCampaigns.length})`} <span className="btn-arrow">{showAllCampaigns ? "↑" : "→"}</span>
+                              {showAllCampaigns ? t("communityWall.sideList.showLess", "Show less") : t("communityWall.sideList.viewAll", "View All ({count})").replace("{count}", myCampaigns.length)} <span className="btn-arrow">{showAllCampaigns ? "↑" : "→"}</span>
                             </button>
                           )}
                         </>
@@ -801,19 +814,19 @@ function Community() {
               {section === "jobs" && (
                 <>
                   <div className="cw-side-card cw-side-card-cta">
-                    <h4>Add a Job</h4>
-                    <p className="cw-side-card-sub">Share an opening with the community.</p>
+                    <h4>{t("communityWall.jobs.addJob", "Add a Job")}</h4>
+                    <p className="cw-side-card-sub">{t("communityWall.jobs.sub", "Share an opening with the community.")}</p>
                     <Link to="/account/my-jobs/new" className="btn btn-gold" style={{ width: "100%", justifyContent: "center" }}>
-                      <Icon name="plus" size={16} /> Add a Job
+                      <Icon name="plus" size={16} /> {t("communityWall.jobs.addJob", "Add a Job")}
                     </Link>
                   </div>
 
                   {user && (
                     <div className="cw-side-card">
-                      <h4>My Jobs</h4>
+                      <h4>{t("communityWall.jobs.myJobsHeading", "My Jobs")}</h4>
                       {myJobsError && <p className="cw-side-card-sub">{myJobsError}</p>}
                       {myJobs && myJobs.length === 0 && (
-                        <p className="cw-side-card-sub">You haven't posted a job yet — add one above to get started.</p>
+                        <p className="cw-side-card-sub">{t("communityWall.jobs.empty", "You haven't posted a job yet — add one above to get started.")}</p>
                       )}
                       {myJobs && myJobs.length > 0 && (
                         <>
@@ -826,7 +839,7 @@ function Community() {
                                   </span>
                                   <span className="cw-my-masjid-body">
                                     <span className="cw-my-masjid-name">{j.title}</span>
-                                    <span className={`acct-status-pill ${JOB_STATUS_PILL_CLASS[j.status] || j.status}`}>{JOB_STATUS_LABEL[j.status] || j.status}</span>
+                                    <span className={`acct-status-pill ${JOB_STATUS_PILL_CLASS[j.status] || j.status}`}>{statusLabel(j.status)}</span>
                                   </span>
                                   <span className="cw-my-masjid-time">{timeAgo(j.createdAt)}</span>
                                 </Link>
@@ -835,7 +848,7 @@ function Community() {
                           </ul>
                           {myJobs.length > SIDE_LIST_PREVIEW_COUNT && (
                             <button type="button" className="cw-side-link" onClick={() => setShowAllJobs((v) => !v)}>
-                              {showAllJobs ? "Show less" : `View All (${myJobs.length})`} <span className="btn-arrow">{showAllJobs ? "↑" : "→"}</span>
+                              {showAllJobs ? t("communityWall.sideList.showLess", "Show less") : t("communityWall.sideList.viewAll", "View All ({count})").replace("{count}", myJobs.length)} <span className="btn-arrow">{showAllJobs ? "↑" : "→"}</span>
                             </button>
                           )}
                         </>
@@ -865,7 +878,7 @@ function Community() {
 
       {postModal?.type === "report" && (
         <ReportModal
-          title="Report Post"
+          title={t("campaignProfile.post.reportTitle", "Report Post")}
           reasons={reportReasons}
           busy={postBusy}
           error={postError}

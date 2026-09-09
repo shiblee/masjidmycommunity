@@ -4,6 +4,7 @@ import CommentSection from "../CommentSection.jsx";
 import PostBodyText from "../PostBodyText.jsx";
 import MentionTextarea from "../MentionTextarea.jsx";
 import { API_ORIGIN } from "../../config.js";
+import { useTranslation } from "../../i18n/LanguageContext.jsx";
 
 // Shared between the general "My Community" wall (client/src/pages/Community.jsx)
 // and the Masjid Community Hub's Wall tab — one post-rendering implementation,
