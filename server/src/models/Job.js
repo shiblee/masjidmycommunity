@@ -1,0 +1,60 @@
+import { DataTypes } from "sequelize";
+import { sequelize } from "../config/db.js";
+
+// Jobs are personal, not masjid-scoped — any registered user can post one
+// with its own `location` field, unlike Campaign which requires an
+// approved + Green-Tick masjid. Auto-published (status defaults "active",
+// no draft/under_review approval lifecycle) since content validation runs
+// synchronously at creation instead of a human review step — see
+// jobController.js's createJob.
+const Job = sequelize.define(
+  "Job",
+  {
+    userId: { type: DataTypes.INTEGER, allowNull: false },
+
+    title: { type: DataTypes.STRING, allowNull: false },
+    slug: { type: DataTypes.STRING, allowNull: false },
+    description: { type: DataTypes.TEXT, allowNull: false },
+
+    jobType: {
+      type: DataTypes.ENUM("full_time", "part_time", "contract", "internship", "volunteer"),
+      allowNull: false,
+      defaultValue: "full_time",
+    },
+    experienceRequired: { type: DataTypes.STRING, allowNull: true },
+    skills: { type: DataTypes.STRING, allowNull: true },
+    location: { type: DataTypes.STRING, allowNull: false },
+    salary: { type: DataTypes.STRING, allowNull: true },
+    applicationDeadline: { type: DataTypes.DATEONLY, allowNull: true },
+    contactMethod: { type: DataTypes.STRING, allowNull: true },
+
+    // Lifecycle — no "draft"/"under_review" step, since a job is live the
+    // moment it's created (subject to the synchronous content check in
+    // createJob, not a human approval queue).
+    status: {
+      type: DataTypes.ENUM("active", "closed", "expired", "deleted"),
+      allowNull: false,
+      defaultValue: "active",
+    },
+
+    // Community-report moderation — same shape as Campaign/Masjid, so the
+    // reported-content queue and admin activate/deactivate controls have a
+    // real hook from day one even before those admin screens are built.
+    moderationStatus: { type: DataTypes.ENUM("active", "under_review"), allowNull: false, defaultValue: "active" },
+    reportCount: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+    moderationReviewedAt: { type: DataTypes.DATE, allowNull: true },
+
+    applicationCount: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+    viewCount: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+  },
+  {
+    tableName: "jobs",
+    indexes: [
+      { fields: ["userId"], name: "jobs_user_id_idx" },
+      { fields: ["status"], name: "jobs_status_idx" },
+      { unique: true, fields: ["slug"], name: "jobs_slug_unique" },
+    ],
+  }
+);
+
+export default Job;

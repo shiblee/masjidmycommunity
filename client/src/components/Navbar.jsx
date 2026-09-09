@@ -246,6 +246,9 @@ function Navbar() {
                     <Link to="/account/my-campaigns" onClick={() => setMenuOpen(false)}>
                       {t("nav.myCampaigns", "My Campaigns")}
                     </Link>
+                    <Link to="/account/my-jobs" onClick={() => setMenuOpen(false)}>
+                      {t("nav.myJobs", "My Jobs")}
+                    </Link>
                     <Link to={`/profile/${user.username}`} onClick={() => setMenuOpen(false)}>
                       {t("nav.myProfile", "My Profile")}
                     </Link>
@@ -301,6 +304,11 @@ function Navbar() {
         {user && (
           <Link to="/account/my-campaigns" onClick={() => setOpen(false)}>
             {t("nav.myCampaigns", "My Campaigns")}
+          </Link>
+        )}
+        {user && (
+          <Link to="/account/my-jobs" onClick={() => setOpen(false)}>
+            {t("nav.myJobs", "My Jobs")}
           </Link>
         )}
         {user && (

@@ -1,20 +1,109 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import axios from "axios";
+import { API_BASE } from "../config.js";
 import { Icon } from "../components/Icons.jsx";
+import { formatDate } from "../utils/formatDateTime.js";
 
-// Placeholder until the Jobs board itself is built — keeps the nav entry
-// live and on-brand rather than a dead link or a 404.
+const PAGE_SIZE = 12;
+const JOB_TYPES = [
+  { value: "", label: "All Types" },
+  { value: "full_time", label: "Full-Time" },
+  { value: "part_time", label: "Part-Time" },
+  { value: "contract", label: "Contract" },
+  { value: "internship", label: "Internship" },
+  { value: "volunteer", label: "Volunteer" },
+];
+const JOB_TYPE_LABEL = Object.fromEntries(JOB_TYPES.filter((t) => t.value).map((t) => [t.value, t.label]));
+
 function Jobs() {
+  const [q, setQ] = useState("");
+  const [jobType, setJobType] = useState("");
+  const [jobs, setJobs] = useState(null);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const handle = setTimeout(() => {
+      setLoading(true);
+      axios
+        .get(`${API_BASE}/jobs/public`, { params: { q: q || undefined, jobType: jobType || undefined, page, pageSize: PAGE_SIZE } })
+        .then(({ data }) => {
+          setJobs((prev) => (page === 1 ? data.jobs : [...(prev || []), ...data.jobs]));
+          setTotal(data.total);
+        })
+        .catch(() => { if (page === 1) setJobs([]); })
+        .finally(() => setLoading(false));
+    }, q ? 300 : 0);
+    return () => clearTimeout(handle);
+  }, [q, jobType, page]);
+
+  const changeType = (value) => { setJobType(value); setPage(1); };
+  const canLoadMore = jobs && jobs.length < total;
+
   return (
     <main className="msj-page">
-      <div className="wrap py-lg">
-        <div className="msj-empty-state" style={{ padding: "96px 20px" }}>
-          <Icon name="building" size={30} />
-          <h3>Coming soon</h3>
-          <p>We're building a jobs board to connect masjids and Muslim organizations with people looking to serve their community. Check back soon.</p>
-          <Link to="/" className="btn btn-outline-ink">Back to Home</Link>
+      <section className="cw-hero msj-explore-hero on-ink">
+        <div className="wrap">
+          <span className="eyebrow">Jobs</span>
+          <h1>Openings from across the community.</h1>
+          <p>Roles posted directly by community members — teaching, administration, and more.</p>
         </div>
-      </div>
+      </section>
+
+      <section className="py-md msj-explore-content">
+        <div className="wrap">
+          <div className="campaign-filters" style={{ margin: "0 0 16px" }}>
+            {JOB_TYPES.map((t) => (
+              <button key={t.value} className={`filter-chip${jobType === t.value ? " active" : ""}`} onClick={() => changeType(t.value)}>
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 20 }}>
+            <div className="msj-search" style={{ flex: "0 1 360px" }}>
+              <Icon name="search" size={16} />
+              <input type="text" placeholder="Search jobs…" value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} />
+            </div>
+          </div>
+
+          <div className="filter-count">
+            {loading && page === 1 ? "Loading jobs…" : `Showing ${jobs?.length || 0} of ${total} jobs`}
+          </div>
+
+          {!loading && jobs?.length === 0 ? (
+            <div className="campaign-empty">
+              <p>{q || jobType ? "No jobs match your search right now." : "No open jobs right now — check back soon."}</p>
+            </div>
+          ) : (
+            <div className="msj-list-grid" style={{ marginTop: 12 }}>
+              {jobs?.map((j) => (
+                <Link to={`/job/${j.slug}`} className="msj-list-card" key={j.id} style={{ display: "block" }}>
+                  <div className="msj-list-body">
+                    <div className="msj-list-top">
+                      <h3>{j.title}</h3>
+                      <span className="acct-status-pill">{JOB_TYPE_LABEL[j.jobType]}</span>
+                    </div>
+                    <p className="msj-list-meta"><Icon name="mapPin" size={13} /> {j.location}{j.experienceRequired ? ` · ${j.experienceRequired}` : ""}</p>
+                    {j.salary && <p className="msj-list-meta">{j.salary}</p>}
+                    <p className="msj-list-meta">By {j.postedBy} · Posted {formatDate(j.createdAt)}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+
+          {canLoadMore && (
+            <div style={{ textAlign: "center", marginTop: "36px" }}>
+              <button className="btn btn-outline-ink" disabled={loading} onClick={() => setPage((p) => p + 1)}>
+                {loading ? "Loading…" : "Load More Jobs"}
+              </button>
+            </div>
+          )}
+        </div>
+      </section>
     </main>
   );
 }

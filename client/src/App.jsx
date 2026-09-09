@@ -30,6 +30,9 @@ import LikedMasjids from "./pages/masjid/LikedMasjids.jsx";
 import VerifyMasjid from "./pages/VerifyMasjid.jsx";
 import MyCampaigns from "./pages/campaign/MyCampaigns.jsx";
 import CampaignProfile from "./pages/CampaignProfile.jsx";
+import MyJobs from "./pages/jobs/MyJobs.jsx";
+import JobForm from "./pages/jobs/JobForm.jsx";
+import JobProfile from "./pages/JobProfile.jsx";
 import RequireUserAuth from "./components/RequireUserAuth.jsx";
 import AdminApp from "./admin/AdminApp.jsx";
 import { LanguageProvider } from "./i18n/LanguageContext.jsx";
@@ -94,6 +97,7 @@ function App() {
           <Route path="/masjid/:slug" element={<MasjidProfile />} />
           <Route path="/masjid/:slug/:tab" element={<MasjidProfile />} />
           <Route path="/campaign/:slug" element={<CampaignProfile />} />
+          <Route path="/job/:slug" element={<JobProfile />} />
           <Route path="/profile/:username" element={<Profile />} />
           <Route path="/profile/:username/:section" element={<Profile />} />
           <Route
@@ -133,6 +137,30 @@ function App() {
           />
           <Route path="/account/my-campaigns/new" element={<Community />} />
           <Route path="/account/my-campaigns/:id" element={<Community />} />
+          <Route
+            path="/account/my-jobs"
+            element={
+              <RequireUserAuth>
+                <MyJobs />
+              </RequireUserAuth>
+            }
+          />
+          <Route
+            path="/account/my-jobs/new"
+            element={
+              <RequireUserAuth>
+                <JobForm />
+              </RequireUserAuth>
+            }
+          />
+          <Route
+            path="/account/my-jobs/:id"
+            element={
+              <RequireUserAuth>
+                <JobForm />
+              </RequireUserAuth>
+            }
+          />
         </Route>
         <Route path="/admin/*" element={<AdminApp />} />
       </Routes>
