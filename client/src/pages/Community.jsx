@@ -5,6 +5,7 @@ import { getStoredUser } from "../utils/userAuthStorage.js";
 import communityApi from "../services/communityApi.js";
 import masjidApi from "../services/masjidApi.js";
 import campaignApi from "../services/campaignApi.js";
+import jobApi from "../services/jobApi.js";
 import reportApi from "../services/reportApi.js";
 import MediaThumb from "../components/MediaThumb.jsx";
 import { Icon } from "../components/Icons.jsx";
@@ -30,6 +31,11 @@ const CAMPAIGN_STATUS_LABEL = {
   approved: "Approved", active: "Active", paused: "Paused", goal_reached: "Goal Reached",
   completed: "Completed", rejected: "Rejected", cancelled: "Cancelled",
 };
+
+const JOB_STATUS_LABEL = { active: "Active", closed: "Closed", expired: "Expired", deleted: "Deleted" };
+// Reuses the acct-status-pill classes already styled for other statuses,
+// same mapping as pages/jobs/MyJobs.jsx, rather than adding new CSS.
+const JOB_STATUS_PILL_CLASS = { active: "active", closed: "inactive", expired: "cancelled", deleted: "cancelled" };
 
 // Registry of top-level community categories shown in the right-hand menu.
 // Adding a future real category is one more entry here (plus its own action
@@ -338,6 +344,9 @@ function Community() {
   const [showAllCampaigns, setShowAllCampaigns] = useState(false);
   const [myCampaigns, setMyCampaigns] = useState(null);
   const [myCampaignsError, setMyCampaignsError] = useState("");
+  const [showAllJobs, setShowAllJobs] = useState(false);
+  const [myJobs, setMyJobs] = useState(null);
+  const [myJobsError, setMyJobsError] = useState("");
 
   useEffect(() => {
     const onSessionUpdated = (e) => setUser(e.detail);
@@ -409,6 +418,17 @@ function Community() {
       .get("/mine")
       .then(({ data }) => setMyCampaigns(data.campaigns))
       .catch(() => setMyCampaignsError("Couldn't load your campaigns."));
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) {
+      setMyJobs(null);
+      return;
+    }
+    jobApi
+      .get("/mine")
+      .then(({ data }) => setMyJobs(data.jobs))
+      .catch(() => setMyJobsError("Couldn't load your jobs."));
   }, [user]);
 
   const ownedMasjidIds = useMemo(() => new Set((myMasjids || []).map((m) => m.id)), [myMasjids]);
@@ -769,7 +789,54 @@ function Community() {
                 </>
               )}
 
-              {section && !["masjid", "campaign"].includes(section) && (
+              {section === "jobs" && (
+                <>
+                  <div className="cw-side-card cw-side-card-cta">
+                    <h4>Add a Job</h4>
+                    <p className="cw-side-card-sub">Share an opening with the community.</p>
+                    <Link to="/account/my-jobs/new" className="btn btn-gold" style={{ width: "100%", justifyContent: "center" }}>
+                      <Icon name="plus" size={16} /> Add a Job
+                    </Link>
+                  </div>
+
+                  {user && (
+                    <div className="cw-side-card">
+                      <h4>My Jobs</h4>
+                      {myJobsError && <p className="cw-side-card-sub">{myJobsError}</p>}
+                      {myJobs && myJobs.length === 0 && (
+                        <p className="cw-side-card-sub">You haven't posted a job yet — add one above to get started.</p>
+                      )}
+                      {myJobs && myJobs.length > 0 && (
+                        <>
+                          <ul className="cw-side-list cw-side-my-masjids">
+                            {(showAllJobs ? myJobs : myJobs.slice(0, SIDE_LIST_PREVIEW_COUNT)).map((j) => (
+                              <li key={j.id}>
+                                <Link to={`/account/my-jobs/${j.id}`} className="cw-my-masjid-item">
+                                  <span className="cw-my-masjid-thumb">
+                                    <MediaThumb src={null} />
+                                  </span>
+                                  <span className="cw-my-masjid-body">
+                                    <span className="cw-my-masjid-name">{j.title}</span>
+                                    <span className={`acct-status-pill ${JOB_STATUS_PILL_CLASS[j.status] || j.status}`}>{JOB_STATUS_LABEL[j.status] || j.status}</span>
+                                  </span>
+                                  <span className="cw-my-masjid-time">{timeAgo(j.createdAt)}</span>
+                                </Link>
+                              </li>
+                            ))}
+                          </ul>
+                          {myJobs.length > SIDE_LIST_PREVIEW_COUNT && (
+                            <button type="button" className="cw-side-link" onClick={() => setShowAllJobs((v) => !v)}>
+                              {showAllJobs ? "Show less" : `View All (${myJobs.length})`} <span className="btn-arrow">{showAllJobs ? "↑" : "→"}</span>
+                            </button>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+
+              {section && !["masjid", "campaign", "jobs"].includes(section) && (
                 <div className="cw-side-card cw-side-card-soon">
                   <h4>
                     <Icon name={COMMUNITY_SECTIONS.find((s) => s.key === section)?.icon} size={15} />{" "}
