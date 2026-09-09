@@ -36,20 +36,6 @@ function ReportsAnalytics() {
 
   return (
     <>
-      <div className="amx-page-head">
-        <div>
-          <span className="amx-crumb">Insights</span>
-          <h1>Reports &amp; Analytics</h1>
-          <p>Platform-wide performance across masjids, campaigns, and donors</p>
-        </div>
-        <div className="amx-page-actions">
-          <button className="amx-btn amx-btn-outline">
-            <Icon name="download" size={16} />
-            Export PDF
-          </button>
-        </div>
-      </div>
-
       <div className="amx-kpi-grid" style={{ gridTemplateColumns: "repeat(4,1fr)" }}>
         <div className="amx-card amx-kpi">
           <div className="amx-kpi-top">

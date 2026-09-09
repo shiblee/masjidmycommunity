@@ -10,12 +10,7 @@ import MasjidReview from "./pages/MasjidReview.jsx";
 import CommunityWall from "./pages/CommunityWall.jsx";
 import Campaigns from "./pages/Campaigns.jsx";
 import CampaignReview from "./pages/CampaignReview.jsx";
-import Donations from "./pages/Donations.jsx";
-import Donors from "./pages/Donors.jsx";
-import Projects from "./pages/Projects.jsx";
-import FundUtilization from "./pages/FundUtilization.jsx";
 import GreenTickApplications from "./pages/GreenTickApplications.jsx";
-import ReportsAnalytics from "./pages/ReportsAnalytics.jsx";
 import RegisteredUsers from "./pages/RegisteredUsers.jsx";
 import RegisteredUserDetail from "./pages/RegisteredUserDetail.jsx";
 import UserActivityHistory from "./pages/UserActivityHistory.jsx";
@@ -60,12 +55,10 @@ function AdminApp() {
         <Route path="campaigns" element={<Campaigns />} />
         <Route path="campaigns/:id" element={<CampaignReview />} />
         <Route path="campaigns/:id/:tab" element={<CampaignReview />} />
-        <Route path="donations" element={<Donations />} />
-        <Route path="donors" element={<Donors />} />
-        <Route path="projects" element={<Projects />} />
-        <Route path="fund-utilization" element={<FundUtilization />} />
         <Route path="verification" element={<GreenTickApplications />} />
-        <Route path="reports" element={<ReportsAnalytics />} />
+        {/* Fund Utilization and Reports & Analytics merged into Dashboard's own tabs. */}
+        <Route path="fund-utilization" element={<Navigate to="/admin/dashboard" replace />} />
+        <Route path="reports" element={<Navigate to="/admin/dashboard" replace />} />
         <Route path="registered-users" element={<RegisteredUsers />} />
         <Route path="registered-users/:id" element={<RegisteredUserDetail />} />
         <Route path="registered-users/:id/activity" element={<UserActivityHistory />} />

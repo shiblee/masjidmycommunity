@@ -28,29 +28,6 @@ export const CAMPAIGNS = [
   { id: "CMP-2870", name: "Library & Learning Center", masjid: "Masjid Umar Ibn Al-Khattab", category: "Education", raised: 88300, goal: 120000, status: "paused", ends: "Dec 1, 2026" },
 ];
 
-export const DONATIONS = [
-  { id: "DN-88231", donor: "Yusuf Rahman", initials: "YR", campaign: "Winter Relief Drive", amount: 12500, date: "Aug 21, 2026", status: "ok", method: "Card" },
-  { id: "DN-88230", donor: "Anonymous", initials: "AN", campaign: "Masjid Al-Falah Renovation", amount: 5000, date: "Aug 21, 2026", status: "ok", method: "Bank Transfer" },
-  { id: "DN-88227", donor: "Fatima Noor", initials: "FN", campaign: "Ramadan Food Bank", amount: 25000, date: "Aug 20, 2026", status: "ok", method: "Card" },
-  { id: "DN-88219", donor: "Ibrahim Malik", initials: "IM", campaign: "New Wudu Facility", amount: 8750, date: "Aug 20, 2026", status: "warn", method: "Bank Transfer" },
-  { id: "DN-88204", donor: "Sana Ahmed", initials: "SA", campaign: "Youth Education Fund", amount: 3200, date: "Aug 19, 2026", status: "ok", method: "Wallet" },
-  { id: "DN-88198", donor: "Anonymous", initials: "AN", campaign: "Emergency Relief Fund", amount: 15000, date: "Aug 19, 2026", status: "ok", method: "Card" },
-  { id: "DN-88190", donor: "Khalid Osman", initials: "KO", campaign: "Clean Water Initiative", amount: 6400, date: "Aug 18, 2026", status: "ok", method: "Card" },
-  { id: "DN-88177", donor: "Layla Hassan", initials: "LH", campaign: "Masjid Renovation Fund", amount: 42000, date: "Aug 18, 2026", status: "ok", method: "Bank Transfer" },
-  { id: "DN-88160", donor: "Omar Siddiqui", initials: "OS", campaign: "Ramadan Food Bank", amount: 1800, date: "Aug 17, 2026", status: "failed", method: "Card" },
-  { id: "DN-88144", donor: "Anonymous", initials: "AN", campaign: "Winter Relief Drive", amount: 9000, date: "Aug 17, 2026", status: "ok", method: "Wallet" },
-];
-
-export const DONORS = [
-  { id: "DR-5510", name: "Yusuf Rahman", initials: "YR", email: "y.rahman@example.com", donations: 24, total: 128400, since: "Jan 2025", tier: "Champion" },
-  { id: "DR-5498", name: "Layla Hassan", initials: "LH", email: "layla.h@example.com", donations: 18, total: 96200, since: "Mar 2025", tier: "Champion" },
-  { id: "DR-5471", name: "Fatima Noor", initials: "FN", email: "fatima.noor@example.com", donations: 31, total: 84900, since: "Nov 2024", tier: "Champion" },
-  { id: "DR-5440", name: "Khalid Osman", initials: "KO", email: "khalid.o@example.com", donations: 12, total: 41200, since: "May 2025", tier: "Regular" },
-  { id: "DR-5402", name: "Sana Ahmed", initials: "SA", email: "sana.ahmed@example.com", donations: 9, total: 22600, since: "Jul 2025", tier: "Regular" },
-  { id: "DR-5388", name: "Omar Siddiqui", initials: "OS", email: "omar.s@example.com", donations: 6, total: 8400, since: "Sep 2025", tier: "New" },
-  { id: "DR-5350", name: "Ibrahim Malik", initials: "IM", email: "i.malik@example.com", donations: 4, total: 15750, since: "Oct 2025", tier: "New" },
-];
-
 export const PROJECTS = [
   { id: "PRJ-441", name: "Masjid Al-Falah Extension", masjid: "Masjid Al-Falah, London", status: "ongoing", budget: 650000, spent: 412000, milestone: "Foundation & structure complete", eta: "Nov 2026" },
   { id: "PRJ-437", name: "Community Kitchen Build", masjid: "Baitul Aman Masjid, Dhaka", status: "ongoing", budget: 90000, spent: 61500, milestone: "Kitchen fit-out in progress", eta: "Oct 2026" },

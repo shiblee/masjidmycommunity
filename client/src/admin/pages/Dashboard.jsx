@@ -4,6 +4,9 @@ import Icon from "../components/Icons.jsx";
 import TrendChart from "../components/TrendChart.jsx";
 import adminApi from "../services/adminApi.js";
 import { API_ORIGIN } from "../../config.js";
+import { getUser } from "../authStorage.js";
+import FundUtilization from "./FundUtilization.jsx";
+import ReportsAnalytics from "./ReportsAnalytics.jsx";
 
 function initialsOf(name = "") {
   const parts = name.trim().split(/\s+/);
@@ -167,14 +170,14 @@ const QUICK_ACTIONS = [
   { icon: "plus", label: "Add Masjid", desc: "Register a new masjid profile", to: "/admin/masjids" },
   { icon: "campaign", label: "Create Campaign", desc: "Launch a new fundraising campaign", to: "/admin/campaigns" },
   { icon: "verify", label: "Review Verifications", desc: "4 requests awaiting review", to: "/admin/verification" },
-  { icon: "reports", label: "Generate Report", desc: "Export fund-utilization report", to: "/admin/reports" },
+  { icon: "reports", label: "Generate Report", desc: "Export fund-utilization report", to: "/admin/dashboard" },
 ];
 
 function fmt(n) {
   return `₹${n.toLocaleString("en-IN")}`;
 }
 
-function Dashboard() {
+function DashboardOverview() {
   const [registeredUsers, setRegisteredUsers] = useState([]);
   const [usersLoading, setUsersLoading] = useState(true);
 
@@ -212,24 +215,6 @@ function Dashboard() {
 
   return (
     <>
-      <div className="amx-page-head">
-        <div>
-          <span className="amx-crumb">Overview</span>
-          <h1>Dashboard</h1>
-          <p>Welcome back, Aisha — here's how the platform is performing today.</p>
-        </div>
-        <div className="amx-page-actions">
-          <button className="amx-btn amx-btn-outline">
-            <Icon name="download" size={16} />
-            Export Report
-          </button>
-          <button className="amx-btn amx-btn-accent">
-            <Icon name="plus" size={16} />
-            New Campaign
-          </button>
-        </div>
-      </div>
-
       <div className="amx-kpi-grid">
         {kpis.map((k) => {
           const Wrapper = k.to ? Link : "div";
@@ -408,7 +393,7 @@ function Dashboard() {
               <h3>Recent Donations</h3>
               <div className="amx-panel-sub">Latest contributions across all campaigns</div>
             </div>
-            <Link to="/admin/donations" className="amx-panel-link">
+            <Link to="/admin/campaigns" className="amx-panel-link">
               View all
               <Icon name="arrowRight" />
             </Link>
@@ -582,6 +567,54 @@ function Dashboard() {
           ))}
         </div>
       </div>
+    </>
+  );
+}
+
+const DASHBOARD_TABS = [
+  { key: "overview", label: "Overview" },
+  { key: "fund-utilization", label: "Fund Utilization" },
+  { key: "reports", label: "Reports & Analytics" },
+];
+
+// Fund Utilization and Reports & Analytics used to be their own top-level
+// nav sections — merged in here as tabs of one "Dashboard" entry. Their
+// content is unchanged from before the merge (still the same mocked
+// figures — ALLOCATION/REGION_DATA/etc. in their own files — not wired to
+// real data yet; only Overview below is live).
+function Dashboard() {
+  const [tab, setTab] = useState("overview");
+  const admin = getUser();
+
+  return (
+    <>
+      <div className="amx-page-head">
+        <div>
+          <span className="amx-crumb">Overview</span>
+          <h1>Dashboard</h1>
+          <p>Welcome back{admin?.name ? `, ${admin.name}` : ""} — here's how the platform is performing today.</p>
+        </div>
+        <div className="amx-page-actions">
+          <button className="amx-btn amx-btn-outline">
+            <Icon name="download" size={16} />
+            Export Report
+          </button>
+          <button className="amx-btn amx-btn-accent">
+            <Icon name="plus" size={16} />
+            New Campaign
+          </button>
+        </div>
+      </div>
+
+      <div className="amx-tabs" style={{ marginBottom: 20, flexWrap: "wrap" }}>
+        {DASHBOARD_TABS.map((t) => (
+          <button key={t.key} type="button" className={tab === t.key ? "active" : ""} onClick={() => setTab(t.key)}>{t.label}</button>
+        ))}
+      </div>
+
+      {tab === "overview" && <DashboardOverview />}
+      {tab === "fund-utilization" && <FundUtilization />}
+      {tab === "reports" && <ReportsAnalytics />}
     </>
   );
 }
