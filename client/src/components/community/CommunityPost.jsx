@@ -535,9 +535,9 @@ function PostImageGallery({ images, onOpen }) {
   );
 }
 
-function CommunityPost({ post, user, navigate, onVote, onEdit, onDelete, onReport, onHashtagClick, commentMaxLength, replyMaxLength, onOpenImage }) {
+function CommunityPost({ post, user, navigate, onVote, onEdit, onDelete, onReport, onHashtagClick, commentMaxLength, replyMaxLength, onOpenImage, commentsOpenByDefault = false }) {
   const meta = TYPE_META[post.type];
-  const [showComments, setShowComments] = useState(false);
+  const [showComments, setShowComments] = useState(commentsOpenByDefault);
   const [commentCountOverride, setCommentCountOverride] = useState(null);
   const commentCount = commentCountOverride ?? post.commentCount ?? 0;
   return (

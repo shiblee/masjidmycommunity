@@ -113,6 +113,7 @@ function CampaignPostSection({ campaignId }) {
         commentMaxLength={contentLimits.maxCommentLength}
         replyMaxLength={contentLimits.maxReplyLength}
         onOpenImage={(_p, index) => setImageViewerIndex(index)}
+        commentsOpenByDefault
       />
 
       {reportOpen && (
