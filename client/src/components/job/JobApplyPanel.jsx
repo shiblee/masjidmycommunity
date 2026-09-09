@@ -4,8 +4,10 @@ import { Icon } from "../Icons.jsx";
 import { formatDate } from "../../utils/formatDateTime.js";
 import { getStoredUser } from "../../utils/userAuthStorage.js";
 import jobApi from "../../services/jobApi.js";
+import MicButton from "../MicButton.jsx";
 
 const STATUS_LABEL = { applied: "Applied", under_review: "Under Review", shortlisted: "Shortlisted", rejected: "Not Selected", hired: "Selected / Hired" };
+const COVER_NOTE_MAX = 1000;
 
 // Auto-fetches the applicant's profile (jobController.js's applyToJob pulls
 // education/work experience/skills/bio via the same aggregation
@@ -51,8 +53,20 @@ function ApplyModal({ job, onCancel, onSubmitted }) {
             </span>
           </div>
           <div className="auth-field">
-            <label>Note to the job creator (optional)</label>
-            <textarea rows={4} value={coverNote} onChange={(e) => setCoverNote(e.target.value)} placeholder="Anything you'd like to add…" />
+            <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 10 }}>
+              <label>Note to the job creator (optional)</label>
+              <span className="pf-char-counter">{coverNote.length}/{COVER_NOTE_MAX}</span>
+            </div>
+            <div className="msj-about-wrap">
+              <textarea
+                rows={4}
+                maxLength={COVER_NOTE_MAX}
+                value={coverNote}
+                onChange={(e) => setCoverNote(e.target.value)}
+                placeholder="Anything you'd like to add…"
+              />
+              <MicButton onTranscript={(text) => setCoverNote(text.slice(0, COVER_NOTE_MAX))} className="msj-about-mic" />
+            </div>
           </div>
           {error && <div className="auth-alert" style={{ marginBottom: 16 }}><Icon name="info" size={17} />{error}</div>}
           <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
