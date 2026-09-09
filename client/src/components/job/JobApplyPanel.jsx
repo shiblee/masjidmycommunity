@@ -182,8 +182,8 @@ function JobApplyPanel({ job, posterId }) {
       <h3>{job.title}</h3>
 
       <div className="camp-donate-substats" style={{ gridTemplateColumns: "1fr 1fr" }}>
+        <div className="job-apply-location-stat"><strong>{job.location}</strong><span>{t("jobApply.panel.location", "Location")}</span></div>
         <div><strong>{job.jobType}</strong><span>{t("jobApply.panel.jobType", "Job Type")}</span></div>
-        <div><strong>{job.location}</strong><span>{t("jobApply.panel.location", "Location")}</span></div>
         {job.experienceRequired && <div><strong>{job.experienceRequired}</strong><span>{t("jobApply.panel.experience", "Experience")}</span></div>}
         {job.salary && <div><strong>{job.salary}</strong><span>{t("jobApply.panel.compensation", "Compensation")}</span></div>}
         {job.applicationDeadline && <div><strong>{formatDate(job.applicationDeadline)}</strong><span>{t("jobApply.panel.applyBy", "Apply By")}</span></div>}

@@ -4182,9 +4182,17 @@ footer{
 .camp-donate-progress-meta{ display:flex; justify-content:space-between; margin-top:6px; font-size:11.5px; color:var(--text-on-paper-dim); font-variant-numeric:tabular-nums; }
 
 .camp-donate-substats{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:16px; }
-.camp-donate-substats div{ background:var(--paper-dim); border-radius:10px; padding:9px 12px; }
+/* min-width:0 — without it a grid cell's default min-width:auto sizes to
+   its content's un-wrapped intrinsic width, which for a long value (e.g. a
+   full address) silently overrides the 1fr track and pushes the whole row
+   past the card's edge instead of the ellipsis below ever engaging. */
+.camp-donate-substats div{ background:var(--paper-dim); border-radius:10px; padding:9px 12px; min-width:0; }
 .camp-donate-substats strong{ display:block; font-size:14.5px; color:var(--text-on-paper); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .camp-donate-substats span{ display:block; font-size:10.5px; color:var(--text-on-paper-dim); text-transform:uppercase; letter-spacing:.02em; margin-top:1px; }
+/* A job's location can be a full address, not just a short city name —
+   give it its own full-width row and let it wrap instead of truncating. */
+.camp-donate-substats .job-apply-location-stat{ grid-column:1 / -1; }
+.camp-donate-substats .job-apply-location-stat strong{ white-space:normal; overflow:visible; text-overflow:clip; }
 
 .camp-donate-cta{ width:100%; justify-content:center; margin-top:18px; }
 
