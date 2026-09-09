@@ -7,7 +7,6 @@ import MicButton from "../components/MicButton.jsx";
 import JobCard from "../components/job/JobCard.jsx";
 import JobCardSkeleton from "../components/job/JobCardSkeleton.jsx";
 import JobRail from "../components/job/JobRail.jsx";
-import JobAiAssistant from "../components/job/JobAiAssistant.jsx";
 import JobFiltersSidebar from "../components/job/JobFiltersSidebar.jsx";
 import JobsMap from "./jobs/JobsMap.jsx";
 import JobsList from "./jobs/JobsList.jsx";
@@ -229,8 +228,6 @@ function Jobs() {
 
       <section className="py-md msj-explore-content">
         <div className="wrap">
-          <JobAiAssistant />
-
           <JobRail
             icon="sparkle"
             title={t("jobs.rails.recommended.title", "Recommended for You")}
