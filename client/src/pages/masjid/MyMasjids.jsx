@@ -6,15 +6,23 @@ import MasjidDeleteFlow from "../../components/masjid/MasjidDeleteFlow.jsx";
 import MyMasjidsGrid from "./MyMasjidsGrid.jsx";
 import MyMasjidsList from "./MyMasjidsList.jsx";
 import MyMasjidsMap from "./MyMasjidsMap.jsx";
-import { STATUS_LABEL, matchesSearch } from "./myMasjidsShared.jsx";
+import { buildStatusLabel, matchesSearch } from "./myMasjidsShared.jsx";
+import { useTranslation } from "../../i18n/LanguageContext.jsx";
 
 const VIEWS = [
-  { key: "grid", label: "Grid", icon: "grid" },
-  { key: "list", label: "List", icon: "list" },
-  { key: "map", label: "Map", icon: "map" },
+  { key: "grid", icon: "grid" },
+  { key: "list", icon: "list" },
+  { key: "map", icon: "map" },
 ];
 
 function MyMasjids() {
+  const { t } = useTranslation();
+  const STATUS_LABEL = buildStatusLabel(t);
+  const VIEW_LABELS = {
+    grid: t("exploreMasjidsPage.view.grid", "Grid"),
+    list: t("exploreMasjidsPage.view.list", "List"),
+    map: t("exploreMasjidsPage.view.map", "Map"),
+  };
   const [masjids, setMasjids] = useState(null);
   const [categories, setCategories] = useState([]);
   const [error, setError] = useState("");
@@ -38,7 +46,7 @@ function MyMasjids() {
     masjidApi
       .get("/mine")
       .then(({ data }) => setMasjids(data.masjids))
-      .catch(() => setError("Couldn't load your masjids."));
+      .catch(() => setError(t("communityWall.masjid.loadError", "Couldn't load your masjids.")));
   };
 
   useEffect(() => { load(); }, []);
@@ -62,9 +70,9 @@ function MyMasjids() {
   }, [masjids]);
 
   const activeFilters = [
-    q && { key: "q", label: `Search: "${q}"` },
-    category && { key: "category", label: `Category: ${category}` },
-    status && { key: "status", label: `Status: ${STATUS_LABEL[status]}` },
+    q && { key: "q", label: t("myMasjids.filter.searchLabel", "Search: \"{query}\"").replace("{query}", q) },
+    category && { key: "category", label: t("myMasjids.filter.categoryLabel", "Category: {category}").replace("{category}", category) },
+    status && { key: "status", label: t("myMasjids.filter.statusLabel", "Status: {status}").replace("{status}", STATUS_LABEL[status]) },
   ].filter(Boolean);
 
   const clearAll = () => setSearchParams({}, { replace: true });
@@ -82,12 +90,12 @@ function MyMasjids() {
       <section className="acct-hero on-ink">
         <div className="wrap acct-hero-inner">
           <div>
-            <span className="eyebrow">Your Masjids</span>
-            <h1>My Masjids</h1>
-            <p>Register and manage the masjids you represent on Masjid My Community.</p>
+            <span className="eyebrow">{t("myMasjids.hero.eyebrow", "Your Masjids")}</span>
+            <h1>{t("communityWall.masjid.myMasjidsHeading", "My Masjids")}</h1>
+            <p>{t("myMasjids.hero.sub", "Register and manage the masjids you represent on Masjid My Community.")}</p>
           </div>
           <Link to="/account/my-masjids/new" className="btn btn-gold" style={{ marginLeft: "auto" }}>
-            <Icon name="plus" size={16} /> Register Your Masjid
+            <Icon name="plus" size={16} /> {t("communityWall.masjid.registerHeading", "Register Your Masjid")}
           </Link>
         </div>
       </section>
@@ -99,32 +107,32 @@ function MyMasjids() {
           {masjids && masjids.length === 0 && (
             <div className="msj-empty-state">
               <Icon name="mosque" size={30} />
-              <h3>You haven't registered a masjid yet</h3>
-              <p>Register your masjid to start receiving verified visibility and, once approved, launch fundraising campaigns.</p>
-              <Link to="/account/my-masjids/new" className="btn btn-gold">Register Your Masjid <span className="btn-arrow">→</span></Link>
+              <h3>{t("myMasjids.empty.title", "You haven't registered a masjid yet")}</h3>
+              <p>{t("myMasjids.empty.body", "Register your masjid to start receiving verified visibility and, once approved, launch fundraising campaigns.")}</p>
+              <Link to="/account/my-masjids/new" className="btn btn-gold">{t("communityWall.masjid.registerHeading", "Register Your Masjid")} <span className="btn-arrow">→</span></Link>
             </div>
           )}
 
           {hasAnyMasjids && (
             <>
               <div className="msj-stats-strip">
-                <div className="msj-stat-box"><strong>{stats.total}</strong><span>Total Masjids</span></div>
-                <div className="msj-stat-box"><strong>{stats.approved}</strong><span>Approved</span></div>
-                <div className="msj-stat-box"><strong>{stats.photos}</strong><span>Photos</span></div>
-                <div className="msj-stat-box"><strong>{stats.videos}</strong><span>Videos</span></div>
+                <div className="msj-stat-box"><strong>{stats.total}</strong><span>{t("myMasjids.stats.total", "Total Masjids")}</span></div>
+                <div className="msj-stat-box"><strong>{stats.approved}</strong><span>{t("masjidWizard.status.approved", "Approved")}</span></div>
+                <div className="msj-stat-box"><strong>{stats.photos}</strong><span>{t("myMasjids.stats.photos", "Photos")}</span></div>
+                <div className="msj-stat-box"><strong>{stats.videos}</strong><span>{t("myMasjids.stats.videos", "Videos")}</span></div>
               </div>
 
               <div className="msj-explore-filters">
                 <div className="msj-search">
                   <Icon name="search" size={16} />
-                  <input value={q} onChange={(e) => setParam("q", e.target.value)} placeholder="Search your masjids..." />
+                  <input value={q} onChange={(e) => setParam("q", e.target.value)} placeholder={t("myMasjids.search.placeholder", "Search your masjids...")} />
                 </div>
                 <select value={category} onChange={(e) => setParam("category", e.target.value)}>
-                  <option value="">All Categories</option>
+                  <option value="">{t("exploreMasjidsPage.categoryFilter.all", "All Categories")}</option>
                   {categories.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
                 </select>
                 <select value={status} onChange={(e) => setParam("status", e.target.value)}>
-                  <option value="">All Statuses</option>
+                  <option value="">{t("myMasjids.filter.allStatuses", "All Statuses")}</option>
                   {Object.entries(STATUS_LABEL).filter(([key]) => key !== "deleted").map(([key, label]) => (
                     <option key={key} value={key}>{label}</option>
                   ))}
@@ -136,9 +144,9 @@ function MyMasjids() {
                       type="button"
                       className={view === v.key ? "active" : ""}
                       onClick={() => setParam("view", v.key)}
-                      title={v.label}
+                      title={VIEW_LABELS[v.key]}
                     >
-                      <Icon name={v.icon} size={16} /> {v.label}
+                      <Icon name={v.icon} size={16} /> {VIEW_LABELS[v.key]}
                     </button>
                   ))}
                 </div>
@@ -152,16 +160,16 @@ function MyMasjids() {
                       <button type="button" onClick={() => setParam(f.key, "")}><Icon name="x" size={11} /></button>
                     </span>
                   ))}
-                  <button type="button" className="msj-clear-all" onClick={clearAll}>Clear All Filters</button>
+                  <button type="button" className="msj-clear-all" onClick={clearAll}>{t("jobs.filter.clearAll", "Clear All Filters")}</button>
                 </div>
               )}
 
               {hasNoResults && (
                 <div className="msj-empty-state">
                   <Icon name="search" size={30} />
-                  <h3>No masjids match your search</h3>
-                  <p>Try a different search term or remove some filters.</p>
-                  <button type="button" className="btn btn-gold" onClick={clearAll}>Clear Filters</button>
+                  <h3>{t("myMasjids.noResults.title", "No masjids match your search")}</h3>
+                  <p>{t("myMasjids.noResults.body", "Try a different search term or remove some filters.")}</p>
+                  <button type="button" className="btn btn-gold" onClick={clearAll}>{t("exploreMasjidsPage.empty.clear", "Clear Filters")}</button>
                 </div>
               )}
 

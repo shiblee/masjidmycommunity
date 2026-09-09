@@ -3,11 +3,14 @@ import { Icon } from "../../components/Icons.jsx";
 import { API_ORIGIN } from "../../config.js";
 import { formatDate } from "../../utils/formatDateTime.js";
 import MediaThumb from "../../components/MediaThumb.jsx";
-import { STATUS_LABEL, locationOf, MasjidActions, MediaCountBadge, CampaignsLink } from "./myMasjidsShared.jsx";
+import { buildStatusLabel, locationOf, MasjidActions, MediaCountBadge, CampaignsLink } from "./myMasjidsShared.jsx";
 import EngagementRow from "../../components/masjid/EngagementRow.jsx";
 import GreenTickBadge from "../../components/masjid/GreenTickBadge.jsx";
+import { useTranslation } from "../../i18n/LanguageContext.jsx";
 
 function MyMasjidsGrid({ masjids, onDelete }) {
+  const { t } = useTranslation();
+  const STATUS_LABEL = buildStatusLabel(t);
   return (
     <div className="msj-list-grid">
       {masjids.map((m) => (
@@ -25,9 +28,9 @@ function MyMasjidsGrid({ masjids, onDelete }) {
               <span className={`acct-status-pill ${m.status}`}>{STATUS_LABEL[m.status]}</span>
             </div>
             {m.category && <span className="msj-category-badge">{m.category}</span>}
-            <p className="msj-list-loc"><Icon name="mapPin" size={14} /> {locationOf(m)}</p>
+            <p className="msj-list-loc"><Icon name="mapPin" size={14} /> {locationOf(m, t)}</p>
             {m.status === "approved" && <EngagementRow masjid={m} variant="list" className="msj-list-engagement" />}
-            <p className="msj-list-meta">Registered {formatDate(m.createdAt)}</p>
+            <p className="msj-list-meta">{t("myMasjidsShared.registered", "Registered {date}").replace("{date}", formatDate(m.createdAt))}</p>
             <CampaignsLink m={m} />
             <MasjidActions m={m} onDelete={onDelete} />
           </div>

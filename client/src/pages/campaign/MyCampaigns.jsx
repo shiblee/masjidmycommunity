@@ -6,16 +6,26 @@ import { formatDate } from "../../utils/formatDateTime.js";
 import campaignApi from "../../services/campaignApi.js";
 import masjidApi from "../../services/masjidApi.js";
 import MediaThumb from "../../components/MediaThumb.jsx";
+import { useTranslation } from "../../i18n/LanguageContext.jsx";
 
-const STATUS_LABEL = {
-  draft: "Draft", submitted: "Submitted", under_review: "Under Review", changes_requested: "Changes Requested",
-  approved: "Approved", active: "Active", paused: "Paused", goal_reached: "Goal Reached",
-  completed: "Completed", rejected: "Rejected", cancelled: "Cancelled",
-};
 const EDITABLE = new Set(["draft", "changes_requested"]);
 const LIVE = new Set(["active", "paused", "goal_reached", "completed"]);
 
 function MyCampaigns() {
+  const { t } = useTranslation();
+  const STATUS_LABEL = {
+    draft: t("communityWall.status.draft", "Draft"),
+    submitted: t("communityWall.status.submitted", "Submitted"),
+    under_review: t("communityWall.status.underReview", "Under Review"),
+    changes_requested: t("communityWall.status.changesRequested", "Changes Requested"),
+    approved: t("communityWall.status.approved", "Approved"),
+    active: t("communityWall.status.active", "Active"),
+    paused: t("communityWall.status.paused", "Paused"),
+    goal_reached: t("communityWall.status.goalReached", "Goal Reached"),
+    completed: t("communityWall.status.completed", "Completed"),
+    rejected: t("communityWall.status.rejected", "Rejected"),
+    cancelled: t("communityWall.status.cancelled", "Cancelled"),
+  };
   const [searchParams, setSearchParams] = useSearchParams();
   const urlMasjidId = searchParams.get("masjidId") || "";
   const [masjids, setMasjids] = useState(null);
@@ -51,7 +61,7 @@ function MyCampaigns() {
     campaignApi
       .get("/mine", { params: masjidId ? { masjidId } : undefined })
       .then(({ data }) => setCampaigns(data.campaigns))
-      .catch(() => setError("Couldn't load your campaigns."));
+      .catch(() => setError(t("communityWall.campaign.loadError", "Couldn't load your campaigns.")));
   }, [masjidId]);
 
   const startCampaignLink = masjidId ? `/account/my-campaigns/new?masjidId=${masjidId}` : "/account/my-campaigns/new";
@@ -62,12 +72,12 @@ function MyCampaigns() {
       <section className="acct-hero on-ink">
         <div className="wrap acct-hero-inner">
           <div>
-            <span className="eyebrow">Your Campaigns</span>
-            <h1>My Campaigns</h1>
-            <p>Launch and track fundraising campaigns for your verified masjids.</p>
+            <span className="eyebrow">{t("myCampaigns.hero.eyebrow", "Your Campaigns")}</span>
+            <h1>{t("communityWall.campaign.myCampaignsHeading", "My Campaigns")}</h1>
+            <p>{t("myCampaigns.hero.sub", "Launch and track fundraising campaigns for your verified masjids.")}</p>
           </div>
           <Link to={startCampaignLink} className="btn btn-gold" style={{ marginLeft: "auto" }}>
-            <Icon name="plus" size={16} /> Start a Campaign
+            <Icon name="plus" size={16} /> {t("communityWall.campaign.startHeading", "Start a Campaign")}
           </Link>
         </div>
       </section>
@@ -78,9 +88,9 @@ function MyCampaigns() {
 
           {masjids && masjids.length > 1 && (
             <div className="auth-field" style={{ maxWidth: 320, marginBottom: 24 }}>
-              <label>Filter by Masjid</label>
+              <label>{t("myCampaigns.filterByMasjid", "Filter by Masjid")}</label>
               <select value={masjidId} onChange={(e) => changeMasjidFilter(e.target.value)}>
-                <option value="">All Masjids</option>
+                <option value="">{t("myCampaigns.allMasjids", "All Masjids")}</option>
                 {masjids.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
               </select>
             </div>
@@ -89,9 +99,9 @@ function MyCampaigns() {
           {campaigns && campaigns.length === 0 && (
             <div className="msj-empty-state">
               <Icon name="flag" size={30} />
-              <h3>{selectedMasjid ? `No campaigns yet for ${selectedMasjid.name}` : "You haven't started a campaign yet"}</h3>
-              <p>Once your masjid is approved, you can launch a campaign to raise funds for a specific project.</p>
-              <Link to={startCampaignLink} className="btn btn-gold">Start a Campaign <span className="btn-arrow">→</span></Link>
+              <h3>{selectedMasjid ? t("myCampaigns.empty.titleForMasjid", "No campaigns yet for {name}").replace("{name}", selectedMasjid.name) : t("myCampaigns.empty.titleGeneric", "You haven't started a campaign yet")}</h3>
+              <p>{t("myCampaigns.empty.body", "Once your masjid is approved, you can launch a campaign to raise funds for a specific project.")}</p>
+              <Link to={startCampaignLink} className="btn btn-gold">{t("communityWall.campaign.startHeading", "Start a Campaign")} <span className="btn-arrow">→</span></Link>
             </div>
           )}
 
@@ -112,15 +122,15 @@ function MyCampaigns() {
                       <div className="camp-card-progress">
                         <div className="progress-track"><div className="progress-fill" style={{ width: `${pct}%` }} /></div>
                         <div className="camp-card-meta">
-                          <span><strong>₹{Number(c.amountRaised).toLocaleString("en-IN")}</strong> raised</span>
-                          <span>of ₹{Number(c.goalAmount).toLocaleString("en-IN")}</span>
+                          <span><strong>₹{Number(c.amountRaised).toLocaleString("en-IN")}</strong> {t("myCampaigns.raised", "raised")}</span>
+                          <span>{t("myCampaigns.ofGoal", "of ₹{amount}").replace("{amount}", Number(c.goalAmount).toLocaleString("en-IN"))}</span>
                         </div>
                       </div>
                     )}
-                    <p className="msj-list-meta">Created {formatDate(c.createdAt)}</p>
+                    <p className="msj-list-meta">{t("myCampaigns.created", "Created {date}").replace("{date}", formatDate(c.createdAt))}</p>
                     <div className="msj-list-actions">
-                      <Link to={`/account/my-campaigns/${c.id}`}>{EDITABLE.has(c.status) ? "Edit" : "View Details"}</Link>
-                      {LIVE.has(c.status) && <Link to={`/campaign/${c.slug}`}>View Public Page</Link>}
+                      <Link to={`/account/my-campaigns/${c.id}`}>{EDITABLE.has(c.status) ? t("donationAccount.edit", "Edit") : t("myCampaigns.viewDetails", "View Details")}</Link>
+                      {LIVE.has(c.status) && <Link to={`/campaign/${c.slug}`}>{t("myCampaigns.viewPublicPage", "View Public Page")}</Link>}
                     </div>
                   </div>
                 </div>

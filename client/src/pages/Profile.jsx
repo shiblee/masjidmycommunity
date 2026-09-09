@@ -15,16 +15,6 @@ import HobbiesCard from "../components/profile/HobbiesCard.jsx";
 import SecurityCard from "../components/profile/SecurityCard.jsx";
 import ProfileCompletion from "../components/profile/ProfileCompletion.jsx";
 
-const MASJID_STATUS_LABEL = {
-  draft: "Draft", submitted: "Submitted", under_review: "Under Review",
-  changes_requested: "Changes Requested", approved: "Approved", rejected: "Rejected", inactive: "Inactive",
-};
-const CAMPAIGN_STATUS_LABEL = {
-  draft: "Draft", submitted: "Submitted", under_review: "Under Review", changes_requested: "Changes Requested",
-  approved: "Approved", active: "Active", paused: "Paused", goal_reached: "Goal Reached",
-  completed: "Completed", rejected: "Rejected", cancelled: "Cancelled",
-};
-const JOB_STATUS_LABEL = { active: "Active", closed: "Closed", expired: "Expired" };
 const SIDE_LIST_PREVIEW_COUNT = 3;
 const POSTS_PAGE_SIZE = 10;
 
@@ -37,16 +27,16 @@ const PROFILE_NAV_SECTIONS = [
   { key: "security", labelKey: "profile.nav.security.label", label: "Security", descKey: "profile.nav.security.desc", desc: "Password & account safety", icon: "shieldCheck" },
 ];
 
-function timeAgo(dateStr) {
+function timeAgo(dateStr, t) {
   if (!dateStr) return "";
   const diffMs = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diffMs / 60000);
-  if (mins < 1) return "Just now";
-  if (mins < 60) return `${mins}m ago`;
+  if (mins < 1) return t("commentSection.time.justNow", "Just now");
+  if (mins < 60) return t("commentSection.time.minutesAgo", "{count}m ago").replace("{count}", mins);
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
+  if (hrs < 24) return t("commentSection.time.hoursAgo", "{count}h ago").replace("{count}", hrs);
   const days = Math.floor(hrs / 24);
-  if (days < 30) return `${days}d ago`;
+  if (days < 30) return t("commentSection.time.daysAgo", "{count}d ago").replace("{count}", days);
   return new Date(dateStr).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 }
 
@@ -56,6 +46,7 @@ function initialsOf(name = "") {
 }
 
 function ProfilePostCard({ post, fallbackAuthor }) {
+  const { t } = useTranslation();
   const authorName = post.author?.fullName || fallbackAuthor?.fullName || "";
   return (
     <article className="cw-post">
@@ -67,7 +58,7 @@ function ProfilePostCard({ post, fallbackAuthor }) {
         )}
         <div className="cw-post-headtext">
           <div className="cw-post-name">{authorName}</div>
-          <div className="cw-post-meta">{timeAgo(post.publishedAt || post.createdAt)}</div>
+          <div className="cw-post-meta">{timeAgo(post.publishedAt || post.createdAt, t)}</div>
         </div>
       </div>
 
@@ -89,7 +80,7 @@ function ProfilePostCard({ post, fallbackAuthor }) {
             <Icon name="heart" size={15} /> {post.likeCount || 0}
           </span>
           <span className="cw-comment-toggle" style={{ cursor: "default" }}>
-            {post.commentCount || 0} {post.commentCount === 1 ? "Comment" : "Comments"}
+            {post.commentCount || 0} {post.commentCount === 1 ? t("profile.post.commentSingular", "Comment") : t("profile.post.commentPlural", "Comments")}
           </span>
         </div>
       </div>
@@ -98,6 +89,7 @@ function ProfilePostCard({ post, fallbackAuthor }) {
 }
 
 function OwnedAssetList({ title, items, showAll, onToggleShowAll, statusLabel, nameKey, linkBase, linkKey = "id", icon }) {
+  const { t } = useTranslation();
   if (!items || items.length === 0) return null;
   const visible = showAll ? items : items.slice(0, SIDE_LIST_PREVIEW_COUNT);
   return (
@@ -112,14 +104,14 @@ function OwnedAssetList({ title, items, showAll, onToggleShowAll, statusLabel, n
                 <span className="cw-my-masjid-name">{item[nameKey]}</span>
                 <span className={`acct-status-pill ${item.status}`}>{statusLabel[item.status] || item.status}</span>
               </span>
-              <span className="cw-my-masjid-time">{timeAgo(item.createdAt)}</span>
+              <span className="cw-my-masjid-time">{timeAgo(item.createdAt, t)}</span>
             </Link>
           </li>
         ))}
       </ul>
       {items.length > SIDE_LIST_PREVIEW_COUNT && (
         <button type="button" className="cw-side-link" onClick={onToggleShowAll}>
-          {showAll ? "Show less" : `View All (${items.length})`} <span className="btn-arrow">{showAll ? "↑" : "→"}</span>
+          {showAll ? t("communityWall.sideList.showLess", "Show less") : t("communityWall.sideList.viewAll", "View All ({count})").replace("{count}", items.length)} <span className="btn-arrow">{showAll ? "↑" : "→"}</span>
         </button>
       )}
     </div>
@@ -208,7 +200,7 @@ function Profile() {
   if (loading) {
     return (
       <main className="cw-page">
-        <section className="py-sm"><div className="wrap"><p className="msj-note">Loading profile…</p></div></section>
+        <section className="py-sm"><div className="wrap"><p className="msj-note">{t("profile.loading", "Loading profile…")}</p></div></section>
       </main>
     );
   }
@@ -218,9 +210,9 @@ function Profile() {
       <main className="cw-page">
         <section className="py-sm">
           <div className="wrap" style={{ textAlign: "center", padding: "60px 0" }}>
-            <h2>Profile not found</h2>
-            <p className="msj-note">This member doesn't exist, or their profile isn't available right now.</p>
-            <Link to="/my-community" className="btn btn-gold" style={{ marginTop: 16 }}>Back to Community Wall</Link>
+            <h2>{t("profile.notFound.title", "Profile not found")}</h2>
+            <p className="msj-note">{t("profile.notFound.body", "This member doesn't exist, or their profile isn't available right now.")}</p>
+            <Link to="/my-community" className="btn btn-gold" style={{ marginTop: 16 }}>{t("masjidWizard.backToCommunityWall", "Back to Community Wall")}</Link>
           </div>
         </section>
       </main>
@@ -299,11 +291,11 @@ function Profile() {
                   {activeSection === "security" && <SecurityCard />}
                 </div>
               ) : postsLoading && posts.length === 0 ? (
-                <p className="msj-note">Loading posts…</p>
+                <p className="msj-note">{t("profile.posts.loading", "Loading posts…")}</p>
               ) : posts.length === 0 ? (
                 <div className="cw-side-card" style={{ textAlign: "center" }}>
                   <p className="cw-side-card-sub" style={{ marginBottom: 0 }}>
-                    {`${profile.fullName} hasn't shared anything on the Community Wall yet.`}
+                    {t("profile.posts.empty", "{name} hasn't shared anything on the Community Wall yet.").replace("{name}", profile.fullName)}
                   </p>
                 </div>
               ) : (
@@ -316,7 +308,7 @@ function Profile() {
 
               {!isOwner && postsHasMore && (
                 <button type="button" className="btn btn-outline-ink" style={{ marginTop: 20 }} disabled={postsLoading} onClick={loadMorePosts}>
-                  {postsLoading ? "Loading…" : "Load more posts"}
+                  {postsLoading ? t("masjidWizard.loading", "Loading…") : t("profile.posts.loadMore", "Load more posts")}
                 </button>
               )}
             </div>
@@ -324,19 +316,27 @@ function Profile() {
             <aside className="cw-side">
               {isOwner && (
                 <div className="cw-side-card cw-side-card-cta">
-                  <h4>Register Your Masjid</h4>
-                  <p className="cw-side-card-sub">Get verified and featured on the wall.</p>
+                  <h4>{t("communityWall.masjid.registerHeading", "Register Your Masjid")}</h4>
+                  <p className="cw-side-card-sub">{t("communityWall.masjid.registerSub", "Get verified and featured on the wall.")}</p>
                   <Link to="/account/my-masjids/new" className="btn btn-gold" style={{ width: "100%", justifyContent: "center" }}>
-                    <Icon name="plus" size={16} /> Add a Masjid
+                    <Icon name="plus" size={16} /> {t("communityWall.masjid.addMasjid", "Add a Masjid")}
                   </Link>
                 </div>
               )}
               <OwnedAssetList
-                title="My Masjids"
+                title={t("communityWall.masjid.myMasjidsHeading", "My Masjids")}
                 items={masjids}
                 showAll={showAllMasjids}
                 onToggleShowAll={() => setShowAllMasjids((v) => !v)}
-                statusLabel={MASJID_STATUS_LABEL}
+                statusLabel={{
+                  draft: t("masjidWizard.status.draft", "Draft"),
+                  submitted: t("masjidWizard.status.submitted", "Submitted"),
+                  under_review: t("masjidWizard.status.underReview", "Under Review"),
+                  changes_requested: t("masjidWizard.status.changesRequested", "Changes Requested"),
+                  approved: t("masjidWizard.status.approved", "Approved"),
+                  rejected: t("masjidWizard.status.rejected", "Rejected"),
+                  inactive: t("masjidWizard.status.inactive", "Inactive"),
+                }}
                 nameKey="name"
                 linkBase={isOwner ? "/account/my-masjids" : "/masjid"}
                 icon="mosque"
@@ -344,19 +344,31 @@ function Profile() {
 
               {isOwner && (
                 <div className="cw-side-card cw-side-card-cta">
-                  <h4>Start a Campaign</h4>
-                  <p className="cw-side-card-sub">Raise funds for your masjid's next project.</p>
+                  <h4>{t("communityWall.campaign.startHeading", "Start a Campaign")}</h4>
+                  <p className="cw-side-card-sub">{t("communityWall.campaign.startSub", "Raise funds for your masjid's next project.")}</p>
                   <Link to="/account/my-campaigns/new" className="btn btn-gold" style={{ width: "100%", justifyContent: "center" }}>
-                    <Icon name="plus" size={16} /> Add a Campaign
+                    <Icon name="plus" size={16} /> {t("communityWall.campaign.addCampaign", "Add a Campaign")}
                   </Link>
                 </div>
               )}
               <OwnedAssetList
-                title="My Campaigns"
+                title={t("communityWall.campaign.myCampaignsHeading", "My Campaigns")}
                 items={campaigns}
                 showAll={showAllCampaigns}
                 onToggleShowAll={() => setShowAllCampaigns((v) => !v)}
-                statusLabel={CAMPAIGN_STATUS_LABEL}
+                statusLabel={{
+                  draft: t("communityWall.status.draft", "Draft"),
+                  submitted: t("communityWall.status.submitted", "Submitted"),
+                  under_review: t("communityWall.status.underReview", "Under Review"),
+                  changes_requested: t("communityWall.status.changesRequested", "Changes Requested"),
+                  approved: t("communityWall.status.approved", "Approved"),
+                  active: t("communityWall.status.active", "Active"),
+                  paused: t("communityWall.status.paused", "Paused"),
+                  goal_reached: t("communityWall.status.goalReached", "Goal Reached"),
+                  completed: t("communityWall.status.completed", "Completed"),
+                  rejected: t("communityWall.status.rejected", "Rejected"),
+                  cancelled: t("communityWall.status.cancelled", "Cancelled"),
+                }}
                 nameKey="title"
                 linkBase={isOwner ? "/account/my-campaigns" : "/campaign"}
                 linkKey={isOwner ? "id" : "slug"}
@@ -365,19 +377,23 @@ function Profile() {
 
               {isOwner && (
                 <div className="cw-side-card cw-side-card-cta">
-                  <h4>Post a Job Opening</h4>
-                  <p className="cw-side-card-sub">Reach the community looking for their next role.</p>
+                  <h4>{t("profile.cta.job.title", "Post a Job Opening")}</h4>
+                  <p className="cw-side-card-sub">{t("profile.cta.job.sub", "Reach the community looking for their next role.")}</p>
                   <Link to="/account/my-jobs/new" className="btn btn-gold" style={{ width: "100%", justifyContent: "center" }}>
-                    <Icon name="plus" size={16} /> Add a Job
+                    <Icon name="plus" size={16} /> {t("communityWall.jobs.addJob", "Add a Job")}
                   </Link>
                 </div>
               )}
               <OwnedAssetList
-                title="My Jobs"
+                title={t("communityWall.jobs.myJobsHeading", "My Jobs")}
                 items={jobs}
                 showAll={showAllJobs}
                 onToggleShowAll={() => setShowAllJobs((v) => !v)}
-                statusLabel={JOB_STATUS_LABEL}
+                statusLabel={{
+                  active: t("communityWall.status.active", "Active"),
+                  closed: t("communityWall.status.closed", "Closed"),
+                  expired: t("communityWall.status.expired", "Expired"),
+                }}
                 nameKey="title"
                 linkBase={isOwner ? "/account/my-jobs" : "/job"}
                 linkKey={isOwner ? "id" : "slug"}

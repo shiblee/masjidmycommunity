@@ -8,10 +8,11 @@ import { Icon } from "../../components/Icons.jsx";
 import MediaThumb from "../../components/MediaThumb.jsx";
 import { API_ORIGIN } from "../../config.js";
 import { loadClusterPlugin } from "../../utils/loadMarkerCluster.js";
-import { STATUS_LABEL, locationOf, EDITABLE } from "./myMasjidsShared.jsx";
+import { buildStatusLabel, locationOf, EDITABLE } from "./myMasjidsShared.jsx";
 import EngagementRow from "../../components/masjid/EngagementRow.jsx";
 import GreenTickBadge from "../../components/masjid/GreenTickBadge.jsx";
 import { formatCompactNumber } from "../../utils/formatCompactNumber.js";
+import { useTranslation } from "../../i18n/LanguageContext.jsx";
 
 const DEFAULT_CENTER = [20.5937, 78.9629];
 const DEFAULT_ZOOM = 4;
@@ -34,7 +35,7 @@ const STAR_SVG_FILLED =
 const SHIELD_SVG =
   '<svg width="14" height="14" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#5E9A2C"></circle><path d="M7 12.5l3.3 3.3L17 8" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" fill="none"></path></svg>';
 
-function popupHtml(m) {
+function popupHtml(m, t, statusLabel) {
   const cover = m.coverPhotoUrl ? `${API_ORIGIN}${m.coverPhotoUrl}` : null;
   const engagementParts = [];
   if (m.status === "approved") {
@@ -48,20 +49,22 @@ function popupHtml(m) {
     <div class="msj-map-popup">
       ${cover ? `<img src="${cover}" alt="" class="msj-map-popup-thumb" />` : ""}
       <div class="msj-map-popup-body">
-        <h4>${m.name}${m.isGreenTick ? ` <span class="msj-map-popup-greentick" title="Verified">${SHIELD_SVG}</span>` : ""}</h4>
+        <h4>${m.name}${m.isGreenTick ? ` <span class="msj-map-popup-greentick" title="${t("exploreMasjidsPage.map.verified", "Verified")}">${SHIELD_SVG}</span>` : ""}</h4>
         <div class="msj-map-popup-meta">
           ${m.category ? `<span class="msj-category-badge">${m.category}</span>` : ""}
-          <span class="acct-status-pill ${m.status}">${STATUS_LABEL[m.status]}</span>
+          <span class="acct-status-pill ${m.status}">${statusLabel[m.status]}</span>
         </div>
-        <p>${locationOf(m)}</p>
+        <p>${locationOf(m, t)}</p>
         ${engagementHtml}
-        <a href="/account/my-masjids/${m.id}">${EDITABLE.has(m.status) ? "Edit" : "View Details"} →</a>
+        <a href="/account/my-masjids/${m.id}">${EDITABLE.has(m.status) ? t("masjidWizard.summary.edit", "Edit") : t("myMasjidsShared.viewDetails", "View Details")} →</a>
       </div>
     </div>
   `;
 }
 
 function MyMasjidsMap({ masjids, selectedId, onSelect }) {
+  const { t } = useTranslation();
+  const STATUS_LABEL = buildStatusLabel(t);
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const clusterRef = useRef(null);
@@ -103,7 +106,7 @@ function MyMasjidsMap({ masjids, selectedId, onSelect }) {
 
     mapped.forEach((m) => {
       const marker = L.marker([Number(m.latitude), Number(m.longitude)], { icon: pinIcon });
-      marker.bindPopup(popupHtml(m));
+      marker.bindPopup(popupHtml(m, t, STATUS_LABEL));
       marker.on("click", () => onSelectRef.current?.(m.id));
       cluster.addLayer(marker);
       markersById.current.set(m.id, marker);
@@ -120,7 +123,7 @@ function MyMasjidsMap({ masjids, selectedId, onSelect }) {
       map.setView(DEFAULT_CENTER, DEFAULT_ZOOM);
     }
     setTimeout(() => map.invalidateSize(), 60);
-  }, [masjids, pluginReady]);
+  }, [masjids, pluginReady, t]);
 
   useEffect(() => {
     if (!selectedId) return;
@@ -139,7 +142,7 @@ function MyMasjidsMap({ masjids, selectedId, onSelect }) {
   return (
     <div className="msj-explore-map-layout">
       <div className="msj-explore-map-panel">
-        {masjids.length === 0 && <p className="msj-explore-map-empty">No masjids match your search.</p>}
+        {masjids.length === 0 && <p className="msj-explore-map-empty">{t("exploreMasjidsPage.map.noMatch", "No masjids match your search.")}</p>}
         {masjids.map((m) => (
           <button
             type="button"
@@ -156,13 +159,13 @@ function MyMasjidsMap({ masjids, selectedId, onSelect }) {
                 <h4>{m.name}</h4>
                 <GreenTickBadge masjid={m} variant="map" />
               </span>
-              <p><Icon name="mapPin" size={12} /> {locationOf(m)}</p>
+              <p><Icon name="mapPin" size={12} /> {locationOf(m, t)}</p>
               <span className={`acct-status-pill ${m.status}`}>{STATUS_LABEL[m.status]}</span>
-              {(m.latitude == null || m.longitude == null) && <span className="msj-explore-map-item-flag">Not mapped yet</span>}
+              {(m.latitude == null || m.longitude == null) && <span className="msj-explore-map-item-flag">{t("exploreMasjidsPage.map.notMappedYet", "Not mapped yet")}</span>}
               {m.status === "approved" && <EngagementRow masjid={m} variant="map" />}
             </div>
             <Link to={`/account/my-masjids/${m.id}`} onClick={(e) => e.stopPropagation()} className="msj-explore-map-item-link">
-              {EDITABLE.has(m.status) ? "Edit" : "View Details"}
+              {EDITABLE.has(m.status) ? t("masjidWizard.summary.edit", "Edit") : t("myMasjidsShared.viewDetails", "View Details")}
             </Link>
           </button>
         ))}

@@ -7,6 +7,7 @@ import MicButton from "../../components/MicButton.jsx";
 import TagSelect from "../../components/profile/TagSelect.jsx";
 import jobApi from "../../services/jobApi.js";
 import userApi from "../../services/userApi.js";
+import { useTranslation } from "../../i18n/LanguageContext.jsx";
 
 const DESCRIPTION_MAX = 3000;
 
@@ -25,11 +26,14 @@ function emptyForm() {
 // column (via Community.jsx, for /account/my-jobs/new and /:id) rather than
 // as its own standalone page.
 function JobForm({ embedded = false }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { id } = useParams();
   const isEdit = !!id;
   const backTo = embedded ? "/my-community" : "/account/my-jobs";
-  const backLabel = embedded ? "Back to Community Wall" : "Back to My Jobs";
+  const backLabel = embedded
+    ? t("masjidWizard.backToCommunityWall", "Back to Community Wall")
+    : t("jobForm.backToMyJobs", "Back to My Jobs");
   const [form, setForm] = useState(emptyForm);
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
@@ -63,7 +67,7 @@ function JobForm({ embedded = false }) {
         location: j.location, salary: j.salary || "",
         applicationDeadline: j.applicationDeadline || "", contactMethod: j.contactMethod || "",
       });
-    }).catch(() => setErrors({ form: "Couldn't load this job." })).finally(() => setLoading(false));
+    }).catch(() => setErrors({ form: t("jobForm.errors.loadFailed", "Couldn't load this job.") })).finally(() => setLoading(false));
   }, [id, isEdit]);
 
   const setField = (field) => (e) => {
@@ -76,10 +80,10 @@ function JobForm({ embedded = false }) {
 
   const validate = () => {
     const errs = {};
-    if (!form.title.trim()) errs.title = "Job title is required.";
-    if (!form.description.trim()) errs.description = "Job description is required.";
-    if (!form.location.trim()) errs.location = "Location is required.";
-    if (form.applicationDeadline && form.applicationDeadline < todayStr()) errs.applicationDeadline = "Application deadline can't be in the past.";
+    if (!form.title.trim()) errs.title = t("jobForm.errors.titleRequired", "Job title is required.");
+    if (!form.description.trim()) errs.description = t("jobForm.errors.descriptionRequired", "Job description is required.");
+    if (!form.location.trim()) errs.location = t("jobForm.errors.locationRequired", "Location is required.");
+    if (form.applicationDeadline && form.applicationDeadline < todayStr()) errs.applicationDeadline = t("jobForm.errors.deadlinePast", "Application deadline can't be in the past.");
     return errs;
   };
 
@@ -102,13 +106,13 @@ function JobForm({ embedded = false }) {
     } catch (err) {
       const resp = err.response?.data;
       if (resp?.field) setErrors({ [resp.field]: resp.message });
-      else setErrors({ form: resp?.message || "Couldn't save this job. Please try again." });
+      else setErrors({ form: resp?.message || t("jobForm.errors.saveFailed", "Couldn't save this job. Please try again.") });
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) return <WizardShell embedded={embedded}><p>Loading…</p></WizardShell>;
+  if (loading) return <WizardShell embedded={embedded}><p>{t("masjidWizard.loading", "Loading…")}</p></WizardShell>;
 
   return (
     <WizardShell embedded={embedded}>
@@ -119,12 +123,12 @@ function JobForm({ embedded = false }) {
 
         <form onSubmit={submit} style={{ marginTop: 20 }}>
           <div className="card msj-step-card">
-            <Field label="Job Title" required error={errors.title}>
-              <input value={form.title} onChange={setField("title")} placeholder="e.g. Weekend Qur'an Teacher" maxLength={150} />
+            <Field label={t("jobForm.fields.jobTitle", "Job Title")} required error={errors.title}>
+              <input value={form.title} onChange={setField("title")} placeholder={t("jobForm.fields.jobTitlePlaceholder", "e.g. Weekend Qur'an Teacher")} maxLength={150} />
             </Field>
 
             <Field
-              label="Job Description"
+              label={t("jobForm.fields.jobDescription", "Job Description")}
               required
               error={errors.description}
               labelExtra={<span className="pf-char-counter">{form.description.length}/{DESCRIPTION_MAX}</span>}
@@ -135,7 +139,7 @@ function JobForm({ embedded = false }) {
                   maxLength={DESCRIPTION_MAX}
                   value={form.description}
                   onChange={setField("description")}
-                  placeholder="Describe the role, responsibilities, and what makes a good fit"
+                  placeholder={t("jobForm.fields.descriptionPlaceholder", "Describe the role, responsibilities, and what makes a good fit")}
                 />
                 <MicButton
                   onTranscript={(text) => {
@@ -148,33 +152,33 @@ function JobForm({ embedded = false }) {
             </Field>
 
             <div className="msj-field-row">
-              <Field label="Job Type" required>
+              <Field label={t("jobApply.panel.jobType", "Job Type")} required>
                 <select value={form.jobType} onChange={setField("jobType")}>
-                  {jobTypes.map((t) => <option key={t.id} value={t.name}>{t.name}</option>)}
+                  {jobTypes.map((jt) => <option key={jt.id} value={jt.name}>{jt.name}</option>)}
                 </select>
               </Field>
-              <Field label="Location" required error={errors.location}>
-                <input value={form.location} onChange={setField("location")} placeholder="e.g. Lucknow, India or Remote" maxLength={150} />
+              <Field label={t("jobApply.panel.location", "Location")} required error={errors.location}>
+                <input value={form.location} onChange={setField("location")} placeholder={t("jobForm.fields.locationPlaceholder", "e.g. Lucknow, India or Remote")} maxLength={150} />
               </Field>
             </div>
 
             <div className="msj-field-row">
-              <Field label="Required Experience" hint="Optional">
+              <Field label={t("jobForm.fields.requiredExperience", "Required Experience")} hint={t("jobForm.hints.optional", "Optional")}>
                 <select value={form.experienceRequired} onChange={setField("experienceRequired")}>
-                  <option value="">Not specified</option>
+                  <option value="">{t("jobForm.fields.notSpecified", "Not specified")}</option>
                   {experienceLevels.map((lvl) => <option key={lvl.id} value={lvl.name}>{lvl.name}</option>)}
                 </select>
               </Field>
-              <Field label="Salary / Compensation" hint="Optional — leave blank if not applicable">
-                <input value={form.salary} onChange={setField("salary")} placeholder="e.g. ₹25,000-₹35,000/month or Volunteer" maxLength={100} />
+              <Field label={t("jobForm.fields.salary", "Salary / Compensation")} hint={t("jobForm.hints.optionalLeaveBlank", "Optional — leave blank if not applicable")}>
+                <input value={form.salary} onChange={setField("salary")} placeholder={t("jobForm.fields.salaryPlaceholder", "e.g. ₹25,000-₹35,000/month or Volunteer")} maxLength={100} />
               </Field>
             </div>
 
-            <Field label="Skills / Qualifications" hint="Optional — search and select any that apply">
+            <Field label={t("jobs.skillsFilter.heading", "Skills / Qualifications")} hint={t("jobForm.hints.optionalSearchSelect", "Optional — search and select any that apply")}>
               <TagSelect
                 options={masterSkills}
                 selected={form.skills}
-                placeholder="Search skills — Tajweed, Arabic, Public Speaking…"
+                placeholder={t("jobForm.fields.skillsSearchPlaceholder", "Search skills — Tajweed, Arabic, Public Speaking…")}
                 onSelect={addSkill}
                 onRemove={removeSkill}
                 allowCustom={false}
@@ -182,18 +186,18 @@ function JobForm({ embedded = false }) {
             </Field>
 
             <div className="msj-field-row">
-              <Field label="Application Deadline" hint="Optional" error={errors.applicationDeadline}>
+              <Field label={t("jobForm.fields.applicationDeadline", "Application Deadline")} hint={t("jobForm.hints.optional", "Optional")} error={errors.applicationDeadline}>
                 <input type="date" min={todayStr()} value={form.applicationDeadline} onChange={setField("applicationDeadline")} />
               </Field>
-              <Field label="Contact / Application Method" hint="Optional — shown to applicants who'd rather reach out directly">
-                <input value={form.contactMethod} onChange={setField("contactMethod")} placeholder="e.g. an email address or phone number" maxLength={150} />
+              <Field label={t("jobForm.fields.contactMethod", "Contact / Application Method")} hint={t("jobForm.hints.optionalShownToApplicants", "Optional — shown to applicants who'd rather reach out directly")}>
+                <input value={form.contactMethod} onChange={setField("contactMethod")} placeholder={t("jobForm.fields.contactMethodPlaceholder", "e.g. an email address or phone number")} maxLength={150} />
               </Field>
             </div>
 
             <div className="msj-prayer-savebar" style={{ marginTop: 8 }}>
-              <Link to={backTo} className="btn btn-outline-ink">Cancel</Link>
+              <Link to={backTo} className="btn btn-outline-ink">{t("masjidWizard.contacts.cancel", "Cancel")}</Link>
               <button type="submit" className="btn btn-gold" disabled={saving}>
-                {saving ? "Saving…" : isEdit ? "Save Changes" : "Post Job"} <span className="btn-arrow">→</span>
+                {saving ? t("masjidWizard.actions.saving", "Saving…") : isEdit ? t("jobForm.actions.saveChanges", "Save Changes") : t("jobForm.actions.postJob", "Post Job")} <span className="btn-arrow">→</span>
               </button>
             </div>
           </div>
