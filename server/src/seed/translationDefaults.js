@@ -1825,6 +1825,12 @@ const DEFAULTS = [
   ["myJobs", "myJobs.viewApplicants", "View Applicants ({count})", "आवेदक देखें ({count})", "درخواست دہندگان دیکھیں ({count})", "عرض المتقدمين ({count})"],
   ["myJobs", "myJobs.viewPublicPage", "View Public Page", "सार्वजनिक पेज देखें", "عوامی صفحہ دیکھیں", "عرض الصفحة العامة"],
   ["myJobs", "myJobs.reopen", "Reopen", "फिर से खोलें", "دوبارہ کھولیں", "إعادة الفتح"],
+  ["myJobs", "myJobs.tabs.all", "All", "सभी", "تمام", "الكل"],
+  ["myJobs", "myJobs.stats.totalJobs", "Total Jobs", "कुल नौकरियां", "کل ملازمتیں", "إجمالي الوظائف"],
+  ["myJobs", "myJobs.stats.totalApplicants", "Total Applicants", "कुल आवेदक", "کل درخواست دہندگان", "إجمالي المتقدمين"],
+  ["myJobs", "myJobs.stats.totalViews", "Total Views", "कुल दृश्य", "کل ملاحظات", "إجمالي المشاهدات"],
+  ["myJobs", "myJobs.emptyTab.title", "No jobs in this status", "इस स्थिति में कोई नौकरी नहीं", "اس حالت میں کوئی ملازمت نہیں", "لا توجد وظائف بهذه الحالة"],
+  ["myJobs", "myJobs.emptyTab.body", "Switch tabs to see your other jobs.", "अपनी अन्य नौकरियां देखने के लिए टैब बदलें।", "اپنی دیگر ملازمتیں دیکھنے کے لیے ٹیب تبدیل کریں۔", "بدّل التبويبات لرؤية وظائفك الأخرى."],
 
   ["jobApplicants", "jobApplicants.status.rejected", "Rejected", "अस्वीकृत", "مسترد", "مرفوض"],
   ["jobApplicants", "jobApplicants.saveError", "Couldn't save changes.", "बदलाव सहेजे नहीं जा सके।", "تبدیلیاں محفوظ نہیں ہو سکیں۔", "تعذّر حفظ التغييرات."],
