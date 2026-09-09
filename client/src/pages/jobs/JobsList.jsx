@@ -73,8 +73,8 @@ function JobRow({ job, userLocation }) {
           className={`job-card-save${favorited ? " active" : ""}`}
           onClick={onSaveClick}
           disabled={busy}
-          aria-label={favorited ? t("jobs.card.unsave", "Remove from saved jobs") : t("jobs.card.save", "Save job")}
-          title={favorited ? t("jobs.card.unsave", "Remove from saved jobs") : t("jobs.card.save", "Save job")}
+          aria-label={favorited ? t("jobs.card.unlike", "Remove from liked jobs") : t("jobs.card.like", "Like job")}
+          title={favorited ? t("jobs.card.unlike", "Remove from liked jobs") : t("jobs.card.like", "Like job")}
         >
           <Icon name="heart" size={15} />
         </button>

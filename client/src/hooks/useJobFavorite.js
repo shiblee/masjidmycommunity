@@ -2,6 +2,11 @@ import { useCallback, useEffect, useState } from "react";
 import publicJobApi from "../services/publicJobApi.js";
 import { getUserToken } from "../utils/userAuthStorage.js";
 
+// Fired on every successful toggle so any mounted component (the Jobs
+// page's ♥ Liked count chip, in particular) can react without a refetch —
+// same cross-component-sync pattern as "mmc-user-session-updated".
+export const JOB_FAVORITE_CHANGED_EVENT = "mmc-job-favorite-changed";
+
 // Save/Unsave a job — mirrors useMasjidLike.js exactly (optimistic update
 // with rollback on failure), used by JobCard.jsx and JobApplyPanel.jsx so
 // the toggle behaves identically everywhere it appears.
@@ -21,6 +26,7 @@ export function useJobFavorite(jobId, { favorited: initialFavorited = false } = 
     try {
       if (next) await publicJobApi.post(`/${jobId}/favorite`);
       else await publicJobApi.delete(`/${jobId}/favorite`);
+      window.dispatchEvent(new CustomEvent(JOB_FAVORITE_CHANGED_EVENT, { detail: { jobId, favorited: next } }));
       return { ok: true };
     } catch (err) {
       setFavorited(!next);

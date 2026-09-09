@@ -11,6 +11,7 @@ import JobFiltersSidebar from "../components/job/JobFiltersSidebar.jsx";
 import JobsMap from "./jobs/JobsMap.jsx";
 import JobsList from "./jobs/JobsList.jsx";
 import publicJobApi from "../services/publicJobApi.js";
+import { JOB_FAVORITE_CHANGED_EVENT } from "../hooks/useJobFavorite.js";
 import { getStoredUser } from "../utils/userAuthStorage.js";
 import { useTranslation } from "../i18n/LanguageContext.jsx";
 
@@ -93,6 +94,17 @@ function Jobs() {
       publicJobApi.get("/by-skills", { params: { limit: 10 } }).then(({ data }) => setBySkills(data.jobs)).catch(() => {});
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Keeps the ♥ Liked count in step the instant a heart is toggled anywhere
+  // on the page (or on the job detail page, via the same event) — no
+  // refetch/refresh needed.
+  useEffect(() => {
+    const onFavoriteChanged = (e) => {
+      setSavedTotal((t) => Math.max(0, t + (e.detail.favorited ? 1 : -1)));
+    };
+    window.addEventListener(JOB_FAVORITE_CHANGED_EVENT, onFavoriteChanged);
+    return () => window.removeEventListener(JOB_FAVORITE_CHANGED_EVENT, onFavoriteChanged);
   }, []);
 
   useEffect(() => {
@@ -273,7 +285,7 @@ function Jobs() {
             </div>
 
             <button type="button" className={`filter-chip saved-chip${savedOnly ? " active" : ""}`} onClick={toggleSavedOnly}>
-              ♥ {t("jobs.filter.saved", "Saved")}{savedTotal > 0 ? ` (${savedTotal})` : ""}
+              ♥ {t("jobs.filter.liked", "Liked")}{savedTotal > 0 ? ` (${savedTotal})` : ""}
             </button>
 
             <button
@@ -343,8 +355,8 @@ function Jobs() {
                       ? t("jobs.filter.loadingJobs", "Loading jobs…")
                       : savedOnly
                       ? t(
-                          (jobs?.length || 0) === 1 ? "jobs.filter.savedCountSingular" : "jobs.filter.savedCountPlural",
-                          (jobs?.length || 0) === 1 ? "{count} saved job" : "{count} saved jobs"
+                          (jobs?.length || 0) === 1 ? "jobs.filter.likedCountSingular" : "jobs.filter.likedCountPlural",
+                          (jobs?.length || 0) === 1 ? "{count} liked job" : "{count} liked jobs"
                         ).replace("{count}", jobs?.length || 0)
                       : `${t("jobs.filter.showing", "Showing")} ${jobs?.length || 0} ${t("jobs.filter.of", "of")} ${total} ${t("jobs.filter.jobsCount", "jobs")}`}
                   </div>
@@ -356,8 +368,8 @@ function Jobs() {
                   ) : jobs?.length === 0 ? (
                     <div className="msj-empty-state">
                       <Icon name="briefcase" size={30} />
-                      <h3>{savedOnly ? t("jobs.empty.savedTitle", "No saved jobs yet") : hasAnyFilter ? t("jobs.empty.filteredTitle", "No jobs match your filters") : t("jobs.empty.noneTitle", "No open jobs right now")}</h3>
-                      <p>{savedOnly ? t("jobs.empty.savedBody", "Tap the heart on a job to keep track of it here.") : hasAnyFilter ? t("jobs.empty.filteredBody", "Try removing a filter or broadening your search.") : t("jobs.empty.noneBody", "Check back soon — new roles are posted by the community often.")}</p>
+                      <h3>{savedOnly ? t("jobs.empty.likedTitle", "No liked jobs yet") : hasAnyFilter ? t("jobs.empty.filteredTitle", "No jobs match your filters") : t("jobs.empty.noneTitle", "No open jobs right now")}</h3>
+                      <p>{savedOnly ? t("jobs.empty.likedBody", "Tap the heart on a job to keep track of it here.") : hasAnyFilter ? t("jobs.empty.filteredBody", "Try removing a filter or broadening your search.") : t("jobs.empty.noneBody", "Check back soon — new roles are posted by the community often.")}</p>
                       <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center" }}>
                         {appliedFilters?.location && !skipLocation && (
                           <button type="button" className="btn btn-outline-ink" onClick={broadenWithoutLocation}>

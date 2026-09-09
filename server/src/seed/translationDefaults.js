@@ -1976,6 +1976,15 @@ const DEFAULTS = [
   ["jobs", "jobs.map.showMyLocation", "Show my location", "मेरा स्थान दिखाएं", "میرا مقام دکھائیں", "إظهار موقعي"],
   ["jobForm", "jobForm.hints.locationSearch", "Search for a real address, or type freely (e.g. \"Remote\")", "किसी वास्तविक पते के लिए खोजें, या स्वतंत्र रूप से टाइप करें (उदाहरण: \"रिमोट\")", "کسی حقیقی پتے کے لیے تلاش کریں، یا آزادانہ طور پر ٹائپ کریں (مثلاً \"ریموٹ\")", "ابحث عن عنوان حقيقي، أو اكتب بحرية (مثال: \"عن بُعد\")"],
 
+  // Jobs redesign — "Saved" renamed to "Liked" throughout
+  ["jobs", "jobs.card.like", "Like job", "नौकरी पसंद करें", "ملازمت پسند کریں", "الإعجاب بالوظيفة"],
+  ["jobs", "jobs.card.unlike", "Remove from liked jobs", "पसंद की गई नौकरियों से हटाएं", "پسندیدہ ملازمتوں سے ہٹائیں", "إزالة من الوظائف المُعجب بها"],
+  ["jobs", "jobs.filter.liked", "Liked", "पसंद की गई", "پسندیدہ", "المُعجب بها"],
+  ["jobs", "jobs.filter.likedCountSingular", "{count} liked job", "{count} पसंद की गई नौकरी", "{count} پسندیدہ ملازمت", "{count} وظيفة مُعجب بها"],
+  ["jobs", "jobs.filter.likedCountPlural", "{count} liked jobs", "{count} पसंद की गई नौकरियाँ", "{count} پسندیدہ ملازمتیں", "{count} وظائف مُعجب بها"],
+  ["jobs", "jobs.empty.likedTitle", "No liked jobs yet", "अभी तक कोई नौकरी पसंद नहीं की गई", "ابھی تک کوئی ملازمت پسند نہیں کی گئی", "لا توجد وظائف أُعجب بها بعد"],
+  ["jobs", "jobs.empty.likedBody", "Tap the heart on a job to keep track of it here.", "किसी नौकरी को यहाँ ट्रैक करने के लिए उस पर दिल पर टैप करें।", "کسی ملازمت کو یہاں ٹریک کرنے کے لیے اس پر دل پر ٹیپ کریں۔", "اضغط على أيقونة القلب في وظيفة لتتبعها هنا."],
+
   // Jobs redesign — left-hand filter sidebar + Grid/List/Map search row
   ["jobs", "jobs.view.list", "List", "सूची", "فہرست", "قائمة"],
   ["jobs", "jobs.sidebar.title", "Filters", "फ़िल्टर", "فلٹرز", "عوامل التصفية"],
