@@ -1698,6 +1698,19 @@ const DEFAULTS = [
   ["commentSection", "commentSection.loadMoreCommentsPlural", "Load {count} more comments", "{count} और टिप्पणियाँ लोड करें", "{count} مزید تبصرے لوڈ کریں", "تحميل {count} تعليقات إضافية"],
   ["commentSection", "commentSection.reportModalTitle", "Report Comment", "टिप्पणी की रिपोर्ट करें", "تبصرے کی رپورٹ کریں", "الإبلاغ عن التعليق"],
 
+  // Comment composer redesign — avatar + "Comment as {name}" pill, and the
+  // new Emoji/GIF/Sticker toolbar
+  ["commentSection", "commentSection.placeholderCommentAs", "Comment as {name}", "{name} के रूप में टिप्पणी करें", "{name} کے طور پر تبصرہ کریں", "علّق باسم {name}"],
+  ["commentSection", "commentSection.emojiLabel", "Add emoji", "इमोजी जोड़ें", "ایموجی شامل کریں", "إضافة إيموجي"],
+  ["commentSection", "commentSection.gifLabel", "Add a GIF", "GIF जोड़ें", "GIF شامل کریں", "إضافة GIF"],
+  ["commentSection", "commentSection.stickerLabel", "Add a sticker", "स्टिकर जोड़ें", "اسٹیکر شامل کریں", "إضافة ملصق"],
+  ["commentSection", "commentSection.gifAlt", "GIF", "GIF", "GIF", "GIF"],
+  ["commentSection", "commentSection.gif.searchPlaceholder", "Search GIFs…", "GIF खोजें…", "GIF تلاش کریں…", "البحث عن GIF…"],
+  ["commentSection", "commentSection.gif.loading", "Loading…", "लोड हो रहा है…", "لوڈ ہو رہا ہے…", "جارٍ التحميل…"],
+  ["commentSection", "commentSection.gif.empty", "No GIFs found.", "कोई GIF नहीं मिला।", "کوئی GIF نہیں ملا۔", "لم يتم العثور على أي GIF."],
+  ["commentSection", "commentSection.gif.loadError", "Couldn't load GIFs.", "GIF लोड नहीं हो सके।", "GIF لوڈ نہیں ہو سکے۔", "تعذّر تحميل ملفات GIF."],
+  ["commentSection", "commentSection.gif.unavailable", "GIF search isn't set up yet.", "GIF खोज अभी सेट अप नहीं है।", "GIF تلاش ابھی سیٹ اپ نہیں ہے۔", "لم يتم إعداد البحث عن GIF بعد."],
+
   ["postComposer", "postComposer.guest.prompt", "Sign in to share an update with the community.", "समुदाय के साथ अपडेट साझा करने के लिए साइन इन करें।", "کمیونٹی کے ساتھ اپڈیٹ شیئر کرنے کے لیے سائن ان کریں۔", "سجّل الدخول لمشاركة تحديث مع المجتمع."],
   ["postComposer", "postComposer.guest.signIn", "Sign In", "साइन इन करें", "سائن ان کریں", "تسجيل الدخول"],
   ["postComposer", "postComposer.lockedMasjidNotice", "This post will be shared with the {masjid} community.", "यह पोस्ट {masjid} समुदाय के साथ साझा की जाएगी।", "یہ پوسٹ {masjid} کمیونٹی کے ساتھ شیئر کی جائے گی۔", "سيتم مشاركة هذا المنشور مع مجتمع {masjid}."],

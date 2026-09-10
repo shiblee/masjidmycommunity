@@ -1,11 +1,26 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import communityApi from "../services/communityApi.js";
 import reportApi from "../services/reportApi.js";
 import { Icon } from "./Icons.jsx";
 import ReportModal from "./ReportModal.jsx";
 import MentionTextarea from "./MentionTextarea.jsx";
 import PostBodyText from "./PostBodyText.jsx";
+import EmojiPicker from "./comment/EmojiPicker.jsx";
+import GifPicker from "./comment/GifPicker.jsx";
+import StickerPicker from "./comment/StickerPicker.jsx";
 import { useTranslation } from "../i18n/LanguageContext.jsx";
+
+// A short run of emoji (picked from the sticker tray, or just typed) renders
+// larger — same "emoji-only messages get bigger" convention WhatsApp/
+// Telegram use, so a sticker doesn't need any media/schema support of its
+// own: it's just an emoji-only comment body.
+const EMOJI_ONLY_RE = new RegExp("^(?:\\p{Extended_Pictographic}|\\p{Emoji_Presentation}|\\u200d|\\uFE0F|\\s)+$", "u");
+function isEmojiOnly(text) {
+  if (!text) return false;
+  const trimmed = text.trim();
+  if (!trimmed || trimmed.length > 30) return false;
+  return EMOJI_ONLY_RE.test(trimmed);
+}
 
 const TOP_LEVEL_PAGE = 10;
 const REPLY_PREVIEW = 3;
@@ -68,30 +83,87 @@ function CommentVoteButtons({ comment, requireAuth, onVote }) {
   );
 }
 
-function CommentComposer({ placeholder, autoFocus, busy, value, onChange, onSubmit, onCancel, submitLabel, maxLength }) {
+// `user` drives the avatar + "Comment as {name}" placeholder shown in the
+// screenshot this was built from. onSendSticker/onSendGif (only passed for
+// the top-level and reply composers, not the plain-textarea edit box) send
+// immediately on pick — same tap-to-send convention as a real sticker/GIF
+// tray — bypassing the normal type-then-click-Post flow entirely.
+function CommentComposer({ user, placeholder, autoFocus, busy, value, onChange, onSubmit, onCancel, submitLabel, maxLength, onSendSticker, onSendGif }) {
   const { t } = useTranslation();
   const overLimit = maxLength != null && value.length > maxLength;
+  const [picker, setPicker] = useState(null); // null | "emoji" | "gif" | "sticker"
+  const emojiBtnRef = useRef(null);
+  const gifBtnRef = useRef(null);
+  const stickerBtnRef = useRef(null);
+
+  const togglePicker = (key) => setPicker((p) => (p === key ? null : key));
+  const closePicker = () => setPicker(null);
+
   return (
     <div className="cmt-composer">
-      <MentionTextarea
-        rows={2}
-        placeholder={placeholder}
-        value={value}
-        autoFocus={autoFocus}
-        onChange={onChange}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) onSubmit();
-        }}
-      />
-      <div className="cmt-composer-actions">
-        {onCancel && (
-          <button type="button" className="cmt-btn-text" onClick={onCancel} disabled={busy}>
-            {t("commentSection.cancel", "Cancel")}
-          </button>
+      <span className="cmt-composer-avatar">{initialsOf(user?.fullName)}</span>
+      <div className="cmt-composer-main">
+        <MentionTextarea
+          rows={2}
+          placeholder={placeholder}
+          value={value}
+          autoFocus={autoFocus}
+          onChange={onChange}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) onSubmit();
+          }}
+        />
+        <div className="cmt-composer-toolbar">
+          <div className="cmt-composer-tools">
+            <button type="button" ref={emojiBtnRef} className="cmt-tool-btn" onClick={() => togglePicker("emoji")} aria-label={t("commentSection.emojiLabel", "Add emoji")}>
+              <Icon name="emoji" size={17} />
+            </button>
+            {onSendGif && (
+              <button type="button" ref={gifBtnRef} className="cmt-tool-btn cmt-tool-btn-gif" onClick={() => togglePicker("gif")} aria-label={t("commentSection.gifLabel", "Add a GIF")}>
+                GIF
+              </button>
+            )}
+            {onSendSticker && (
+              <button type="button" ref={stickerBtnRef} className="cmt-tool-btn" onClick={() => togglePicker("sticker")} aria-label={t("commentSection.stickerLabel", "Add a sticker")}>
+                <Icon name="star" size={17} />
+              </button>
+            )}
+          </div>
+          <div className="cmt-composer-toolbar-right">
+            {onCancel && (
+              <button type="button" className="cmt-btn-text" onClick={onCancel} disabled={busy}>
+                {t("commentSection.cancel", "Cancel")}
+              </button>
+            )}
+            <button
+              type="button"
+              className="cmt-send-btn"
+              onClick={onSubmit}
+              disabled={busy || !value.trim() || overLimit}
+              aria-label={submitLabel || t("commentSection.post", "Post")}
+            >
+              <Icon name="send" size={15} />
+            </button>
+          </div>
+        </div>
+
+        <EmojiPicker open={picker === "emoji"} onClose={closePicker} anchorRef={emojiBtnRef} onPick={(emoji) => onChange(value + emoji)} />
+        {onSendGif && (
+          <GifPicker
+            open={picker === "gif"}
+            onClose={closePicker}
+            anchorRef={gifBtnRef}
+            onPick={(gif) => { closePicker(); onSendGif(gif.url); }}
+          />
         )}
-        <button type="button" className="cmt-btn-post" onClick={onSubmit} disabled={busy || !value.trim() || overLimit}>
-          {busy ? t("commentSection.posting", "Posting…") : submitLabel || t("commentSection.post", "Post")}
-        </button>
+        {onSendSticker && (
+          <StickerPicker
+            open={picker === "sticker"}
+            onClose={closePicker}
+            anchorRef={stickerBtnRef}
+            onPick={(sticker) => { closePicker(); onSendSticker(sticker); }}
+          />
+        )}
       </div>
     </div>
   );
@@ -127,13 +199,19 @@ function CommentNode({ comment, childrenMap, depth, basePath, user, navigate, mu
     return true;
   };
 
-  const submitReply = async () => {
-    if (!requireAuth() || !replyText.trim()) return;
+  // Handles both the normal typed reply (called with no args, reading
+  // replyText) and an instant sticker/GIF send (called with an override
+  // body/media, bypassing the textbox entirely).
+  const postReply = async ({ body, mediaUrl, mediaType } = {}) => {
+    if (!requireAuth()) return;
+    const trimmedBody = body != null ? body.trim() : replyText.trim();
+    if (!trimmedBody && !mediaUrl) return;
     setReplyBusy(true);
     try {
       const { data } = await communityApi.post(`${basePath}/comments`, {
         parentId: comment.id,
-        body: replyText.trim(),
+        body: trimmedBody,
+        ...(mediaUrl ? { mediaUrl, mediaType } : {}),
       });
       mutate.add(data.comment);
       setReplyText("");
@@ -145,6 +223,7 @@ function CommentNode({ comment, childrenMap, depth, basePath, user, navigate, mu
       setReplyBusy(false);
     }
   };
+  const submitReply = () => postReply();
 
   const submitEdit = async () => {
     if (!editText.trim()) return;
@@ -192,10 +271,19 @@ function CommentNode({ comment, childrenMap, depth, basePath, user, navigate, mu
                   </button>
                 </div>
               </div>
+            ) : isDeleted ? (
+              <p className="cmt-text cmt-text-deleted">{t("commentSection.commentDeleted", "[Comment deleted]")}</p>
             ) : (
-              <p className={`cmt-text${isDeleted ? " cmt-text-deleted" : ""}`}>
-                {isDeleted ? t("commentSection.commentDeleted", "[Comment deleted]") : <PostBodyText text={comment.body} />}
-              </p>
+              <>
+                {comment.body && (
+                  <p className={`cmt-text${isEmojiOnly(comment.body) ? " cmt-text-emoji" : ""}`}>
+                    <PostBodyText text={comment.body} />
+                  </p>
+                )}
+                {comment.mediaType === "gif" && comment.mediaUrl && (
+                  <img className="cmt-gif-media" src={comment.mediaUrl} alt={t("commentSection.gifAlt", "GIF")} loading="lazy" />
+                )}
+              </>
             )}
           </div>
 
@@ -239,6 +327,7 @@ function CommentNode({ comment, childrenMap, depth, basePath, user, navigate, mu
 
           {replying && (
             <CommentComposer
+              user={user}
               placeholder={t("commentSection.replyPlaceholder", "Reply to {name}…").replace("{name}", comment.author?.fullName || t("commentSection.replyToFallbackName", "this comment"))}
               autoFocus
               busy={replyBusy}
@@ -248,6 +337,8 @@ function CommentNode({ comment, childrenMap, depth, basePath, user, navigate, mu
               onCancel={() => setReplying(false)}
               submitLabel={t("commentSection.reply", "Reply")}
               maxLength={replyMaxLength}
+              onSendSticker={(sticker) => postReply({ body: sticker })}
+              onSendGif={(url) => postReply({ body: "", mediaUrl: url, mediaType: "gif" })}
             />
           )}
 
@@ -366,12 +457,19 @@ function CommentSection({ activityId, imageId, user, navigate, onCountChange, co
     if (comments !== null) onCountChange?.(total);
   }, [comments, total, onCountChange]);
 
-  const submitTopLevel = async () => {
+  // Same override-body pattern as CommentNode's postReply — called with no
+  // args for a normal typed comment (reads newText), or with a sticker/GIF
+  // payload for an instant send.
+  const postTopLevel = async ({ body, mediaUrl, mediaType } = {}) => {
     if (!user) { navigate("/auth"); return; }
-    if (!newText.trim()) return;
+    const trimmedBody = body != null ? body.trim() : newText.trim();
+    if (!trimmedBody && !mediaUrl) return;
     setPosting(true);
     try {
-      const { data } = await communityApi.post(`${basePath}/comments`, { body: newText.trim() });
+      const { data } = await communityApi.post(`${basePath}/comments`, {
+        body: trimmedBody,
+        ...(mediaUrl ? { mediaUrl, mediaType } : {}),
+      });
       mutate.add(data.comment);
       setNewText("");
     } catch (err) {
@@ -380,6 +478,7 @@ function CommentSection({ activityId, imageId, user, navigate, onCountChange, co
       setPosting(false);
     }
   };
+  const submitTopLevel = () => postTopLevel();
 
   const submitReport = async ({ reason, comment }) => {
     setReportBusy(true);
@@ -401,13 +500,16 @@ function CommentSection({ activityId, imageId, user, navigate, onCountChange, co
   return (
     <div className="cmt-section">
       <CommentComposer
-        placeholder={t("commentSection.placeholderWriteComment", "Write a comment…")}
+        user={user}
+        placeholder={user ? t("commentSection.placeholderCommentAs", "Comment as {name}").replace("{name}", user.fullName) : t("commentSection.placeholderWriteComment", "Write a comment…")}
         busy={posting}
         value={newText}
         onChange={setNewText}
         onSubmit={submitTopLevel}
         submitLabel={t("commentSection.post", "Post")}
         maxLength={commentMaxLength}
+        onSendSticker={(sticker) => postTopLevel({ body: sticker })}
+        onSendGif={(url) => postTopLevel({ body: "", mediaUrl: url, mediaType: "gif" })}
       />
 
       {error && <div className="cmt-error">{error}</div>}

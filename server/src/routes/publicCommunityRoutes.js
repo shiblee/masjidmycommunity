@@ -2,6 +2,7 @@ import { Router } from "express";
 import auth, { requireUser } from "../middleware/auth.js";
 import optionalAuth from "../middleware/optionalAuth.js";
 import { uploadWallPostMedia } from "../middleware/upload.js";
+import gifSearchRateLimit from "../middleware/gifSearchRateLimit.js";
 import {
   listPublished,
   castVote,
@@ -21,6 +22,7 @@ import {
   createImageComment,
   updateImageComment,
   deleteImageComment,
+  searchGifsEndpoint,
 } from "../controllers/publicCommunityController.js";
 
 const router = Router();
@@ -28,6 +30,7 @@ const router = Router();
 router.get("/content-settings", getContentSettings);
 router.get("/stats", getCommunityStats);
 router.get("/mention-search", mentionSearch);
+router.get("/gifs", auth, requireUser, gifSearchRateLimit, searchGifsEndpoint);
 router.get("/activities", optionalAuth, listPublished);
 router.post("/activities/:id/vote", auth, requireUser, castVote);
 

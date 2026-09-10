@@ -54,6 +54,8 @@ const ICONS = {
   fileText: { d: ["M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z", "M14 2v6h6", "M9 13h6M9 17h6"] },
   user: { circle: { cx: 12, cy: 8, r: 4 }, d: ["M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"] },
   logOut: { d: ["M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4", "M16 17l5-5-5-5", "M21 12H9"] },
+  emoji: { circle: { cx: 12, cy: 12, r: 9 }, d: ["M8 14s1.5 2 4 2 4-2 4-2", "M9 9h.01", "M15 9h.01"] },
+  send: { d: ["M22 2L11 13", "M22 2l-7 20-4-9-9-4 20-7z"] },
 };
 
 export function Icon({ name, size = 24 }) {

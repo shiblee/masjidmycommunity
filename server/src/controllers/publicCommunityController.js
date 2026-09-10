@@ -17,6 +17,13 @@ import { mediaTypeOf, IMAGE_MAX_BYTES } from "../middleware/upload.js";
 import ContentSettings from "../models/ContentSettings.js";
 import { notifyUser } from "../services/notificationService.js";
 import { checkRestrictedWords, RESTRICTED_CONTENT_MESSAGE } from "../utils/contentModeration.js";
+import { searchGifs, isGifSearchConfigured } from "../services/gifService.js";
+
+// The only place a comment's mediaUrl is ever produced is our own GIF search
+// response below, so a create request is trusted only if the URL is
+// actually one of GIPHY's CDN hosts — narrows what would otherwise be an
+// arbitrary attacker-supplied <img src>.
+const GIPHY_MEDIA_URL_RE = /^https:\/\/(media\d*\.giphy\.com|i\.giphy\.com)\//;
 
 function notifyReply({ parentUserId, actorId, actorName, body, link }) {
   if (!parentUserId || parentUserId === actorId) return;
@@ -478,6 +485,8 @@ export const listComments = async (req, res) => {
       id: c.id,
       parentId: c.parentId,
       body: c.status === "deleted" ? null : c.body,
+      mediaUrl: c.status === "deleted" ? null : c.mediaUrl,
+      mediaType: c.status === "deleted" ? null : c.mediaType,
       status: c.status,
       createdAt: c.createdAt,
       updatedAt: c.updatedAt,
@@ -499,8 +508,12 @@ export const listComments = async (req, res) => {
 export const createComment = async (req, res) => {
   try {
     const { activityId } = req.params;
-    const { parentId, body } = req.body;
-    if (!body?.trim()) return res.status(400).json({ message: "Comment cannot be empty." });
+    const { parentId, body, mediaUrl, mediaType } = req.body;
+    const trimmedBody = body?.trim() || "";
+    if (!trimmedBody && !mediaUrl) return res.status(400).json({ message: "Comment cannot be empty." });
+    if (mediaUrl && (mediaType !== "gif" || !GIPHY_MEDIA_URL_RE.test(mediaUrl))) {
+      return res.status(400).json({ message: "Invalid GIF." });
+    }
 
     const activity = await CommunityActivity.findOne({ where: { id: activityId, status: "published" } });
     if (!activity) return res.status(404).json({ message: "Post not found." });
@@ -513,27 +526,36 @@ export const createComment = async (req, res) => {
 
     const { maxCommentLength, maxReplyLength } = await getContentLimits();
     const limit = parentId ? maxReplyLength : maxCommentLength;
-    if (body.trim().length > limit) {
+    if (trimmedBody.length > limit) {
       return res.status(400).json({ message: `${parentId ? "Replies" : "Comments"} can be at most ${limit} characters.` });
     }
 
-    if ((await checkRestrictedWords(body)).flagged) {
+    if (trimmedBody && (await checkRestrictedWords(trimmedBody)).flagged) {
       return res.status(400).json({ message: RESTRICTED_CONTENT_MESSAGE });
     }
 
-    const comment = await Comment.create({ activityId, parentId: parentId || null, userId: req.user.id, body: body.trim() });
+    const comment = await Comment.create({
+      activityId,
+      parentId: parentId || null,
+      userId: req.user.id,
+      body: trimmedBody,
+      mediaUrl: mediaUrl || null,
+      mediaType: mediaUrl ? "gif" : null,
+    });
     const user = await User.findByPk(req.user.id, { attributes: ["id", "fullName"] });
 
     if (parent) {
-      notifyReply({ parentUserId: parent.userId, actorId: req.user.id, actorName: user?.fullName || "Someone", body: comment.body, link: "/my-community" });
+      notifyReply({ parentUserId: parent.userId, actorId: req.user.id, actorName: user?.fullName || "Someone", body: comment.body || "a GIF", link: "/my-community" });
     }
-    notifyMentions(comment.body, { actorId: req.user.id, actorName: user?.fullName || "Someone" });
+    if (comment.body) notifyMentions(comment.body, { actorId: req.user.id, actorName: user?.fullName || "Someone" });
 
     res.status(201).json({
       comment: {
         id: comment.id,
         parentId: comment.parentId,
         body: comment.body,
+        mediaUrl: comment.mediaUrl,
+        mediaType: comment.mediaType,
         status: comment.status,
         createdAt: comment.createdAt,
         updatedAt: comment.updatedAt,
@@ -549,6 +571,17 @@ export const createComment = async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
+};
+
+// GET /community/gifs?q=... — used by the comment composer's GIF picker.
+// `configured:false` (rather than an error) is the same "feature not wired
+// up yet" shape the AI assistant already uses, so the picker can show an
+// honest empty state instead of a broken search box.
+export const searchGifsEndpoint = async (req, res) => {
+  if (!isGifSearchConfigured()) return res.json({ configured: false, gifs: [] });
+  const gifs = await searchGifs(req.query.q);
+  if (gifs === null) return res.status(502).json({ configured: true, gifs: [], message: "Couldn't load GIFs right now." });
+  res.json({ configured: true, gifs });
 };
 
 export const castCommentVote = async (req, res) => {
@@ -887,6 +920,8 @@ export const listImageComments = async (req, res) => {
       id: c.id,
       parentId: c.parentId,
       body: c.status === "deleted" ? null : c.body,
+      mediaUrl: c.status === "deleted" ? null : c.mediaUrl,
+      mediaType: c.status === "deleted" ? null : c.mediaType,
       status: c.status,
       createdAt: c.createdAt,
       updatedAt: c.updatedAt,
@@ -908,8 +943,12 @@ export const listImageComments = async (req, res) => {
 export const createImageComment = async (req, res) => {
   try {
     const { imageId } = req.params;
-    const { parentId, body } = req.body;
-    if (!body?.trim()) return res.status(400).json({ message: "Comment cannot be empty." });
+    const { parentId, body, mediaUrl, mediaType } = req.body;
+    const trimmedBody = body?.trim() || "";
+    if (!trimmedBody && !mediaUrl) return res.status(400).json({ message: "Comment cannot be empty." });
+    if (mediaUrl && (mediaType !== "gif" || !GIPHY_MEDIA_URL_RE.test(mediaUrl))) {
+      return res.status(400).json({ message: "Invalid GIF." });
+    }
 
     const image = await PostImage.findOne({ where: { id: imageId, status: "visible" } });
     if (!image) return res.status(404).json({ message: "Image not found." });
@@ -922,33 +961,37 @@ export const createImageComment = async (req, res) => {
 
     const { maxCommentLength, maxReplyLength } = await getContentLimits();
     const limit = parentId ? maxReplyLength : maxCommentLength;
-    if (body.trim().length > limit) {
+    if (trimmedBody.length > limit) {
       return res.status(400).json({ message: `${parentId ? "Replies" : "Comments"} can be at most ${limit} characters.` });
     }
 
-    if ((await checkRestrictedWords(body)).flagged) {
+    if (trimmedBody && (await checkRestrictedWords(trimmedBody)).flagged) {
       return res.status(400).json({ message: RESTRICTED_CONTENT_MESSAGE });
     }
 
     const comment = await Comment.create({
       activityId: image.activityId,
       imageId: image.id,
+      mediaUrl: mediaUrl || null,
+      mediaType: mediaUrl ? "gif" : null,
       parentId: parentId || null,
       userId: req.user.id,
-      body: body.trim(),
+      body: trimmedBody,
     });
     const user = await User.findByPk(req.user.id, { attributes: ["id", "fullName"] });
 
     if (parent) {
-      notifyReply({ parentUserId: parent.userId, actorId: req.user.id, actorName: user?.fullName || "Someone", body: comment.body, link: "/my-community" });
+      notifyReply({ parentUserId: parent.userId, actorId: req.user.id, actorName: user?.fullName || "Someone", body: comment.body || "a GIF", link: "/my-community" });
     }
-    notifyMentions(comment.body, { actorId: req.user.id, actorName: user?.fullName || "Someone" });
+    if (comment.body) notifyMentions(comment.body, { actorId: req.user.id, actorName: user?.fullName || "Someone" });
 
     res.status(201).json({
       comment: {
         id: comment.id,
         parentId: comment.parentId,
         body: comment.body,
+        mediaUrl: comment.mediaUrl,
+        mediaType: comment.mediaType,
         status: comment.status,
         createdAt: comment.createdAt,
         updatedAt: comment.updatedAt,
