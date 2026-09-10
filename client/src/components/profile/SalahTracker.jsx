@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import userApi from "../../services/userApi.js";
 import { Icon } from "../Icons.jsx";
 import { useTranslation } from "../../i18n/LanguageContext.jsx";
+import { formatPrayerTime } from "../../utils/formatPrayerTime.js";
 
 const HISTORY_DAYS = 7;
 
@@ -153,7 +154,7 @@ function SalahTracker() {
                 <div className="st-row" key={p.prayerId}>
                   <span className="st-row-icon"><Icon name={prayerIconFor(p.name)} size={14} /></span>
                   <span className="st-row-name">{t(`prayer.${p.name.toLowerCase()}`, p.name)}</span>
-                  <span className="st-row-time">{p.time}</span>
+                  <span className="st-row-time">{formatPrayerTime(p.time)}</span>
                   <button
                     type="button"
                     className={`st-mark-btn${p.completed ? " done" : ""}`}

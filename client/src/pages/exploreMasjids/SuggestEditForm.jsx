@@ -5,6 +5,7 @@ import MediaThumb from "../../components/MediaThumb.jsx";
 import { API_BASE, API_ORIGIN } from "../../config.js";
 import { getUserToken } from "../../utils/userAuthStorage.js";
 import { IMAGE_SIZE_MAX_BYTES } from "./exploreMasjidsShared.jsx";
+import { formatPrayerTime } from "../../utils/formatPrayerTime.js";
 
 const API = `${API_BASE}/masjids/public`;
 
@@ -97,7 +98,7 @@ function CorrectionCard({ fieldKey, label, masjid, categories, designations, pra
       </div>
     );
   } else if (fieldKey === "prayer_times") {
-    current = prayerRoster.length > 0 ? prayerRoster.map((p) => `${p.name}: ${p.time}`).join(" · ") : "Not set";
+    current = prayerRoster.length > 0 ? prayerRoster.map((p) => `${p.name}: ${formatPrayerTime(p.time)}`).join(" · ") : "Not set";
     suggestedInput = (
       <textarea
         rows={3}

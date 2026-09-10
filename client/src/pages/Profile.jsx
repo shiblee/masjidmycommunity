@@ -6,6 +6,7 @@ import userApi from "../services/userApi.js";
 import communityApi from "../services/communityApi.js";
 import publicMasjidApi from "../services/publicMasjidApi.js";
 import { updateStoredUser, getStoredUser } from "../utils/userAuthStorage.js";
+import { formatPrayerTime } from "../utils/formatPrayerTime.js";
 import { API_ORIGIN } from "../config.js";
 import ProfilePhotoCard from "../components/profile/ProfilePhotoCard.jsx";
 import PersonalDetailsCard from "../components/profile/PersonalDetailsCard.jsx";
@@ -202,7 +203,7 @@ function PrimaryMasjidPanel({ profile, isOwner, onChanged }) {
                   {roster.map((p) => (
                     <div className="msj-review-prayer-card" key={p.prayerId}>
                       <span className="msj-review-prayer-name">{t(`prayer.${p.name.toLowerCase()}`, p.name)}</span>
-                      <span className="msj-review-prayer-time">{p.time}</span>
+                      <span className="msj-review-prayer-time">{formatPrayerTime(p.time)}</span>
                     </div>
                   ))}
                 </div>

@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Icon } from "../../components/Icons.jsx";
 import { useTranslation } from "../../i18n/LanguageContext.jsx";
+import { formatPrayerTime } from "../../utils/formatPrayerTime.js";
 
 const SOURCE_META = {
   set: { label: "Set on This Date", cls: "set" },
@@ -330,7 +331,7 @@ function PrayerRosterSection({ basePath, api }) {
               <div className="msj-prayer-history-row" key={h.id}>
                 <div>
                   <strong>{t(`prayer.${h.prayerName.toLowerCase()}`, h.prayerName)}</strong>{" "}
-                  effective {h.effectiveDate}: {h.oldValue || "not set"} → {h.newValue}
+                  effective {h.effectiveDate}: {h.oldValue ? formatPrayerTime(h.oldValue) : "not set"} → {formatPrayerTime(h.newValue)}
                 </div>
                 <div className="msj-prayer-history-meta">
                   {h.actorName || "Unknown"} · {new Date(h.createdAt).toLocaleString()}

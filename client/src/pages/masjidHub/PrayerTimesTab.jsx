@@ -3,6 +3,7 @@ import axios from "axios";
 import { API_BASE } from "../../config.js";
 import { Icon } from "../../components/Icons.jsx";
 import { useTranslation } from "../../i18n/LanguageContext.jsx";
+import { formatPrayerTime } from "../../utils/formatPrayerTime.js";
 
 const API = `${API_BASE}/masjids/public`;
 
@@ -41,7 +42,7 @@ function PrayerTimesTab({ masjidId }) {
           {roster.map((p) => (
             <div className="msj-review-prayer-card" key={p.prayerId}>
               <span className="msj-review-prayer-name">{t(`prayer.${p.name.toLowerCase()}`, p.name)}</span>
-              <span className="msj-review-prayer-time">{p.time}</span>
+              <span className="msj-review-prayer-time">{formatPrayerTime(p.time)}</span>
             </div>
           ))}
         </div>

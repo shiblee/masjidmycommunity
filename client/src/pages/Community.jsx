@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { API_ORIGIN } from "../config.js";
 import { getStoredUser } from "../utils/userAuthStorage.js";
+import { formatPrayerTime } from "../utils/formatPrayerTime.js";
 import communityApi from "../services/communityApi.js";
 import masjidApi from "../services/masjidApi.js";
 import campaignApi from "../services/campaignApi.js";
@@ -482,7 +483,7 @@ function Community() {
                         <li className="cw-prayer-row" key={p.prayerId}>
                           <span className="cw-prayer-row-icon"><Icon name={prayerIconFor(p.name)} size={15} /></span>
                           <span className="cw-prayer-row-name">{t(`prayer.${p.name.toLowerCase()}`, p.name)}</span>
-                          <span className="cw-prayer-row-time">{p.time}</span>
+                          <span className="cw-prayer-row-time">{formatPrayerTime(p.time)}</span>
                         </li>
                       ))}
                     </ul>

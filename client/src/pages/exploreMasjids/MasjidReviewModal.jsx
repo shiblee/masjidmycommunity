@@ -13,6 +13,7 @@ import ReviewRow from "./ReviewRow.jsx";
 import { useTranslation } from "../../i18n/LanguageContext.jsx";
 import { useMasjidLike } from "../../hooks/useMasjidLike.js";
 import { formatCompactNumber } from "../../utils/formatCompactNumber.js";
+import { formatPrayerTime } from "../../utils/formatPrayerTime.js";
 import { trackMasjidView } from "../../utils/trackMasjidView.js";
 import GreenTickBadge from "../../components/masjid/GreenTickBadge.jsx";
 
@@ -265,7 +266,7 @@ function MasjidReviewModal({ masjid, initialTab = "overview", onClose }) {
                   {prayerRoster.map((p) => (
                     <div className="msj-review-prayer-card" key={p.prayerId}>
                       <span className="msj-review-prayer-name">{t(`prayer.${p.name.toLowerCase()}`, p.name)}</span>
-                      <span className="msj-review-prayer-time">{p.time}</span>
+                      <span className="msj-review-prayer-time">{formatPrayerTime(p.time)}</span>
                     </div>
                   ))}
                 </div>
