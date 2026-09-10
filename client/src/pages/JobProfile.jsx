@@ -49,7 +49,7 @@ function JobProfile() {
 
   return (
     <main className="msj-page">
-      <section className="cw-hero msj-explore-hero on-ink">
+      <section className="cw-hero msj-explore-hero on-ink job-profile-hero">
         <div className="wrap">
           <span className="eyebrow">{job.jobType}</span>
           <h1>{job.title}</h1>

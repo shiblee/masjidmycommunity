@@ -1434,6 +1434,11 @@ footer{
 .msj-explore-hero .wrap{ position:relative; z-index:1; }
 .msj-explore-hero h1{ font-size:clamp(24px,3.2vw,36px); margin-top:10px; max-width:600px; }
 .msj-explore-hero p{ margin-top:10px; font-size:15px; max-width:540px; }
+/* The 600px cap above suits an intro paragraph's heading, but a job title
+   is often a single long professional title (not flowing prose) — letting
+   it use the full hero width avoids wrapping early into a lot of unused
+   space beside it. */
+.job-profile-hero h1{ max-width:none; }
 /* .py-md's default 76px top padding (shared with CampaignProfile/MasjidProfile)
    left a large gap under the now-shorter hero — tightened here only. Combined
    selector for specificity, since .py-md is declared later in this file. */
