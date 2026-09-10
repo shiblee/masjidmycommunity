@@ -40,12 +40,18 @@ const [{ c: missingCoordsCount }] = await sequelize.query(
 );
 console.log(`\nApproved masjids WITHOUT coordinates (engine can't run for these): ${missingCoordsCount}`);
 
-console.log("\n--- Deep-dive: 'Jama Masjid Lalbagh' ---");
-const rows = await sequelize.query(
-  `SELECT id, name, latitude, longitude, timezone, status, createdAt, approvedAt, updatedAt FROM masjids WHERE name LIKE '%Lalbagh%'`,
+console.log("\n--- Deep-dive: 'Jama Masjid Lalbagh' (id 110), specifically Sept 1-10 ---");
+const janToTen = await sequelize.query(
+  `SELECT mpt.effectiveDate, mpt.time, pm.name as prayerName
+   FROM masjid_prayer_timelines mpt
+   JOIN prayer_masters pm ON pm.id = mpt.prayerId
+   WHERE mpt.masjidId = 110 AND LOWER(pm.name) IN ('fajr','maghrib')
+     AND mpt.effectiveDate BETWEEN '2026-09-01' AND '2026-09-10'
+   ORDER BY pm.name, mpt.effectiveDate`,
   { type: QueryTypes.SELECT }
 );
-console.log(JSON.stringify(rows, null, 2));
+console.log(JSON.stringify(janToTen, null, 2));
+const rows = [];
 
 for (const m of rows) {
   const timeline = await sequelize.query(
