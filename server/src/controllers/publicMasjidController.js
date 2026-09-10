@@ -387,7 +387,9 @@ export const listNearbyAll = async (req, res) => {
     const page = Math.max(Number(req.query.page) || 1, 1);
     const pageSize = Math.min(Number(req.query.pageSize) || 20, 50);
 
-    const where = { status: PUBLIC_STATUS, moderationStatus: "active" };
+    // Excludes the masjid being viewed — its own page is the one you're
+    // already on, so relisting it (at a confusing "0 m") added nothing.
+    const where = { status: PUBLIC_STATUS, moderationStatus: "active", id: { [Op.ne]: masjid.id } };
     if (q) where.name = { [Op.like]: `%${q}%` };
 
     const hasCoords = masjid.latitude != null && masjid.longitude != null;

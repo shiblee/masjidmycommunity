@@ -16,10 +16,10 @@ function formatDistanceKm(km) {
   return `${km.toFixed(1)} km`;
 }
 
-/** Left-side discovery panel: every masjid, nearest-to-the-one-being-viewed
- * first, with the current masjid highlighted. Re-fetches (from page 1)
- * whenever `activeId` changes, since "nearest first" is relative to
- * whichever masjid is currently open. */
+/** Left-side discovery panel: every OTHER masjid (the one being viewed is
+ * excluded server-side), nearest-to-the-one-being-viewed first. Re-fetches
+ * (from page 1) whenever `activeId` changes, since "nearest first" is
+ * relative to whichever masjid is currently open. */
 function NearbyMasjidPanel({ activeId, onSelect }) {
   const [rawQuery, setRawQuery] = useState("");
   const [query, setQuery] = useState("");
@@ -67,12 +67,7 @@ function NearbyMasjidPanel({ activeId, onSelect }) {
         {loading && <p className="msj-nearby-empty">Loading…</p>}
         {!loading && masjids.length === 0 && <p className="msj-nearby-empty">No masjids found.</p>}
         {!loading && masjids.map((m) => (
-          <button
-            type="button"
-            key={m.id}
-            className={`msj-nearby-item ${m.id === Number(activeId) ? "active" : ""}`}
-            onClick={() => onSelect(m.slug || m.id)}
-          >
+          <button type="button" key={m.id} className="msj-nearby-item" onClick={() => onSelect(m.slug || m.id)}>
             <MediaThumb src={m.coverPhotoUrl ? `${API_ORIGIN}${m.coverPhotoUrl}` : null} className="msj-nearby-thumb" />
             <span className="msj-nearby-item-body">
               <span className="msj-card-title-row">
@@ -80,11 +75,16 @@ function NearbyMasjidPanel({ activeId, onSelect }) {
                 <GreenTickBadge masjid={m} variant="map" />
               </span>
               <span className="msj-nearby-item-meta">
-                {[m.category, [m.city, m.country].filter(Boolean).join(", ")].filter(Boolean).join(" • ")}
+                {m.category && <span className="msj-nearby-category-badge">{m.category}</span>}
+                <span className="msj-nearby-item-location">{[m.city, m.country].filter(Boolean).join(", ")}</span>
               </span>
               <EngagementRow masjid={m} variant="map" className="msj-nearby-item-engagement" />
             </span>
-            {formatDistanceKm(m.distanceKm) && <span className="msj-nearby-distance">{formatDistanceKm(m.distanceKm)}</span>}
+            {formatDistanceKm(m.distanceKm) && (
+              <span className="msj-nearby-distance">
+                <Icon name="mapPin" size={11} /> {formatDistanceKm(m.distanceKm)}
+              </span>
+            )}
           </button>
         ))}
       </div>
