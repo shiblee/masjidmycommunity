@@ -68,12 +68,25 @@ function hashtagFromName(name) {
 // admin approval, the existing-masjid backfill) produces identical, on-brand
 // text — see masjidRegisteredActivityBackfill.js for the callers.
 export function composeMasjidWelcomeBody(masjid) {
-  const hashtags = ["#Masjid", "#IslamicCommunity", "#MuslimCommunity", "#Community", "#MasjidNetwork", hashtagFromName(masjid.name)]
+  // Same @[masjid:<id>:<name>] token the composer's own @ autocomplete
+  // writes — PostBodyText.jsx already renders it as a clickable link to
+  // this exact masjid's page, so every "masjid name" mention in the body
+  // is clickable with no new rendering logic needed.
+  const mention = `@[masjid:${masjid.id}:${masjid.name}]`;
+  const hashtags = [
+    "#Masjid",
+    "#IslamicCommunity",
+    "#MuslimCommunity",
+    "#Community",
+    "#MasjidNetwork",
+    "#masjidmycommunity",
+    hashtagFromName(masjid.name),
+  ]
     .filter(Boolean)
     .join(" ");
   return (
-    `🕌 Welcome to ${masjid.name}!\n\n` +
-    `We are pleased to have ${masjid.name} registered on our community platform. This Masjid is now part of our growing community network, helping people discover and connect with their local Masjid and community activities.\n\n` +
+    `🕌 Welcome to ${mention}!\n\n` +
+    `We are pleased to have ${mention} registered on our community platform. This Masjid is now part of our growing community network, helping people discover and connect with their local Masjid and community activities.\n\n` +
     hashtags
   );
 }

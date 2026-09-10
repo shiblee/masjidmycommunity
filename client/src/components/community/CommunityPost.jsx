@@ -559,7 +559,11 @@ function CommunityPost({ post, user, navigate, onVote, onEdit, onDelete, onRepor
         <Avatar actor={post.actor} />
         <div className="cw-post-headtext">
           <div className="cw-post-name">
-            {post.actor.name}
+            {post.type === "masjid_update" && post.relatedMasjidId ? (
+              <a href={`/masjid/${post.relatedMasjidId}`} className="cw-post-name-link">{post.actor.name}</a>
+            ) : (
+              post.actor.name
+            )}
             {post.actor.verified && <VerifiedBadge />}
           </div>
           <div className="cw-post-meta">

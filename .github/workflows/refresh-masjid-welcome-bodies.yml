@@ -1,0 +1,27 @@
+name: Refresh masjid welcome post bodies
+
+# One-off: runs server/scripts/refreshMasjidWelcomeBodies.mjs on the server
+# to regenerate every existing masjid_approved post's body with the current
+# composeMasjidWelcomeBody() copy.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run the refresh script on the server
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+
+          ssh -i ~/.ssh/deploy_key "$DEPLOY_USER@$DEPLOY_HOST" '
+            set -e
+            cd /var/www/masjidmycommunity/server
+            node scripts/refreshMasjidWelcomeBodies.mjs
+          '

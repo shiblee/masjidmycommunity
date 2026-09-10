@@ -1656,6 +1656,8 @@ footer{
 }
 .cw-post-headtext{ flex:1; min-width:0; }
 .cw-post-name{ display:flex; align-items:center; gap:6px; font-weight:700; font-size:15.5px; color:var(--text-on-paper); }
+.cw-post-name-link{ color:inherit; }
+.cw-post-name-link:hover{ color:var(--teal-deep); text-decoration:underline; }
 .cw-verified{ width:14px; height:14px; color:#fff; background:var(--teal); border-radius:50%; padding:2px; flex-shrink:0; }
 .cw-post-meta{ font-size:12.5px; color:var(--text-on-paper-dim); font-family:var(--mono); margin-top:2px; }
 .cw-tag{
