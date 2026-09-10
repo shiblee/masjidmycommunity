@@ -2,15 +2,14 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { API_ORIGIN } from "../config.js";
 import { getStoredUser } from "../utils/userAuthStorage.js";
-import { formatPrayerTime } from "../utils/formatPrayerTime.js";
 import communityApi from "../services/communityApi.js";
 import masjidApi from "../services/masjidApi.js";
 import campaignApi from "../services/campaignApi.js";
 import jobApi from "../services/jobApi.js";
 import reportApi from "../services/reportApi.js";
 import userApi from "../services/userApi.js";
-import publicMasjidApi from "../services/publicMasjidApi.js";
 import MasjidPickerModal from "../components/MasjidPickerModal.jsx";
+import SalahTracker from "../components/profile/SalahTracker.jsx";
 import MediaThumb from "../components/MediaThumb.jsx";
 import { Icon } from "../components/Icons.jsx";
 import { useTranslation } from "../i18n/LanguageContext.jsx";
@@ -61,16 +60,6 @@ const COMMUNITY_SECTIONS = [
 ];
 
 const SIDE_LIST_PREVIEW_COUNT = 3;
-
-// Sun for the daylight prayers, a setting-sun stand-in for Maghrib (no
-// dedicated sunset glyph in the icon set), moon for Isha — purely visual,
-// matches nothing in PrayerMaster.category.
-function prayerIconFor(name) {
-  const key = (name || "").toLowerCase();
-  if (key === "isha") return "moon";
-  if (key === "maghrib") return "drop";
-  return "sun";
-}
 
 const FILTERS = [
   { key: "all", label: "All Updates" },
@@ -160,8 +149,10 @@ function Community() {
   const [myJobsError, setMyJobsError] = useState("");
 
   // undefined = not checked yet, null = checked and none set, object = set.
+  // Drives the right-side masjid card / empty CTA only now -- the left
+  // sidebar's actual prayer display is the self-contained SalahTracker
+  // below, which fetches its own day data (including the Mark Done state).
   const [primaryMasjid, setPrimaryMasjid] = useState(undefined);
-  const [prayerRoster, setPrayerRoster] = useState(null);
   const [pmPickerOpen, setPmPickerOpen] = useState(false);
 
   useEffect(() => {
@@ -180,18 +171,6 @@ function Community() {
       .then(({ data }) => setPrimaryMasjid(data.primaryMasjid || null))
       .catch(() => setPrimaryMasjid(null));
   }, [user]);
-
-  useEffect(() => {
-    if (!primaryMasjid) {
-      setPrayerRoster(null);
-      return;
-    }
-    setPrayerRoster(null);
-    publicMasjidApi
-      .get(`/${primaryMasjid.id}/prayer-times`)
-      .then(({ data }) => setPrayerRoster(data.roster || []))
-      .catch(() => setPrayerRoster([]));
-  }, [primaryMasjid?.id]);
 
   useEffect(() => {
     communityApi
@@ -470,26 +449,7 @@ function Community() {
                 </div>
               </div>
 
-              {primaryMasjid && (
-                <div className="cw-side-card cw-prayer-widget">
-                  <h4><Icon name="clock" size={15} /> {t("community.prayerWidget.heading", "Primary Masjid Prayer Times")}</h4>
-                  {prayerRoster === null ? (
-                    <p className="cw-prayer-widget-note">{t("masjidWizard.loading", "Loading…")}</p>
-                  ) : prayerRoster.length === 0 ? (
-                    <p className="cw-prayer-widget-note">{t("profile.pm.noRoster", "This masjid hasn't published its prayer times yet.")}</p>
-                  ) : (
-                    <ul className="cw-prayer-list">
-                      {prayerRoster.map((p) => (
-                        <li className="cw-prayer-row" key={p.prayerId}>
-                          <span className="cw-prayer-row-icon"><Icon name={prayerIconFor(p.name)} size={15} /></span>
-                          <span className="cw-prayer-row-name">{t(`prayer.${p.name.toLowerCase()}`, p.name)}</span>
-                          <span className="cw-prayer-row-time">{formatPrayerTime(p.time)}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              )}
+              {user && primaryMasjid && <SalahTracker compact />}
             </aside>
 
             <div className="cw-main">

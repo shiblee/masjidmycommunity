@@ -52,7 +52,11 @@ function useFallbackPools() {
   return { pickDaily: () => daily[Math.floor(Math.random() * daily.length)] };
 }
 
-function SalahTracker() {
+// `compact`: used in the Community Wall sidebar (a ~280px column) — shows a
+// shorter date label and icon-only nav buttons instead of "Previous Day"/
+// "Next Day" text, which would wrap awkwardly at that width. The Profile
+// page's Primary Masjid tab (much wider) uses the default, fuller labels.
+function SalahTracker({ compact = false }) {
   const { t, language } = useTranslation();
   const { pickDaily } = useFallbackPools();
 
@@ -126,17 +130,17 @@ function SalahTracker() {
 
   return (
     <>
-      <div className="st-card">
+      <div className={`st-card${compact ? " st-compact" : ""}`}>
         <div className="st-datenav">
-          <button type="button" className="st-datenav-btn" onClick={() => setDate((d) => addDays(d, -1))}>
-            <Icon name="chevronLeft" size={13} /> {t("salah.dateNav.previous", "Previous Day")}
+          <button type="button" className="st-datenav-btn" onClick={() => setDate((d) => addDays(d, -1))} aria-label={t("salah.dateNav.previous", "Previous Day")}>
+            <Icon name="chevronLeft" size={13} /> <span className="st-datenav-btn-label">{t("salah.dateNav.previous", "Previous Day")}</span>
           </button>
           <button type="button" className="st-datenav-date" onClick={() => setDate(todayStr())} disabled={isToday}>
-            {formatDateLabel(date)}
+            {compact ? formatShortLabel(date) : formatDateLabel(date)}
             {!isToday && <span className="st-today-pill">{t("salah.dateNav.backToToday", "Back to Today")}</span>}
           </button>
-          <button type="button" className="st-datenav-btn" onClick={() => setDate((d) => addDays(d, 1))} disabled={isToday}>
-            {t("salah.dateNav.next", "Next Day")} <Icon name="chevronRight" size={13} />
+          <button type="button" className="st-datenav-btn" onClick={() => setDate((d) => addDays(d, 1))} disabled={isToday} aria-label={t("salah.dateNav.next", "Next Day")}>
+            <span className="st-datenav-btn-label">{t("salah.dateNav.next", "Next Day")}</span> <Icon name="chevronRight" size={13} />
           </button>
         </div>
 
@@ -160,9 +164,10 @@ function SalahTracker() {
                     className={`st-mark-btn${p.completed ? " done" : ""}`}
                     disabled={busyPrayerId === p.prayerId}
                     onClick={() => toggle(p)}
+                    aria-label={p.completed ? t("salah.doneLabel", "Done") : t("salah.markDone", "Mark Done")}
                   >
                     <Icon name={p.completed ? "check" : "clock"} size={13} />
-                    {p.completed ? t("salah.doneLabel", "Done") : t("salah.markDone", "Mark Done")}
+                    <span className="st-mark-btn-label">{p.completed ? t("salah.doneLabel", "Done") : t("salah.markDone", "Mark Done")}</span>
                   </button>
                 </div>
               ))}
@@ -176,7 +181,7 @@ function SalahTracker() {
       </div>
 
       {historyOpen && (
-        <div className="cw-side-card st-history">
+        <div className={`cw-side-card st-history${compact ? " st-compact" : ""}`}>
           {weekly && (
             <>
               <div className="st-weekly">

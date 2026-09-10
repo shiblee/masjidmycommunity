@@ -4023,25 +4023,6 @@ footer{
 .pmp-actions{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:6px; padding-top:14px; border-top:1px solid var(--line); }
 
 /* Community Wall — Primary Masjid sidebar widgets */
-.cw-prayer-widget{
-  background:linear-gradient(165deg, var(--ink) 0%, var(--teal-deep) 130%);
-  border-color:transparent; color:#fff;
-}
-.cw-prayer-widget h4{ color:#fff; }
-.cw-prayer-widget-note{ font-size:12.5px; color:rgba(255,255,255,.72); margin:0; }
-.cw-prayer-list{ display:flex; flex-direction:column; gap:2px; }
-.cw-prayer-row{
-  display:flex; align-items:center; gap:10px; padding:9px 4px;
-  border-top:1px solid rgba(255,255,255,.12);
-}
-.cw-prayer-row:first-child{ border-top:none; }
-.cw-prayer-row-icon{
-  width:28px; height:28px; border-radius:50%; background:rgba(255,255,255,.14);
-  display:flex; align-items:center; justify-content:center; flex-shrink:0; color:#fff;
-}
-.cw-prayer-row-name{ font-size:13px; color:rgba(255,255,255,.85); flex:1; }
-.cw-prayer-row-time{ font-family:var(--mono); font-size:13.5px; font-weight:700; color:#fff; }
-
 .cw-pm-card{ text-align:center; }
 .cw-pm-card-thumb{ width:100%; aspect-ratio:16/9; border-radius:12px; object-fit:cover; background:var(--paper-dim); margin-bottom:12px; }
 .cw-pm-card-name{ display:block; font-size:14.5px; color:var(--text-on-paper); }
@@ -4646,6 +4627,15 @@ footer{
 .st-celebrate{ text-align:center; }
 .st-celebrate-badge{ font-size:15px; font-weight:800; color:var(--teal-deep); margin-bottom:12px; }
 .st-celebrate-msg{ font-size:14px; color:var(--text-on-paper); line-height:1.6; margin-bottom:20px; }
+
+/* .st-compact: the Community Wall sidebar's ~280px column -- icon-only
+   date-nav/mark buttons and a 2-column weekly grid instead of wrapping. */
+.st-compact .st-datenav-btn-label,
+.st-compact .st-mark-btn-label,
+.st-compact .st-row-time{ display:none; }
+.st-compact .st-datenav-btn{ padding:7px 9px; }
+.st-compact .st-mark-btn{ padding:6px 9px; }
+.st-compact .st-weekly{ grid-template-columns:repeat(2,1fr); }
 
 @media (max-width:760px){
   .pf-profile-header{ text-align:center; justify-content:center; }
