@@ -27,6 +27,7 @@ import * as workExperience from "../controllers/userWorkExperienceController.js"
 import * as education from "../controllers/userEducationController.js";
 import * as skills from "../controllers/userSkillController.js";
 import * as hobbies from "../controllers/userHobbyController.js";
+import { getStatus as getPrimaryMasjidStatus, listNearby as listNearbyMasjids, setPrimary as setPrimaryMasjid, skipPrompt as skipPrimaryMasjidPrompt } from "../controllers/primaryMasjidController.js";
 import { listActive as listActiveMaritalStatuses } from "../controllers/adminMaritalStatusController.js";
 import { listActive as listActiveEducationLevels } from "../controllers/adminEducationLevelController.js";
 import { listActive as listActiveDegrees } from "../controllers/adminDegreeController.js";
@@ -94,6 +95,11 @@ router.get("/meta/job-categories", auth, requireUser, listActiveJobCategories);
 router.get("/me/hobbies", auth, requireUser, hobbies.listMine);
 router.post("/me/hobbies", auth, requireUser, hobbies.create);
 router.delete("/me/hobbies/:id", auth, requireUser, hobbies.remove);
+
+router.get("/me/primary-masjid-status", auth, requireUser, getPrimaryMasjidStatus);
+router.get("/me/nearby-masjids", auth, requireUser, listNearbyMasjids);
+router.post("/me/primary-masjid", auth, requireUser, setPrimaryMasjid);
+router.post("/me/primary-masjid/skip", auth, requireUser, skipPrimaryMasjidPrompt);
 
 router.get("/notifications", auth, requireUser, listMine);
 router.patch("/notifications/read-all", auth, requireUser, markAllRead);

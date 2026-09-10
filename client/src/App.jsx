@@ -4,6 +4,7 @@ import Navbar from "./components/Navbar.jsx";
 import Footer from "./components/Footer.jsx";
 import CookieConsent from "./components/CookieConsent.jsx";
 import VisitorTracker from "./components/VisitorTracker.jsx";
+import PrimaryMasjidPrompt from "./components/PrimaryMasjidPrompt.jsx";
 import Community from "./pages/Community.jsx";
 import HowItWorks from "./pages/HowItWorks.jsx";
 import OurImpact from "./pages/OurImpact.jsx";
@@ -61,6 +62,7 @@ function MarketingLayout() {
       <Outlet />
       <Footer />
       <CookieConsent />
+      <PrimaryMasjidPrompt />
     </>
   );
 }

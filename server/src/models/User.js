@@ -146,6 +146,24 @@ const User = sequelize.define(
       type: DataTypes.FLOAT,
       allowNull: true,
     },
+    // The masjid this user has chosen as their "home" one — set only via
+    // the explicit Primary Masjid picker (PrimaryMasjidPrompt.jsx / the
+    // profile page's "Change Primary Masjid"), never auto-derived. Nullable,
+    // no default, no DB-level FK — matches this codebase's established
+    // schema-safety convention for relational id columns (e.g. Masjid.userId).
+    primaryMasjidId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+    // Last time this user dismissed the Primary Masjid picker without
+    // choosing one — drives the reminder-interval gate in
+    // primaryMasjidController.js so the prompt doesn't reappear on every
+    // page load, only after PRIMARY_MASJID_REMINDER_DAYS have passed.
+    // Cleared whenever a masjid is actually selected.
+    primaryMasjidPromptSkippedAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
     // "real" (registered by an actual person) vs "bot" (created by
     // userBotSchedulerService.js/syntheticUserGeneratorService.js) — the
     // one permanent, database-level distinction the synthetic user

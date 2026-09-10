@@ -2041,6 +2041,18 @@ const DEFAULTS = [
   // Mobile nav drawer redesign — section labels grouping the flat link list
   ["nav", "nav.section.explore", "Explore", "एक्सप्लोर करें", "دریافت کریں", "استكشف"],
   ["nav", "nav.section.account", "Your Account", "आपका खाता", "آپ کا اکاؤنٹ", "حسابك"],
+
+  // Primary Masjid selection popup
+  ["primaryMasjid", "primaryMasjid.title", "Select Your Primary Masjid", "अपनी प्राथमिक मस्जिद चुनें", "اپنی بنیادی مسجد منتخب کریں", "اختر مسجدك الأساسي"],
+  ["primaryMasjid", "primaryMasjid.subtitle", "Choose the masjid closest to you, or the one you regularly visit, to set it as your Primary Masjid.", "अपने सबसे नज़दीकी या नियमित रूप से जाने वाली मस्जिद को अपनी प्राथमिक मस्जिद के रूप में चुनें।", "اپنی قریب ترین یا باقاعدگی سے جانے والی مسجد کو اپنی بنیادی مسجد کے طور پر منتخب کریں۔", "اختر المسجد الأقرب إليك، أو الذي تزوره بانتظام، لتعيينه مسجدك الأساسي."],
+  ["primaryMasjid", "primaryMasjid.loading", "Finding masjids near you…", "आपके नज़दीक मस्जिदें खोजी जा रही हैं…", "آپ کے قریب مساجد تلاش کی جا رہی ہیں…", "جارٍ البحث عن مساجد قريبة منك…"],
+  ["primaryMasjid", "primaryMasjid.empty", "No masjids to show right now — you can pick one later from your profile.", "अभी दिखाने के लिए कोई मस्जिद नहीं है — आप बाद में अपनी प्रोफ़ाइल से चुन सकते हैं।", "ابھی دکھانے کے لیے کوئی مسجد نہیں ہے — آپ بعد میں اپنی پروفائل سے منتخب کر سکتے ہیں۔", "لا توجد مساجد لعرضها الآن — يمكنك الاختيار لاحقًا من ملفك الشخصي."],
+  ["primaryMasjid", "primaryMasjid.select", "Select", "चुनें", "منتخب کریں", "اختيار"],
+  ["primaryMasjid", "primaryMasjid.selecting", "Selecting…", "चुना जा रहा है…", "منتخب ہو رہا ہے…", "جارٍ الاختيار…"],
+  ["primaryMasjid", "primaryMasjid.searchInstead", "Search for a masjid instead", "इसके बजाय मस्जिद खोजें", "اس کے بجائے مسجد تلاش کریں", "أو ابحث عن مسجد بدلاً من ذلك"],
+  ["primaryMasjid", "primaryMasjid.skip", "Skip for now", "अभी के लिए छोड़ें", "ابھی کے لیے چھوڑ دیں", "تخطَّ الآن"],
+  ["primaryMasjid", "primaryMasjid.skipping", "Skipping…", "छोड़ा जा रहा है…", "چھوڑا جا رہا ہے…", "جارٍ التخطي…"],
+  ["primaryMasjid", "primaryMasjid.close", "Close", "बंद करें", "بند کریں", "إغلاق"],
 ];
 
 // Additive, not "seed once": every deploy that adds new keys to DEFAULTS
