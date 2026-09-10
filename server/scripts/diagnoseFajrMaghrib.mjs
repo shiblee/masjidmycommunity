@@ -34,7 +34,13 @@ const noRows = summaryRows.filter((r) => Number(r.fajrRows) === 0);
 console.log(`Masjids with ZERO Fajr rows at all: ${noRows.length}`);
 for (const s of noRows.slice(0, 15)) console.log(`  id=${s.id} "${s.name}"`);
 
-console.log("\n--- Deep-dive: masjid 114 (Jama Masjid Lalbagh) ---");
+const [{ c: missingCoordsCount }] = await sequelize.query(
+  `SELECT COUNT(*) as c FROM masjids WHERE status = 'approved' AND (latitude IS NULL OR longitude IS NULL)`,
+  { type: QueryTypes.SELECT }
+);
+console.log(`\nApproved masjids WITHOUT coordinates (engine can't run for these): ${missingCoordsCount}`);
+
+console.log("\n--- Deep-dive: masjid 114 ---");
 const rows = await sequelize.query(
   `SELECT id, name, latitude, longitude, timezone FROM masjids WHERE id = 114`,
   { type: QueryTypes.SELECT }
