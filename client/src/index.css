@@ -4171,6 +4171,22 @@ footer{
 .camp-rail-progress{ height:4px; }
 .camp-rail-card-meta{ display:flex; justify-content:space-between; font-size:11px; color:var(--text-on-paper-dim); margin-top:5px; }
 
+/* Latest Jobs rail cards — same AI-match/category/skill signals as the main
+   job-card grid, scaled down for the ~250px sidebar column. */
+.job-rail-card{ flex-direction:column; padding:12px; }
+.job-rail-card-top{ display:flex; align-items:center; gap:5px; flex-wrap:wrap; margin-bottom:6px; }
+.job-rail-card-top .job-card-save{ width:22px; height:22px; margin-left:auto; flex-shrink:0; }
+.job-rail-card-top .job-card-save svg{ width:11px; height:11px; }
+.job-rail-card-top .job-card-type{ font-size:9.5px; padding:2px 8px; }
+.job-rail-match-chip{
+  display:inline-flex; align-items:center; gap:3px; font-size:9.5px; font-weight:700; letter-spacing:.01em; white-space:nowrap;
+  color:var(--teal-deep); background:rgba(141,198,63,.14); padding:2px 8px; border-radius:100px;
+}
+.job-rail-match-chip.best{ background:linear-gradient(90deg,var(--teal),var(--gold)); color:#0b1f1e; }
+.job-rail-card-chips{ display:flex; flex-wrap:wrap; gap:4px; margin:2px 0 6px; }
+.job-rail-card-chips .job-card-workmode,
+.job-rail-card-chips .job-card-skill-chip{ font-size:9.5px; padding:2px 7px; }
+
 .camp-donate-panel-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:4px; }
 .camp-donate-eyebrow{ font-size:11px; font-weight:700; color:var(--teal-deep); text-transform:uppercase; letter-spacing:.05em; }
 .camp-icon-btn{
