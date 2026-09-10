@@ -47,7 +47,7 @@ import { ensureLanguageDefaults } from "./seed/languageDefaults.js";
 import { ensureTranslationDefaults } from "./seed/translationDefaults.js";
 import { ensurePageDefaults } from "./seed/pageDefaults.js";
 import { ensureMetaEntityTranslationDefaults } from "./seed/metaEntityTranslationDefaults.js";
-import { ensureJobPostedActivities } from "./seed/jobPostedActivityBackfill.js";
+// import { ensureJobPostedActivities } from "./seed/jobPostedActivityBackfill.js"; // "jobs as community posts" disabled — see below
 
 const PORT = process.env.PORT || 5000;
 
@@ -96,7 +96,12 @@ connectDB()
   )
   .then(() => ensurePageDefaults())
   .then(() => ensureMetaEntityTranslationDefaults())
-  .then(() => ensureJobPostedActivities())
+  // "Jobs as community posts" disabled by explicit request (Sept 2026) — this
+  // backfill kept recreating a Wall post for every job on every restart,
+  // which fought a deliberate wall reset. Restore this line (and the import
+  // above) plus the two recordJobPostedActivity call sites in
+  // jobController.js/adminJobController.js to re-enable the whole feature.
+  // .then(() => ensureJobPostedActivities())
   .catch((error) => console.error("Failed to seed defaults:", error.message))
   .finally(() => {
     app.listen(PORT, () => {
