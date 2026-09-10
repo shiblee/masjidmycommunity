@@ -1475,6 +1475,9 @@ footer{
    cards actually read as separate, lifted surfaces instead of white-on-white
    with only a hairline border between them. */
 .cw-page{ background:#FAFCF6; min-height:60vh; }
+/* .py-sm's shared 66px top padding (used across many unrelated pages, so
+   not changed globally) left a big dead gap under the header here. */
+.cw-page .py-sm{ padding-top:28px; }
 
 .cw-layout{ display:grid; grid-template-columns:280px 1fr 320px; gap:44px; align-items:start; }
 .cw-main{ min-width:0; }
