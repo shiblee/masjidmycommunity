@@ -2097,10 +2097,15 @@ footer{
   /* Tighter rhythm between the stacked impact/composer/feed blocks — the
      44px desktop column gap reads as a big dead gap once everything's a
      single full-width mobile column instead of side-by-side. */
-  .cw-layout{ gap:20px; }
-  .cw-composer{ padding:18px 16px; margin-bottom:20px; }
-  .cw-side-card{ padding:18px; }
-  .cw-post{ padding:18px 16px 16px; }
+  .cw-layout{ gap:16px; }
+  /* Narrower outer gutter and less internal card padding on the wall/profile
+     pages specifically (not the shared .wrap default, which every other
+     page still uses) — the cards had noticeably more air on all four sides
+     than a mobile feed needs. */
+  .cw-page .wrap{ padding:0 14px; }
+  .cw-composer{ padding:14px; margin-bottom:16px; }
+  .cw-side-card{ padding:14px; }
+  .cw-post{ padding:14px 14px 12px; }
   .cw-post-featured{ padding-top:34px; }
   .cw-featured-ribbon{ left:16px; }
   .cw-post-media img{ height:200px; }
