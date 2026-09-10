@@ -1,0 +1,74 @@
+name: Nginx - stop index.html from being cached stale
+
+# The SPA's index.html references content-hashed JS/CSS filenames (Vite's
+# cache-busting scheme), but nginx was serving index.html with no
+# Cache-Control header at all -- browsers fall back to heuristic caching,
+# so a visitor's browser can keep serving an old index.html (pointing at
+# old, since-superseded hashed assets) well after a new deploy, making
+# real deploys look like they "didn't take". This adds explicit
+# Cache-Control: no-cache on index.html (always revalidated, cheap given
+# it's tiny) and a long-lived immutable Cache-Control on /assets/ (safe,
+# since each deploy's filenames are unique content hashes).
+# Uses plain Python string .replace() on a literal block this pipeline
+# knows exactly from the config nginx-widen-masjid-regex.yml last wrote.
+# Backs up the file, validates with nginx -t before ever reloading,
+# restores + fails without reloading if that check doesn't pass.
+# Every OLD/NEW string is built with explicit \n joins on ONE physical
+# line each (no embedded multi-line triple-quoted literals) so nothing
+# here fights YAML block-scalar indentation rules.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  patch-nginx:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Write remote patch script
+        run: |
+          cat > remote_patch.py <<'PYEOF'
+          import subprocess, sys, datetime
+          CONF = "/etc/nginx/sites-available/masjidmycommunity"
+          OLD = "    location / {\n        try_files $uri $uri/ /index.html;\n    }"
+          NEW = "    location = /index.html {\n        add_header Cache-Control \"no-cache, no-store, must-revalidate\";\n        try_files $uri =404;\n    }\n\n    location /assets/ {\n        add_header Cache-Control \"public, max-age=31536000, immutable\";\n        try_files $uri =404;\n    }\n\n    location / {\n        try_files $uri $uri/ /index.html;\n    }"
+          MARKER = "location = /index.html {"
+          content = subprocess.run(["sudo", "cat", CONF], capture_output=True, text=True, check=True).stdout
+          if MARKER in content:
+              print("Already patched -- no changes made.")
+              sys.exit(0)
+          if OLD not in content:
+              print("ERROR: expected rule not found -- aborting without changes.")
+              print(repr(content))
+              sys.exit(1)
+          backup = CONF + ".bak-" + datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+          subprocess.run(["sudo", "cp", CONF, backup], check=True)
+          print("Backed up current config to " + backup)
+          new_content = content.replace(OLD, NEW)
+          with open("/tmp/masjidmycommunity.new", "w") as f:
+              f.write(new_content)
+          subprocess.run(["sudo", "cp", "/tmp/masjidmycommunity.new", CONF], check=True)
+          print("Patched cache headers.")
+          test = subprocess.run(["sudo", "nginx", "-t"], capture_output=True, text=True)
+          print(test.stdout, test.stderr)
+          if test.returncode == 0:
+              subprocess.run(["sudo", "systemctl", "reload", "nginx"], check=True)
+              print("Reloaded successfully.")
+          else:
+              print("SYNTAX ERROR -- restoring backup, NOT reloading.")
+              subprocess.run(["sudo", "cp", backup, CONF], check=True)
+              sys.exit(1)
+          PYEOF
+
+      - name: Run patch over SSH
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+
+          scp -i ~/.ssh/deploy_key remote_patch.py "$DEPLOY_USER@$DEPLOY_HOST:/tmp/"
+          ssh -i ~/.ssh/deploy_key "$DEPLOY_USER@$DEPLOY_HOST" '
+            python3 /tmp/remote_patch.py && rm -f /tmp/remote_patch.py /tmp/masjidmycommunity.new
+          '
