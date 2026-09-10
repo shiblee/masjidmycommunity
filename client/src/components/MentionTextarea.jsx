@@ -111,31 +111,34 @@ function MentionTextarea({ value, onChange, onKeyDown, rows = 3, placeholder, au
 
   const showingPlaceholder = !value && !focused;
 
-  // Resync the DOM from `value` only when it changed for a reason other than
-  // our own onInput → onChange echo (an external reset, or switching which
-  // comment/post is being edited) — otherwise this would fight the caret on
-  // every keystroke.
-  useEffect(() => {
-    if (value === lastEmitted.current) return;
-    const root = editableRef.current;
-    if (!root) return;
-    root.innerHTML = "";
-    root.appendChild(buildEditableDom(value || ""));
-    lastEmitted.current = value;
-  }, [value]);
-
+  // One effect, not two — a separate "resync from value" effect and a
+  // separate "toggle placeholder" effect could both fire in the same commit
+  // (e.g. a picker calling onChange(value + emoji) before the box was ever
+  // focused: value goes "" → "😀" *and* showingPlaceholder flips true → false
+  // in the same render) and, running in sequence, the second effect's
+  // `root.textContent = ""` wiped out the emoji the first effect had just
+  // written — the click would appear to do nothing. Computing the DOM's
+  // final state from both `value` and `showingPlaceholder` together avoids
+  // that. Still skips work when `value` only changed via our own onInput →
+  // onChange echo, so normal typing doesn't fight the caret.
   useEffect(() => {
     const root = editableRef.current;
     if (!root) return;
     if (showingPlaceholder) {
-      root.textContent = placeholder || "";
-      root.classList.add("is-placeholder");
-    } else if (root.classList.contains("is-placeholder")) {
-      root.textContent = "";
-      root.classList.remove("is-placeholder");
+      if (root.textContent !== placeholder || !root.classList.contains("is-placeholder")) {
+        root.textContent = placeholder || "";
+        root.classList.add("is-placeholder");
+      }
+      return;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showingPlaceholder, placeholder]);
+    const wasShowingPlaceholder = root.classList.contains("is-placeholder");
+    if (wasShowingPlaceholder) root.classList.remove("is-placeholder");
+    if (wasShowingPlaceholder || value !== lastEmitted.current) {
+      root.innerHTML = "";
+      root.appendChild(buildEditableDom(value || ""));
+      lastEmitted.current = value;
+    }
+  }, [value, showingPlaceholder, placeholder]);
 
   useEffect(() => () => clearTimeout(blurTimeout.current), []);
 
