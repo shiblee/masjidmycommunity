@@ -1474,7 +1474,7 @@ footer{
 /* A soft wash behind the wall/profile feed so the white composer/post/side
    cards actually read as separate, lifted surfaces instead of white-on-white
    with only a hairline border between them. */
-.cw-page{ background:var(--paper-dim); min-height:60vh; }
+.cw-page{ background:#FAFCF6; min-height:60vh; }
 
 .cw-layout{ display:grid; grid-template-columns:280px 1fr 320px; gap:44px; align-items:start; }
 .cw-main{ min-width:0; }
