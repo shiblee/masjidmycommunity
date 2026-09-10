@@ -51,7 +51,14 @@ const NAV_ITEMS = [
       { to: "/admin/verification", label: "Green Tick", icon: "verify" },
     ],
   },
-  { to: "/admin/community-wall", label: "Community Wall", icon: "megaphone" },
+  {
+    label: "Community Wall",
+    icon: "megaphone",
+    children: [
+      { to: "/admin/community-wall", label: "Community Wall", icon: "megaphone" },
+      { to: "/admin/moderation", label: "Reported Content", icon: "flag" },
+    ],
+  },
   { to: "/admin/campaigns", label: "Campaigns", icon: "campaign" },
   { to: "/admin/jobs", label: "Jobs", icon: "briefcase" },
   {
@@ -76,7 +83,6 @@ const NAV_ITEMS = [
   { to: "/admin/translations", label: "Translations", icon: "content" },
   { to: "/admin/notifications", label: "Notifications", icon: "bell" },
   { to: "/admin/settings", label: "Settings", icon: "settings" },
-  { to: "/admin/moderation", label: "Reported Content", icon: "flag" },
 ];
 
 // Nav items whose badge count is polled alongside the bell notifications —
