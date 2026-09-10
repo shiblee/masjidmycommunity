@@ -7,6 +7,9 @@ import masjidApi from "../services/masjidApi.js";
 import campaignApi from "../services/campaignApi.js";
 import jobApi from "../services/jobApi.js";
 import reportApi from "../services/reportApi.js";
+import userApi from "../services/userApi.js";
+import publicMasjidApi from "../services/publicMasjidApi.js";
+import MasjidPickerModal from "../components/MasjidPickerModal.jsx";
 import MediaThumb from "../components/MediaThumb.jsx";
 import { Icon } from "../components/Icons.jsx";
 import { useTranslation } from "../i18n/LanguageContext.jsx";
@@ -57,6 +60,16 @@ const COMMUNITY_SECTIONS = [
 ];
 
 const SIDE_LIST_PREVIEW_COUNT = 3;
+
+// Sun for the daylight prayers, a setting-sun stand-in for Maghrib (no
+// dedicated sunset glyph in the icon set), moon for Isha — purely visual,
+// matches nothing in PrayerMaster.category.
+function prayerIconFor(name) {
+  const key = (name || "").toLowerCase();
+  if (key === "isha") return "moon";
+  if (key === "maghrib") return "drop";
+  return "sun";
+}
 
 const FILTERS = [
   { key: "all", label: "All Updates" },
@@ -145,11 +158,39 @@ function Community() {
   const [myJobs, setMyJobs] = useState(null);
   const [myJobsError, setMyJobsError] = useState("");
 
+  // undefined = not checked yet, null = checked and none set, object = set.
+  const [primaryMasjid, setPrimaryMasjid] = useState(undefined);
+  const [prayerRoster, setPrayerRoster] = useState(null);
+  const [pmPickerOpen, setPmPickerOpen] = useState(false);
+
   useEffect(() => {
     const onSessionUpdated = (e) => setUser(e.detail);
     window.addEventListener("mmc-user-session-updated", onSessionUpdated);
     return () => window.removeEventListener("mmc-user-session-updated", onSessionUpdated);
   }, []);
+
+  useEffect(() => {
+    if (!user) {
+      setPrimaryMasjid(undefined);
+      return;
+    }
+    userApi
+      .get("/me/primary-masjid-status")
+      .then(({ data }) => setPrimaryMasjid(data.primaryMasjid || null))
+      .catch(() => setPrimaryMasjid(null));
+  }, [user]);
+
+  useEffect(() => {
+    if (!primaryMasjid) {
+      setPrayerRoster(null);
+      return;
+    }
+    setPrayerRoster(null);
+    publicMasjidApi
+      .get(`/${primaryMasjid.id}/prayer-times`)
+      .then(({ data }) => setPrayerRoster(data.roster || []))
+      .catch(() => setPrayerRoster([]));
+  }, [primaryMasjid?.id]);
 
   useEffect(() => {
     communityApi
@@ -427,6 +468,27 @@ function Community() {
                   </div>
                 </div>
               </div>
+
+              {primaryMasjid && (
+                <div className="cw-side-card cw-prayer-widget">
+                  <h4><Icon name="clock" size={15} /> {t("community.prayerWidget.heading", "Primary Masjid Prayer Times")}</h4>
+                  {prayerRoster === null ? (
+                    <p className="cw-prayer-widget-note">{t("masjidWizard.loading", "Loading…")}</p>
+                  ) : prayerRoster.length === 0 ? (
+                    <p className="cw-prayer-widget-note">{t("profile.pm.noRoster", "This masjid hasn't published its prayer times yet.")}</p>
+                  ) : (
+                    <ul className="cw-prayer-list">
+                      {prayerRoster.map((p) => (
+                        <li className="cw-prayer-row" key={p.prayerId}>
+                          <span className="cw-prayer-row-icon"><Icon name={prayerIconFor(p.name)} size={15} /></span>
+                          <span className="cw-prayer-row-name">{t(`prayer.${p.name.toLowerCase()}`, p.name)}</span>
+                          <span className="cw-prayer-row-time">{p.time}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
             </aside>
 
             <div className="cw-main">
@@ -503,6 +565,33 @@ function Community() {
                   ))}
                 </div>
               </div>
+
+              {user && (primaryMasjid ? (
+                <div className="cw-side-card cw-pm-card">
+                  <h4><Icon name="mosque" size={15} /> {t("community.pmCard.heading", "Primary Masjid")}</h4>
+                  <MediaThumb src={primaryMasjid.coverPhotoUrl ? `${API_ORIGIN}${primaryMasjid.coverPhotoUrl}` : null} className="cw-pm-card-thumb" />
+                  <strong className="cw-pm-card-name">{primaryMasjid.name}</strong>
+                  {(primaryMasjid.city || primaryMasjid.country) && (
+                    <span className="cw-pm-card-location"><Icon name="mapPin" size={13} />{[primaryMasjid.city, primaryMasjid.country].filter(Boolean).join(", ")}</span>
+                  )}
+                  <div className="cw-pm-card-actions">
+                    <Link to={`/masjid/${primaryMasjid.id}`} className="btn btn-outline-ink" style={{ width: "100%", justifyContent: "center" }}>
+                      {t("profile.pm.viewMasjid", "View Masjid")}
+                    </Link>
+                    <button type="button" className="btn btn-gold" style={{ width: "100%", justifyContent: "center", marginTop: 8 }} onClick={() => setPmPickerOpen(true)}>
+                      {t("profile.pm.change", "Change Primary Masjid")}
+                    </button>
+                  </div>
+                </div>
+              ) : primaryMasjid === null ? (
+                <div className="cw-side-card cw-side-card-cta">
+                  <h4><Icon name="mosque" size={15} /> {t("community.pmCard.emptyHeading", "Set Your Primary Masjid")}</h4>
+                  <p className="cw-side-card-sub">{t("community.pmCard.emptySub", "Pick a nearby masjid to see its prayer timings right here.")}</p>
+                  <button type="button" className="btn btn-gold" style={{ width: "100%", justifyContent: "center" }} onClick={() => setPmPickerOpen(true)}>
+                    {t("profile.pm.selectOne", "Select One")}
+                  </button>
+                </div>
+              ) : null)}
 
               {section === "masjid" && (
                 <>
@@ -711,6 +800,17 @@ function Community() {
           replyMaxLength={contentLimits.maxReplyLength}
           onClose={() => setImageViewer(null)}
           onImagesChange={onViewerImagesChange}
+        />
+      )}
+
+      {pmPickerOpen && (
+        <MasjidPickerModal
+          title={primaryMasjid ? t("profile.pm.changeTitle", "Change Primary Masjid") : undefined}
+          onClose={() => setPmPickerOpen(false)}
+          onSelected={(masjid) => {
+            setPrimaryMasjid(masjid);
+            setPmPickerOpen(false);
+          }}
         />
       )}
     </main>

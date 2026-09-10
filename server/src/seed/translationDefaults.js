@@ -2082,6 +2082,11 @@ const DEFAULTS = [
   ["profile", "profile.masjidTab.emptyOther", "{name} hasn't added any masjids yet.", "{name} ने अभी तक कोई मस्जिद नहीं जोड़ी है।", "{name} نے ابھی تک کوئی مسجد شامل نہیں کی۔", "لم يُضِف {name} أي مسجد بعد."],
   ["profile", "profile.jobsTab.emptyOwner", "You haven't posted any jobs yet.", "आपने अभी तक कोई नौकरी पोस्ट नहीं की है।", "آپ نے ابھی تک کوئی ملازمت پوسٹ نہیں کی۔", "لم تنشر أي وظيفة بعد."],
   ["profile", "profile.jobsTab.emptyOther", "{name} hasn't posted any jobs yet.", "{name} ने अभी तक कोई नौकरी पोस्ट नहीं की है।", "{name} نے ابھی تک کوئی ملازمت پوسٹ نہیں کی۔", "لم ينشر {name} أي وظيفة بعد."],
+
+  ["community", "community.prayerWidget.heading", "Primary Masjid Prayer Times", "प्राथमिक मस्जिद के नमाज़ समय", "بنیادی مسجد کے نماز کے اوقات", "مواقيت الصلاة في مسجدك الأساسي"],
+  ["community", "community.pmCard.heading", "Primary Masjid", "प्राथमिक मस्जिद", "بنیادی مسجد", "المسجد الأساسي"],
+  ["community", "community.pmCard.emptyHeading", "Set Your Primary Masjid", "अपनी प्राथमिक मस्जिद चुनें", "اپنی بنیادی مسجد مقرر کریں", "حدد مسجدك الأساسي"],
+  ["community", "community.pmCard.emptySub", "Pick a nearby masjid to see its prayer timings right here.", "यहीं इसके नमाज़ समय देखने के लिए एक नज़दीकी मस्जिद चुनें।", "یہاں اس کے نماز کے اوقات دیکھنے کے لیے قریبی مسجد منتخب کریں۔", "اختر مسجدًا قريبًا لرؤية مواقيت صلاته هنا مباشرة."],
 ];
 
 // Additive, not "seed once": every deploy that adds new keys to DEFAULTS
