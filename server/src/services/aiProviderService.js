@@ -631,6 +631,54 @@ export async function generateTranslation({ text, targetLanguageCode }) {
   }
 }
 
+const SalahReflectionSchema = z.object({ message: z.string() });
+
+// "daily_complete" fires once a user finishes all 5 Fard prayers for today;
+// "weekly" is the one-line reflection under the 7-day summary. Both share
+// this single hard-rule prompt rather than two near-duplicate ones.
+function salahReflectionSystemPrompt(kind, languageCode) {
+  return [
+    "You write a very short, warm message of encouragement for a Muslim user's private personal Salah (daily prayer) tracker on Masjid My Community.",
+    "Use ONLY the stats given below — never invent numbers, streaks, or facts not present in them.",
+    "NEVER shame, judge, criticize, or pressure the user. NEVER compare the user to other users, to 'most people', or to any performance benchmark. NEVER produce rankings or comparisons of any kind.",
+    "If the stats show a gap or missed prayers, frame it gently as a fresh opportunity to keep going — never as a failure.",
+    "Tone: warm, sincere, respectful, Islamically appropriate — phrases like 'Alhamdulillah' or 'insha'Allah' are welcome where natural, but do not force them into every sentence.",
+    kind === "daily_complete"
+      ? "Context: the user just completed all 5 of today's prayers. Write 1-2 short sentences celebrating this."
+      : "Context: this is a reflection on the user's last 7 days of Salah tracking, shown under a weekly summary. Write 1-2 short sentences.",
+    "Vary your exact wording — avoid producing the same sentence structure every time.",
+    `Respond in this language, written naturally as a native speaker would: ${languageCode}.`,
+    "Output plain text only in the 'message' field — no markdown, no quotation marks, no emoji beyond at most one if it fits naturally.",
+  ].join(" ");
+}
+
+async function callClaudeSalahReflection({ kind, statsContext, languageCode }) {
+  const response = await anthropic.messages.parse({
+    model: AI_MODEL,
+    max_tokens: 200,
+    system: [{ type: "text", text: salahReflectionSystemPrompt(kind, languageCode), cache_control: { type: "ephemeral" } }],
+    output_config: { format: zodOutputFormat(SalahReflectionSchema), effort: AI_EFFORT },
+    messages: [{ role: "user", content: `Stats:\n${statsContext}` }],
+  });
+  return response.parsed_output;
+}
+
+// Same null-on-failure/unconfigured contract as generateBio. The caller
+// (salahController.js) always has a respectful, translation-keyed fallback
+// message ready client-side, so this celebratory moment is never visibly
+// broken just because no API key is set.
+export async function generateSalahReflection({ kind, statsContext, languageCode }) {
+  if (!aiProviderConfigured || AI_PROVIDER !== "claude") return null;
+  try {
+    const parsed = await callClaudeSalahReflection({ kind, statsContext, languageCode: languageCode || "en" });
+    if (!parsed?.message) return null;
+    return { message: parsed.message.trim() };
+  } catch (error) {
+    console.error("AI provider Salah reflection failed:", error.message);
+    return null;
+  }
+}
+
 const JobSearchQuerySchema = z.object({
   keywords: z.array(z.string()).max(6),
   location: z.string().nullable(),

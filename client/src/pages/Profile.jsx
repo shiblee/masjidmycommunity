@@ -18,6 +18,7 @@ import ProfileCompletion from "../components/profile/ProfileCompletion.jsx";
 import MediaThumb from "../components/MediaThumb.jsx";
 import ShareMenu from "../components/ShareMenu.jsx";
 import MasjidPickerModal from "../components/MasjidPickerModal.jsx";
+import SalahTracker from "../components/profile/SalahTracker.jsx";
 
 const SIDE_LIST_PREVIEW_COUNT = 3;
 const POSTS_PAGE_SIZE = 10;
@@ -154,55 +155,61 @@ function PrimaryMasjidPanel({ profile, isOwner, onChanged }) {
   const masjid = profile.primaryMasjid;
 
   useEffect(() => {
-    if (!masjid) return;
+    // Owners get the interactive SalahTracker below instead, which fetches
+    // its own day data — this read-only roster is only needed for viewers.
+    if (!masjid || isOwner) return;
     setRoster(null);
     setRosterError(false);
     publicMasjidApi
       .get(`/${masjid.id}/prayer-times`)
       .then(({ data }) => setRoster(data.roster || []))
       .catch(() => setRosterError(true));
-  }, [masjid?.id]);
+  }, [masjid?.id, isOwner]);
 
   return (
     <div className="pf-pm-tab">
       {masjid ? (
-        <div className="pf-pm-layout">
-          <div className="pf-pm-card">
-            <MediaThumb src={masjid.coverPhotoUrl ? `${API_ORIGIN}${masjid.coverPhotoUrl}` : null} className="pf-pm-card-thumb" />
-            <h3>{masjid.name}</h3>
-            <p className="pf-pm-card-location">
-              <Icon name="mapPin" size={14} />
-              {[masjid.city, masjid.country].filter(Boolean).join(", ") || masjid.formattedAddress}
-            </p>
-            <Link to={`/masjid/${masjid.id}`} className="btn btn-outline-ink" style={{ width: "100%", justifyContent: "center", marginTop: 14 }}>
-              {t("profile.pm.viewMasjid", "View Masjid")}
-            </Link>
-            {isOwner && (
-              <button type="button" className="btn btn-gold" style={{ width: "100%", justifyContent: "center", marginTop: 10 }} onClick={() => setPickerOpen(true)}>
-                {t("profile.pm.change", "Change Primary Masjid")}
-              </button>
-            )}
+        <>
+          <div className="pf-pm-header">
+            <MediaThumb src={masjid.coverPhotoUrl ? `${API_ORIGIN}${masjid.coverPhotoUrl}` : null} className="pf-pm-header-thumb" />
+            <div className="pf-pm-header-body">
+              <h3>{masjid.name}</h3>
+              <span><Icon name="mapPin" size={13} />{[masjid.city, masjid.country].filter(Boolean).join(", ") || masjid.formattedAddress}</span>
+            </div>
+            <div className="pf-pm-header-actions">
+              <Link to={`/masjid/${masjid.id}`} className="btn btn-outline-ink">{t("profile.pm.viewMasjid", "View Masjid")}</Link>
+              {isOwner && (
+                <button type="button" className="btn btn-gold" onClick={() => setPickerOpen(true)}>
+                  {t("profile.pm.change", "Change Primary Masjid")}
+                </button>
+              )}
+            </div>
           </div>
-          <div className="pf-pm-prayer">
-            <h4><Icon name="clock" size={16} /> {t("prayer.rosterHeading", "Today's Prayer Times")}</h4>
-            {rosterError ? (
-              <p className="msj-note">{t("profile.pm.noRoster", "This masjid hasn't published its prayer times yet.")}</p>
-            ) : roster === null ? (
-              <p className="msj-note">{t("masjidWizard.loading", "Loading…")}</p>
-            ) : roster.length === 0 ? (
-              <p className="msj-note">{t("profile.pm.noRoster", "This masjid hasn't published its prayer times yet.")}</p>
-            ) : (
-              <div className="msj-review-prayer-grid">
-                {roster.map((p) => (
-                  <div className="msj-review-prayer-card" key={p.prayerId}>
-                    <span className="msj-review-prayer-name">{t(`prayer.${p.name.toLowerCase()}`, p.name)}</span>
-                    <span className="msj-review-prayer-time">{p.time}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
+
+          {isOwner ? (
+            <SalahTracker />
+          ) : (
+            <div className="pf-pm-prayer">
+              <h4><Icon name="clock" size={16} /> {t("prayer.rosterHeading", "Today's Prayer Times")}</h4>
+              {rosterError ? (
+                <p className="msj-note">{t("profile.pm.noRoster", "This masjid hasn't published its prayer times yet.")}</p>
+              ) : roster === null ? (
+                <p className="msj-note">{t("masjidWizard.loading", "Loading…")}</p>
+              ) : roster.length === 0 ? (
+                <p className="msj-note">{t("profile.pm.noRoster", "This masjid hasn't published its prayer times yet.")}</p>
+              ) : (
+                <div className="msj-review-prayer-grid">
+                  {roster.map((p) => (
+                    <div className="msj-review-prayer-card" key={p.prayerId}>
+                      <span className="msj-review-prayer-name">{t(`prayer.${p.name.toLowerCase()}`, p.name)}</span>
+                      <span className="msj-review-prayer-time">{p.time}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </>
       ) : isOwner ? (
         <div className="cw-side-card pf-pm-empty" style={{ textAlign: "center" }}>
           <Icon name="mosque" size={26} />

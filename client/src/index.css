@@ -4577,22 +4577,83 @@ footer{
   background:rgba(141,198,63,.12); color:var(--teal-deep); font-size:12px; font-weight:700;
 }
 
-.pf-pm-layout{ display:grid; grid-template-columns:280px 1fr; gap:22px; align-items:start; }
-.pf-pm-card{
-  background:#fff; border:1px solid var(--line); border-radius:14px; padding:22px; text-align:center;
-  box-shadow:0 1px 3px rgba(17,38,44,.05);
+.pf-pm-header{
+  display:flex; align-items:center; gap:14px; flex-wrap:wrap; background:#fff; border:1px solid var(--line);
+  border-radius:14px; padding:16px 18px; margin-bottom:16px; box-shadow:0 1px 3px rgba(17,38,44,.05);
 }
-.pf-pm-card-thumb{ width:100%; aspect-ratio:16/10; border-radius:12px; object-fit:cover; background:var(--paper-dim); }
-.pf-pm-card h3{ font-size:17px; color:var(--text-on-paper); margin:14px 0 4px; }
-.pf-pm-card-location{ display:flex; align-items:center; justify-content:center; gap:6px; font-size:12.5px; color:var(--text-on-paper-dim); }
+.pf-pm-header-thumb{ width:52px; height:52px; border-radius:10px; object-fit:cover; background:var(--paper-dim); flex-shrink:0; }
+.pf-pm-header-body{ flex:1; min-width:160px; }
+.pf-pm-header-body h3{ font-size:15px; color:var(--text-on-paper); margin:0; }
+.pf-pm-header-body span{ display:flex; align-items:center; gap:5px; font-size:12px; color:var(--text-on-paper-dim); margin-top:3px; }
+.pf-pm-header-actions{ display:flex; gap:8px; flex-shrink:0; }
 .pf-pm-prayer{ background:#fff; border:1px solid var(--line); border-radius:14px; padding:22px; box-shadow:0 1px 3px rgba(17,38,44,.05); }
 .pf-pm-prayer h4{ display:flex; align-items:center; gap:8px; font-size:15px; color:var(--text-on-paper); margin:0 0 18px; }
 .pf-pm-empty{ display:flex; flex-direction:column; align-items:center; gap:10px; max-width:420px; margin:0 auto; color:var(--teal-deep); }
 .pf-pm-empty h4{ font-size:16px; color:var(--text-on-paper); margin:0; }
+
+/* Salah Tracker — the interactive "Mark Done" card + history/weekly panel */
+.st-card{
+  background:linear-gradient(165deg, var(--ink) 0%, var(--teal-deep) 130%); border-radius:16px;
+  padding:20px; color:#fff;
+}
+.st-datenav{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:16px; }
+.st-datenav-btn{
+  display:flex; align-items:center; gap:5px; background:rgba(255,255,255,.14); border:none; color:#fff;
+  border-radius:100px; padding:7px 12px; font-size:12px; font-weight:600; cursor:pointer; transition:background .15s; flex-shrink:0;
+}
+.st-datenav-btn:hover:not(:disabled){ background:rgba(255,255,255,.26); }
+.st-datenav-btn:disabled{ opacity:.35; cursor:default; }
+.st-datenav-date{ background:none; border:none; color:#fff; font-size:13px; font-weight:700; text-align:center; cursor:pointer; padding:0 4px; }
+.st-datenav-date:disabled{ cursor:default; }
+.st-today-pill{ display:block; font-size:10px; font-weight:600; color:rgba(255,255,255,.68); margin-top:3px; text-transform:uppercase; letter-spacing:.02em; }
+.st-progress{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:14px; }
+.st-progress-label{ font-size:13px; color:rgba(255,255,255,.85); }
+.st-progress-count{ font-family:var(--mono); font-weight:700; font-size:14.5px; }
+.st-rows{ display:flex; flex-direction:column; }
+.st-row{ display:flex; align-items:center; gap:10px; padding:11px 2px; border-top:1px solid rgba(255,255,255,.12); }
+.st-row:first-child{ border-top:none; }
+.st-row-icon{ width:26px; height:26px; border-radius:50%; background:rgba(255,255,255,.14); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.st-row-name{ font-size:13px; color:rgba(255,255,255,.92); flex:1; }
+.st-row-time{ font-family:var(--mono); font-size:12px; color:rgba(255,255,255,.68); }
+.st-mark-btn{
+  display:flex; align-items:center; gap:6px; border:1px solid rgba(255,255,255,.4); background:rgba(255,255,255,.06);
+  color:#fff; border-radius:100px; padding:6px 12px; font-size:11.5px; font-weight:700; cursor:pointer; transition:all .15s; flex-shrink:0;
+}
+.st-mark-btn:hover:not(:disabled){ background:rgba(255,255,255,.2); }
+.st-mark-btn.done{ background:#fff; border-color:#fff; color:var(--teal-deep); }
+.st-mark-btn:disabled{ opacity:.65; cursor:default; }
+.st-history-toggle{
+  width:100%; text-align:center; background:rgba(255,255,255,.1); border:none; color:#fff; border-radius:10px;
+  padding:10px; font-size:12.5px; font-weight:700; margin-top:18px; cursor:pointer; transition:background .15s;
+}
+.st-history-toggle:hover{ background:rgba(255,255,255,.2); }
+
+.st-history{ margin-top:14px; }
+.st-weekly{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:14px; }
+.st-weekly-tile{ background:var(--paper-dim); border-radius:10px; padding:10px 6px; text-align:center; }
+.st-weekly-tile strong{ display:block; font-size:14.5px; color:var(--teal-deep); font-family:var(--mono); }
+.st-weekly-tile span{ display:block; font-size:10px; color:var(--text-on-paper-dim); margin-top:2px; }
+.st-weekly-reflection{ font-size:12.5px; color:var(--text-on-paper-dim); line-height:1.55; font-style:italic; margin:0 0 6px; }
+.st-history-day{ display:flex; align-items:center; gap:10px; padding:9px 0; border-top:1px solid var(--line); }
+.st-history-day:first-child{ border-top:none; }
+.st-history-date{ font-size:12px; color:var(--text-on-paper); width:64px; flex-shrink:0; }
+.st-history-marks{ display:flex; gap:5px; flex:1; }
+.st-history-mark{ width:20px; height:20px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; flex-shrink:0; }
+.st-history-mark.done{ background:rgba(141,198,63,.18); color:var(--teal-deep); }
+.st-history-mark.pending{ background:var(--paper-dim); color:var(--text-on-paper-dim); }
+.st-history-count{ font-family:var(--mono); font-size:12px; font-weight:700; color:var(--text-on-paper); flex-shrink:0; }
+
+.st-celebrate{ text-align:center; }
+.st-celebrate-badge{ font-size:15px; font-weight:800; color:var(--teal-deep); margin-bottom:12px; }
+.st-celebrate-msg{ font-size:14px; color:var(--text-on-paper); line-height:1.6; margin-bottom:20px; }
+
 @media (max-width:760px){
-  .pf-pm-layout{ grid-template-columns:1fr; }
   .pf-profile-header{ text-align:center; justify-content:center; }
   .pf-stats-grid{ grid-template-columns:repeat(4,1fr); }
+  .pf-pm-header{ justify-content:center; text-align:center; }
+  .pf-pm-header-actions{ width:100%; justify-content:center; }
+  .st-weekly{ grid-template-columns:repeat(2,1fr); }
+  .st-row-time{ display:none; }
 }
 
 /* Work Experience / Education — vertical timeline of polished entry cards. */

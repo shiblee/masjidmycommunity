@@ -28,6 +28,7 @@ import * as education from "../controllers/userEducationController.js";
 import * as skills from "../controllers/userSkillController.js";
 import * as hobbies from "../controllers/userHobbyController.js";
 import { getStatus as getPrimaryMasjidStatus, listNearby as listNearbyMasjids, setPrimary as setPrimaryMasjid, skipPrompt as skipPrimaryMasjidPrompt } from "../controllers/primaryMasjidController.js";
+import { getDay as getSalahDay, markDone as markSalahDone, unmarkDone as unmarkSalahDone, getHistory as getSalahHistory, getWeeklySummary as getSalahWeeklySummary } from "../controllers/salahController.js";
 import { listActive as listActiveMaritalStatuses } from "../controllers/adminMaritalStatusController.js";
 import { listActive as listActiveEducationLevels } from "../controllers/adminEducationLevelController.js";
 import { listActive as listActiveDegrees } from "../controllers/adminDegreeController.js";
@@ -100,6 +101,12 @@ router.get("/me/primary-masjid-status", auth, requireUser, getPrimaryMasjidStatu
 router.get("/me/nearby-masjids", auth, requireUser, listNearbyMasjids);
 router.post("/me/primary-masjid", auth, requireUser, setPrimaryMasjid);
 router.post("/me/primary-masjid/skip", auth, requireUser, skipPrimaryMasjidPrompt);
+
+router.get("/me/salah/day", auth, requireUser, getSalahDay);
+router.post("/me/salah/mark", auth, requireUser, markSalahDone);
+router.post("/me/salah/unmark", auth, requireUser, unmarkSalahDone);
+router.get("/me/salah/history", auth, requireUser, getSalahHistory);
+router.get("/me/salah/weekly-summary", auth, requireUser, getSalahWeeklySummary);
 
 router.get("/notifications", auth, requireUser, listMine);
 router.patch("/notifications/read-all", auth, requireUser, markAllRead);
