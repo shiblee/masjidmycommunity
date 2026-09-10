@@ -33,4 +33,10 @@ console.log("Users with a primaryMasjidId set:", usersWithPrimary.c);
 const [salahLogCount] = await sequelize.query("SELECT COUNT(*) as c FROM salah_logs", { type: QueryTypes.SELECT }).catch((e) => [{ c: `ERROR: ${e.message}` }]);
 console.log("salah_logs row count:", salahLogCount.c);
 
+const usersWithPrimaryRows = await sequelize.query(
+  "SELECT id, username, primaryMasjidId FROM users WHERE primaryMasjidId IS NOT NULL LIMIT 5",
+  { type: QueryTypes.SELECT }
+);
+console.log("Users with primaryMasjidId set:", JSON.stringify(usersWithPrimaryRows));
+
 await sequelize.close();
