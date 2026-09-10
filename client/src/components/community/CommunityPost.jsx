@@ -65,7 +65,11 @@ export function mapLiveActivity(a) {
         : isJobPost
         ? a.user?.fullName || "A community member"
         : "Masjid My Community",
-      verified: isMasjid,
+      // Not tied to the real Green Tick verification process (a separate
+      // document-review workflow) — always registering a masjid_approved
+      // post as "verified" here would be misleading, so this stays off
+      // until the Wall actually reads a masjid's real Green Tick status.
+      verified: false,
       location: isNewMember ? a.user?.maskedEmail || a.user?.maskedMobile || "" : a.metadata?.location || "",
     },
     time: timeAgo(a.publishedAt || a.createdAt),
