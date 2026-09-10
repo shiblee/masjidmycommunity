@@ -4530,6 +4530,45 @@ footer{
 }
 .profile-empty-prompt:hover{ border-color:var(--teal); color:var(--teal-deep); background:var(--paper-dim); }
 
+/* Profile page redesign — header, tabs, stats/badges, Primary Masjid tab */
+.pf-profile-header{ display:flex; align-items:center; gap:22px; flex-wrap:wrap; }
+.pf-profile-header-info{ flex:1; min-width:0; }
+.pf-profile-header-info h1{ font-size:24px; color:var(--text-on-paper); margin:0; }
+.pf-profile-header-username{ font-size:14px; color:var(--text-on-paper-dim); margin:2px 0 0; }
+.pf-profile-header-bio{ font-size:14px; color:var(--text-on-paper); margin:10px 0 0; max-width:560px; line-height:1.5; }
+.pf-profile-header-location{ display:inline-flex; align-items:center; gap:6px; font-size:12.5px; color:var(--text-on-paper-dim); margin-top:8px; }
+
+.pf-single-col{ display:flex; flex-direction:column; gap:20px; max-width:640px; margin:0 auto; }
+
+.pf-stats-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px; }
+.pf-stat-tile{ background:var(--paper-dim); border-radius:12px; padding:14px; text-align:center; }
+.pf-stat-tile strong{ display:block; font-size:20px; color:var(--teal-deep); font-family:var(--mono); }
+.pf-stat-tile span{ display:block; font-size:11.5px; color:var(--text-on-paper-dim); margin-top:2px; }
+
+.pf-badges-row{ display:flex; flex-wrap:wrap; gap:8px; }
+.pf-badge{
+  display:inline-flex; align-items:center; gap:6px; padding:6px 11px; border-radius:100px;
+  background:rgba(141,198,63,.12); color:var(--teal-deep); font-size:12px; font-weight:700;
+}
+
+.pf-pm-layout{ display:grid; grid-template-columns:280px 1fr; gap:22px; align-items:start; }
+.pf-pm-card{
+  background:#fff; border:1px solid var(--line); border-radius:14px; padding:22px; text-align:center;
+  box-shadow:0 1px 3px rgba(17,38,44,.05);
+}
+.pf-pm-card-thumb{ width:100%; aspect-ratio:16/10; border-radius:12px; object-fit:cover; background:var(--paper-dim); }
+.pf-pm-card h3{ font-size:17px; color:var(--text-on-paper); margin:14px 0 4px; }
+.pf-pm-card-location{ display:flex; align-items:center; justify-content:center; gap:6px; font-size:12.5px; color:var(--text-on-paper-dim); }
+.pf-pm-prayer{ background:#fff; border:1px solid var(--line); border-radius:14px; padding:22px; box-shadow:0 1px 3px rgba(17,38,44,.05); }
+.pf-pm-prayer h4{ display:flex; align-items:center; gap:8px; font-size:15px; color:var(--text-on-paper); margin:0 0 18px; }
+.pf-pm-empty{ display:flex; flex-direction:column; align-items:center; gap:10px; max-width:420px; margin:0 auto; color:var(--teal-deep); }
+.pf-pm-empty h4{ font-size:16px; color:var(--text-on-paper); margin:0; }
+@media (max-width:760px){
+  .pf-pm-layout{ grid-template-columns:1fr; }
+  .pf-profile-header{ text-align:center; justify-content:center; }
+  .pf-stats-grid{ grid-template-columns:repeat(4,1fr); }
+}
+
 /* Work Experience / Education — vertical timeline of polished entry cards. */
 .wx-timeline{ display:flex; flex-direction:column; }
 .wx-item{ display:flex; gap:16px; }

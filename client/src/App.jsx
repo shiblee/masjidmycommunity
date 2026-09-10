@@ -102,7 +102,7 @@ function App() {
           <Route path="/campaign/:slug" element={<CampaignProfile />} />
           <Route path="/job/:slug" element={<JobProfile />} />
           <Route path="/profile/:username" element={<Profile />} />
-          <Route path="/profile/:username/:section" element={<Profile />} />
+          <Route path="/profile/:username/:tab" element={<Profile />} />
           <Route
             path="/account"
             element={

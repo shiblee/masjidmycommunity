@@ -1,31 +1,56 @@
-import React, { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import React, { useEffect, useRef, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { Icon } from "../components/Icons.jsx";
 import { useTranslation } from "../i18n/LanguageContext.jsx";
 import userApi from "../services/userApi.js";
 import communityApi from "../services/communityApi.js";
+import publicMasjidApi from "../services/publicMasjidApi.js";
 import { updateStoredUser, getStoredUser } from "../utils/userAuthStorage.js";
 import { API_ORIGIN } from "../config.js";
 import ProfilePhotoCard from "../components/profile/ProfilePhotoCard.jsx";
-import PersonalDetailsCard, { PersonalDetailsForm } from "../components/profile/PersonalDetailsCard.jsx";
+import PersonalDetailsCard from "../components/profile/PersonalDetailsCard.jsx";
 import EducationCard from "../components/profile/EducationCard.jsx";
 import WorkExperienceCard from "../components/profile/WorkExperienceCard.jsx";
 import SkillsCard from "../components/profile/SkillsCard.jsx";
 import HobbiesCard from "../components/profile/HobbiesCard.jsx";
 import SecurityCard from "../components/profile/SecurityCard.jsx";
 import ProfileCompletion from "../components/profile/ProfileCompletion.jsx";
+import MediaThumb from "../components/MediaThumb.jsx";
+import ShareMenu from "../components/ShareMenu.jsx";
+import MasjidPickerModal from "../components/MasjidPickerModal.jsx";
 
 const SIDE_LIST_PREVIEW_COUNT = 3;
 const POSTS_PAGE_SIZE = 10;
 
-const PROFILE_NAV_SECTIONS = [
-  { key: "personal", labelKey: "profile.nav.personal.label", label: "Profile Details", descKey: "profile.nav.personal.desc", desc: "Bio, contact & personal info", icon: "people" },
-  { key: "education", labelKey: "profile.nav.education.label", label: "Education", descKey: "profile.nav.education.desc", desc: "Your academic background", icon: "book" },
-  { key: "work-experience", labelKey: "profile.nav.workExperience.label", label: "Work Experience", descKey: "profile.nav.workExperience.desc", desc: "Where you've worked", icon: "building" },
-  { key: "hobbies", labelKey: "profile.nav.hobbies.label", label: "Hobbies & Interests", descKey: "profile.nav.hobbies.desc", desc: "What you enjoy", icon: "star" },
-  { key: "skills", labelKey: "profile.nav.skills.label", label: "Skills", descKey: "profile.nav.skills.desc", desc: "What you're good at", icon: "bulb" },
-  { key: "security", labelKey: "profile.nav.security.label", label: "Security", descKey: "profile.nav.security.desc", desc: "Password & account safety", icon: "shieldCheck" },
-];
+const TAB_KEYS = ["about", "primary-masjid", "masjid", "jobs"];
+
+const MASJID_STATUS_LABEL_KEYS = {
+  draft: ["masjidWizard.status.draft", "Draft"],
+  submitted: ["masjidWizard.status.submitted", "Submitted"],
+  under_review: ["masjidWizard.status.underReview", "Under Review"],
+  changes_requested: ["masjidWizard.status.changesRequested", "Changes Requested"],
+  approved: ["masjidWizard.status.approved", "Approved"],
+  rejected: ["masjidWizard.status.rejected", "Rejected"],
+  inactive: ["masjidWizard.status.inactive", "Inactive"],
+};
+const CAMPAIGN_STATUS_LABEL_KEYS = {
+  draft: ["communityWall.status.draft", "Draft"],
+  submitted: ["communityWall.status.submitted", "Submitted"],
+  under_review: ["communityWall.status.underReview", "Under Review"],
+  changes_requested: ["communityWall.status.changesRequested", "Changes Requested"],
+  approved: ["communityWall.status.approved", "Approved"],
+  active: ["communityWall.status.active", "Active"],
+  paused: ["communityWall.status.paused", "Paused"],
+  goal_reached: ["communityWall.status.goalReached", "Goal Reached"],
+  completed: ["communityWall.status.completed", "Completed"],
+  rejected: ["communityWall.status.rejected", "Rejected"],
+  cancelled: ["communityWall.status.cancelled", "Cancelled"],
+};
+const JOB_STATUS_LABEL_KEYS = {
+  active: ["communityWall.status.active", "Active"],
+  closed: ["communityWall.status.closed", "Closed"],
+  expired: ["communityWall.status.expired", "Expired"],
+};
 
 function timeAgo(dateStr, t) {
   if (!dateStr) return "";
@@ -88,7 +113,7 @@ function ProfilePostCard({ post, fallbackAuthor }) {
   );
 }
 
-function OwnedAssetList({ title, items, showAll, onToggleShowAll, statusLabel, nameKey, linkBase, linkKey = "id", icon }) {
+function OwnedAssetList({ title, items, showAll, onToggleShowAll, statusLabelKeys, nameKey, linkBase, linkKey = "id", icon }) {
   const { t } = useTranslation();
   if (!items || items.length === 0) return null;
   const visible = showAll ? items : items.slice(0, SIDE_LIST_PREVIEW_COUNT);
@@ -96,18 +121,21 @@ function OwnedAssetList({ title, items, showAll, onToggleShowAll, statusLabel, n
     <div className="cw-side-card">
       <h4>{title}</h4>
       <ul className="cw-side-list cw-side-my-masjids">
-        {visible.map((item) => (
-          <li key={item.id}>
-            <Link to={`${linkBase}/${item[linkKey]}`} className="cw-my-masjid-item">
-              <span className="cw-my-masjid-thumb"><Icon name={icon} size={18} /></span>
-              <span className="cw-my-masjid-body">
-                <span className="cw-my-masjid-name">{item[nameKey]}</span>
-                <span className={`acct-status-pill ${item.status}`}>{statusLabel[item.status] || item.status}</span>
-              </span>
-              <span className="cw-my-masjid-time">{timeAgo(item.createdAt, t)}</span>
-            </Link>
-          </li>
-        ))}
+        {visible.map((item) => {
+          const statusLabel = statusLabelKeys[item.status];
+          return (
+            <li key={item.id}>
+              <Link to={`${linkBase}/${item[linkKey]}`} className="cw-my-masjid-item">
+                <span className="cw-my-masjid-thumb"><Icon name={icon} size={18} /></span>
+                <span className="cw-my-masjid-body">
+                  <span className="cw-my-masjid-name">{item[nameKey]}</span>
+                  <span className={`acct-status-pill ${item.status}`}>{statusLabel ? t(statusLabel[0], statusLabel[1]) : item.status}</span>
+                </span>
+                <span className="cw-my-masjid-time">{timeAgo(item.createdAt, t)}</span>
+              </Link>
+            </li>
+          );
+        })}
       </ul>
       {items.length > SIDE_LIST_PREVIEW_COUNT && (
         <button type="button" className="cw-side-link" onClick={onToggleShowAll}>
@@ -118,11 +146,96 @@ function OwnedAssetList({ title, items, showAll, onToggleShowAll, statusLabel, n
   );
 }
 
-const PROFILE_NAV_KEYS = PROFILE_NAV_SECTIONS.map((s) => s.key);
+function PrimaryMasjidPanel({ profile, isOwner, onChanged }) {
+  const { t } = useTranslation();
+  const [roster, setRoster] = useState(null);
+  const [rosterError, setRosterError] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const masjid = profile.primaryMasjid;
+
+  useEffect(() => {
+    if (!masjid) return;
+    setRoster(null);
+    setRosterError(false);
+    publicMasjidApi
+      .get(`/${masjid.id}/prayer-times`)
+      .then(({ data }) => setRoster(data.roster || []))
+      .catch(() => setRosterError(true));
+  }, [masjid?.id]);
+
+  return (
+    <div className="pf-pm-tab">
+      {masjid ? (
+        <div className="pf-pm-layout">
+          <div className="pf-pm-card">
+            <MediaThumb src={masjid.coverPhotoUrl ? `${API_ORIGIN}${masjid.coverPhotoUrl}` : null} className="pf-pm-card-thumb" />
+            <h3>{masjid.name}</h3>
+            <p className="pf-pm-card-location">
+              <Icon name="mapPin" size={14} />
+              {[masjid.city, masjid.country].filter(Boolean).join(", ") || masjid.formattedAddress}
+            </p>
+            <Link to={`/masjid/${masjid.id}`} className="btn btn-outline-ink" style={{ width: "100%", justifyContent: "center", marginTop: 14 }}>
+              {t("profile.pm.viewMasjid", "View Masjid")}
+            </Link>
+            {isOwner && (
+              <button type="button" className="btn btn-gold" style={{ width: "100%", justifyContent: "center", marginTop: 10 }} onClick={() => setPickerOpen(true)}>
+                {t("profile.pm.change", "Change Primary Masjid")}
+              </button>
+            )}
+          </div>
+          <div className="pf-pm-prayer">
+            <h4><Icon name="clock" size={16} /> {t("prayer.rosterHeading", "Today's Prayer Times")}</h4>
+            {rosterError ? (
+              <p className="msj-note">{t("profile.pm.noRoster", "This masjid hasn't published its prayer times yet.")}</p>
+            ) : roster === null ? (
+              <p className="msj-note">{t("masjidWizard.loading", "Loading…")}</p>
+            ) : roster.length === 0 ? (
+              <p className="msj-note">{t("profile.pm.noRoster", "This masjid hasn't published its prayer times yet.")}</p>
+            ) : (
+              <div className="msj-review-prayer-grid">
+                {roster.map((p) => (
+                  <div className="msj-review-prayer-card" key={p.prayerId}>
+                    <span className="msj-review-prayer-name">{t(`prayer.${p.name.toLowerCase()}`, p.name)}</span>
+                    <span className="msj-review-prayer-time">{p.time}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      ) : isOwner ? (
+        <div className="cw-side-card pf-pm-empty" style={{ textAlign: "center" }}>
+          <Icon name="mosque" size={26} />
+          <h4>{t("profile.pm.emptyTitle", "No Primary Masjid selected yet")}</h4>
+          <p className="cw-side-card-sub">{t("profile.pm.emptyBody", "Pick the masjid closest to you or the one you regularly visit.")}</p>
+          <button type="button" className="btn btn-gold" onClick={() => setPickerOpen(true)}>{t("profile.pm.selectOne", "Select One")}</button>
+        </div>
+      ) : (
+        <div className="cw-side-card" style={{ textAlign: "center" }}>
+          <p className="cw-side-card-sub" style={{ marginBottom: 0 }}>
+            {t("profile.pm.noneOther", "{name} hasn't set a Primary Masjid yet.").replace("{name}", profile.fullName)}
+          </p>
+        </div>
+      )}
+
+      {pickerOpen && (
+        <MasjidPickerModal
+          title={t("profile.pm.changeTitle", "Change Primary Masjid")}
+          onClose={() => setPickerOpen(false)}
+          onSelected={(newMasjid) => {
+            setPickerOpen(false);
+            onChanged(newMasjid);
+          }}
+        />
+      )}
+    </div>
+  );
+}
 
 function Profile() {
   const { t } = useTranslation();
-  const { username, section } = useParams();
+  const navigate = useNavigate();
+  const { username, tab: tabParam } = useParams();
   const viewer = getStoredUser();
 
   const [profile, setProfile] = useState(null);
@@ -141,7 +254,9 @@ function Profile() {
   const [showAllMasjids, setShowAllMasjids] = useState(false);
   const [showAllCampaigns, setShowAllCampaigns] = useState(false);
   const [showAllJobs, setShowAllJobs] = useState(false);
-  const activeSection = PROFILE_NAV_KEYS.includes(section) ? section : "personal";
+  const [shareOpen, setShareOpen] = useState(false);
+  const shareBtnRef = useRef(null);
+  const activeTab = TAB_KEYS.includes(tabParam) ? tabParam : "about";
 
   useEffect(() => {
     setLoading(true);
@@ -167,9 +282,7 @@ function Profile() {
   }, [username]);
 
   useEffect(() => {
-    // The owner's middle column now shows the section nav content instead of
-    // their post feed, so there's nothing to fetch for that case.
-    if (!profile || profile.isOwner) return;
+    if (!profile) return;
     setPostsLoading(true);
     communityApi
       .get("/activities", { params: { userId: profile.id, limit: POSTS_PAGE_SIZE } })
@@ -178,7 +291,7 @@ function Profile() {
         setPostsHasMore(!!data.hasMore);
       })
       .finally(() => setPostsLoading(false));
-  }, [profile?.id, profile?.isOwner]);
+  }, [profile?.id]);
 
   const loadMorePosts = () => {
     setPostsLoading(true);
@@ -196,6 +309,9 @@ function Profile() {
     if (viewer) updateStoredUser({ ...viewer, ...updatedUser });
   };
 
+  const handlePrimaryMasjidChanged = (masjid) => {
+    setProfile((p) => ({ ...p, primaryMasjidId: masjid.id, primaryMasjid: masjid }));
+  };
 
   if (loading) {
     return (
@@ -222,98 +338,151 @@ function Profile() {
   const isOwner = !!profile.isOwner;
   const mode = isOwner ? "self" : "view";
 
+  const badges = [
+    masjids.length > 0 && { key: "masjidOwner", icon: "mosque", label: t("profile.badge.masjidOwner", "Masjid Owner") },
+    jobs.length > 0 && { key: "jobPoster", icon: "briefcase", label: t("profile.badge.jobPoster", "Job Poster") },
+    campaigns.length > 0 && { key: "campaignOrganizer", icon: "flag", label: t("profile.badge.campaignOrganizer", "Campaign Organizer") },
+    profile.verified && { key: "verifiedMember", icon: "shieldCheck", label: t("profile.badge.verifiedMember", "Verified Member") },
+  ].filter(Boolean);
+
+  const setTab = (key) => navigate(key === "about" ? `/profile/${username}` : `/profile/${username}/${key}`);
+
+  const TABS = [
+    { key: "about", label: t("profile.tabs.about", "About") },
+    { key: "primary-masjid", label: t("profile.tabs.primaryMasjid", "Primary Masjid") },
+    { key: "masjid", label: t("profile.tabs.masjid", "Masjid") },
+    { key: "jobs", label: t("profile.tabs.jobs", "Jobs") },
+  ];
+
   return (
     <main className="cw-page">
       <section className="py-sm">
         <div className="wrap">
-          <div className="cw-layout">
-            <aside className="cw-side">
-              <div className="cw-side-card" style={{ textAlign: "center" }}>
-                {isOwner ? (
-                  <ProfilePhotoCard user={profile} onUserUpdated={handleUserUpdated} />
-                ) : profile.profilePhoto ? (
-                  <div className="profile-avatar-wrap"><img className="profile-avatar-img" src={`${API_ORIGIN}${profile.profilePhoto}`} alt={profile.fullName} /></div>
-                ) : (
-                  <div className="profile-avatar-wrap"><div className="acct-avatar profile-avatar-fallback">{initialsOf(profile.fullName)}</div></div>
-                )}
-                <h3 style={{ marginTop: 14, marginBottom: 2 }}>{profile.fullName}</h3>
-                <p className="cw-side-card-sub" style={{ marginBottom: 0 }}>@{profile.username}</p>
-              </div>
-
+          <div className="pf-profile-header">
+            <div className="pf-profile-header-avatar">
               {isOwner ? (
-                <>
-                  <div className="cw-side-card pf-nav-card">
-                    <nav className="pf-section-nav">
-                      {PROFILE_NAV_SECTIONS.map((s) => (
-                        <Link
-                          key={s.key}
-                          to={s.key === "personal" ? `/profile/${username}` : `/profile/${username}/${s.key}`}
-                          className={`pf-section-nav-item${activeSection === s.key ? " active" : ""}`}
-                        >
-                          <span className="pf-section-nav-icon"><Icon name={s.icon} size={17} /></span>
-                          <span className="pf-section-nav-text">
-                            <span className="pf-section-nav-label">{t(s.labelKey, s.label)}</span>
-                            <span className="pf-section-nav-desc">{t(s.descKey, s.desc)}</span>
-                          </span>
-                          <Icon name="chevronRight" size={14} className="pf-section-nav-chevron" />
-                        </Link>
-                      ))}
-                    </nav>
-                  </div>
-                  <div className="cw-side-card"><ProfileCompletion user={profile} /></div>
-                </>
+                <ProfilePhotoCard user={profile} onUserUpdated={handleUserUpdated} />
+              ) : profile.profilePhoto ? (
+                <div className="profile-avatar-wrap"><img className="profile-avatar-img" src={`${API_ORIGIN}${profile.profilePhoto}`} alt={profile.fullName} /></div>
               ) : (
-                <>
-                  <PersonalDetailsCard user={profile} mode={mode} onUserUpdated={handleUserUpdated} />
-                  <EducationCard mode={mode} entries={education} />
-                  <WorkExperienceCard mode={mode} entries={workExperience} />
-                  <SkillsCard mode={mode} entries={skills} />
-                  <HobbiesCard mode={mode} entries={hobbies} />
-                </>
-              )}
-            </aside>
-
-            <div className="cw-main">
-              {isOwner ? (
-                <div className="pf-section-content" key={activeSection}>
-                  {activeSection === "personal" && (
-                    <div className="card profile-card">
-                      <div className="profile-card-head">
-                        <h3>{t("profile.nav.personal.label", "Profile Details")}</h3>
-                      </div>
-                      <PersonalDetailsForm user={profile} mode="self" onSaved={handleUserUpdated} />
-                    </div>
-                  )}
-                  {activeSection === "education" && <EducationCard mode="self" />}
-                  {activeSection === "work-experience" && <WorkExperienceCard mode="self" />}
-                  {activeSection === "hobbies" && <HobbiesCard mode="self" />}
-                  {activeSection === "skills" && <SkillsCard mode="self" />}
-                  {activeSection === "security" && <SecurityCard />}
-                </div>
-              ) : postsLoading && posts.length === 0 ? (
-                <p className="msj-note">{t("profile.posts.loading", "Loading posts…")}</p>
-              ) : posts.length === 0 ? (
-                <div className="cw-side-card" style={{ textAlign: "center" }}>
-                  <p className="cw-side-card-sub" style={{ marginBottom: 0 }}>
-                    {t("profile.posts.empty", "{name} hasn't shared anything on the Community Wall yet.").replace("{name}", profile.fullName)}
-                  </p>
-                </div>
-              ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-                  {posts.map((post) => (
-                    <ProfilePostCard key={post.id} post={post} fallbackAuthor={profile} />
-                  ))}
-                </div>
-              )}
-
-              {!isOwner && postsHasMore && (
-                <button type="button" className="btn btn-outline-ink" style={{ marginTop: 20 }} disabled={postsLoading} onClick={loadMorePosts}>
-                  {postsLoading ? t("masjidWizard.loading", "Loading…") : t("profile.posts.loadMore", "Load more posts")}
-                </button>
+                <div className="profile-avatar-wrap"><div className="acct-avatar profile-avatar-fallback">{initialsOf(profile.fullName)}</div></div>
               )}
             </div>
+            <div className="pf-profile-header-info">
+              <h1>{profile.fullName}</h1>
+              <p className="pf-profile-header-username">@{profile.username}</p>
+              {profile.bio && <p className="pf-profile-header-bio">{profile.bio}</p>}
+              {profile.locationLabel && <span className="pf-profile-header-location"><Icon name="mapPin" size={14} />{profile.locationLabel}</span>}
+            </div>
+          </div>
+        </div>
+      </section>
 
-            <aside className="cw-side">
+      <div className="msj-hub-tabs-bar">
+        <div className="wrap msj-hub-tabs">
+          {TABS.map((tabDef) => (
+            <button key={tabDef.key} type="button" className={activeTab === tabDef.key ? "active" : ""} onClick={() => setTab(tabDef.key)}>{tabDef.label}</button>
+          ))}
+        </div>
+      </div>
+
+      <section className="py-md">
+        <div className="wrap">
+          {activeTab === "about" && (
+            <div className="cw-layout">
+              <aside className="cw-side">
+                {isOwner && <div className="cw-side-card"><ProfileCompletion user={profile} /></div>}
+                <PersonalDetailsCard user={profile} mode={mode} onUserUpdated={handleUserUpdated} />
+                <EducationCard mode={mode} entries={education} />
+                <WorkExperienceCard mode={mode} entries={workExperience} />
+                <SkillsCard mode={mode} entries={skills} />
+                <HobbiesCard mode={mode} entries={hobbies} />
+                {isOwner && (
+                  <div className="cw-side-card">
+                    <h4>{t("profile.nav.security.label", "Security")}</h4>
+                    <SecurityCard />
+                  </div>
+                )}
+              </aside>
+
+              <div className="cw-main">
+                {postsLoading && posts.length === 0 ? (
+                  <p className="msj-note">{t("profile.posts.loading", "Loading posts…")}</p>
+                ) : posts.length === 0 ? (
+                  <div className="cw-side-card" style={{ textAlign: "center" }}>
+                    <p className="cw-side-card-sub" style={{ marginBottom: 0 }}>
+                      {isOwner
+                        ? t("profile.posts.emptyOwner", "You haven't shared anything on the Community Wall yet.")
+                        : t("profile.posts.empty", "{name} hasn't shared anything on the Community Wall yet.").replace("{name}", profile.fullName)}
+                    </p>
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                    {posts.map((post) => (
+                      <ProfilePostCard key={post.id} post={post} fallbackAuthor={profile} />
+                    ))}
+                  </div>
+                )}
+
+                {postsHasMore && (
+                  <button type="button" className="btn btn-outline-ink" style={{ marginTop: 20 }} disabled={postsLoading} onClick={loadMorePosts}>
+                    {postsLoading ? t("masjidWizard.loading", "Loading…") : t("profile.posts.loadMore", "Load more posts")}
+                  </button>
+                )}
+              </div>
+
+              <aside className="cw-side">
+                <div className="cw-side-card">
+                  <h4>{t("profile.stats.heading", "Profile Stats")}</h4>
+                  <div className="pf-stats-grid">
+                    <div className="pf-stat-tile"><strong>{postsHasMore ? `${posts.length}+` : posts.length}</strong><span>{t("profile.stats.posts", "Posts")}</span></div>
+                    <div className="pf-stat-tile"><strong>{masjids.length}</strong><span>{t("profile.stats.masjids", "Masjids")}</span></div>
+                    <div className="pf-stat-tile"><strong>{campaigns.length}</strong><span>{t("profile.stats.campaigns", "Campaigns")}</span></div>
+                    <div className="pf-stat-tile"><strong>{jobs.length}</strong><span>{t("profile.stats.jobs", "Jobs")}</span></div>
+                  </div>
+                  {badges.length > 0 && (
+                    <div className="pf-badges-row">
+                      {badges.map((b) => (
+                        <span key={b.key} className="pf-badge"><Icon name={b.icon} size={13} />{b.label}</span>
+                      ))}
+                    </div>
+                  )}
+                  <button type="button" ref={shareBtnRef} className="btn btn-outline-ink" style={{ width: "100%", justifyContent: "center", marginTop: 16 }} onClick={() => setShareOpen((v) => !v)}>
+                    <Icon name="link" size={15} /> {t("profile.shareProfile", "Share Profile")}
+                  </button>
+                  <ShareMenu open={shareOpen} onClose={() => setShareOpen(false)} anchorRef={shareBtnRef} url={`${window.location.origin}/profile/${profile.username}`} title={profile.fullName} />
+                </div>
+
+                {isOwner && (
+                  <div className="cw-side-card cw-side-card-cta">
+                    <h4>{t("communityWall.campaign.startHeading", "Start a Campaign")}</h4>
+                    <p className="cw-side-card-sub">{t("communityWall.campaign.startSub", "Raise funds for your masjid's next project.")}</p>
+                    <Link to="/account/my-campaigns/new" className="btn btn-gold" style={{ width: "100%", justifyContent: "center" }}>
+                      <Icon name="plus" size={16} /> {t("communityWall.campaign.addCampaign", "Add a Campaign")}
+                    </Link>
+                  </div>
+                )}
+                <OwnedAssetList
+                  title={t("communityWall.campaign.myCampaignsHeading", "My Campaigns")}
+                  items={campaigns}
+                  showAll={showAllCampaigns}
+                  onToggleShowAll={() => setShowAllCampaigns((v) => !v)}
+                  statusLabelKeys={CAMPAIGN_STATUS_LABEL_KEYS}
+                  nameKey="title"
+                  linkBase={isOwner ? "/account/my-campaigns" : "/campaign"}
+                  linkKey={isOwner ? "id" : "slug"}
+                  icon="flag"
+                />
+              </aside>
+            </div>
+          )}
+
+          {activeTab === "primary-masjid" && (
+            <PrimaryMasjidPanel profile={profile} isOwner={isOwner} onChanged={handlePrimaryMasjidChanged} />
+          )}
+
+          {activeTab === "masjid" && (
+            <div className="pf-single-col">
               {isOwner && (
                 <div className="cw-side-card cw-side-card-cta">
                   <h4>{t("communityWall.masjid.registerHeading", "Register Your Masjid")}</h4>
@@ -323,58 +492,31 @@ function Profile() {
                   </Link>
                 </div>
               )}
-              <OwnedAssetList
-                title={t("communityWall.masjid.myMasjidsHeading", "My Masjids")}
-                items={masjids}
-                showAll={showAllMasjids}
-                onToggleShowAll={() => setShowAllMasjids((v) => !v)}
-                statusLabel={{
-                  draft: t("masjidWizard.status.draft", "Draft"),
-                  submitted: t("masjidWizard.status.submitted", "Submitted"),
-                  under_review: t("masjidWizard.status.underReview", "Under Review"),
-                  changes_requested: t("masjidWizard.status.changesRequested", "Changes Requested"),
-                  approved: t("masjidWizard.status.approved", "Approved"),
-                  rejected: t("masjidWizard.status.rejected", "Rejected"),
-                  inactive: t("masjidWizard.status.inactive", "Inactive"),
-                }}
-                nameKey="name"
-                linkBase={isOwner ? "/account/my-masjids" : "/masjid"}
-                icon="mosque"
-              />
-
-              {isOwner && (
-                <div className="cw-side-card cw-side-card-cta">
-                  <h4>{t("communityWall.campaign.startHeading", "Start a Campaign")}</h4>
-                  <p className="cw-side-card-sub">{t("communityWall.campaign.startSub", "Raise funds for your masjid's next project.")}</p>
-                  <Link to="/account/my-campaigns/new" className="btn btn-gold" style={{ width: "100%", justifyContent: "center" }}>
-                    <Icon name="plus" size={16} /> {t("communityWall.campaign.addCampaign", "Add a Campaign")}
-                  </Link>
+              {masjids.length === 0 ? (
+                <div className="cw-side-card" style={{ textAlign: "center" }}>
+                  <p className="cw-side-card-sub" style={{ marginBottom: 0 }}>
+                    {isOwner
+                      ? t("profile.masjidTab.emptyOwner", "You haven't added any masjids yet.")
+                      : t("profile.masjidTab.emptyOther", "{name} hasn't added any masjids yet.").replace("{name}", profile.fullName)}
+                  </p>
                 </div>
+              ) : (
+                <OwnedAssetList
+                  title={t("communityWall.masjid.myMasjidsHeading", "My Masjids")}
+                  items={masjids}
+                  showAll={showAllMasjids}
+                  onToggleShowAll={() => setShowAllMasjids((v) => !v)}
+                  statusLabelKeys={MASJID_STATUS_LABEL_KEYS}
+                  nameKey="name"
+                  linkBase={isOwner ? "/account/my-masjids" : "/masjid"}
+                  icon="mosque"
+                />
               )}
-              <OwnedAssetList
-                title={t("communityWall.campaign.myCampaignsHeading", "My Campaigns")}
-                items={campaigns}
-                showAll={showAllCampaigns}
-                onToggleShowAll={() => setShowAllCampaigns((v) => !v)}
-                statusLabel={{
-                  draft: t("communityWall.status.draft", "Draft"),
-                  submitted: t("communityWall.status.submitted", "Submitted"),
-                  under_review: t("communityWall.status.underReview", "Under Review"),
-                  changes_requested: t("communityWall.status.changesRequested", "Changes Requested"),
-                  approved: t("communityWall.status.approved", "Approved"),
-                  active: t("communityWall.status.active", "Active"),
-                  paused: t("communityWall.status.paused", "Paused"),
-                  goal_reached: t("communityWall.status.goalReached", "Goal Reached"),
-                  completed: t("communityWall.status.completed", "Completed"),
-                  rejected: t("communityWall.status.rejected", "Rejected"),
-                  cancelled: t("communityWall.status.cancelled", "Cancelled"),
-                }}
-                nameKey="title"
-                linkBase={isOwner ? "/account/my-campaigns" : "/campaign"}
-                linkKey={isOwner ? "id" : "slug"}
-                icon="flag"
-              />
+            </div>
+          )}
 
+          {activeTab === "jobs" && (
+            <div className="pf-single-col">
               {isOwner && (
                 <div className="cw-side-card cw-side-card-cta">
                   <h4>{t("profile.cta.job.title", "Post a Job Opening")}</h4>
@@ -384,23 +526,29 @@ function Profile() {
                   </Link>
                 </div>
               )}
-              <OwnedAssetList
-                title={t("communityWall.jobs.myJobsHeading", "My Jobs")}
-                items={jobs}
-                showAll={showAllJobs}
-                onToggleShowAll={() => setShowAllJobs((v) => !v)}
-                statusLabel={{
-                  active: t("communityWall.status.active", "Active"),
-                  closed: t("communityWall.status.closed", "Closed"),
-                  expired: t("communityWall.status.expired", "Expired"),
-                }}
-                nameKey="title"
-                linkBase={isOwner ? "/account/my-jobs" : "/job"}
-                linkKey={isOwner ? "id" : "slug"}
-                icon="building"
-              />
-            </aside>
-          </div>
+              {jobs.length === 0 ? (
+                <div className="cw-side-card" style={{ textAlign: "center" }}>
+                  <p className="cw-side-card-sub" style={{ marginBottom: 0 }}>
+                    {isOwner
+                      ? t("profile.jobsTab.emptyOwner", "You haven't posted any jobs yet.")
+                      : t("profile.jobsTab.emptyOther", "{name} hasn't posted any jobs yet.").replace("{name}", profile.fullName)}
+                  </p>
+                </div>
+              ) : (
+                <OwnedAssetList
+                  title={t("communityWall.jobs.myJobsHeading", "My Jobs")}
+                  items={jobs}
+                  showAll={showAllJobs}
+                  onToggleShowAll={() => setShowAllJobs((v) => !v)}
+                  statusLabelKeys={JOB_STATUS_LABEL_KEYS}
+                  nameKey="title"
+                  linkBase={isOwner ? "/account/my-jobs" : "/job"}
+                  linkKey={isOwner ? "id" : "slug"}
+                  icon="building"
+                />
+              )}
+            </div>
+          )}
         </div>
       </section>
     </main>
