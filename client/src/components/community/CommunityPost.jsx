@@ -87,7 +87,10 @@ export function mapLiveActivity(a) {
       ? [{ id: null, url: `${API_ORIGIN}${a.imageUrl}` }]
       : undefined,
     videoUrl: a.mediaVideoUrl ? `${API_ORIGIN}${a.mediaVideoUrl}` : undefined,
-    cta: isMasjid && a.relatedMasjidId ? { label: "View Masjid", href: `/masjid/${a.relatedMasjidId}` } : isJobPost ? jobCta : campaignCta,
+    // No "View Masjid" CTA for masjid posts — the header name and the
+    // @mention(s) in the body already link straight to the masjid's page,
+    // so a separate button repeated the same action.
+    cta: isJobPost ? jobCta : campaignCta,
   };
 }
 
