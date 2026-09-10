@@ -79,7 +79,7 @@ function JobProfile() {
           <LatestJobsRail currentSlug={slug} excludeId={job.id} />
 
           <div>
-            <div className="section-head" style={{ marginTop: 0 }}>
+            <div className="section-head" style={{ marginTop: 0, maxWidth: "none" }}>
               <span className="eyebrow">{t("jobProfile.section.description", "Job Description")}</span>
               <h2>{job.title}</h2>
             </div>
