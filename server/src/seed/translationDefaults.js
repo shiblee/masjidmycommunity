@@ -2013,6 +2013,10 @@ const DEFAULTS = [
   ["jobs", "jobs.empty.savedTitle", "No saved jobs yet", "अभी तक कोई नौकरी सहेजी नहीं गई", "ابھی تک کوئی ملازمت محفوظ نہیں کی گئی", "لا توجد وظائف محفوظة بعد"],
   ["jobs", "jobs.empty.savedBody", "Tap the heart on a job to keep track of it here.", "किसी नौकरी को यहाँ ट्रैक करने के लिए उस पर दिल पर टैप करें।", "کسی ملازمت کو یہاں ٹریک کرنے کے لیے اس پر دل پر ٹیپ کریں۔", "اضغط على أيقونة القلب في وظيفة لتتبعها هنا."],
   ["jobs", "jobs.empty.browseAll", "Browse All Jobs", "सभी नौकरियाँ ब्राउज़ करें", "تمام ملازمتیں براؤز کریں", "تصفّح جميع الوظائف"],
+
+  // Mobile nav drawer redesign — section labels grouping the flat link list
+  ["nav", "nav.section.explore", "Explore", "एक्सप्लोर करें", "دریافت کریں", "استكشف"],
+  ["nav", "nav.section.account", "Your Account", "आपका खाता", "آپ کا اکاؤنٹ", "حسابك"],
 ];
 
 // Additive, not "seed once": every deploy that adds new keys to DEFAULTS

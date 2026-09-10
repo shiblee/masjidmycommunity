@@ -3,15 +3,30 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { getStoredUser, clearUserSession } from "../utils/userAuthStorage.js";
 import userApi from "../services/userApi.js";
 import { API_ORIGIN } from "../config.js";
+import { Icon } from "./Icons.jsx";
 import { useTranslation } from "../i18n/LanguageContext.jsx";
 import { useLoginGatedNav } from "../hooks/useLoginGatedNav.js";
 
 function useNavLinks(t) {
   return [
-    { href: "/explore-masjids", label: t("nav.exploreMasjids", "Masjids") },
-    { href: "/my-community", label: t("nav.myCommunity", "My Community") },
-    { href: "/campaigns", label: t("nav.campaign", "Campaign") },
-    { href: "/jobs", label: t("nav.jobs", "Jobs") },
+    { href: "/explore-masjids", label: t("nav.exploreMasjids", "Masjids"), icon: "mosque" },
+    { href: "/my-community", label: t("nav.myCommunity", "My Community"), icon: "people" },
+    { href: "/campaigns", label: t("nav.campaign", "Campaign"), icon: "megaphone" },
+    { href: "/jobs", label: t("nav.jobs", "Jobs"), icon: "briefcase" },
+  ];
+}
+
+// Mobile-drawer-only "Your Account" section — desktop reaches these through
+// the nav-user-dropdown instead, so this list only ever renders inside
+// .mobile-menu.
+function useAccountLinks(t, username) {
+  return [
+    { href: "/account/my-masjids", label: t("nav.myMasjids", "My Masjids"), icon: "building" },
+    { href: "/account/liked-masjids", label: t("nav.likedMasjids", "Liked Masjids"), icon: "heart" },
+    { href: "/account/my-campaigns", label: t("nav.myCampaigns", "My Campaigns"), icon: "chartUp" },
+    { href: "/account/my-jobs", label: t("nav.myJobs", "My Jobs"), icon: "briefcase" },
+    { href: "/account/my-applications", label: t("nav.myApplications", "My Applications"), icon: "fileText" },
+    { href: `/profile/${username}`, label: t("nav.myProfile", "My Profile"), icon: "user" },
   ];
 }
 
@@ -62,6 +77,7 @@ function Navbar() {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [user, setUser] = useState(() => getStoredUser());
+  const accountLinks = useAccountLinks(t, user?.username);
   const [headerHeight, setHeaderHeight] = useState(74);
   const menuRef = useRef(null);
   const notifRef = useRef(null);
@@ -284,52 +300,44 @@ function Navbar() {
             </div>
           </div>
         )}
-        {links.map((l) => (
-          <Link
-            key={l.href}
-            to={linkPath(l.href)}
-            className={isLinkActive(l.href) ? "active" : undefined}
-            onClick={() => setOpen(false)}
-          >
-            {l.label}
-          </Link>
-        ))}
+
+        <div className="mobile-menu-section">
+          <span className="mobile-menu-section-label">{t("nav.section.explore", "Explore")}</span>
+          {links.map((l) => (
+            <Link
+              key={l.href}
+              to={linkPath(l.href)}
+              className={`mobile-menu-item${isLinkActive(l.href) ? " active" : ""}`}
+              onClick={() => setOpen(false)}
+            >
+              <span className="mobile-menu-item-icon"><Icon name={l.icon} size={18} /></span>
+              <span className="mobile-menu-item-label">{l.label}</span>
+              <span className="mobile-menu-item-chev"><Icon name="chevronRight" size={16} /></span>
+            </Link>
+          ))}
+        </div>
+
         {user && (
-          <Link to="/account/my-masjids" onClick={() => setOpen(false)}>
-            {t("nav.myMasjids", "My Masjids")}
-          </Link>
+          <div className="mobile-menu-section">
+            <span className="mobile-menu-section-label">{t("nav.section.account", "Your Account")}</span>
+            {accountLinks.map((l) => (
+              <Link key={l.href} to={l.href} className="mobile-menu-item" onClick={() => setOpen(false)}>
+                <span className="mobile-menu-item-icon"><Icon name={l.icon} size={18} /></span>
+                <span className="mobile-menu-item-label">{l.label}</span>
+                <span className="mobile-menu-item-chev"><Icon name="chevronRight" size={16} /></span>
+              </Link>
+            ))}
+          </div>
         )}
-        {user && (
-          <Link to="/account/liked-masjids" onClick={() => setOpen(false)}>
-            {t("nav.likedMasjids", "Liked Masjids")}
-          </Link>
-        )}
-        {user && (
-          <Link to="/account/my-campaigns" onClick={() => setOpen(false)}>
-            {t("nav.myCampaigns", "My Campaigns")}
-          </Link>
-        )}
-        {user && (
-          <Link to="/account/my-jobs" onClick={() => setOpen(false)}>
-            {t("nav.myJobs", "My Jobs")}
-          </Link>
-        )}
-        {user && (
-          <Link to="/account/my-applications" onClick={() => setOpen(false)}>
-            {t("nav.myApplications", "My Applications")}
-          </Link>
-        )}
-        {user && (
-          <Link to={`/profile/${user.username}`} onClick={() => setOpen(false)}>
-            {t("nav.myProfile", "My Profile")}
-          </Link>
-        )}
+
         <Link to="/#register" className="btn btn-gold" onClick={() => setOpen(false)}>
           {t("nav.registerMasjid", "Register Your Masjid")}
         </Link>
+
         {user && (
-          <button type="button" className="mobile-menu-logout" onClick={logout}>
-            {t("nav.logOut", "Log Out")}
+          <button type="button" className="mobile-menu-item mobile-menu-logout" onClick={logout}>
+            <span className="mobile-menu-item-icon"><Icon name="logOut" size={18} /></span>
+            <span className="mobile-menu-item-label">{t("nav.logOut", "Log Out")}</span>
           </button>
         )}
       </div>
