@@ -196,19 +196,23 @@ function SalahTracker({ compact = false }) {
             </>
           )}
 
-          {history && history.map((h) => (
-            <div className="st-history-day" key={h.date}>
-              <span className="st-history-date">{formatShortLabel(h.date)}</span>
-              <span className="st-history-marks">
-                {h.prayers.map((p) => (
-                  <span key={p.prayerId} className={`st-history-mark${p.completed ? " done" : " pending"}`} title={t(`prayer.${p.name.toLowerCase()}`, p.name)}>
-                    {p.completed ? "✓" : "○"}
+          {history && (
+            <div className="st-history-list">
+              {history.map((h) => (
+                <div className="st-history-day" key={h.date}>
+                  <span className="st-history-date">{formatShortLabel(h.date)}</span>
+                  <span className="st-history-marks">
+                    {h.prayers.map((p) => (
+                      <span key={p.prayerId} className={`st-history-mark${p.completed ? " done" : " pending"}`} title={t(`prayer.${p.name.toLowerCase()}`, p.name)}>
+                        {p.completed ? "✓" : "○"}
+                      </span>
+                    ))}
                   </span>
-                ))}
-              </span>
-              <span className="st-history-count">{h.completedCount}/{h.total}</span>
+                  <span className="st-history-count">{h.completedCount}/{h.total}</span>
+                </div>
+              ))}
             </div>
-          ))}
+          )}
         </div>
       )}
 
