@@ -36,3 +36,12 @@ export const CALCULATED_PRAYER_FIELD_MAP = {
 
 // Rolling forward window every engine run tops up: [today, today + N days].
 export const ROLLING_WINDOW_DAYS = 365;
+
+// Fajr/Sunrise/Maghrib are pure functions of (lat, lng, date) — a masjid
+// whose coordinates are set today can just as validly have yesterday's
+// times computed as today's. Without this, a newly created/relocated
+// masjid has a hard gap for every date before that moment (the Salah
+// Tracker's date-nav and history immediately expose it as missing times).
+// 30 days comfortably covers the tracker's 7-day history plus room to
+// browse a bit further back.
+export const PAST_WINDOW_DAYS = 30;

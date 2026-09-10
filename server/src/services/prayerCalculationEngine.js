@@ -10,6 +10,7 @@ import {
   FIXED_PRAYER_DEFAULTS,
   CALCULATED_PRAYER_FIELD_MAP,
   ROLLING_WINDOW_DAYS,
+  PAST_WINDOW_DAYS,
 } from "../config/prayerCalculationDefaults.js";
 
 // The single centralized prayer-timing engine — the bot's masjidDiscoveryService.js
@@ -123,10 +124,15 @@ export async function ensurePrayerScheduleForMasjid(masjidId) {
   }
 
   // --- Date-varying prayers: one row per currently-ungoverned date in the
-  // rolling window. ---
+  // window, which spans both backward (PAST_WINDOW_DAYS, so a newly
+  // created/relocated masjid isn't missing recent history) and forward
+  // (ROLLING_WINDOW_DAYS). ---
   const latitude = Number(masjid.latitude);
   const longitude = Number(masjid.longitude);
-  const dates = Array.from({ length: ROLLING_WINDOW_DAYS + 1 }, (_, i) => addDays(today, i));
+  const dates = Array.from(
+    { length: PAST_WINDOW_DAYS + ROLLING_WINDOW_DAYS + 1 },
+    (_, i) => addDays(today, i - PAST_WINDOW_DAYS)
+  );
   const windowEnd = dates[dates.length - 1];
 
   const calcEntries = {};
