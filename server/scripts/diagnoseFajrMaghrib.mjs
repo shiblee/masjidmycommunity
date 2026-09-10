@@ -40,11 +40,12 @@ const [{ c: missingCoordsCount }] = await sequelize.query(
 );
 console.log(`\nApproved masjids WITHOUT coordinates (engine can't run for these): ${missingCoordsCount}`);
 
-console.log("\n--- Deep-dive: masjid 114 ---");
+console.log("\n--- Deep-dive: 'Jama Masjid Lalbagh' ---");
 const rows = await sequelize.query(
-  `SELECT id, name, latitude, longitude, timezone FROM masjids WHERE id = 114`,
+  `SELECT id, name, latitude, longitude, timezone, status, createdAt, approvedAt, updatedAt FROM masjids WHERE name LIKE '%Lalbagh%'`,
   { type: QueryTypes.SELECT }
 );
+console.log(JSON.stringify(rows, null, 2));
 
 for (const m of rows) {
   const timeline = await sequelize.query(
