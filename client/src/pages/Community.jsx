@@ -620,23 +620,35 @@ function Community() {
           <div className="cw-layout">
             <aside className="cw-side">
               <div className="cw-side-card">
-                <h4>{t("communityWall.impact.heading", "Community Impact")}</h4>
+                <h4><Icon name="chartUp" size={15} /> {t("communityWall.impact.heading", "Community Impact")}</h4>
                 <div className="cw-side-stats">
-                  <div>
-                    <strong>{communityStats ? communityStats.masjidCount.toLocaleString("en-IN") : "—"}</strong>
-                    <span>{t("communityWall.impact.verifiedMasjids", "Verified Masjids")}</span>
+                  <div className="cw-impact-stat">
+                    <span className="cw-impact-icon"><Icon name="mosque" size={16} /></span>
+                    <span className="cw-impact-stat-body">
+                      <strong>{communityStats ? communityStats.masjidCount.toLocaleString("en-IN") : "—"}</strong>
+                      <span>{t("communityWall.impact.verifiedMasjids", "Verified Masjids")}</span>
+                    </span>
                   </div>
-                  <div>
-                    <strong>{communityStats ? communityStats.campaignCount.toLocaleString("en-IN") : "—"}</strong>
-                    <span>{t("communityWall.impact.activeCampaigns", "Active Campaigns")}</span>
+                  <div className="cw-impact-stat">
+                    <span className="cw-impact-icon"><Icon name="megaphone" size={16} /></span>
+                    <span className="cw-impact-stat-body">
+                      <strong>{communityStats ? communityStats.campaignCount.toLocaleString("en-IN") : "—"}</strong>
+                      <span>{t("communityWall.impact.activeCampaigns", "Active Campaigns")}</span>
+                    </span>
                   </div>
-                  <div>
-                    <strong>{communityStats ? communityStats.memberCount.toLocaleString("en-IN") : "—"}</strong>
-                    <span>{t("communityWall.impact.communityMembers", "Community Members")}</span>
+                  <div className="cw-impact-stat">
+                    <span className="cw-impact-icon"><Icon name="people" size={16} /></span>
+                    <span className="cw-impact-stat-body">
+                      <strong>{communityStats ? communityStats.memberCount.toLocaleString("en-IN") : "—"}</strong>
+                      <span>{t("communityWall.impact.communityMembers", "Community Members")}</span>
+                    </span>
                   </div>
-                  <div>
-                    <strong>{communityStats ? `₹${communityStats.totalRaised.toLocaleString("en-IN")}` : "—"}</strong>
-                    <span>{t("communityWall.impact.totalRaised", "Total Raised")}</span>
+                  <div className="cw-impact-stat">
+                    <span className="cw-impact-icon"><Icon name="wallet" size={16} /></span>
+                    <span className="cw-impact-stat-body">
+                      <strong>{communityStats ? `₹${communityStats.totalRaised.toLocaleString("en-IN")}` : "—"}</strong>
+                      <span>{t("communityWall.impact.totalRaised", "Total Raised")}</span>
+                    </span>
                   </div>
                 </div>
               </div>
@@ -702,7 +714,7 @@ function Community() {
 
             <aside className="cw-side">
               <div className="cw-side-card">
-                <h4>{t("community.explore.heading", "Explore")}</h4>
+                <h4><Icon name="compass" size={15} /> {t("community.explore.heading", "Explore")}</h4>
                 <div className="cw-section-menu">
                   {COMMUNITY_SECTIONS.map((s) => (
                     <button

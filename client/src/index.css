@@ -1471,6 +1471,11 @@ footer{
 .py-md.msj-hub-content{ padding-top:28px; }
 .py-md.camp-hub-content{ padding-top:28px; }
 
+/* A soft wash behind the wall/profile feed so the white composer/post/side
+   cards actually read as separate, lifted surfaces instead of white-on-white
+   with only a hairline border between them. */
+.cw-page{ background:var(--paper-dim); min-height:60vh; }
+
 .cw-layout{ display:grid; grid-template-columns:280px 1fr 320px; gap:44px; align-items:start; }
 .cw-main{ min-width:0; }
 .cw-filters{ margin:0 0 24px; }
@@ -1493,13 +1498,17 @@ footer{
 .cw-hashtag-banner button:hover{ color:var(--ink); }
 
 /* ===== Post composer ===== */
-.cw-composer{ background:#fff; border:1px solid var(--line); border-radius:14px; padding:22px 24px; margin-bottom:24px; }
+.cw-composer{
+  background:#fff; border:1px solid var(--line); border-radius:14px; padding:22px 24px; margin-bottom:24px;
+  box-shadow:0 1px 3px rgba(17,38,44,.05);
+}
 .cw-composer-guest{ text-align:center; display:flex; flex-direction:column; align-items:center; gap:14px; }
 .cw-composer-guest p{ color:var(--text-on-paper-dim); font-size:14px; margin:0; }
 .cw-composer-head{ display:flex; align-items:center; gap:10px; margin-bottom:12px; }
 .cw-composer-avatar{
-  width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+  width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center;
   background:rgba(141,198,63,.14); color:var(--teal-deep); font-family:var(--mono); font-weight:700; font-size:13px;
+  border:2px solid rgba(163,214,92,.4);
 }
 .cw-composer-avatar-photo{ object-fit:cover; }
 .cw-composer-head strong{ font-size:14.5px; color:var(--text-on-paper); }
@@ -1627,6 +1636,7 @@ footer{
 
 .cw-post{
   position:relative; background:#fff; border:1px solid var(--line); border-radius:14px; padding:22px 24px 20px;
+  box-shadow:0 1px 3px rgba(17,38,44,.05);
   transition:transform .35s var(--ease), box-shadow .35s var(--ease), border-color .3s;
 }
 .cw-post:hover{ transform:translateY(-3px); box-shadow:0 26px 46px -30px rgba(11,31,30,.28); border-color:rgba(141,198,63,.35); }
@@ -1638,7 +1648,7 @@ footer{
 
 .cw-post-head{ display:flex; align-items:flex-start; gap:12px; }
 .cw-avatar{
-  width:44px; height:44px; border-radius:50%; object-fit:cover; flex-shrink:0; border:1px solid var(--line);
+  width:44px; height:44px; border-radius:50%; object-fit:cover; flex-shrink:0; border:2px solid rgba(163,214,92,.4);
 }
 .cw-avatar-fallback{
   display:flex; align-items:center; justify-content:center; background:rgba(141,198,63,.14); color:var(--teal-deep);
@@ -1854,11 +1864,17 @@ footer{
   display:flex; flex-direction:column; gap:20px; position:sticky; top:96px;
   max-height:calc(100vh - 96px - 24px); overflow-y:auto; padding-right:4px;
 }
-.cw-side-card{ background:#fff; border:1px solid var(--line); border-radius:14px; padding:22px; }
-.cw-side-card h4{ font-size:14px; font-weight:700; color:var(--text-on-paper); margin:0 0 16px; }
-.cw-side-stats{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
-.cw-side-stats strong{ display:block; font-family:var(--mono); font-size:19px; color:var(--teal-deep); }
-.cw-side-stats span{ display:block; font-size:11.5px; color:var(--text-on-paper-dim); margin-top:3px; line-height:1.3; }
+.cw-side-card{ background:#fff; border:1px solid var(--line); border-radius:14px; padding:22px; box-shadow:0 1px 3px rgba(17,38,44,.05); }
+.cw-side-card h4{ display:flex; align-items:center; gap:8px; font-size:14px; font-weight:700; color:var(--text-on-paper); margin:0 0 16px; }
+.cw-side-stats{ display:grid; grid-template-columns:1fr 1fr; gap:16px 12px; }
+.cw-impact-stat{ display:flex; align-items:center; gap:10px; min-width:0; }
+.cw-impact-icon{
+  display:flex; align-items:center; justify-content:center; width:34px; height:34px; border-radius:10px; flex-shrink:0;
+  background:rgba(141,198,63,.14); color:var(--teal-deep);
+}
+.cw-impact-stat-body{ display:flex; flex-direction:column; min-width:0; }
+.cw-impact-stat-body strong{ font-family:var(--mono); font-size:16.5px; color:var(--text-on-paper); line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.cw-impact-stat-body span{ display:block; font-size:11px; color:var(--text-on-paper-dim); margin-top:2px; line-height:1.3; }
 .cw-side-list{ display:flex; flex-direction:column; gap:16px; list-style:none; margin:0; padding:0; }
 .cw-side-list-head{ display:flex; justify-content:space-between; align-items:baseline; gap:8px; }
 .cw-side-list-title{ font-size:13.5px; font-weight:700; color:var(--text-on-paper); }
@@ -2023,6 +2039,12 @@ footer{
 @media (max-width:560px){
   .cw-hero{ padding:48px 0 32px; }
   .cw-hero-stats{ gap:22px 28px; }
+  /* Tighter rhythm between the stacked impact/composer/feed blocks — the
+     44px desktop column gap reads as a big dead gap once everything's a
+     single full-width mobile column instead of side-by-side. */
+  .cw-layout{ gap:20px; }
+  .cw-composer{ padding:18px 16px; margin-bottom:20px; }
+  .cw-side-card{ padding:18px; }
   .cw-post{ padding:18px 16px 16px; }
   .cw-post-featured{ padding-top:34px; }
   .cw-featured-ribbon{ left:16px; }
