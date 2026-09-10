@@ -1814,7 +1814,10 @@ footer{
 .cmt-send-btn:disabled{ opacity:.4; cursor:not-allowed; }
 
 .cmt-picker-popover{
-  position:fixed; z-index:120; background:#fff; border:1px solid var(--line); border-radius:14px; padding:10px;
+  /* Above .img-viewer-overlay's z-index:1300 — this composer is also used
+     inside the image-lightbox's per-image comment thread, and a lower
+     z-index here left the popover opening invisibly behind that modal. */
+  position:fixed; z-index:1400; background:#fff; border:1px solid var(--line); border-radius:14px; padding:10px;
   box-shadow:0 18px 40px -16px rgba(11,31,46,.28); animation:cwShareIn .16s ease;
 }
 .cmt-emoji-grid{ display:grid; grid-template-columns:repeat(6,1fr); gap:2px; }
