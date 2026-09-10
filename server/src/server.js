@@ -48,6 +48,7 @@ import { ensureTranslationDefaults } from "./seed/translationDefaults.js";
 import { ensurePageDefaults } from "./seed/pageDefaults.js";
 import { ensureMetaEntityTranslationDefaults } from "./seed/metaEntityTranslationDefaults.js";
 // import { ensureJobPostedActivities } from "./seed/jobPostedActivityBackfill.js"; // "jobs as community posts" disabled — see below
+import { ensureAllMasjidRegisteredActivities } from "./seed/masjidRegisteredActivityBackfill.js";
 
 const PORT = process.env.PORT || 5000;
 
@@ -102,6 +103,7 @@ connectDB()
   // above) plus the two recordJobPostedActivity call sites in
   // jobController.js/adminJobController.js to re-enable the whole feature.
   // .then(() => ensureJobPostedActivities())
+  .then(() => ensureAllMasjidRegisteredActivities())
   .catch((error) => console.error("Failed to seed defaults:", error.message))
   .finally(() => {
     app.listen(PORT, () => {

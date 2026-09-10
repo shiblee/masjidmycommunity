@@ -55,12 +55,35 @@ export async function recordNewUserActivity(user) {
   });
 }
 
+// A single alphanumeric token (the `#\w+` hashtag regex PostBodyText.jsx
+// scans for can't contain spaces/hyphens) built from a masjid's own name —
+// e.g. "Masjid-E-Azam Ahle Sunnat" -> "#MasjidEAzamAhleSunnat". Capped so an
+// unusually long name doesn't produce an absurd single token.
+function hashtagFromName(name) {
+  const compact = (name || "").replace(/[^a-zA-Z0-9]/g, "").slice(0, 40);
+  return compact ? `#${compact}` : null;
+}
+
+// Centralizes the welcome-post copy so every trigger path (bot import,
+// admin approval, the existing-masjid backfill) produces identical, on-brand
+// text — see masjidRegisteredActivityBackfill.js for the callers.
+export function composeMasjidWelcomeBody(masjid) {
+  const hashtags = ["#Masjid", "#IslamicCommunity", "#MuslimCommunity", "#Community", "#MasjidNetwork", hashtagFromName(masjid.name)]
+    .filter(Boolean)
+    .join(" ");
+  return (
+    `🕌 Welcome to ${masjid.name}!\n\n` +
+    `We are pleased to have ${masjid.name} registered on our community platform. This Masjid is now part of our growing community network, helping people discover and connect with their local Masjid and community activities.\n\n` +
+    hashtags
+  );
+}
+
 export async function recordMasjidApprovedActivity(masjid, coverPhotoUrl) {
   const location = [masjid.city, masjid.country].filter(Boolean).join(", ");
   return recordActivity({
     type: "masjid_approved",
     title: `Welcome ${masjid.name} to Masjid My Community.`,
-    body: masjid.tagline || masjid.about || "A newly verified masjid has joined the platform.",
+    body: composeMasjidWelcomeBody(masjid),
     imageUrl: coverPhotoUrl,
     relatedMasjidId: masjid.id,
     metadata: { masjidName: masjid.name, location },

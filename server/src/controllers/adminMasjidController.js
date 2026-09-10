@@ -11,7 +11,7 @@ import MasjidReview from "../models/MasjidReview.js";
 import MasjidFavorite from "../models/MasjidFavorite.js";
 import Campaign from "../models/Campaign.js";
 import User from "../models/User.js";
-import { recordMasjidApprovedActivity } from "../services/communityActivityService.js";
+import { ensureMasjidRegisteredActivity } from "../seed/masjidRegisteredActivityBackfill.js";
 import { sendMasjidChangesRequestedEmail, sendMasjidApprovedEmail, sendMasjidRejectedEmail } from "../services/emailService.js";
 import { notifyUser } from "../services/notificationService.js";
 import { mediaTypeOf, IMAGE_MAX_BYTES } from "../middleware/upload.js";
@@ -512,8 +512,10 @@ export const approve = async (req, res) => {
     await masjid.save();
     await logHistory(masjid.id, "approved", req.body.note, req.user.email);
 
-    const cover = await MasjidPhoto.findOne({ where: { masjidId: masjid.id, isCover: true } });
-    await recordMasjidApprovedActivity(masjid, cover?.url || null);
+    // Idempotent — safe even if a bot-import already created this masjid's
+    // Wall post before it reached admin approval (e.g. an under_review bot
+    // import approved later): the duplicate check inside skips it.
+    await ensureMasjidRegisteredActivity(masjid.id);
 
     const owner = await User.findByPk(masjid.userId);
     if (owner) {

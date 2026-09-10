@@ -12,6 +12,7 @@ import { searchMosques, getPlaceDetails } from "./googlePlacesService.js";
 import { checkForDuplicate } from "./masjidDuplicateDetectionService.js";
 import { generateMasjidDescription, generateTranslation } from "./aiProviderService.js";
 import { ensurePrayerScheduleForMasjid } from "./prayerCalculationEngine.js";
+import { ensureMasjidRegisteredActivity } from "../seed/masjidRegisteredActivityBackfill.js";
 
 const MAX_PHOTOS_PER_IMPORT = 5;
 const TRANSLATION_LANGUAGES = ["hi", "ur", "ar"];
@@ -203,6 +204,13 @@ async function importPlace(place, { autoPublish }) {
 
   await writeTranslations(result.id, name, tagline, about).catch(() => {});
   await ensurePrayerScheduleForMasjid(result.id).catch((e) => console.error("ensurePrayerScheduleForMasjid failed:", e.message));
+  // Only when autoPublish actually landed this masjid at "approved" — a
+  // Wall post linking to a still-under_review profile would 404. If it's
+  // approved later via the admin review flow instead, that path creates the
+  // post at that point (same idempotent function, so never a duplicate).
+  if (result.status === "approved") {
+    await ensureMasjidRegisteredActivity(result.id).catch((e) => console.error("ensureMasjidRegisteredActivity failed:", e.message));
+  }
 
   return { id: result.id, name, city: address.city, country: address.country, status: result.status, dataCompletenessPercent: completeness, photoCount: photos.length };
 }
