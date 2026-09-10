@@ -2089,6 +2089,7 @@ const DEFAULTS = [
   ["community", "community.pmCard.emptySub", "Pick a nearby masjid to see its prayer timings right here.", "यहीं इसके नमाज़ समय देखने के लिए एक नज़दीकी मस्जिद चुनें।", "یہاں اس کے نماز کے اوقات دیکھنے کے لیے قریبی مسجد منتخب کریں۔", "اختر مسجدًا قريبًا لرؤية مواقيت صلاته هنا مباشرة."],
   ["community", "community.nearbyMasjids.heading", "Nearby Masjids", "आस-पास की मस्जिदें", "قریبی مساجد", "المساجد القريبة"],
   ["communityWall", "communityWall.sideList.viewAllJobs", "See All Jobs", "सभी नौकरियां देखें", "تمام ملازمتیں دیکھیں", "عرض جميع الوظائف"],
+  ["jobs", "jobs.rails.bySkills.empty", "No jobs match your skills right now — check back later.", "अभी आपके कौशल से मेल खाती कोई नौकरी नहीं है — बाद में फिर देखें।", "ابھی آپ کی مہارتوں سے مماثل کوئی ملازمت نہیں ہے — بعد میں دوبارہ دیکھیں۔", "لا توجد وظائف تطابق مهاراتك الآن — تحقق لاحقًا."],
   ["communityWall", "communityWall.sideList.viewAllMasjids", "See All Masjids", "सभी मस्जिदें देखें", "تمام مساجد دیکھیں", "عرض جميع المساجد"],
 
   ["salah", "salah.dateNav.previous", "Previous Day", "पिछला दिन", "پچھلا دن", "اليوم السابق"],
