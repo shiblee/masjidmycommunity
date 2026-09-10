@@ -7,10 +7,36 @@ import "dotenv/config";
 import { sequelize } from "../src/config/db.js";
 import { QueryTypes } from "sequelize";
 
+// Full sweep: for every approved masjid with valid coordinates, count how
+// many distinct Fajr/Maghrib times it has across its timeline — a masjid
+// stuck on a single legacy value (never recalculated) shows up as a very
+// low distinct-time count despite having many rows (or very few rows).
+const summaryRows = await sequelize.query(
+  `SELECT m.id, m.name,
+          SUM(CASE WHEN LOWER(pm.name) = 'fajr' THEN 1 ELSE 0 END) as fajrRows,
+          COUNT(DISTINCT CASE WHEN LOWER(pm.name) = 'fajr' THEN mpt.time END) as fajrDistinct,
+          SUM(CASE WHEN LOWER(pm.name) = 'maghrib' THEN 1 ELSE 0 END) as maghribRows,
+          COUNT(DISTINCT CASE WHEN LOWER(pm.name) = 'maghrib' THEN mpt.time END) as maghribDistinct
+   FROM masjids m
+   LEFT JOIN masjid_prayer_timelines mpt ON mpt.masjidId = m.id
+   LEFT JOIN prayer_masters pm ON pm.id = mpt.prayerId AND LOWER(pm.name) IN ('fajr','maghrib')
+   WHERE m.status = 'approved' AND m.latitude IS NOT NULL AND m.longitude IS NOT NULL
+   GROUP BY m.id, m.name`,
+  { type: QueryTypes.SELECT }
+);
+console.log(`Total approved masjids with coordinates: ${summaryRows.length}`);
+const stuck = summaryRows.filter((r) => Number(r.fajrDistinct) <= 3 || Number(r.maghribDistinct) <= 3);
+console.log(`Masjids with <=3 distinct Fajr or Maghrib times (likely stuck on a legacy value): ${stuck.length}`);
+for (const s of stuck.slice(0, 30)) {
+  console.log(`  id=${s.id} "${s.name}" fajrRows=${s.fajrRows} fajrDistinct=${s.fajrDistinct} maghribRows=${s.maghribRows} maghribDistinct=${s.maghribDistinct}`);
+}
+const noRows = summaryRows.filter((r) => Number(r.fajrRows) === 0);
+console.log(`Masjids with ZERO Fajr rows at all: ${noRows.length}`);
+for (const s of noRows.slice(0, 15)) console.log(`  id=${s.id} "${s.name}"`);
+
+console.log("\n--- Deep-dive: masjid 114 (Jama Masjid Lalbagh) ---");
 const rows = await sequelize.query(
-  `SELECT id, name, latitude, longitude, timezone FROM masjids
-   WHERE status = 'approved' AND latitude IS NOT NULL AND longitude IS NOT NULL
-   ORDER BY id DESC LIMIT 8`,
+  `SELECT id, name, latitude, longitude, timezone FROM masjids WHERE id = 114`,
   { type: QueryTypes.SELECT }
 );
 
