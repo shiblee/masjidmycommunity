@@ -47,6 +47,7 @@ const NAV_ITEMS = [
     children: [
       { to: "/admin/masjids", label: "Masjids", icon: "mosque" },
       { to: "/admin/masjid-corrections", label: "Correction Requests", icon: "edit" },
+      { to: "/admin/pending-reviews", label: "Pending Reviews", icon: "star" },
     ],
   },
   { to: "/admin/campaigns", label: "Campaigns", icon: "campaign" },
@@ -76,7 +77,6 @@ const NAV_ITEMS = [
   { to: "/admin/verification", label: "Green Tick", icon: "verify" },
   { to: "/admin/community-wall", label: "Community Wall", icon: "megaphone" },
   { to: "/admin/moderation", label: "Reported Content", icon: "flag" },
-  { to: "/admin/pending-reviews", label: "Pending Reviews", icon: "star" },
 ];
 
 // Nav items whose badge count is polled alongside the bell notifications —
