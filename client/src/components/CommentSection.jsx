@@ -88,7 +88,7 @@ function CommentVoteButtons({ comment, requireAuth, onVote }) {
 // the top-level and reply composers, not the plain-textarea edit box) send
 // immediately on pick — same tap-to-send convention as a real sticker/GIF
 // tray — bypassing the normal type-then-click-Post flow entirely.
-function CommentComposer({ user, placeholder, autoFocus, busy, value, onChange, onSubmit, onCancel, submitLabel, maxLength, onSendSticker, onSendGif }) {
+function CommentComposer({ user, placeholder, autoFocus, busy, value, onChange, onSubmit, onCancel, submitLabel, maxLength, onSendSticker, onSendGif, onRequireAuth }) {
   const { t } = useTranslation();
   const overLimit = maxLength != null && value.length > maxLength;
   const [picker, setPicker] = useState(null); // null | "emoji" | "gif" | "sticker"
@@ -98,6 +98,13 @@ function CommentComposer({ user, placeholder, autoFocus, busy, value, onChange, 
 
   const togglePicker = (key) => setPicker((p) => (p === key ? null : key));
   const closePicker = () => setPicker(null);
+  // GIF search hits the server immediately on open (and Sticker sends
+  // immediately on tap), so both need the same guest-redirect Post/Reply
+  // already do — unlike Emoji, which only ever touches local text state.
+  const openGatedPicker = (key) => {
+    if (onRequireAuth && !onRequireAuth()) return;
+    togglePicker(key);
+  };
 
   return (
     <div className="cmt-composer">
@@ -119,12 +126,12 @@ function CommentComposer({ user, placeholder, autoFocus, busy, value, onChange, 
               <Icon name="emoji" size={17} />
             </button>
             {onSendGif && (
-              <button type="button" ref={gifBtnRef} className="cmt-tool-btn cmt-tool-btn-gif" onClick={() => togglePicker("gif")} aria-label={t("commentSection.gifLabel", "Add a GIF")}>
+              <button type="button" ref={gifBtnRef} className="cmt-tool-btn cmt-tool-btn-gif" onClick={() => openGatedPicker("gif")} aria-label={t("commentSection.gifLabel", "Add a GIF")}>
                 GIF
               </button>
             )}
             {onSendSticker && (
-              <button type="button" ref={stickerBtnRef} className="cmt-tool-btn" onClick={() => togglePicker("sticker")} aria-label={t("commentSection.stickerLabel", "Add a sticker")}>
+              <button type="button" ref={stickerBtnRef} className="cmt-tool-btn" onClick={() => openGatedPicker("sticker")} aria-label={t("commentSection.stickerLabel", "Add a sticker")}>
                 <Icon name="star" size={17} />
               </button>
             )}
@@ -339,6 +346,7 @@ function CommentNode({ comment, childrenMap, depth, basePath, user, navigate, mu
               maxLength={replyMaxLength}
               onSendSticker={(sticker) => postReply({ body: sticker })}
               onSendGif={(url) => postReply({ body: "", mediaUrl: url, mediaType: "gif" })}
+              onRequireAuth={requireAuth}
             />
           )}
 
@@ -391,6 +399,14 @@ function CommentSection({ activityId, imageId, user, navigate, onCountChange, co
   const [reportSuccess, setReportSuccess] = useState(false);
   const [reportReasons, setReportReasons] = useState([]);
   const [toast, setToast] = useState(null);
+
+  const requireAuth = () => {
+    if (!user) {
+      navigate("/auth");
+      return false;
+    }
+    return true;
+  };
 
   useEffect(() => {
     communityApi
@@ -510,6 +526,7 @@ function CommentSection({ activityId, imageId, user, navigate, onCountChange, co
         maxLength={commentMaxLength}
         onSendSticker={(sticker) => postTopLevel({ body: sticker })}
         onSendGif={(url) => postTopLevel({ body: "", mediaUrl: url, mediaType: "gif" })}
+        onRequireAuth={requireAuth}
       />
 
       {error && <div className="cmt-error">{error}</div>}
