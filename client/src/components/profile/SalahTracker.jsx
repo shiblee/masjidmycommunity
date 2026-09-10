@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import userApi from "../../services/userApi.js";
 import { Icon } from "../Icons.jsx";
 import { useTranslation } from "../../i18n/LanguageContext.jsx";
@@ -216,17 +217,19 @@ function SalahTracker({ compact = false }) {
         </div>
       )}
 
-      {celebration && (
-        <div className="msj-modal-overlay" onClick={() => setCelebration(null)}>
-          <div className="msj-modal st-celebrate" onClick={(e) => e.stopPropagation()}>
-            <div className="st-celebrate-badge">✓ {t("salah.celebration.heading", "5 / 5 Completed")}</div>
-            <p className="st-celebrate-msg">{celebration}</p>
-            <button type="button" className="btn btn-gold" style={{ width: "100%", justifyContent: "center" }} onClick={() => setCelebration(null)}>
-              {t("salah.celebration.continue", "Continue")}
-            </button>
-          </div>
-        </div>
-      )}
+      {celebration &&
+        createPortal(
+          <div className="msj-modal-overlay" onClick={() => setCelebration(null)}>
+            <div className="msj-modal st-celebrate" onClick={(e) => e.stopPropagation()}>
+              <div className="st-celebrate-badge">✓ {t("salah.celebration.heading", "5 / 5 Completed")}</div>
+              <p className="st-celebrate-msg">{celebration}</p>
+              <button type="button" className="btn btn-gold" style={{ width: "100%", justifyContent: "center" }} onClick={() => setCelebration(null)}>
+                {t("salah.celebration.continue", "Continue")}
+              </button>
+            </div>
+          </div>,
+          document.body
+        )}
     </>
   );
 }
