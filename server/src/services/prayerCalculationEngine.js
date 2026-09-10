@@ -102,7 +102,16 @@ export async function ensurePrayerScheduleForMasjid(masjidId) {
   const today = todayStr();
 
   // --- Fixed-clock-time prayers: at most one row each, only if the masjid
-  // has genuinely never had any value for this prayer. ---
+  // has genuinely never had any value for this prayer. Dated January 1st of
+  // the current year, not "today" — the timeline's forward-fill resolves by
+  // (year, month-day) and chains year-to-year at the SAME month-day (see
+  // resolveEffectiveRow in prayerTimeService.js), so a row dated e.g. Sep 10
+  // would only govern Sep 10-Dec 31 each year, leaving Jan 1-Sep 9 of every
+  // following year ungoverned. Jan 1 is the earliest possible month-day, so
+  // it covers the rest of this year and chains cleanly into every year
+  // after with no gap. Safe regardless of "today"'s actual date, since we
+  // only ever reach this line when nothing already governs the prayer.
+  const yearStart = `${today.slice(0, 4)}-01-01`;
   for (const [name, time] of Object.entries(FIXED_PRAYER_DEFAULTS)) {
     const prayer = byName.get(name.toLowerCase());
     if (!prayer) continue;
@@ -110,7 +119,7 @@ export async function ensurePrayerScheduleForMasjid(masjidId) {
       where: { masjidId, prayerId: prayer.id, effectiveDate: { [Op.lte]: today } },
     });
     if (resolveEffectiveRow(rows, today)) continue;
-    await MasjidPrayerTimeline.create({ masjidId, prayerId: prayer.id, effectiveDate: today, time });
+    await MasjidPrayerTimeline.create({ masjidId, prayerId: prayer.id, effectiveDate: yearStart, time });
   }
 
   // --- Date-varying prayers: one row per currently-ungoverned date in the
