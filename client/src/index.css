@@ -4647,7 +4647,6 @@ footer{
   .pf-pm-header{ justify-content:center; text-align:center; }
   .pf-pm-header-actions{ width:100%; justify-content:center; }
   .st-weekly{ grid-template-columns:repeat(2,1fr); }
-  .st-row-time{ display:none; }
 }
 
 /* Work Experience / Education — vertical timeline of polished entry cards. */
