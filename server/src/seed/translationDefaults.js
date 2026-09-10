@@ -1711,6 +1711,17 @@ const DEFAULTS = [
   ["commentSection", "commentSection.gif.loadError", "Couldn't load GIFs.", "GIF लोड नहीं हो सके।", "GIF لوڈ نہیں ہو سکے۔", "تعذّر تحميل ملفات GIF."],
   ["commentSection", "commentSection.gif.unavailable", "GIF search isn't set up yet.", "GIF खोज अभी सेट अप नहीं है।", "GIF تلاش ابھی سیٹ اپ نہیں ہے۔", "لم يتم إعداد البحث عن GIF بعد."],
 
+  // GIF/Sticker now attach to the draft (removable preview) instead of
+  // sending immediately, and Sticker searches real GIPHY sticker art
+  // instead of a built-in big-emoji grid
+  ["commentSection", "commentSection.stickerAlt", "Sticker", "स्टिकर", "اسٹیکر", "ملصق"],
+  ["commentSection", "commentSection.removeMedia", "Remove", "हटाएं", "ہٹائیں", "إزالة"],
+  ["commentSection", "commentSection.media.loading", "Loading…", "लोड हो रहा है…", "لوڈ ہو رہا ہے…", "جارٍ التحميل…"],
+  ["commentSection", "commentSection.media.loadError", "Couldn't load results.", "परिणाम लोड नहीं हो सके।", "نتائج لوڈ نہیں ہو سکے۔", "تعذّر تحميل النتائج."],
+  ["commentSection", "commentSection.sticker.searchPlaceholder", "Search stickers…", "स्टिकर खोजें…", "اسٹیکرز تلاش کریں…", "البحث عن الملصقات…"],
+  ["commentSection", "commentSection.sticker.empty", "No stickers found.", "कोई स्टिकर नहीं मिला।", "کوئی اسٹیکر نہیں ملا۔", "لم يتم العثور على ملصقات."],
+  ["commentSection", "commentSection.sticker.unavailable", "Sticker search isn't set up yet.", "स्टिकर खोज अभी सेट अप नहीं है।", "اسٹیکر تلاش ابھی سیٹ اپ نہیں ہے۔", "لم يتم إعداد البحث عن الملصقات بعد."],
+
   ["postComposer", "postComposer.guest.prompt", "Sign in to share an update with the community.", "समुदाय के साथ अपडेट साझा करने के लिए साइन इन करें।", "کمیونٹی کے ساتھ اپڈیٹ شیئر کرنے کے لیے سائن ان کریں۔", "سجّل الدخول لمشاركة تحديث مع المجتمع."],
   ["postComposer", "postComposer.guest.signIn", "Sign In", "साइन इन करें", "سائن ان کریں", "تسجيل الدخول"],
   ["postComposer", "postComposer.lockedMasjidNotice", "This post will be shared with the {masjid} community.", "यह पोस्ट {masjid} समुदाय के साथ साझा की जाएगी।", "یہ پوسٹ {masjid} کمیونٹی کے ساتھ شیئر کی جائے گی۔", "سيتم مشاركة هذا المنشور مع مجتمع {masjid}."],

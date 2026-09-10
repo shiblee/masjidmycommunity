@@ -17,13 +17,14 @@ import { mediaTypeOf, IMAGE_MAX_BYTES } from "../middleware/upload.js";
 import ContentSettings from "../models/ContentSettings.js";
 import { notifyUser } from "../services/notificationService.js";
 import { checkRestrictedWords, RESTRICTED_CONTENT_MESSAGE } from "../utils/contentModeration.js";
-import { searchGifs, isGifSearchConfigured } from "../services/gifService.js";
+import { searchGifs, searchStickers, isGifSearchConfigured } from "../services/gifService.js";
 
-// The only place a comment's mediaUrl is ever produced is our own GIF search
-// response below, so a create request is trusted only if the URL is
-// actually one of GIPHY's CDN hosts — narrows what would otherwise be an
-// arbitrary attacker-supplied <img src>.
+// The only place a comment's mediaUrl is ever produced is our own GIF/
+// sticker search responses below, so a create request is trusted only if
+// the URL is actually one of GIPHY's CDN hosts — narrows what would
+// otherwise be an arbitrary attacker-supplied <img src>.
 const GIPHY_MEDIA_URL_RE = /^https:\/\/(media\d*\.giphy\.com|i\.giphy\.com)\//;
+const VALID_MEDIA_TYPES = new Set(["gif", "sticker"]);
 
 function notifyReply({ parentUserId, actorId, actorName, body, link }) {
   if (!parentUserId || parentUserId === actorId) return;
@@ -511,8 +512,8 @@ export const createComment = async (req, res) => {
     const { parentId, body, mediaUrl, mediaType } = req.body;
     const trimmedBody = body?.trim() || "";
     if (!trimmedBody && !mediaUrl) return res.status(400).json({ message: "Comment cannot be empty." });
-    if (mediaUrl && (mediaType !== "gif" || !GIPHY_MEDIA_URL_RE.test(mediaUrl))) {
-      return res.status(400).json({ message: "Invalid GIF." });
+    if (mediaUrl && (!VALID_MEDIA_TYPES.has(mediaType) || !GIPHY_MEDIA_URL_RE.test(mediaUrl))) {
+      return res.status(400).json({ message: "Invalid attachment." });
     }
 
     const activity = await CommunityActivity.findOne({ where: { id: activityId, status: "published" } });
@@ -540,7 +541,7 @@ export const createComment = async (req, res) => {
       userId: req.user.id,
       body: trimmedBody,
       mediaUrl: mediaUrl || null,
-      mediaType: mediaUrl ? "gif" : null,
+      mediaType: mediaUrl ? mediaType : null,
     });
     const user = await User.findByPk(req.user.id, { attributes: ["id", "fullName"] });
 
@@ -573,15 +574,23 @@ export const createComment = async (req, res) => {
   }
 };
 
-// GET /community/gifs?q=... — used by the comment composer's GIF picker.
-// `configured:false` (rather than an error) is the same "feature not wired
-// up yet" shape the AI assistant already uses, so the picker can show an
-// honest empty state instead of a broken search box.
+// GET /community/gifs?q=... and /community/stickers?q=... — used by the
+// comment composer's GIF/Sticker pickers. `configured:false` (rather than
+// an error) is the same "feature not wired up yet" shape the AI assistant
+// already uses, so the picker can show an honest empty state instead of a
+// broken search box.
 export const searchGifsEndpoint = async (req, res) => {
   if (!isGifSearchConfigured()) return res.json({ configured: false, gifs: [] });
   const gifs = await searchGifs(req.query.q);
   if (gifs === null) return res.status(502).json({ configured: true, gifs: [], message: "Couldn't load GIFs right now." });
   res.json({ configured: true, gifs });
+};
+
+export const searchStickersEndpoint = async (req, res) => {
+  if (!isGifSearchConfigured()) return res.json({ configured: false, stickers: [] });
+  const stickers = await searchStickers(req.query.q);
+  if (stickers === null) return res.status(502).json({ configured: true, stickers: [], message: "Couldn't load stickers right now." });
+  res.json({ configured: true, stickers });
 };
 
 export const castCommentVote = async (req, res) => {
@@ -946,8 +955,8 @@ export const createImageComment = async (req, res) => {
     const { parentId, body, mediaUrl, mediaType } = req.body;
     const trimmedBody = body?.trim() || "";
     if (!trimmedBody && !mediaUrl) return res.status(400).json({ message: "Comment cannot be empty." });
-    if (mediaUrl && (mediaType !== "gif" || !GIPHY_MEDIA_URL_RE.test(mediaUrl))) {
-      return res.status(400).json({ message: "Invalid GIF." });
+    if (mediaUrl && (!VALID_MEDIA_TYPES.has(mediaType) || !GIPHY_MEDIA_URL_RE.test(mediaUrl))) {
+      return res.status(400).json({ message: "Invalid attachment." });
     }
 
     const image = await PostImage.findOne({ where: { id: imageId, status: "visible" } });
@@ -973,7 +982,7 @@ export const createImageComment = async (req, res) => {
       activityId: image.activityId,
       imageId: image.id,
       mediaUrl: mediaUrl || null,
-      mediaType: mediaUrl ? "gif" : null,
+      mediaType: mediaUrl ? mediaType : null,
       parentId: parentId || null,
       userId: req.user.id,
       body: trimmedBody,

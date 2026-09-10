@@ -16,11 +16,11 @@ const Comment = sequelize.define(
     userId: { type: DataTypes.INTEGER, allowNull: false },
     body: { type: DataTypes.TEXT, allowNull: false },
 
-    // Set only for a GIF comment (picked from the composer's GIF search) —
-    // body is "" in that case, never both null and empty. Nullable/no
-    // default so existing rows are untouched.
+    // Set only for a GIF/sticker comment (picked from the composer's
+    // search) — body can still be non-empty alongside it (text + media in
+    // the same comment). Nullable/no default so existing rows are untouched.
     mediaUrl: { type: DataTypes.STRING, allowNull: true },
-    mediaType: { type: DataTypes.ENUM("gif"), allowNull: true },
+    mediaType: { type: DataTypes.ENUM("gif", "sticker"), allowNull: true },
 
     // "deleted" = the author removed it themselves (row kept, body cleared,
     // rendered as a placeholder so replies underneath stay attached to a

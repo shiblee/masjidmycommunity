@@ -1824,26 +1824,36 @@ footer{
 }
 .cmt-emoji-item:hover{ background:var(--paper-dim); }
 
-.cmt-sticker-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:6px; max-height:280px; overflow-y:auto; }
-.cmt-sticker-item{
-  display:flex; align-items:center; justify-content:center; height:56px; font-size:26px; border-radius:10px;
-  background:var(--paper-dim); border:none; cursor:pointer; transition:background .15s, transform .1s;
-}
-.cmt-sticker-item:hover{ background:rgba(141,198,63,.14); transform:scale(1.05); }
-
+/* Shared by the GIF and Sticker pickers (both search GIPHY via
+   MediaPicker.jsx) — square tiles with object-fit:contain rather than
+   cover, since a sticker's usually square/transparent-background art while
+   a GIF is usually wide, and contain avoids cropping either shape. */
 .cmt-gif-search{
   display:flex; align-items:center; gap:8px; background:var(--paper-dim); border-radius:100px; padding:7px 12px; margin-bottom:8px;
   color:var(--text-on-paper-dim);
 }
 .cmt-gif-search input{ flex:1; min-width:0; border:none; background:none; font-size:13px; font-family:var(--sans); color:var(--text-on-paper); }
 .cmt-gif-search input:focus{ outline:none; }
-.cmt-gif-grid{ display:grid; grid-template-columns:1fr 1fr; gap:6px; max-height:280px; overflow-y:auto; }
-.cmt-gif-item{ padding:0; border:none; border-radius:8px; overflow:hidden; cursor:pointer; background:var(--paper-dim); aspect-ratio:1.4; }
-.cmt-gif-item img{ width:100%; height:100%; object-fit:cover; display:block; }
+.cmt-gif-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:6px; max-height:280px; overflow-y:auto; }
+.cmt-gif-item{ padding:6px; border:none; border-radius:8px; overflow:hidden; cursor:pointer; background:var(--paper-dim); aspect-ratio:1; transition:background .15s; }
+.cmt-gif-item:hover{ background:rgba(141,198,63,.14); }
+.cmt-gif-item img{ width:100%; height:100%; object-fit:contain; display:block; }
 .cmt-picker-empty{ font-size:12.5px; color:var(--text-on-paper-dim); text-align:center; padding:20px 8px; margin:0; }
 
 .cmt-text-emoji{ font-size:28px; line-height:1.3; }
-.cmt-gif-media{ display:block; max-width:220px; width:100%; border-radius:12px; margin-top:6px; }
+
+/* A GIF/sticker attached to the draft but not yet sent — shown between the
+   textarea and the toolbar, with its own remove button. */
+.cmt-composer-media-preview{ position:relative; display:inline-block; margin-top:8px; }
+.cmt-composer-media-preview img{ display:block; max-width:160px; max-height:160px; border-radius:10px; background:var(--paper-dim); }
+.cmt-composer-media-preview button{
+  position:absolute; top:-7px; right:-7px; width:22px; height:22px; border-radius:50%; border:2px solid #fff;
+  background:rgba(17,26,30,.75); color:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer;
+}
+
+/* An already-posted GIF/sticker. */
+.cmt-media-post{ display:block; max-width:220px; width:100%; border-radius:12px; margin-top:6px; }
+.cmt-media-post-sticker{ max-width:140px; }
 
 .cmt-composer-actions{ display:flex; justify-content:flex-end; gap:10px; }
 .cmt-btn-text{

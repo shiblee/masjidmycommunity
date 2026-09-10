@@ -23,6 +23,7 @@ import {
   updateImageComment,
   deleteImageComment,
   searchGifsEndpoint,
+  searchStickersEndpoint,
 } from "../controllers/publicCommunityController.js";
 
 const router = Router();
@@ -31,6 +32,7 @@ router.get("/content-settings", getContentSettings);
 router.get("/stats", getCommunityStats);
 router.get("/mention-search", mentionSearch);
 router.get("/gifs", auth, requireUser, gifSearchRateLimit, searchGifsEndpoint);
+router.get("/stickers", auth, requireUser, gifSearchRateLimit, searchStickersEndpoint);
 router.get("/activities", optionalAuth, listPublished);
 router.post("/activities/:id/vote", auth, requireUser, castVote);
 
