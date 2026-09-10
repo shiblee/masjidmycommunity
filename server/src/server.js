@@ -16,6 +16,7 @@ import { startUserBotScheduler } from "./services/userBotSchedulerService.js";
 import { ensureMasjidBotUserDefaults } from "./seed/masjidBotUserDefaults.js";
 import { ensureMasjidBotSettings } from "./seed/masjidBotSettingsDefaults.js";
 import { startMasjidBotScheduler } from "./services/masjidBotSchedulerService.js";
+import { startPrayerTimeScheduler } from "./services/prayerTimeSchedulerService.js";
 import { ensureReviewRestrictedWordDefaults } from "./seed/reviewRestrictedWordDefaults.js";
 import { ensureMasjidContactDesignationDefaults } from "./seed/masjidContactDesignationDefaults.js";
 import { ensurePrayerDefaults } from "./seed/prayerDefaults.js";
@@ -104,5 +105,6 @@ connectDB()
       startVisitorBotScheduler();
       startUserBotScheduler();
       startMasjidBotScheduler();
+      startPrayerTimeScheduler();
     });
   });

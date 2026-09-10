@@ -42,6 +42,13 @@ const Masjid = sequelize.define(
     // remain fully acceptable).
     placeId: { type: DataTypes.STRING, allowNull: true },
 
+    // IANA timezone name (e.g. "Asia/Kolkata"), resolved once from
+    // latitude/longitude by prayerCalculationEngine.js the first time it
+    // runs for this masjid, then cached here so every later run skips the
+    // lookup. Engine-owned — deliberately excluded from masjidController.js's
+    // UPDATABLE_FIELDS, never owner-editable.
+    timezone: { type: DataTypes.STRING, allowNull: true },
+
     // Contact & verification moved to a list of office-bearers — see
     // MasjidContactPerson (one row per designation, each independently
     // OTP-verified). The old single imamName/contactMobile/contactEmail

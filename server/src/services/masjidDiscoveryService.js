@@ -11,6 +11,7 @@ import { MASJID_BOT_EMAIL } from "../seed/masjidBotUserDefaults.js";
 import { searchMosques, getPlaceDetails } from "./googlePlacesService.js";
 import { checkForDuplicate } from "./masjidDuplicateDetectionService.js";
 import { generateMasjidDescription, generateTranslation } from "./aiProviderService.js";
+import { ensurePrayerScheduleForMasjid } from "./prayerCalculationEngine.js";
 
 const MAX_PHOTOS_PER_IMPORT = 5;
 const TRANSLATION_LANGUAGES = ["hi", "ur", "ar"];
@@ -201,6 +202,7 @@ async function importPlace(place, { autoPublish }) {
   });
 
   await writeTranslations(result.id, name, tagline, about).catch(() => {});
+  await ensurePrayerScheduleForMasjid(result.id).catch((e) => console.error("ensurePrayerScheduleForMasjid failed:", e.message));
 
   return { id: result.id, name, city: address.city, country: address.country, status: result.status, dataCompletenessPercent: completeness, photoCount: photos.length };
 }

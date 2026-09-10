@@ -20,6 +20,7 @@ import { getEngagementFor, getEngagementForMany } from "../services/masjidEngage
 import { getGreenTickBadgeInfo, getGreenTickBadgeInfoForMany } from "../services/greenTickService.js";
 import { generateUniqueSlug } from "../utils/slugify.js";
 import { verifyIfscForBank } from "../services/ifscLookupService.js";
+import { ensurePrayerScheduleForMasjid } from "../services/prayerCalculationEngine.js";
 
 // Second-layer contextual check (Layer 2 of the Common Content Moderation
 // Engine) — run only on fields the rule-based filter above did NOT already
@@ -234,6 +235,9 @@ export const update = async (req, res) => {
       return res.status(400).json({ field: "name", message: "Masjid name can't be empty." });
     }
 
+    const prevLatitude = masjid.latitude;
+    const prevLongitude = masjid.longitude;
+
     for (const field of UPDATABLE_FIELDS) {
       if (req.body[field] !== undefined) masjid[field] = typeof req.body[field] === "string" ? req.body[field].trim() : req.body[field];
     }
@@ -264,6 +268,17 @@ export const update = async (req, res) => {
     }
 
     await masjid.save();
+
+    // Same centralized engine the masjid-discovery bot calls — fires
+    // whenever this masjid's location actually changed (a fresh set, or a
+    // correction) and both coordinates are now known. Not awaited: the
+    // owner's save should never wait on prayer-time computation.
+    const latitudeChanged = String(prevLatitude) !== String(masjid.latitude);
+    const longitudeChanged = String(prevLongitude) !== String(masjid.longitude);
+    if ((latitudeChanged || longitudeChanged) && masjid.latitude != null && masjid.longitude != null) {
+      ensurePrayerScheduleForMasjid(masjid.id).catch((e) => console.error("ensurePrayerScheduleForMasjid failed:", e.message));
+    }
+
     res.json({ masjid: await serializeMasjid(masjid) });
   } catch (error) {
     res.status(500).json({ message: error.message });

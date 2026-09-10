@@ -22,7 +22,7 @@ function parseDateStr(dateStr) {
 }
 
 /** Normalizes a Sequelize DATEONLY value (usually already a "YYYY-MM-DD" string, but not guaranteed across drivers) to a plain date string. */
-function toDateStr(value) {
+export function toDateStr(value) {
   if (typeof value === "string") return value.slice(0, 10);
   return value.toISOString().slice(0, 10);
 }
@@ -57,13 +57,17 @@ export function isValidDateStr(dateStr) {
  * one by this point, else inherit last year's value for this same date,
  * else the year before that, etc."
  */
-async function findEffectiveRow(masjidId, prayerId, dateStr) {
+/**
+ * Pure resolution over an already-fetched row set — the same "highest year,
+ * then month-day <= target" algorithm findEffectiveRow always used,
+ * extracted so a bulk caller (prayerCalculationEngine.js) can fetch a
+ * masjid+prayer's rows ONCE and resolve many dates against them in memory,
+ * instead of one DB round trip per date. No behavior change versus before —
+ * findEffectiveRow below is now a thin wrapper around this.
+ */
+export function resolveEffectiveRow(rows, dateStr) {
   const { year: targetYear } = parseDateStr(dateStr);
   const targetMd = monthDay(dateStr);
-
-  const rows = await MasjidPrayerTimeline.findAll({
-    where: { masjidId, prayerId, effectiveDate: { [Op.lte]: `${targetYear}-12-31` } },
-  });
 
   const candidates = rows.filter((r) => {
     const rDateStr = toDateStr(r.effectiveDate);
@@ -76,6 +80,14 @@ async function findEffectiveRow(masjidId, prayerId, dateStr) {
   return candidates
     .filter((r) => parseDateStr(toDateStr(r.effectiveDate)).year === maxYear)
     .reduce((a, b) => (toDateStr(a.effectiveDate) > toDateStr(b.effectiveDate) ? a : b));
+}
+
+async function findEffectiveRow(masjidId, prayerId, dateStr) {
+  const { year: targetYear } = parseDateStr(dateStr);
+  const rows = await MasjidPrayerTimeline.findAll({
+    where: { masjidId, prayerId, effectiveDate: { [Op.lte]: `${targetYear}-12-31` } },
+  });
+  return resolveEffectiveRow(rows, dateStr);
 }
 
 /**
