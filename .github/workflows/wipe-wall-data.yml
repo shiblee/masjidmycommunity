@@ -1,0 +1,28 @@
+name: Wipe Community Wall data
+
+# Explicitly user-requested, irreversible: deletes every wall post (all
+# CommunityActivity types), comment/reply, like/dislike vote, and post
+# image via server/scripts/wipeWallData.mjs (single transaction, no
+# backup). See that script's header for full scope/reasoning.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  wipe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run the wall-data wipe script on the server
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+
+          ssh -i ~/.ssh/deploy_key "$DEPLOY_USER@$DEPLOY_HOST" '
+            set -e
+            cd /var/www/masjidmycommunity/server
+            node scripts/wipeWallData.mjs
+          '
