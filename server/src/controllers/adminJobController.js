@@ -9,7 +9,7 @@ import { generateUniqueSlug } from "../utils/slugify.js";
 import { firstRestrictedField, RESTRICTED_CONTENT_MESSAGE } from "../utils/contentModeration.js";
 import { validateFields, normalizeSkills, logJobHistory, serializeApplication, applyApplicationStatusChange } from "./jobController.js";
 import { PLATFORM_EMAIL } from "../seed/platformUserDefaults.js";
-// import { recordJobPostedActivity } from "../services/communityActivityService.js"; // "jobs as community posts" disabled — see createJob below
+import { recordJobPostedActivity } from "../services/communityActivityService.js";
 
 const STATUSES = ["active", "closed", "expired", "deleted"];
 
@@ -101,8 +101,7 @@ export const create = async (req, res) => {
       contactMethod: contactMethod?.trim() || null,
     });
     await logJobHistory(job.id, "admin_created", `${job.title} — ${job.location}`, "admin", req.user.email);
-    // "Jobs as community posts" disabled by explicit request — see jobController.js's createJob for the matching change.
-    // recordJobPostedActivity(job, platformUser).catch(() => {});
+    recordJobPostedActivity(job, platformUser).catch(() => {});
 
     res.status(201).json({ job });
   } catch (error) {

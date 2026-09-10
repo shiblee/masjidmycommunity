@@ -6,7 +6,7 @@ import JobApplication from "../models/JobApplication.js";
 import User from "../models/User.js";
 import { generateUniqueSlug } from "../utils/slugify.js";
 import { firstRestrictedField, RESTRICTED_CONTENT_MESSAGE } from "../utils/contentModeration.js";
-// import { recordJobPostedActivity } from "../services/communityActivityService.js"; // "jobs as community posts" disabled — see createJob below
+import { recordJobPostedActivity } from "../services/communityActivityService.js";
 import { buildProfileSnapshot } from "./publicUserController.js";
 import {
   sendJobApplicationSubmittedNotifications,
@@ -147,12 +147,8 @@ export const createJob = async (req, res) => {
       contactMethod: contactMethod?.trim() || null,
     });
     await logJobHistory(job.id, "posted", `${job.title} — ${job.location}`, "user", null);
-    // "Jobs as community posts" disabled by explicit request — a job no
-    // longer gets a Wall post (and therefore no like/comment section on its
-    // own detail page). Re-enable by restoring this call; recordJobPostedActivity
-    // itself is untouched.
-    // const poster = await User.findByPk(job.userId, { attributes: ["fullName"] });
-    // recordJobPostedActivity(job, poster).catch(() => {});
+    const poster = await User.findByPk(job.userId, { attributes: ["fullName"] });
+    recordJobPostedActivity(job, poster).catch(() => {});
 
     res.status(201).json({ job });
   } catch (error) {
