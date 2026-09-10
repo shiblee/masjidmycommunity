@@ -4631,10 +4631,10 @@ footer{
 /* .st-compact: the Community Wall sidebar's ~280px column -- icon-only
    date-nav/mark buttons and a 2-column weekly grid instead of wrapping. */
 .st-compact .st-datenav-btn-label,
-.st-compact .st-mark-btn-label,
-.st-compact .st-row-time{ display:none; }
+.st-compact .st-mark-btn-label{ display:none; }
 .st-compact .st-datenav-btn{ padding:7px 9px; }
 .st-compact .st-mark-btn{ padding:6px 9px; }
+.st-compact .st-row-time{ font-size:11px; }
 .st-compact .st-weekly{ grid-template-columns:repeat(2,1fr); }
 
 @media (max-width:760px){
