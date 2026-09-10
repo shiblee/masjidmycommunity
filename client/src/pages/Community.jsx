@@ -8,6 +8,7 @@ import campaignApi from "../services/campaignApi.js";
 import jobApi from "../services/jobApi.js";
 import reportApi from "../services/reportApi.js";
 import userApi from "../services/userApi.js";
+import publicJobApi from "../services/publicJobApi.js";
 import MasjidPickerModal from "../components/MasjidPickerModal.jsx";
 import SalahTracker from "../components/profile/SalahTracker.jsx";
 import MediaThumb from "../components/MediaThumb.jsx";
@@ -155,6 +156,12 @@ function Community() {
   const [primaryMasjid, setPrimaryMasjid] = useState(undefined);
   const [pmPickerOpen, setPmPickerOpen] = useState(false);
 
+  // Personalized discovery widgets -- both login-gated (same as Primary
+  // Masjid/SalahTracker on this page), null until fetched, empty array
+  // meaning "checked, nothing to show" so the widget cleanly hides itself.
+  const [recommendedJobs, setRecommendedJobs] = useState(null);
+  const [nearbyMasjids, setNearbyMasjids] = useState(null);
+
   useEffect(() => {
     const onSessionUpdated = (e) => setUser(e.detail);
     window.addEventListener("mmc-user-session-updated", onSessionUpdated);
@@ -170,6 +177,34 @@ function Community() {
       .get("/me/primary-masjid-status")
       .then(({ data }) => setPrimaryMasjid(data.primaryMasjid || null))
       .catch(() => setPrimaryMasjid(null));
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) {
+      setRecommendedJobs(null);
+      setNearbyMasjids(null);
+      return;
+    }
+    publicJobApi
+      .get("/by-skills", { params: { limit: 4 } })
+      .then(({ data }) => setRecommendedJobs(data.jobs || []))
+      .catch(() => setRecommendedJobs([]));
+
+    const loadNearby = (params) => {
+      userApi
+        .get("/me/nearby-masjids", { params })
+        .then(({ data }) => setNearbyMasjids((data.masjids || []).slice(0, 4)))
+        .catch(() => setNearbyMasjids([]));
+    };
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => loadNearby({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        () => loadNearby(undefined),
+        { timeout: 6000 }
+      );
+    } else {
+      loadNearby(undefined);
+    }
   }, [user]);
 
   useEffect(() => {
@@ -415,6 +450,28 @@ function Community() {
         <div className="wrap">
           <div className="cw-layout">
             <aside className="cw-side">
+              {recommendedJobs && recommendedJobs.length > 0 && (
+                <div className="cw-side-card">
+                  <h4><Icon name="target" size={15} /> {t("jobs.rails.bySkills.title", "Based on Your Skills")}</h4>
+                  <ul className="cw-side-list cw-side-my-masjids">
+                    {recommendedJobs.map((j) => (
+                      <li key={j.id}>
+                        <Link to={`/job/${j.slug}`} className="cw-my-masjid-item">
+                          <span className="cw-my-masjid-thumb"><Icon name="briefcase" size={18} /></span>
+                          <span className="cw-my-masjid-body">
+                            <span className="cw-my-masjid-name">{j.title}</span>
+                            <span className="cw-side-card-sub" style={{ marginBottom: 0 }}>{j.postedBy}{j.location ? ` · ${j.location}` : ""}</span>
+                          </span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                  <Link to="/jobs" className="cw-side-link">
+                    {t("communityWall.sideList.viewAllJobs", "See All Jobs")} <span className="btn-arrow">→</span>
+                  </Link>
+                </div>
+              )}
+
               <div className="cw-side-card">
                 <h4><Icon name="chartUp" size={15} /> {t("communityWall.impact.heading", "Community Impact")}</h4>
                 <div className="cw-side-stats">
@@ -526,6 +583,33 @@ function Community() {
                   ))}
                 </div>
               </div>
+
+              {nearbyMasjids && nearbyMasjids.length > 0 && (
+                <div className="cw-side-card">
+                  <h4><Icon name="mapPin" size={15} /> {t("community.nearbyMasjids.heading", "Nearby Masjids")}</h4>
+                  <ul className="cw-side-list cw-side-my-masjids">
+                    {nearbyMasjids.map((m) => (
+                      <li key={m.id}>
+                        <Link to={`/masjid/${m.id}`} className="cw-my-masjid-item">
+                          <span className="cw-my-masjid-thumb">
+                            {m.coverPhotoUrl ? <img src={`${API_ORIGIN}${m.coverPhotoUrl}`} alt="" /> : <Icon name="mosque" size={18} />}
+                          </span>
+                          <span className="cw-my-masjid-body">
+                            <span className="cw-my-masjid-name">{m.name}</span>
+                            <span className="cw-side-card-sub" style={{ marginBottom: 0 }}>{[m.city, m.country].filter(Boolean).join(", ")}</span>
+                          </span>
+                          {m.distanceKm != null && (
+                            <span className="cw-my-masjid-time">{m.distanceKm < 1 ? `${Math.round(m.distanceKm * 1000)} m` : `${m.distanceKm.toFixed(1)} km`}</span>
+                          )}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                  <Link to="/explore-masjids" className="cw-side-link">
+                    {t("communityWall.sideList.viewAllMasjids", "See All Masjids")} <span className="btn-arrow">→</span>
+                  </Link>
+                </div>
+              )}
 
               {user && (primaryMasjid ? (
                 <div className="cw-side-card cw-pm-card">

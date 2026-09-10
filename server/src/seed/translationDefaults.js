@@ -2087,6 +2087,9 @@ const DEFAULTS = [
   ["community", "community.pmCard.heading", "Primary Masjid", "प्राथमिक मस्जिद", "بنیادی مسجد", "المسجد الأساسي"],
   ["community", "community.pmCard.emptyHeading", "Set Your Primary Masjid", "अपनी प्राथमिक मस्जिद चुनें", "اپنی بنیادی مسجد مقرر کریں", "حدد مسجدك الأساسي"],
   ["community", "community.pmCard.emptySub", "Pick a nearby masjid to see its prayer timings right here.", "यहीं इसके नमाज़ समय देखने के लिए एक नज़दीकी मस्जिद चुनें।", "یہاں اس کے نماز کے اوقات دیکھنے کے لیے قریبی مسجد منتخب کریں۔", "اختر مسجدًا قريبًا لرؤية مواقيت صلاته هنا مباشرة."],
+  ["community", "community.nearbyMasjids.heading", "Nearby Masjids", "आस-पास की मस्जिदें", "قریبی مساجد", "المساجد القريبة"],
+  ["communityWall", "communityWall.sideList.viewAllJobs", "See All Jobs", "सभी नौकरियां देखें", "تمام ملازمتیں دیکھیں", "عرض جميع الوظائف"],
+  ["communityWall", "communityWall.sideList.viewAllMasjids", "See All Masjids", "सभी मस्जिदें देखें", "تمام مساجد دیکھیں", "عرض جميع المساجد"],
 
   ["salah", "salah.dateNav.previous", "Previous Day", "पिछला दिन", "پچھلا دن", "اليوم السابق"],
   ["salah", "salah.dateNav.next", "Next Day", "अगला दिन", "اگلا دن", "اليوم التالي"],
