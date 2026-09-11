@@ -1,0 +1,28 @@
+name: Verify Reels upload & duration cap (self-cleaning)
+
+# Synthesizes a valid 2s and an oversized 100s test clip with the server's
+# own ffmpeg, uploads both to the live POST /api/community/reels endpoint
+# (expect 400 then 201), confirms the valid one is listed with a poster,
+# then deletes the test reel and clips.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run the verification script on the server
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+
+          ssh -i ~/.ssh/deploy_key "$DEPLOY_USER@$DEPLOY_HOST" '
+            set -e
+            cd /var/www/masjidmycommunity/server
+            node scripts/verifyReels.mjs
+          '
