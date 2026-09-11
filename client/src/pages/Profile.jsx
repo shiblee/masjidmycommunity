@@ -86,6 +86,10 @@ const PROFILE_NAV_KEYS = PROFILE_NAV_SECTIONS.map((s) => s.key);
 
 const VIEWER_TABS = [
   { key: "about", labelKey: "profile.tabs.about", label: "About" },
+  { key: "education", labelKey: "profile.nav.education.label", label: "Education" },
+  { key: "work-experience", labelKey: "profile.nav.workExperience.label", label: "Work Experience" },
+  { key: "skills", labelKey: "profile.nav.skills.label", label: "Skills" },
+  { key: "hobbies", labelKey: "profile.nav.hobbies.label", label: "Hobbies & Interests" },
   { key: "masjid", labelKey: "profile.tabs.masjid", label: "Masjid" },
   { key: "jobs", labelKey: "profile.tabs.jobs", label: "Jobs" },
 ];
@@ -380,13 +384,7 @@ function Profile() {
                   <div className="cw-side-card"><ProfileCompletion user={profile} /></div>
                 </>
               ) : (
-                <>
-                  <PersonalDetailsCard user={profile} mode={mode} onUserUpdated={handleUserUpdated} />
-                  <EducationCard mode={mode} entries={education} />
-                  <WorkExperienceCard mode={mode} entries={workExperience} />
-                  <SkillsCard mode={mode} entries={skills} />
-                  <HobbiesCard mode={mode} entries={hobbies} />
-                </>
+                <PersonalDetailsCard user={profile} mode={mode} onUserUpdated={handleUserUpdated} />
               )}
             </aside>
 
@@ -596,6 +594,78 @@ function Profile() {
           </div>
         </div>
       </section>
+      )}
+
+      {!isOwner && activeViewerTab === "education" && (
+        <section className="py-md">
+          <div className="wrap">
+            <div className="pf-single-col">
+              {education.length === 0 ? (
+                <div className="cw-side-card" style={{ textAlign: "center" }}>
+                  <p className="cw-side-card-sub" style={{ marginBottom: 0 }}>
+                    {t("profile.educationTab.emptyOther", "{name} hasn't added any education yet.").replace("{name}", profile.fullName)}
+                  </p>
+                </div>
+              ) : (
+                <EducationCard mode={mode} entries={education} />
+              )}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {!isOwner && activeViewerTab === "work-experience" && (
+        <section className="py-md">
+          <div className="wrap">
+            <div className="pf-single-col">
+              {workExperience.length === 0 ? (
+                <div className="cw-side-card" style={{ textAlign: "center" }}>
+                  <p className="cw-side-card-sub" style={{ marginBottom: 0 }}>
+                    {t("profile.workExperienceTab.emptyOther", "{name} hasn't added any work experience yet.").replace("{name}", profile.fullName)}
+                  </p>
+                </div>
+              ) : (
+                <WorkExperienceCard mode={mode} entries={workExperience} />
+              )}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {!isOwner && activeViewerTab === "skills" && (
+        <section className="py-md">
+          <div className="wrap">
+            <div className="pf-single-col">
+              {skills.length === 0 ? (
+                <div className="cw-side-card" style={{ textAlign: "center" }}>
+                  <p className="cw-side-card-sub" style={{ marginBottom: 0 }}>
+                    {t("profile.skillsTab.emptyOther", "{name} hasn't added any skills yet.").replace("{name}", profile.fullName)}
+                  </p>
+                </div>
+              ) : (
+                <SkillsCard mode={mode} entries={skills} />
+              )}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {!isOwner && activeViewerTab === "hobbies" && (
+        <section className="py-md">
+          <div className="wrap">
+            <div className="pf-single-col">
+              {hobbies.length === 0 ? (
+                <div className="cw-side-card" style={{ textAlign: "center" }}>
+                  <p className="cw-side-card-sub" style={{ marginBottom: 0 }}>
+                    {t("profile.hobbiesTab.emptyOther", "{name} hasn't added any hobbies yet.").replace("{name}", profile.fullName)}
+                  </p>
+                </div>
+              ) : (
+                <HobbiesCard mode={mode} entries={hobbies} />
+              )}
+            </div>
+          </div>
+        </section>
       )}
 
       {!isOwner && activeViewerTab === "masjid" && (
