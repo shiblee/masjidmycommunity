@@ -25,6 +25,7 @@ import Auth from "./pages/Auth.jsx";
 import Profile from "./pages/Profile.jsx";
 import AccountRedirect from "./components/AccountRedirect.jsx";
 import ExploreMasjids from "./pages/ExploreMasjids.jsx";
+import ExploreUsers from "./pages/ExploreUsers.jsx";
 import MasjidProfile from "./pages/MasjidProfile.jsx";
 import MyMasjids from "./pages/masjid/MyMasjids.jsx";
 import LikedMasjids from "./pages/masjid/LikedMasjids.jsx";
@@ -97,6 +98,7 @@ function App() {
           <Route path="/pages/:slug" element={<LegalPage />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/explore-masjids" element={<ExploreMasjids />} />
+          <Route path="/explore-users" element={<ExploreUsers />} />
           <Route path="/masjid/:slug" element={<MasjidProfile />} />
           <Route path="/masjid/:slug/:tab" element={<MasjidProfile />} />
           <Route path="/campaign/:slug" element={<CampaignProfile />} />

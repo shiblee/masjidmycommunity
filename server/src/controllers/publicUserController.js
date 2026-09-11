@@ -169,3 +169,56 @@ export const getPublicProfile = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+const DIRECTORY_SAFE_ATTRIBUTES = ["id", "username", "fullName", "profilePhoto", "bio", "locationLabel", "locationCity", "locationState", "locationCountry", "createdAt", "emailVerified", "mobileVerified"];
+
+// Registered Users directory (Home Page module) -- same public-safe field
+// set getPublicProfile already returns to a non-owner viewer (see above):
+// no email/mobile, not even masked, because they're simply never selected
+// here. Only "active" accounts are listed (excludes pending_verification/
+// inactive/suspended), mirroring getPublicProfile's suspended-account
+// exclusion. Gender/maritalStatus are deliberately not filterable here --
+// today they're owner/admin-only fields, and this directory doesn't change
+// that.
+export const listDirectory = async (req, res) => {
+  try {
+    const { q, city, state, country, sortBy = "newest", page = 1, pageSize = 24 } = req.query;
+    const where = { status: "active" };
+    if (q?.trim()) {
+      const term = q.trim();
+      where[Op.or] = [{ fullName: { [Op.like]: `%${term}%` } }, { username: { [Op.like]: `%${term}%` } }];
+    }
+    if (city?.trim()) where.locationCity = { [Op.like]: `%${city.trim()}%` };
+    if (state?.trim()) where.locationState = { [Op.like]: `%${state.trim()}%` };
+    if (country?.trim()) where.locationCountry = { [Op.like]: `%${country.trim()}%` };
+
+    const limit = Math.min(Number(pageSize) || 24, 60);
+    const pageNum = Math.max(Number(page) || 1, 1);
+
+    const { rows, count } = await User.findAndCountAll({
+      where,
+      attributes: DIRECTORY_SAFE_ATTRIBUTES,
+      order: [["createdAt", sortBy === "oldest" ? "ASC" : "DESC"]],
+      limit,
+      offset: (pageNum - 1) * limit,
+    });
+
+    const users = rows.map((u) => ({
+      id: u.id,
+      username: u.username,
+      fullName: u.fullName,
+      profilePhoto: u.profilePhoto,
+      bio: u.bio,
+      locationLabel: u.locationLabel,
+      locationCity: u.locationCity,
+      locationState: u.locationState,
+      locationCountry: u.locationCountry,
+      createdAt: u.createdAt,
+      verified: !!(u.emailVerified || u.mobileVerified),
+    }));
+
+    res.json({ users, total: count, page: pageNum, pageSize: limit });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

@@ -161,6 +161,7 @@ function Community() {
   // meaning "checked, nothing to show" so the widget cleanly hides itself.
   const [recommendedJobs, setRecommendedJobs] = useState(null);
   const [nearbyMasjids, setNearbyMasjids] = useState(null);
+  const [registeredUsersPreview, setRegisteredUsersPreview] = useState(null);
 
   useEffect(() => {
     const onSessionUpdated = (e) => setUser(e.detail);
@@ -183,12 +184,18 @@ function Community() {
     if (!user) {
       setRecommendedJobs(null);
       setNearbyMasjids(null);
+      setRegisteredUsersPreview(null);
       return;
     }
     publicJobApi
       .get("/by-skills", { params: { limit: 4 } })
       .then(({ data }) => setRecommendedJobs(data.jobs || []))
       .catch(() => setRecommendedJobs([]));
+
+    userApi
+      .get("/public", { params: { pageSize: 6 } })
+      .then(({ data }) => setRegisteredUsersPreview(data.users || []))
+      .catch(() => setRegisteredUsersPreview([]));
 
     const loadNearby = (params) => {
       userApi
@@ -587,6 +594,32 @@ function Community() {
                   ))}
                 </div>
               </div>
+
+              {registeredUsersPreview && registeredUsersPreview.length > 0 && (
+                <div className="cw-side-card">
+                  <h4><Icon name="people" size={15} /> {t("community.registeredUsers.heading", "Registered Users")}</h4>
+                  <ul className="cw-side-list cw-side-my-masjids">
+                    {registeredUsersPreview.map((u) => (
+                      <li key={u.id}>
+                        <Link to={`/profile/${u.username}`} className="cw-my-masjid-item">
+                          <span className="cw-my-masjid-thumb">
+                            <MediaThumb src={u.profilePhoto ? `${API_ORIGIN}${u.profilePhoto}` : null} />
+                          </span>
+                          <span className="cw-my-masjid-body">
+                            <span className="cw-my-masjid-name">{u.fullName}</span>
+                            <span className="cw-side-card-sub" style={{ marginBottom: 0 }}>
+                              {[u.locationCity, u.locationCountry].filter(Boolean).join(", ")}
+                            </span>
+                          </span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                  <Link to="/explore-users" className="cw-side-link">
+                    {t("communityWall.sideList.viewAllUsers", "See All Users")} <span className="btn-arrow">→</span>
+                  </Link>
+                </div>
+              )}
 
               {nearbyMasjids && nearbyMasjids.length > 0 && (
                 <div className="cw-side-card">
