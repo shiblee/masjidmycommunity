@@ -42,9 +42,9 @@ const NAV_ITEMS = [
       { to: "/admin/registered-users", label: "Users", icon: "globe", moduleKey: "users" },
       { to: "/admin/visitors", label: "Visitors", icon: "eye", moduleKey: "visitors" },
       { to: "/admin/synthetic-users", label: "Synthetic Users", icon: "users", moduleKey: "users" },
+      { to: "/admin/staff", label: "Staff", icon: "lock", moduleKey: "staff" },
     ],
   },
-  { to: "/admin/staff", label: "Staff", icon: "lock", moduleKey: "staff" },
   {
     label: "Masjids",
     icon: "mosque",
