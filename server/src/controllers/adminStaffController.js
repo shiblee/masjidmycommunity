@@ -313,22 +313,28 @@ export const getUsageAnalytics = async (req, res) => {
     startOfMonth.setUTCDate(1);
     startOfMonth.setUTCHours(0, 0, 0, 0);
 
+    // "Activity" here means real usage (action/page_view rows), the same
+    // definition getOne()'s Overview tab uses for totalActivity -- login/
+    // logout are session events, not usage, and deliberately excluded so a
+    // staff member who only logs in and out doesn't show up as "active".
+    const usageTypeFilter = { activityType: { [Op.in]: ["action", "page_view"] } };
+
     const [dailyRows, moduleRows, hourRows, loginDayRows] = await Promise.all([
       AdminActivityLog.findAll({
-        where: { adminUserId: admin.id, createdAt: { [Op.gte]: since } },
+        where: { adminUserId: admin.id, ...usageTypeFilter, createdAt: { [Op.gte]: since } },
         attributes: [[fn("DATE", col("createdAt")), "day"], [fn("COUNT", literal("*")), "c"]],
         group: ["day"],
         raw: true,
       }),
       AdminActivityLog.findAll({
-        where: { adminUserId: admin.id, activityType: { [Op.in]: ["action", "page_view"] }, module: { [Op.ne]: null }, createdAt: { [Op.gte]: since } },
+        where: { adminUserId: admin.id, ...usageTypeFilter, module: { [Op.ne]: null }, createdAt: { [Op.gte]: since } },
         attributes: ["module", [fn("COUNT", literal("*")), "c"]],
         group: ["module"],
         order: [[literal("c"), "DESC"]],
         raw: true,
       }),
       AdminActivityLog.findAll({
-        where: { adminUserId: admin.id, createdAt: { [Op.gte]: since } },
+        where: { adminUserId: admin.id, ...usageTypeFilter, createdAt: { [Op.gte]: since } },
         attributes: [[fn("HOUR", col("createdAt")), "hour"], [fn("COUNT", literal("*")), "c"]],
         group: ["hour"],
         order: [[literal("c"), "DESC"]],
