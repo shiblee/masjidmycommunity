@@ -18,8 +18,11 @@ function StaffForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [permissions, setPermissions] = useState({});
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(isEdit);
+
+  const clearFieldError = (field) => setFieldErrors((fe) => (fe[field] ? { ...fe, [field]: null } : fe));
 
   useEffect(() => {
     adminApi.get("/staff/permission-modules").then(({ data }) => setModules(data.modules)).catch(() => setModules([]));
@@ -42,12 +45,19 @@ function StaffForm() {
     e.preventDefault();
     setError("");
 
-    if (!name.trim()) return setError("Name is required.");
-    if (!email.trim()) return setError("Email is required.");
-    if (!EMAIL_RE.test(email.trim())) return setError("Enter a valid email address.");
-    if (!isEdit) {
-      if (!password || password.length < 8) return setError("Password must be at least 8 characters.");
+    const newFieldErrors = {};
+    if (!name.trim()) newFieldErrors.name = "Name is required.";
+    if (!email.trim()) newFieldErrors.email = "Email is required.";
+    else if (!EMAIL_RE.test(email.trim())) newFieldErrors.email = "Enter a valid email address.";
+    if (!isEdit && (!password || password.length < 8)) newFieldErrors.password = "Password must be at least 8 characters.";
+
+    if (Object.keys(newFieldErrors).length > 0) {
+      setFieldErrors(newFieldErrors);
+      setError(Object.values(newFieldErrors)[0]);
+      return;
     }
+    setFieldErrors({});
+
     const hasAnyPermission = Object.values(permissions).some((a) => a.length > 0);
     if (!hasAnyPermission && !window.confirm("No permissions are assigned, so this account won't be able to access anything yet. Create it anyway?")) {
       return;
@@ -62,7 +72,9 @@ function StaffForm() {
       }
       navigate(isEdit ? `/admin/staff/${id}` : "/admin/staff");
     } catch (err) {
-      setError(err.response?.data?.message || "Couldn't save this staff account.");
+      const message = err.response?.data?.message || "Couldn't save this staff account.";
+      setError(message);
+      if (/email/i.test(message)) setFieldErrors({ email: message });
     } finally {
       setSaving(false);
     }
@@ -89,11 +101,35 @@ function StaffForm() {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
             <div className="amx-form-group">
               <label htmlFor="staff-name">Name</label>
-              <input id="staff-name" type="text" value={name} onChange={(e) => setName(e.target.value)} required />
+              <input
+                id="staff-name"
+                type="text"
+                value={name}
+                onChange={(e) => { setName(e.target.value); clearFieldError("name"); }}
+                style={fieldErrors.name ? { borderColor: "var(--a-danger)" } : undefined}
+              />
+              {fieldErrors.name && (
+                <div className="amx-field-error">
+                  <Icon name="info" size={14} />
+                  {fieldErrors.name}
+                </div>
+              )}
             </div>
             <div className="amx-form-group">
               <label htmlFor="staff-email">Email Address</label>
-              <input id="staff-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+              <input
+                id="staff-email"
+                type="email"
+                value={email}
+                onChange={(e) => { setEmail(e.target.value); clearFieldError("email"); }}
+                style={fieldErrors.email ? { borderColor: "var(--a-danger)" } : undefined}
+              />
+              {fieldErrors.email && (
+                <div className="amx-field-error">
+                  <Icon name="info" size={14} />
+                  {fieldErrors.email}
+                </div>
+              )}
             </div>
             {!isEdit && (
               <div className="amx-form-group">
@@ -103,10 +139,8 @@ function StaffForm() {
                     id="staff-password"
                     type={showPassword ? "text" : "password"}
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    minLength={8}
-                    style={{ paddingRight: 40, width: "100%" }}
+                    onChange={(e) => { setPassword(e.target.value); clearFieldError("password"); }}
+                    style={{ paddingRight: 40, width: "100%", ...(fieldErrors.password ? { borderColor: "var(--a-danger)" } : {}) }}
                   />
                   <button
                     type="button"
@@ -117,6 +151,12 @@ function StaffForm() {
                     <Icon name={showPassword ? "eyeOff" : "eye"} size={16} />
                   </button>
                 </div>
+                {fieldErrors.password && (
+                  <div className="amx-field-error">
+                    <Icon name="info" size={14} />
+                    {fieldErrors.password}
+                  </div>
+                )}
               </div>
             )}
           </div>
