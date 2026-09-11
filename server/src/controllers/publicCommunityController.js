@@ -1,4 +1,5 @@
 import fs from "fs";
+import path from "path";
 import { Op, fn, col } from "sequelize";
 import CommunityActivity from "../models/CommunityActivity.js";
 import CommunityActivityVote from "../models/CommunityActivityVote.js";
@@ -17,6 +18,7 @@ import { mediaTypeOf, IMAGE_MAX_BYTES } from "../middleware/upload.js";
 import ContentSettings from "../models/ContentSettings.js";
 import { notifyUser } from "../services/notificationService.js";
 import { checkRestrictedWords, RESTRICTED_CONTENT_MESSAGE } from "../utils/contentModeration.js";
+import { generateVideoThumbnail } from "../utils/videoThumbnail.js";
 import { searchGifs, searchStickers, isGifSearchConfigured } from "../services/gifService.js";
 
 // The only place a comment's mediaUrl is ever produced is our own GIF/
@@ -707,6 +709,11 @@ export const createPost = async (req, res) => {
 
     const imageFiles = files.filter((f) => mediaTypeOf(f.mimetype) === "photo");
     const videoUrl = videoFiles.length ? `/uploads/wall-post-media/${videoFiles[0].filename}` : null;
+    let videoPosterUrl = null;
+    if (videoFiles.length) {
+      const posterFileName = await generateVideoThumbnail(videoFiles[0].path, path.dirname(videoFiles[0].path));
+      if (posterFileName) videoPosterUrl = `/uploads/wall-post-media/${posterFileName}`;
+    }
 
     // Posted from a masjid's own Community Wall tab — the masjid comes from
     // the request body (set automatically by that composer, not picked by
@@ -728,6 +735,7 @@ export const createPost = async (req, res) => {
       relatedUserId: req.user.id,
       relatedMasjidId,
       mediaVideoUrl: videoUrl,
+      mediaVideoPosterUrl: videoPosterUrl,
       status: "published",
       publishedAt: new Date(),
     });
@@ -819,7 +827,7 @@ export async function deleteActivityCascade(activity) {
     await PostImage.destroy({ where: { id: { [Op.in]: imageIds } } });
   }
 
-  [...images.map((i) => i.url), activity.mediaVideoUrl].filter(Boolean).forEach((url) => {
+  [...images.map((i) => i.url), activity.mediaVideoUrl, activity.mediaVideoPosterUrl].filter(Boolean).forEach((url) => {
     fs.unlink(`.${url}`, () => {});
   });
 

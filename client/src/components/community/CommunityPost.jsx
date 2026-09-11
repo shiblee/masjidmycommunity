@@ -3,6 +3,7 @@ import { Icon } from "../Icons.jsx";
 import CommentSection from "../CommentSection.jsx";
 import PostBodyText from "../PostBodyText.jsx";
 import MentionTextarea from "../MentionTextarea.jsx";
+import MediaThumb from "../MediaThumb.jsx";
 import { API_ORIGIN } from "../../config.js";
 import { useTranslation } from "../../i18n/LanguageContext.jsx";
 
@@ -87,6 +88,7 @@ export function mapLiveActivity(a) {
       ? [{ id: null, url: `${API_ORIGIN}${a.imageUrl}` }]
       : undefined,
     videoUrl: a.mediaVideoUrl ? `${API_ORIGIN}${a.mediaVideoUrl}` : undefined,
+    videoPosterUrl: a.mediaVideoPosterUrl ? `${API_ORIGIN}${a.mediaVideoPosterUrl}` : undefined,
     // No "View Masjid" CTA for masjid posts — the header name and the
     // @mention(s) in the body already link straight to the masjid's page,
     // so a separate button repeated the same action.
@@ -587,17 +589,7 @@ function CommunityPost({ post, user, navigate, onVote, onEdit, onDelete, onRepor
 
       {post.videoUrl && (
         <div className="cw-post-media cw-post-video">
-          <video
-            src={post.videoUrl}
-            controls
-            preload="metadata"
-            // Chrome/Safari often paint the very first frame (0:00) as solid
-            // black for freshly-encoded uploads instead of a real thumbnail.
-            // Nudging playback to a hair past zero once metadata is ready
-            // forces the browser to decode and paint an actual frame there,
-            // without playing or downloading the rest of the video.
-            onLoadedMetadata={(e) => { e.currentTarget.currentTime = 0.1; }}
-          />
+          <MediaThumb src={post.videoUrl} poster={post.videoPosterUrl} mediaType="video" videoProps={{ controls: true }} />
         </div>
       )}
 

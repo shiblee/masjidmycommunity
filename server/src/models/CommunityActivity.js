@@ -26,6 +26,12 @@ const CommunityActivity = sequelize.define(
     // own PostImage rows (so each can carry its own likes/comments/reports);
     // video stays a single URL here since only one is allowed per post.
     mediaVideoUrl: { type: DataTypes.STRING, allowNull: true },
+    // Real frame extracted server-side at upload time (see
+    // server/src/utils/videoThumbnail.js) -- the same approach masjid photo
+    // uploads already use. Nullable/no-default, appended after the fact
+    // like relatedCampaignId: posts uploaded before this existed just have
+    // no poster, and MediaThumb.jsx already falls back gracefully for those.
+    mediaVideoPosterUrl: { type: DataTypes.STRING, allowNull: true },
 
     relatedMasjidId: { type: DataTypes.INTEGER, allowNull: true },
     relatedUserId: { type: DataTypes.INTEGER, allowNull: true },
