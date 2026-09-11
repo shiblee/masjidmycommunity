@@ -4,6 +4,8 @@ import Icon from "../components/Icons.jsx";
 import PermissionMatrix from "../components/PermissionMatrix.jsx";
 import adminApi from "../services/adminApi.js";
 
+const EMAIL_RE = /^\S+@\S+\.\S+$/;
+
 function StaffForm() {
   const { id } = useParams();
   const isEdit = !!id;
@@ -42,6 +44,7 @@ function StaffForm() {
 
     if (!name.trim()) return setError("Name is required.");
     if (!email.trim()) return setError("Email is required.");
+    if (!EMAIL_RE.test(email.trim())) return setError("Enter a valid email address.");
     if (!isEdit) {
       if (!password || password.length < 8) return setError("Password must be at least 8 characters.");
     }
@@ -78,7 +81,7 @@ function StaffForm() {
         </div>
       </div>
 
-      <form onSubmit={submit}>
+      <form onSubmit={submit} noValidate>
         {error && <div className="amx-alert-banner warn" style={{ marginBottom: 16 }}>{error}</div>}
 
         <div className="amx-card amx-panel" style={{ marginBottom: 20 }}>
