@@ -1,0 +1,27 @@
+name: Verify Staff create flow (self-cleaning)
+
+# Diagnostic: mints a JWT for an existing super_admin and exercises live
+# POST /staff (short password -> 400, valid password -> 201), then cleans
+# up any account it creates. No lasting data changes either way.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run the verification script on the server
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+
+          ssh -i ~/.ssh/deploy_key "$DEPLOY_USER@$DEPLOY_HOST" '
+            set -e
+            cd /var/www/masjidmycommunity/server
+            node scripts/verifyStaffCreateFlow.mjs
+          '
