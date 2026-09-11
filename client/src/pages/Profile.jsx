@@ -104,6 +104,7 @@ function Profile() {
   const [skills, setSkills] = useState([]);
   const [hobbies, setHobbies] = useState([]);
   const [masjids, setMasjids] = useState([]);
+  const [likedMasjids, setLikedMasjids] = useState([]);
   const [campaigns, setCampaigns] = useState([]);
   const [jobs, setJobs] = useState([]);
   const [posts, setPosts] = useState([]);
@@ -112,6 +113,7 @@ function Profile() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [showAllMasjids, setShowAllMasjids] = useState(false);
+  const [showAllLikedMasjids, setShowAllLikedMasjids] = useState(false);
   const [showAllCampaigns, setShowAllCampaigns] = useState(false);
   const [showAllJobs, setShowAllJobs] = useState(false);
   const [contentLimits, setContentLimits] = useState({ maxPostLength: 2000, maxCommentLength: 1000, maxReplyLength: 1000 });
@@ -138,6 +140,7 @@ function Profile() {
         setSkills(data.skills);
         setHobbies(data.hobbies);
         setMasjids(data.masjids);
+        setLikedMasjids(data.likedMasjids);
         setCampaigns(data.campaigns);
         setJobs(data.jobs);
         // Keep the navbar/session copy of "my own" data in sync if I'm
@@ -345,7 +348,7 @@ function Profile() {
           </div>
         </section>
       )}
-      {(isOwner || activeViewerTab === "about" || activeViewerTab === "background") && (
+      {(isOwner || activeViewerTab === "about" || activeViewerTab === "background" || activeViewerTab === "masjid") && (
       <section className="py-sm">
         <div className="wrap">
           <div className="cw-layout">
@@ -453,6 +456,45 @@ function Profile() {
                     <WorkExperienceCard mode={mode} entries={workExperience} />
                     <SkillsCard mode={mode} entries={skills} />
                     <HobbiesCard mode={mode} entries={hobbies} />
+                  </div>
+                )
+              ) : activeViewerTab === "masjid" ? (
+                masjids.length === 0 && likedMasjids.length === 0 ? (
+                  <div className="cw-side-card" style={{ textAlign: "center" }}>
+                    <p className="cw-side-card-sub" style={{ marginBottom: 0 }}>
+                      {t("profile.masjidTab.emptyOther", "{name} hasn't added any masjids yet.").replace("{name}", profile.fullName)}
+                    </p>
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                    <OwnedAssetList
+                      title={t("communityWall.masjid.myMasjidsHeading", "My Masjids")}
+                      items={masjids}
+                      showAll={showAllMasjids}
+                      onToggleShowAll={() => setShowAllMasjids((v) => !v)}
+                      statusLabel={{
+                        draft: t("masjidWizard.status.draft", "Draft"),
+                        submitted: t("masjidWizard.status.submitted", "Submitted"),
+                        under_review: t("masjidWizard.status.underReview", "Under Review"),
+                        changes_requested: t("masjidWizard.status.changesRequested", "Changes Requested"),
+                        approved: t("masjidWizard.status.approved", "Approved"),
+                        rejected: t("masjidWizard.status.rejected", "Rejected"),
+                        inactive: t("masjidWizard.status.inactive", "Inactive"),
+                      }}
+                      nameKey="name"
+                      linkBase="/masjid"
+                      icon="mosque"
+                    />
+                    <OwnedAssetList
+                      title={t("profile.masjidTab.likedHeading", "Liked Masjids")}
+                      items={likedMasjids}
+                      showAll={showAllLikedMasjids}
+                      onToggleShowAll={() => setShowAllLikedMasjids((v) => !v)}
+                      statusLabel={{ approved: t("masjidWizard.status.approved", "Approved") }}
+                      nameKey="name"
+                      linkBase="/masjid"
+                      icon="heart"
+                    />
                   </div>
                 )
               ) : postsLoading && posts.length === 0 ? (
@@ -608,40 +650,6 @@ function Profile() {
       </section>
       )}
 
-      {!isOwner && activeViewerTab === "masjid" && (
-        <section className="py-md">
-          <div className="wrap">
-            <div className="pf-single-col">
-              {masjids.length === 0 ? (
-                <div className="cw-side-card" style={{ textAlign: "center" }}>
-                  <p className="cw-side-card-sub" style={{ marginBottom: 0 }}>
-                    {t("profile.masjidTab.emptyOther", "{name} hasn't added any masjids yet.").replace("{name}", profile.fullName)}
-                  </p>
-                </div>
-              ) : (
-                <OwnedAssetList
-                  title={t("communityWall.masjid.myMasjidsHeading", "My Masjids")}
-                  items={masjids}
-                  showAll={showAllMasjids}
-                  onToggleShowAll={() => setShowAllMasjids((v) => !v)}
-                  statusLabel={{
-                    draft: t("masjidWizard.status.draft", "Draft"),
-                    submitted: t("masjidWizard.status.submitted", "Submitted"),
-                    under_review: t("masjidWizard.status.underReview", "Under Review"),
-                    changes_requested: t("masjidWizard.status.changesRequested", "Changes Requested"),
-                    approved: t("masjidWizard.status.approved", "Approved"),
-                    rejected: t("masjidWizard.status.rejected", "Rejected"),
-                    inactive: t("masjidWizard.status.inactive", "Inactive"),
-                  }}
-                  nameKey="name"
-                  linkBase="/masjid"
-                  icon="mosque"
-                />
-              )}
-            </div>
-          </div>
-        </section>
-      )}
 
       {!isOwner && activeViewerTab === "jobs" && (
         <section className="py-md">
