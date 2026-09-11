@@ -18,15 +18,20 @@ fs.mkdirSync(UPLOAD_ROOT, { recursive: true });
 // Deliberately varied phrasing/age/context so repeated calls don't keep
 // landing on the same handful of top search results -- combined with a
 // randomized page number below, this is what keeps different bot accounts
-// from ending up with the same-looking (or highly similar) face.
+// from ending up with the same-looking (or highly similar) face. Includes
+// explicitly Muslim-presenting terms (hijab, muslim man/woman) alongside
+// the general Indian ones, since this platform's members are Indian
+// Muslims specifically, not Indians generally.
 const QUERY_TERMS = {
   male: [
     "indian man portrait", "indian man face", "indian young man", "indian senior man",
     "indian professional man headshot", "indian man smiling", "indian businessman portrait",
+    "muslim man portrait", "muslim man face", "indian muslim man", "muslim man beard portrait",
   ],
   female: [
     "indian woman portrait", "indian woman face", "indian young woman", "indian senior woman",
     "indian professional woman headshot", "indian woman smiling", "indian businesswoman portrait",
+    "muslim woman hijab portrait", "muslim woman portrait", "indian muslim woman", "hijab woman portrait",
   ],
 };
 
