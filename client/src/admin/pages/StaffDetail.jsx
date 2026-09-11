@@ -2,12 +2,15 @@ import React, { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import Icon from "../components/Icons.jsx";
 import StatusBadge from "../components/StatusBadge.jsx";
+import PermissionMatrix from "../components/PermissionMatrix.jsx";
 import adminApi from "../services/adminApi.js";
 import { formatDateTime } from "../../utils/formatDateTime.js";
 
 const TABS = [
   { key: "overview", label: "Overview" },
+  { key: "permissions", label: "Permissions" },
   { key: "login-history", label: "Login History" },
+  { key: "activity", label: "Activity" },
 ];
 
 function formatDuration(seconds) {
@@ -51,7 +54,7 @@ function ResetPasswordModal({ onClose, onSubmit, busy }) {
   );
 }
 
-function OverviewTab({ staff, overview }) {
+function OverviewTab({ overview }) {
   return (
     <div className="amx-card amx-panel">
       <div className="amx-panel-head"><h3>Overview</h3></div>
@@ -68,21 +71,194 @@ function OverviewTab({ staff, overview }) {
           <div className="amx-kpi-value" style={{ fontSize: 18 }}>{overview.firstLoginAt ? formatDateTime(overview.firstLoginAt) : "—"}</div>
           <div className="amx-kpi-label">First Login</div>
         </div>
+        <div className="amx-card amx-kpi">
+          <div className="amx-kpi-value">{overview.totalActivity}</div>
+          <div className="amx-kpi-label">Total Activity</div>
+        </div>
+        <div className="amx-card amx-kpi">
+          <div className="amx-kpi-value" style={{ fontSize: 18 }}>{overview.mostUsedModule || "—"}</div>
+          <div className="amx-kpi-label">Most Used Module</div>
+        </div>
       </div>
 
-      <div className="amx-panel-head" style={{ marginTop: 24 }}><h3>Assigned Modules</h3></div>
-      {Object.entries(staff.permissions || {}).filter(([, actions]) => actions.length > 0).length === 0 ? (
+      {overview.moduleUsage?.length > 0 && (
+        <>
+          <div className="amx-panel-head" style={{ marginTop: 24 }}><h3>Module Usage</h3></div>
+          <div className="amx-permission-list">
+            {overview.moduleUsage.map((m) => (
+              <div className="amx-permission-row" key={m.module}>
+                <span className="amx-permission-row-label">{m.module}</span>
+                <span className="amx-panel-sub">{m.count} action{m.count === 1 ? "" : "s"}</span>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function PermissionsTab({ id, staff, onSaved }) {
+  const [modules, setModules] = useState([]);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(staff.permissions || {});
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [history, setHistory] = useState(null);
+
+  useEffect(() => {
+    adminApi.get("/staff/permission-modules").then(({ data }) => setModules(data.modules)).catch(() => setModules([]));
+  }, []);
+
+  useEffect(() => {
+    adminApi.get(`/staff/${id}/permission-history`).then(({ data }) => setHistory(data.history)).catch(() => setHistory([]));
+  }, [id, staff.permissions]);
+
+  const startEdit = () => {
+    setDraft(staff.permissions || {});
+    setError("");
+    setEditing(true);
+  };
+
+  const save = async () => {
+    setSaving(true);
+    setError("");
+    try {
+      await adminApi.patch(`/staff/${id}`, { permissions: draft });
+      setEditing(false);
+      onSaved();
+    } catch (err) {
+      setError(err.response?.data?.message || "Couldn't save permissions.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const granted = Object.entries(staff.permissions || {}).filter(([, actions]) => actions.length > 0);
+
+  return (
+    <div className="amx-card amx-panel">
+      <div className="amx-panel-head" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <h3>Permissions</h3>
+        {!editing && (
+          <button type="button" className="amx-btn amx-btn-sm amx-btn-outline" onClick={startEdit}>
+            <Icon name="edit" size={14} /> Edit Permissions
+          </button>
+        )}
+      </div>
+
+      {editing ? (
+        <>
+          {error && <div className="amx-alert-banner warn" style={{ marginBottom: 16 }}>{error}</div>}
+          <PermissionMatrix modules={modules} permissions={draft} onChange={setDraft} />
+          <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+            <button type="button" className="amx-btn amx-btn-outline" disabled={saving} onClick={() => setEditing(false)}>Cancel</button>
+            <button type="button" className="amx-btn amx-btn-accent" disabled={saving} onClick={save}>{saving ? "Saving…" : "Save Changes"}</button>
+          </div>
+        </>
+      ) : granted.length === 0 ? (
         <p className="amx-panel-sub">No modules assigned yet.</p>
       ) : (
         <div className="amx-permission-list">
-          {Object.entries(staff.permissions || {})
-            .filter(([, actions]) => actions.length > 0)
-            .map(([key, actions]) => (
+          {granted.map(([key, actions]) => {
+            const label = modules.find((m) => m.key === key)?.label || key;
+            return (
               <div className="amx-permission-row" key={key}>
-                <span className="amx-permission-row-label">{key}</span>
+                <span className="amx-permission-row-label">{label}</span>
                 <span className="amx-panel-sub">{actions.join(", ")}</span>
               </div>
-            ))}
+            );
+          })}
+        </div>
+      )}
+
+      <div className="amx-panel-head" style={{ marginTop: 24 }}><h3>Permission Change History</h3></div>
+      {!history ? (
+        <p className="amx-panel-sub">Loading…</p>
+      ) : history.length === 0 ? (
+        <p className="amx-panel-sub">No permission changes recorded yet.</p>
+      ) : (
+        <div className="amx-table-wrap">
+          <table className="amx-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Changed By</th>
+                <th>Before</th>
+                <th>After</th>
+              </tr>
+            </thead>
+            <tbody>
+              {history.map((h) => (
+                <tr key={h.id}>
+                  <td>{formatDateTime(h.createdAt)}</td>
+                  <td>{h.changedByAdminName || "—"}</td>
+                  <td>{Object.entries(h.oldPermissions || {}).filter(([, a]) => a.length > 0).map(([k, a]) => `${k}: ${a.join(",")}`).join("; ") || "None"}</td>
+                  <td>{Object.entries(h.newPermissions || {}).filter(([, a]) => a.length > 0).map(([k, a]) => `${k}: ${a.join(",")}`).join("; ") || "None"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const ACTIVITY_TYPE_LABEL = { action: "Action", page_view: "Page View" };
+
+function ActivityTab({ id }) {
+  const [activity, setActivity] = useState(null);
+  const [filters, setFilters] = useState({ module: "", dateFrom: "", dateTo: "" });
+
+  const load = () => {
+    const params = {};
+    if (filters.module) params.module = filters.module;
+    if (filters.dateFrom) params.dateFrom = filters.dateFrom;
+    if (filters.dateTo) params.dateTo = filters.dateTo;
+    adminApi.get(`/staff/${id}/activity`, { params }).then(({ data }) => setActivity(data.activity)).catch(() => setActivity([]));
+  };
+
+  useEffect(() => { load(); }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return (
+    <div className="amx-card amx-panel">
+      <div className="amx-panel-head"><h3>Activity</h3></div>
+      <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
+        <input type="text" placeholder="Module (e.g. masjid)" value={filters.module} onChange={(e) => setFilters((f) => ({ ...f, module: e.target.value }))} style={{ maxWidth: 180 }} />
+        <input type="date" value={filters.dateFrom} onChange={(e) => setFilters((f) => ({ ...f, dateFrom: e.target.value }))} />
+        <input type="date" value={filters.dateTo} onChange={(e) => setFilters((f) => ({ ...f, dateTo: e.target.value }))} />
+        <button type="button" className="amx-btn amx-btn-sm amx-btn-outline" onClick={load}><Icon name="search" size={14} /> Filter</button>
+      </div>
+
+      {!activity ? (
+        <p className="amx-panel-sub">Loading…</p>
+      ) : activity.length === 0 ? (
+        <div className="amx-empty"><Icon name="inbox" /><strong>No activity recorded yet</strong><span>Actions on Masjids and Staff show up here as they happen.</span></div>
+      ) : (
+        <div className="amx-table-wrap">
+          <table className="amx-table">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Type</th>
+                <th>Module</th>
+                <th>Action</th>
+                <th>Target</th>
+              </tr>
+            </thead>
+            <tbody>
+              {activity.map((a) => (
+                <tr key={a.id}>
+                  <td>{formatDateTime(a.createdAt)}</td>
+                  <td>{ACTIVITY_TYPE_LABEL[a.activityType] || a.activityType}</td>
+                  <td style={{ textTransform: "capitalize" }}>{a.module || "—"}</td>
+                  <td style={{ textTransform: "capitalize" }}>{a.action || "—"}</td>
+                  <td>{a.targetId ? `#${a.targetId}` : a.summary || "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </div>
@@ -226,8 +402,10 @@ function StaffDetail() {
         ))}
       </div>
 
-      {tab === "overview" && <OverviewTab staff={staff} overview={overview} />}
+      {tab === "overview" && <OverviewTab overview={overview} />}
+      {tab === "permissions" && <PermissionsTab id={id} staff={staff} onSaved={load} />}
       {tab === "login-history" && <LoginHistoryTab id={id} />}
+      {tab === "activity" && <ActivityTab id={id} />}
 
       {resetOpen && <ResetPasswordModal onClose={() => setResetOpen(false)} onSubmit={resetPassword} busy={resetBusy} />}
       {toast && <div className="amx-toast"><Icon name="check" />{toast}</div>}

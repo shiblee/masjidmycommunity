@@ -1,6 +1,7 @@
 import { Router } from "express";
 import auth, { requireAdmin } from "../middleware/auth.js";
 import { requireModuleAccess, requirePermission } from "../middleware/permission.js";
+import { logActivity } from "../middleware/activityLogger.js";
 import { uploadMasjidPhotos } from "../middleware/upload.js";
 import {
   listAll,
@@ -71,49 +72,57 @@ const edit = requirePermission("masjid", "edit");
 const del = requirePermission("masjid", "delete");
 const decide = requirePermission("masjid", "approve");
 
+// Activity logging (Phase 2) -- only on write routes, only fires on a
+// successful response (see activityLogger.js). Reuses the exact same
+// action labels already assigned per route above.
+const logAdd = logActivity("masjid", "add");
+const logEdit = logActivity("masjid", "edit");
+const logDelete = logActivity("masjid", "delete");
+const logDecide = logActivity("masjid", "approve");
+
 router.get("/", view, listAll);
-router.post("/", add, createMasjid);
+router.post("/", add, logAdd, createMasjid);
 router.get("/:id", view, getOne);
 router.get("/:id/reviews", view, listMasjidReviews);
 router.get("/:id/likers", view, listMasjidLikers);
-router.patch("/:id", edit, updateBasicInfo);
-router.patch("/:id/seo", edit, updateSeo);
+router.patch("/:id", edit, logEdit, updateBasicInfo);
+router.patch("/:id/seo", edit, logEdit, updateSeo);
 router.post("/:id/seo/suggest", edit, suggestSeoMeta);
-router.post("/:id/photos", add, uploadMasjidPhotos, uploadPhotos);
-router.patch("/:id/photos/:photoId", edit, updatePhoto);
-router.delete("/:id/photos/:photoId", del, deletePhoto);
+router.post("/:id/photos", add, logAdd, uploadMasjidPhotos, uploadPhotos);
+router.patch("/:id/photos/:photoId", edit, logEdit, updatePhoto);
+router.delete("/:id/photos/:photoId", del, logDelete, deletePhoto);
 router.get("/:id/contacts", view, listContacts);
-router.post("/:id/contacts", add, createContact);
-router.patch("/:id/contacts/:contactId", edit, updateContact);
-router.delete("/:id/contacts/:contactId", del, removeContact);
+router.post("/:id/contacts", add, logAdd, createContact);
+router.patch("/:id/contacts/:contactId", edit, logEdit, updateContact);
+router.delete("/:id/contacts/:contactId", del, logDelete, removeContact);
 router.post("/:id/contacts/:contactId/send-otp", edit, sendContactOtp);
 router.post("/:id/contacts/:contactId/confirm-otp", edit, confirmContactOtp);
-router.post("/:id/approve", decide, approve);
-router.post("/:id/reject", decide, reject);
-router.post("/:id/request-changes", decide, requestChanges);
+router.post("/:id/approve", decide, logDecide, approve);
+router.post("/:id/reject", decide, logDecide, reject);
+router.post("/:id/request-changes", decide, logDecide, requestChanges);
 router.post("/:id/notes", edit, addNote);
-router.post("/:id/activate", decide, activate);
-router.post("/:id/deactivate", decide, deactivate);
-router.post("/:id/delete", del, remove);
-router.post("/:id/donation-account/verify", decide, verifyDonationAccount);
+router.post("/:id/activate", decide, logDecide, activate);
+router.post("/:id/deactivate", decide, logDecide, deactivate);
+router.post("/:id/delete", del, logDelete, remove);
+router.post("/:id/donation-account/verify", decide, logDecide, verifyDonationAccount);
 router.patch("/reviews/:reviewId/visibility", edit, setReviewVisibility);
 router.get("/:id/prayer-times", view, getPrayerRoster);
-router.put("/:id/prayer-times", edit, savePrayerRoster);
+router.put("/:id/prayer-times", edit, logEdit, savePrayerRoster);
 router.get("/:id/prayer-times/history", view, getPrayerHistory);
 router.get("/:id/prayer-times/changes", view, getPrayerChangeDates);
 router.get("/:id/green-tick", view, getGreenTickApplication);
-router.patch("/:id/green-tick/representatives/:repId/identity", edit, setRepresentativeIdentity);
-router.patch("/:id/green-tick/representatives/:repId/authorization", edit, setRepresentativeAuthorization);
-router.patch("/:id/green-tick/documents/:docId", edit, setDocumentStatus);
+router.patch("/:id/green-tick/representatives/:repId/identity", edit, logEdit, setRepresentativeIdentity);
+router.patch("/:id/green-tick/representatives/:repId/authorization", edit, logEdit, setRepresentativeAuthorization);
+router.patch("/:id/green-tick/documents/:docId", edit, logEdit, setDocumentStatus);
 router.get("/:id/green-tick/documents/:docId/file", view, downloadGreenTickDocument);
 router.get("/:id/green-tick/documents/download-all", view, downloadAllGreenTickDocuments);
-router.post("/:id/green-tick/under-review", decide, markUnderReview);
-router.post("/:id/green-tick/request-documents", decide, requestMoreDocuments);
-router.post("/:id/green-tick/request-clarification", decide, requestClarification);
-router.post("/:id/green-tick/verification-failed", decide, markVerificationFailed);
-router.post("/:id/green-tick/approve", decide, approveApplication);
-router.post("/:id/green-tick/issue", decide, issueGreenTick);
-router.post("/:id/green-tick/suspend", decide, suspendApplication);
-router.post("/:id/green-tick/revoke", decide, revokeApplication);
+router.post("/:id/green-tick/under-review", decide, logDecide, markUnderReview);
+router.post("/:id/green-tick/request-documents", decide, logDecide, requestMoreDocuments);
+router.post("/:id/green-tick/request-clarification", decide, logDecide, requestClarification);
+router.post("/:id/green-tick/verification-failed", decide, logDecide, markVerificationFailed);
+router.post("/:id/green-tick/approve", decide, logDecide, approveApplication);
+router.post("/:id/green-tick/issue", decide, logDecide, issueGreenTick);
+router.post("/:id/green-tick/suspend", decide, logDecide, suspendApplication);
+router.post("/:id/green-tick/revoke", decide, logDecide, revokeApplication);
 
 export default router;

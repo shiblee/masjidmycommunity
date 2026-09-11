@@ -84,7 +84,7 @@ export const login = async (req, res) => {
     const sessionId = crypto.randomUUID();
     const expiresIn = remember ? REMEMBER_EXPIRY : SESSION_EXPIRY;
     const token = jwt.sign(
-      { id: admin.id, email: admin.email, role: admin.role, permissions: admin.role === "super_admin" ? null : admin.permissions || {}, type: "admin", sid: sessionId },
+      { id: admin.id, name: admin.name, email: admin.email, role: admin.role, permissions: admin.role === "super_admin" ? null : admin.permissions || {}, type: "admin", sid: sessionId },
       process.env.JWT_SECRET,
       { expiresIn }
     );

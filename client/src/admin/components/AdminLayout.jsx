@@ -89,6 +89,20 @@ const NAV_ITEMS = [
   { to: "/admin/settings", label: "Settings", icon: "settings", moduleKey: "settings" },
 ];
 
+// Flat (path, moduleKey) pairs derived from NAV_ITEMS, longest path first, so
+// the page-visit tracker below can reverse-map any admin pathname to the
+// module that owns it (a route can be more specific than its nav entry, e.g.
+// "/admin/staff/5/activity" under the "/admin/staff" nav link).
+const PATH_MODULES = NAV_ITEMS.flatMap((item) => (item.children ? item.children : [item]))
+  .filter((item) => item.to && item.moduleKey)
+  .map((item) => ({ to: item.to, moduleKey: item.moduleKey }))
+  .sort((a, b) => b.to.length - a.to.length);
+
+function moduleForPath(pathname) {
+  const match = PATH_MODULES.find((m) => pathname === m.to || pathname.startsWith(`${m.to}/`));
+  return match?.moduleKey || null;
+}
+
 const ROLE_LABELS = { super_admin: "Platform Administrator", staff: "Staff" };
 
 function hasModulePermission(user, moduleKey) {
@@ -405,6 +419,10 @@ function AdminLayout() {
     const interval = setInterval(load, 30000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    adminApi.post("/activity/page-view", { module: moduleForPath(pathname), path: pathname }).catch(() => {});
+  }, [pathname]);
 
   const openAlert = (n) => {
     if (!n.isRead) {

@@ -1,28 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Icon from "../components/Icons.jsx";
+import PermissionMatrix from "../components/PermissionMatrix.jsx";
 import adminApi from "../services/adminApi.js";
-
-function ModulePermissionRow({ module, granted, onChange }) {
-  const toggle = (action) => {
-    const has = granted.includes(action);
-    onChange(has ? granted.filter((a) => a !== action) : [...granted, action]);
-  };
-
-  return (
-    <div className="amx-permission-row">
-      <span className="amx-permission-row-label">{module.label}</span>
-      <div className="amx-permission-row-actions">
-        {module.actions.map((action) => (
-          <label key={action} className="amx-permission-checkbox">
-            <input type="checkbox" checked={granted.includes(action)} onChange={() => toggle(action)} />
-            {action.charAt(0).toUpperCase() + action.slice(1)}
-          </label>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 function StaffForm() {
   const { id } = useParams();
@@ -55,10 +35,6 @@ function StaffForm() {
       .catch(() => setError("Couldn't load this staff account."))
       .finally(() => setLoading(false));
   }, [id, isEdit]);
-
-  const setModuleActions = (moduleKey, actions) => {
-    setPermissions((p) => ({ ...p, [moduleKey]: actions }));
-  };
 
   const submit = async (e) => {
     e.preventDefault();
@@ -137,11 +113,7 @@ function StaffForm() {
             <h3>Module Permissions</h3>
             <div className="amx-panel-sub">Grant only the modules and actions this staff member needs.</div>
           </div>
-          <div className="amx-permission-list">
-            {modules.map((m) => (
-              <ModulePermissionRow key={m.key} module={m} granted={permissions[m.key] || []} onChange={(actions) => setModuleActions(m.key, actions)} />
-            ))}
-          </div>
+          <PermissionMatrix modules={modules} permissions={permissions} onChange={setPermissions} />
         </div>
 
         <div className="amx-page-actions">

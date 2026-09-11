@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import { Op } from "sequelize";
 import AdminUser from "../models/AdminUser.js";
 import AdminActivityLog from "../models/AdminActivityLog.js";
+import PermissionChangeLog from "../models/PermissionChangeLog.js";
 import { PERMISSION_MODULES, isValidPermissions } from "../config/permissionModules.js";
 
 const EMAIL_RE = /^\S+@\S+\.\S+$/;
@@ -67,11 +68,21 @@ export const getOne = async (req, res) => {
     const admin = await AdminUser.findOne({ where: { id: req.params.id, role: "staff" } });
     if (!admin) return res.status(404).json({ message: "Staff member not found." });
 
-    const [totalLogins, lastLoginRow, firstActivity] = await Promise.all([
+    const [totalLogins, lastLoginRow, firstActivity, totalActivity, moduleUsage] = await Promise.all([
       AdminActivityLog.count({ where: { adminUserId: admin.id, activityType: "login", status: "success" } }),
       AdminActivityLog.findOne({ where: { adminUserId: admin.id, activityType: "login", status: "success" }, order: [["createdAt", "DESC"]] }),
       AdminActivityLog.findOne({ where: { adminUserId: admin.id, activityType: "login", status: "success" }, order: [["createdAt", "ASC"]] }),
+      AdminActivityLog.count({ where: { adminUserId: admin.id, activityType: { [Op.in]: ["action", "page_view"] } } }),
+      AdminActivityLog.findAll({
+        where: { adminUserId: admin.id, activityType: { [Op.in]: ["action", "page_view"] }, module: { [Op.ne]: null } },
+        attributes: ["module", [AdminActivityLog.sequelize.fn("COUNT", "*"), "c"]],
+        group: ["module"],
+        order: [[AdminActivityLog.sequelize.literal("c"), "DESC"]],
+        raw: true,
+      }),
     ]);
+
+    const moduleLabel = (key) => PERMISSION_MODULES.find((m) => m.key === key)?.label || key;
 
     res.json({
       staff: {
@@ -87,6 +98,9 @@ export const getOne = async (req, res) => {
         totalLogins,
         lastLoginAt: lastLoginRow?.createdAt || null,
         firstLoginAt: firstActivity?.createdAt || null,
+        totalActivity,
+        mostUsedModule: moduleUsage[0] ? moduleLabel(moduleUsage[0].module) : null,
+        moduleUsage: moduleUsage.map((m) => ({ module: moduleLabel(m.module), count: Number(m.c) })),
       },
     });
   } catch (error) {
@@ -147,13 +161,29 @@ export const update = async (req, res) => {
       }
       admin.email = normalizedEmail;
     }
+    let permissionsChanged = false;
+    const oldPermissions = admin.permissions;
     if (permissions !== undefined) {
       if (!isValidPermissions(permissions)) return res.status(400).json({ message: "Invalid permissions." });
+      if (JSON.stringify(permissions) !== JSON.stringify(oldPermissions || {})) permissionsChanged = true;
       admin.permissions = permissions;
       admin.changed("permissions", true);
     }
 
     await admin.save();
+
+    // Best-effort, same contract as recordAdminActivity -- never break the
+    // real save that triggered it.
+    if (permissionsChanged) {
+      PermissionChangeLog.create({
+        staffId: admin.id,
+        oldPermissions: oldPermissions || {},
+        newPermissions: admin.permissions,
+        changedByAdminId: req.user.id,
+        changedByAdminName: req.user.name || req.user.email,
+      }).catch((error) => console.error("PermissionChangeLog write failed:", error.message));
+    }
+
     res.json({ staff: { id: admin.id, name: admin.name, email: admin.email, status: admin.status, permissions: admin.permissions } });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -213,6 +243,46 @@ export const getLoginHistory = async (req, res) => {
     });
 
     res.json({ history: rows, total: count, page, pageSize: limit });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Searchable/filterable timeline (spec's Activity tab) -- module/action/
+// status/date-range filters, same pagination shape as everywhere else.
+export const getActivity = async (req, res) => {
+  try {
+    const admin = await AdminUser.findOne({ where: { id: req.params.id, role: "staff" } });
+    if (!admin) return res.status(404).json({ message: "Staff member not found." });
+
+    const { module, action, status, dateFrom, dateTo, page = 1, pageSize = 30 } = req.query;
+    const where = { adminUserId: admin.id, activityType: { [Op.in]: ["action", "page_view"] } };
+    if (module) where.module = module;
+    if (action) where.action = action;
+    if (status) where.status = status;
+    if (dateFrom || dateTo) {
+      where.createdAt = {};
+      if (dateFrom) where.createdAt[Op.gte] = new Date(dateFrom);
+      if (dateTo) where.createdAt[Op.lte] = new Date(`${dateTo}T23:59:59.999`);
+    }
+
+    const limit = Math.min(Number(pageSize) || 30, 100);
+    const offset = (Math.max(Number(page) || 1, 1) - 1) * limit;
+
+    const { rows, count } = await AdminActivityLog.findAndCountAll({ where, order: [["createdAt", "DESC"]], limit, offset });
+    res.json({ activity: rows, total: count, page: Number(page) || 1, pageSize: limit });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const getPermissionHistory = async (req, res) => {
+  try {
+    const admin = await AdminUser.findOne({ where: { id: req.params.id, role: "staff" } });
+    if (!admin) return res.status(404).json({ message: "Staff member not found." });
+
+    const rows = await PermissionChangeLog.findAll({ where: { staffId: admin.id }, order: [["createdAt", "DESC"]], limit: 50 });
+    res.json({ history: rows });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

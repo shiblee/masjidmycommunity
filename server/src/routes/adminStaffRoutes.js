@@ -1,19 +1,26 @@
 import { Router } from "express";
 import auth, { requireAdmin } from "../middleware/auth.js";
 import { requirePermission } from "../middleware/permission.js";
-import { listAll, listPermissionModules, getOne, create, update, resetPassword, setStatus, getLoginHistory } from "../controllers/adminStaffController.js";
+import { logActivity } from "../middleware/activityLogger.js";
+import { listAll, listPermissionModules, getOne, create, update, resetPassword, setStatus, getLoginHistory, getActivity, getPermissionHistory } from "../controllers/adminStaffController.js";
 
 const router = Router();
 
 router.use(auth, requireAdmin);
 
-router.get("/permission-modules", requirePermission("staff", "view"), listPermissionModules);
-router.get("/", requirePermission("staff", "view"), listAll);
-router.post("/", requirePermission("staff", "add"), create);
-router.get("/:id", requirePermission("staff", "view"), getOne);
-router.patch("/:id", requirePermission("staff", "edit"), update);
-router.post("/:id/reset-password", requirePermission("staff", "edit"), resetPassword);
-router.patch("/:id/status", requirePermission("staff", "edit"), setStatus);
-router.get("/:id/login-history", requirePermission("staff", "view"), getLoginHistory);
+const view = requirePermission("staff", "view");
+const add = requirePermission("staff", "add");
+const edit = requirePermission("staff", "edit");
+
+router.get("/permission-modules", view, listPermissionModules);
+router.get("/", view, listAll);
+router.post("/", add, logActivity("staff", "add"), create);
+router.get("/:id", view, getOne);
+router.patch("/:id", edit, logActivity("staff", "edit"), update);
+router.post("/:id/reset-password", edit, logActivity("staff", "edit"), resetPassword);
+router.patch("/:id/status", edit, logActivity("staff", "edit"), setStatus);
+router.get("/:id/login-history", view, getLoginHistory);
+router.get("/:id/activity", view, getActivity);
+router.get("/:id/permission-history", view, getPermissionHistory);
 
 export default router;
