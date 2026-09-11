@@ -614,61 +614,6 @@ function Community() {
                 </div>
               </div>
 
-
-              {user && (primaryMasjid ? (
-                <div className="cw-side-card cw-pm-card">
-                  <h4><Icon name="mosque" size={15} /> {t("community.pmCard.heading", "Primary Masjid")}</h4>
-                  <MediaThumb src={primaryMasjid.coverPhotoUrl ? `${API_ORIGIN}${primaryMasjid.coverPhotoUrl}` : null} className="cw-pm-card-thumb" />
-                  <strong className="cw-pm-card-name">{primaryMasjid.name}</strong>
-                  {(primaryMasjid.city || primaryMasjid.country) && (
-                    <span className="cw-pm-card-location"><Icon name="mapPin" size={13} />{[primaryMasjid.city, primaryMasjid.country].filter(Boolean).join(", ")}</span>
-                  )}
-                  <div className="cw-pm-card-actions">
-                    <Link to={`/masjid/${primaryMasjid.id}`} className="btn btn-outline-ink" style={{ width: "100%", justifyContent: "center" }}>
-                      {t("profile.pm.viewMasjid", "View Masjid")}
-                    </Link>
-                    <button type="button" className="btn btn-gold" style={{ width: "100%", justifyContent: "center", marginTop: 8 }} onClick={() => setPmPickerOpen(true)}>
-                      {t("profile.pm.change", "Change Primary Masjid")}
-                    </button>
-                  </div>
-                </div>
-              ) : primaryMasjid === null ? (
-                <div className="cw-side-card cw-side-card-cta">
-                  <h4><Icon name="mosque" size={15} /> {t("community.pmCard.emptyHeading", "Set Your Primary Masjid")}</h4>
-                  <p className="cw-side-card-sub">{t("community.pmCard.emptySub", "Pick a nearby masjid to see its prayer timings right here.")}</p>
-                  <button type="button" className="btn btn-gold" style={{ width: "100%", justifyContent: "center" }} onClick={() => setPmPickerOpen(true)}>
-                    {t("profile.pm.selectOne", "Select One")}
-                  </button>
-                </div>
-              ) : null)}
-
-              {nearbyMasjids && nearbyMasjids.length > 0 && (
-                <div className="cw-side-card">
-                  <h4><Icon name="mapPin" size={15} /> {t("community.nearbyMasjids.heading", "Nearby Masjids")}</h4>
-                  <ul className="cw-side-list cw-side-my-masjids">
-                    {nearbyMasjids.map((m) => (
-                      <li key={m.id}>
-                        <Link to={`/masjid/${m.id}`} className="cw-my-masjid-item">
-                          <span className="cw-my-masjid-thumb">
-                            {m.coverPhotoUrl ? <img src={`${API_ORIGIN}${m.coverPhotoUrl}`} alt="" /> : <Icon name="mosque" size={18} />}
-                          </span>
-                          <span className="cw-my-masjid-body">
-                            <span className="cw-my-masjid-name">{m.name}</span>
-                            <span className="cw-side-card-sub" style={{ marginBottom: 0 }}>{[m.city, m.country].filter(Boolean).join(", ")}</span>
-                          </span>
-                          {m.distanceKm != null && (
-                            <span className="cw-my-masjid-time">{m.distanceKm < 1 ? `${Math.round(m.distanceKm * 1000)} m` : `${m.distanceKm.toFixed(1)} km`}</span>
-                          )}
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                  <Link to="/explore-masjids" className="cw-side-link">
-                    {t("communityWall.sideList.viewAllMasjids", "See All Masjids")} <span className="btn-arrow">→</span>
-                  </Link>
-                </div>
-              )}
-
               {section === "masjid" && (
                 <>
                   <div className="cw-side-card cw-side-card-cta">
@@ -820,6 +765,60 @@ function Community() {
                     })()}
                   </h4>
                   <p className="cw-side-card-sub">{t("community.explore.comingSoon", "This feature is coming soon — stay tuned!")}</p>
+                </div>
+              )}
+
+              {user && (primaryMasjid ? (
+                <div className="cw-side-card cw-pm-card">
+                  <h4><Icon name="mosque" size={15} /> {t("community.pmCard.heading", "Primary Masjid")}</h4>
+                  <MediaThumb src={primaryMasjid.coverPhotoUrl ? `${API_ORIGIN}${primaryMasjid.coverPhotoUrl}` : null} className="cw-pm-card-thumb" />
+                  <strong className="cw-pm-card-name">{primaryMasjid.name}</strong>
+                  {(primaryMasjid.city || primaryMasjid.country) && (
+                    <span className="cw-pm-card-location"><Icon name="mapPin" size={13} />{[primaryMasjid.city, primaryMasjid.country].filter(Boolean).join(", ")}</span>
+                  )}
+                  <div className="cw-pm-card-actions">
+                    <Link to={`/masjid/${primaryMasjid.id}`} className="btn btn-outline-ink" style={{ width: "100%", justifyContent: "center" }}>
+                      {t("profile.pm.viewMasjid", "View Masjid")}
+                    </Link>
+                    <button type="button" className="btn btn-gold" style={{ width: "100%", justifyContent: "center", marginTop: 8 }} onClick={() => setPmPickerOpen(true)}>
+                      {t("profile.pm.change", "Change Primary Masjid")}
+                    </button>
+                  </div>
+                </div>
+              ) : primaryMasjid === null ? (
+                <div className="cw-side-card cw-side-card-cta">
+                  <h4><Icon name="mosque" size={15} /> {t("community.pmCard.emptyHeading", "Set Your Primary Masjid")}</h4>
+                  <p className="cw-side-card-sub">{t("community.pmCard.emptySub", "Pick a nearby masjid to see its prayer timings right here.")}</p>
+                  <button type="button" className="btn btn-gold" style={{ width: "100%", justifyContent: "center" }} onClick={() => setPmPickerOpen(true)}>
+                    {t("profile.pm.selectOne", "Select One")}
+                  </button>
+                </div>
+              ) : null)}
+
+              {nearbyMasjids && nearbyMasjids.length > 0 && (
+                <div className="cw-side-card">
+                  <h4><Icon name="mapPin" size={15} /> {t("community.nearbyMasjids.heading", "Nearby Masjids")}</h4>
+                  <ul className="cw-side-list cw-side-my-masjids">
+                    {nearbyMasjids.map((m) => (
+                      <li key={m.id}>
+                        <Link to={`/masjid/${m.id}`} className="cw-my-masjid-item">
+                          <span className="cw-my-masjid-thumb">
+                            {m.coverPhotoUrl ? <img src={`${API_ORIGIN}${m.coverPhotoUrl}`} alt="" /> : <Icon name="mosque" size={18} />}
+                          </span>
+                          <span className="cw-my-masjid-body">
+                            <span className="cw-my-masjid-name">{m.name}</span>
+                            <span className="cw-side-card-sub" style={{ marginBottom: 0 }}>{[m.city, m.country].filter(Boolean).join(", ")}</span>
+                          </span>
+                          {m.distanceKm != null && (
+                            <span className="cw-my-masjid-time">{m.distanceKm < 1 ? `${Math.round(m.distanceKm * 1000)} m` : `${m.distanceKm.toFixed(1)} km`}</span>
+                          )}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                  <Link to="/explore-masjids" className="cw-side-link">
+                    {t("communityWall.sideList.viewAllMasjids", "See All Masjids")} <span className="btn-arrow">→</span>
+                  </Link>
                 </div>
               )}
 
