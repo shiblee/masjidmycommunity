@@ -33,6 +33,7 @@ function UploadReelModal({ user, onClose, onUploaded }) {
   const [body, setBody] = useState("");
   const [error, setError] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef(null);
 
   useEffect(() => () => { if (previewUrl) URL.revokeObjectURL(previewUrl); }, [previewUrl]);
@@ -55,17 +56,27 @@ function UploadReelModal({ user, onClose, onUploaded }) {
   const submit = async () => {
     if (!file || uploading) return;
     setUploading(true);
+    setUploadProgress(0);
     setError("");
     try {
       const form = new FormData();
       form.append("video", file);
       if (body.trim()) form.append("body", body.trim());
-      const { data } = await communityApi.post("/reels", form);
+      // A real video (especially on a slow connection) can take a while to
+      // transfer -- without progress feedback "Uploading…" looks identical
+      // to a hung request, so the percentage here is what tells the user
+      // it's genuinely still working, not stuck.
+      const { data } = await communityApi.post("/reels", form, {
+        onUploadProgress: (e) => {
+          if (e.total) setUploadProgress(Math.round((e.loaded / e.total) * 100));
+        },
+      });
       onUploaded(data.activity);
     } catch (err) {
       setError(err.response?.data?.message || t("reels.upload.errorPublish", "Couldn't upload your Reel. Please try again."));
     } finally {
       setUploading(false);
+      setUploadProgress(0);
     }
   };
 
@@ -97,6 +108,17 @@ function UploadReelModal({ user, onClose, onUploaded }) {
         />
 
         {error && <div className="auth-alert" style={{ marginTop: 12 }}><Icon name="info" size={17} />{error}</div>}
+
+        {uploading && (
+          <div style={{ marginTop: 14 }}>
+            <div className="progress-track"><div className="progress-fill" style={{ width: `${uploadProgress}%` }} /></div>
+            <p className="msj-note" style={{ marginTop: 6, textAlign: "center" }}>
+              {uploadProgress < 100
+                ? t("reels.upload.uploadingPct", "Uploading… {pct}%").replace("{pct}", uploadProgress)
+                : t("reels.upload.processing", "Processing your Reel…")}
+            </p>
+          </div>
+        )}
 
         <button type="button" className="btn btn-gold" style={{ width: "100%", justifyContent: "center", marginTop: 14 }} disabled={!file || uploading} onClick={submit}>
           {uploading ? t("reels.upload.uploading", "Uploading…") : t("reels.upload.submit", "Post Reel")}

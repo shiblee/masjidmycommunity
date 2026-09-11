@@ -1413,6 +1413,8 @@ const DEFAULTS = [
   ["reels", "reels.upload.captionPlaceholder", "Add a caption, hashtags…", "कैप्शन, हैशटैग जोड़ें…", "کیپشن، ہیش ٹیگز شامل کریں…", "أضف تعليقًا، وسومًا…"],
   ["reels", "reels.upload.tooLong", "Reels must be {max} seconds or shorter (this video is {actual}s).", "रील अधिकतम {max} सेकंड की होनी चाहिए (यह वीडियो {actual} सेकंड है)।", "ریل زیادہ سے زیادہ {max} سیکنڈ کی ہونی چاہیے (یہ ویڈیو {actual} سیکنڈ ہے)۔", "يجب ألا يتجاوز المقطع {max} ثانية (مدة هذا الفيديو {actual} ثانية)."],
   ["reels", "reels.upload.uploading", "Uploading…", "अपलोड हो रहा है…", "اپ لوڈ ہو رہا ہے…", "جارٍ الرفع…"],
+  ["reels", "reels.upload.uploadingPct", "Uploading… {pct}%", "अपलोड हो रहा है… {pct}%", "اپ لوڈ ہو رہا ہے… {pct}%", "جارٍ الرفع… {pct}%"],
+  ["reels", "reels.upload.processing", "Processing your Reel…", "आपकी रील प्रोसेस हो रही है…", "آپ کی ریل پر کارروائی ہو رہی ہے…", "جارٍ معالجة المقطع…"],
   ["reels", "reels.upload.submit", "Post Reel", "रील पोस्ट करें", "ریل پوسٹ کریں", "نشر المقطع"],
   ["reels", "reels.upload.errorPublish", "Couldn't upload your Reel. Please try again.", "आपकी रील अपलोड नहीं हो सकी। कृपया पुनः प्रयास करें।", "آپ کی ریل اپ لوڈ نہیں ہو سکی۔ براہ کرم دوبارہ کوشش کریں۔", "تعذر رفع المقطع. حاول مرة أخرى."],
   ["reels", "reelsPage.hero.title", "Reels from the community", "समुदाय की रील्स", "کمیونٹی کی ریلز", "مقاطع من المجتمع"],
