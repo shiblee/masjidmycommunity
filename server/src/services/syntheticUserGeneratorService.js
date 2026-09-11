@@ -21,7 +21,7 @@ import {
   GENERIC_FIRST_NAMES_MALE, GENERIC_FIRST_NAMES_FEMALE, GENERIC_LAST_NAMES,
   titlesForField,
 } from "../constants/syntheticPersonaData.js";
-import { generateAndSaveAvatar } from "./avatarGeneratorService.js";
+import { generateRealisticProfilePhoto } from "../utils/realisticPhotoService.js";
 import { generateBio, generateEducationEnhancement, generateWorkExperienceEnhancement } from "./aiProviderService.js";
 import { buildBioProfileContext, BIO_LANGUAGES } from "../utils/bioContext.js";
 import { recordMetaChange } from "../utils/metaChangeLog.js";
@@ -217,7 +217,7 @@ export async function generateSyntheticUser(settings, { skipAi = false } = {}) {
   // delivers risk-free.
   const email = `${username}@${BOT_EMAIL_DOMAIN}`;
   const password = await bcrypt.hash(crypto.randomUUID(), 10);
-  const avatarPath = generateAndSaveAvatar(username);
+  const avatarPath = await generateRealisticProfilePhoto(username, persona.gender);
 
   const templatedBio = `Based in ${persona.geo.city}, ${persona.geo.country}${fieldOfStudy ? `. Background in ${fieldOfStudy}` : ""}${hobbyNames.length ? `, with an interest in ${hobbyNames[0]}` : ""}.`;
 
