@@ -14,11 +14,13 @@ import SkillsCard from "../components/profile/SkillsCard.jsx";
 import HobbiesCard from "../components/profile/HobbiesCard.jsx";
 import SecurityCard from "../components/profile/SecurityCard.jsx";
 import ProfileCompletion from "../components/profile/ProfileCompletion.jsx";
+import PostComposer from "../components/PostComposer.jsx";
 
 const SIDE_LIST_PREVIEW_COUNT = 3;
 const POSTS_PAGE_SIZE = 10;
 
 const PROFILE_NAV_SECTIONS = [
+  { key: "wall", labelKey: "profile.nav.wall.label", label: "My Wall", descKey: "profile.nav.wall.desc", desc: "Your posts & activity", icon: "grid" },
   { key: "personal", labelKey: "profile.nav.personal.label", label: "Profile Details", descKey: "profile.nav.personal.desc", desc: "Bio, contact & personal info", icon: "people" },
   { key: "education", labelKey: "profile.nav.education.label", label: "Education", descKey: "profile.nav.education.desc", desc: "Your academic background", icon: "book" },
   { key: "work-experience", labelKey: "profile.nav.workExperience.label", label: "Work Experience", descKey: "profile.nav.workExperience.desc", desc: "Where you've worked", icon: "building" },
@@ -141,7 +143,8 @@ function Profile() {
   const [showAllMasjids, setShowAllMasjids] = useState(false);
   const [showAllCampaigns, setShowAllCampaigns] = useState(false);
   const [showAllJobs, setShowAllJobs] = useState(false);
-  const activeSection = PROFILE_NAV_KEYS.includes(section) ? section : "personal";
+  const [contentLimits, setContentLimits] = useState({ maxPostLength: 2000 });
+  const activeSection = PROFILE_NAV_KEYS.includes(section) ? section : "wall";
 
   useEffect(() => {
     setLoading(true);
@@ -167,9 +170,11 @@ function Profile() {
   }, [username]);
 
   useEffect(() => {
-    // The owner's middle column now shows the section nav content instead of
-    // their post feed, so there's nothing to fetch for that case.
-    if (!profile || profile.isOwner) return;
+    communityApi.get("/content-settings").then(({ data }) => setContentLimits(data)).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (!profile) return;
     setPostsLoading(true);
     communityApi
       .get("/activities", { params: { userId: profile.id, limit: POSTS_PAGE_SIZE } })
@@ -178,7 +183,18 @@ function Profile() {
         setPostsHasMore(!!data.hasMore);
       })
       .finally(() => setPostsLoading(false));
-  }, [profile?.id, profile?.isOwner]);
+  }, [profile?.id]);
+
+  const handlePostCreated = () => {
+    setPostsLoading(true);
+    communityApi
+      .get("/activities", { params: { userId: profile.id, limit: POSTS_PAGE_SIZE } })
+      .then(({ data }) => {
+        setPosts(data.activities);
+        setPostsHasMore(!!data.hasMore);
+      })
+      .finally(() => setPostsLoading(false));
+  };
 
   const loadMorePosts = () => {
     setPostsLoading(true);
@@ -276,6 +292,31 @@ function Profile() {
             <div className="cw-main">
               {isOwner ? (
                 <div className="pf-section-content" key={activeSection}>
+                  {activeSection === "wall" && (
+                    <>
+                      <PostComposer user={profile} onPosted={handlePostCreated} maxLength={contentLimits.maxPostLength} />
+                      {postsLoading && posts.length === 0 ? (
+                        <p className="msj-note">{t("profile.posts.loading", "Loading posts…")}</p>
+                      ) : posts.length === 0 ? (
+                        <div className="cw-side-card" style={{ textAlign: "center", marginTop: 20 }}>
+                          <p className="cw-side-card-sub" style={{ marginBottom: 0 }}>
+                            {t("profile.posts.emptyOwner", "You haven't shared anything on the Community Wall yet.")}
+                          </p>
+                        </div>
+                      ) : (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 20, marginTop: 20 }}>
+                          {posts.map((post) => (
+                            <ProfilePostCard key={post.id} post={post} fallbackAuthor={profile} />
+                          ))}
+                        </div>
+                      )}
+                      {postsHasMore && (
+                        <button type="button" className="btn btn-outline-ink" style={{ marginTop: 20 }} disabled={postsLoading} onClick={loadMorePosts}>
+                          {postsLoading ? t("masjidWizard.loading", "Loading…") : t("profile.posts.loadMore", "Load more posts")}
+                        </button>
+                      )}
+                    </>
+                  )}
                   {activeSection === "personal" && (
                     <div className="card profile-card">
                       <div className="profile-card-head">
