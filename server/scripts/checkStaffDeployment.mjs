@@ -17,4 +17,10 @@ console.log("admin_activity_logs table exists:", await tableExists("admin_activi
 const admins = await sequelize.query("SELECT id, email, role, status FROM admin_users", { type: QueryTypes.SELECT });
 console.log("admin_users rows:", JSON.stringify(admins, null, 2));
 
+const recentLogs = await sequelize.query(
+  "SELECT adminUserId, email, activityType, status, sessionId, ipAddress, browser, os, deviceType, createdAt FROM admin_activity_logs ORDER BY createdAt DESC LIMIT 5",
+  { type: QueryTypes.SELECT }
+);
+console.log("Recent admin_activity_logs rows:", JSON.stringify(recentLogs, null, 2));
+
 await sequelize.close();
