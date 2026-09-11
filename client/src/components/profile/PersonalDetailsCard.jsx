@@ -52,6 +52,11 @@ function formatDob(d) {
   return new Date(d).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 }
 
+function formatMemberSince(d) {
+  if (!d) return "";
+  return new Date(d).toLocaleDateString("en-GB", { month: "long", year: "numeric" });
+}
+
 // A compact, custom listbox for Day/Month/Year — used instead of a native
 // <select> because native pickers can flip open upward when there isn't
 // room below (e.g. a 100-entry Year list near the bottom of the viewport).
@@ -549,8 +554,42 @@ function PersonalDetailsCard({ user, mode = "self", targetUserId, onUserUpdated 
           </button>
         ) : null}
 
-        {user.locationLabel && (
-          <div className="profile-meta-row"><Icon name="mapPin" size={15} />{user.locationLabel}</div>
+        {!editable ? (
+          (user.locationLabel || user.createdAt || user.verified) && (
+            <div className="pf-basic-info-list">
+              {user.locationLabel && (
+                <div className="pf-basic-info-row">
+                  <span className="pf-basic-info-icon"><Icon name="mapPin" size={16} /></span>
+                  <div>
+                    <span className="pf-basic-info-label">{t("personal.location", "Location")}</span>
+                    <strong>{user.locationLabel}</strong>
+                  </div>
+                </div>
+              )}
+              {user.createdAt && (
+                <div className="pf-basic-info-row">
+                  <span className="pf-basic-info-icon"><Icon name="calendar" size={16} /></span>
+                  <div>
+                    <span className="pf-basic-info-label">{t("personal.memberSince", "Member Since")}</span>
+                    <strong>{formatMemberSince(user.createdAt)}</strong>
+                  </div>
+                </div>
+              )}
+              {user.verified && (
+                <div className="pf-basic-info-row">
+                  <span className="pf-basic-info-icon"><Icon name="shieldCheck" size={16} /></span>
+                  <div>
+                    <span className="pf-basic-info-label">{t("personal.status", "Status")}</span>
+                    <strong>{t("profile.badge.verifiedMember", "Verified Member")}</strong>
+                  </div>
+                </div>
+              )}
+            </div>
+          )
+        ) : (
+          user.locationLabel && (
+            <div className="profile-meta-row"><Icon name="mapPin" size={15} />{user.locationLabel}</div>
+          )
         )}
 
         {hasPrivate && (user.gender || user.maritalStatus || user.dateOfBirth || user.email || user.mobile) && (
