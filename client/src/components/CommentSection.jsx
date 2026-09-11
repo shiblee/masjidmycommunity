@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import communityApi from "../services/communityApi.js";
 import reportApi from "../services/reportApi.js";
 import { Icon } from "./Icons.jsx";
@@ -287,10 +288,20 @@ function CommentNode({ comment, childrenMap, depth, basePath, user, navigate, mu
   return (
     <div className="cmt-node" style={{ marginLeft: visualDepth ? 28 : 0 }}>
       <div className="cmt-row">
-        <div className="cmt-avatar">{initialsOf(comment.author?.fullName)}</div>
+        {comment.author?.username ? (
+          <Link to={`/profile/${comment.author.username}`} className="cmt-avatar">{initialsOf(comment.author?.fullName)}</Link>
+        ) : (
+          <div className="cmt-avatar">{initialsOf(comment.author?.fullName)}</div>
+        )}
         <div className="cmt-body-wrap">
           <div className="cmt-bubble">
-            <div className="cmt-author">{comment.author?.fullName || t("commentSection.deletedUser", "Deleted User")}</div>
+            <div className="cmt-author">
+              {comment.author?.username ? (
+                <Link to={`/profile/${comment.author.username}`} className="cmt-author-link">{comment.author.fullName}</Link>
+              ) : (
+                comment.author?.fullName || t("commentSection.deletedUser", "Deleted User")
+              )}
+            </div>
             {editing ? (
               <div className="cmt-edit-box">
                 <MentionTextarea rows={2} value={editText} onChange={setEditText} autoFocus />

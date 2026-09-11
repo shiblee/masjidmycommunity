@@ -384,7 +384,7 @@ export const listPublished = async (req, res) => {
       }
       if (a.type === "community_post" && a.relatedUserId) {
         const u = userById.get(a.relatedUserId);
-        json.author = u ? { id: u.id, fullName: u.fullName } : null;
+        json.author = u ? { id: u.id, fullName: u.fullName, username: u.username, profilePhoto: u.profilePhoto } : null;
         json.isOwner = req.user?.type === "user" && req.user.id === a.relatedUserId;
       }
       json.likeCount = voteCounts[a.id]?.like || 0;
@@ -454,7 +454,7 @@ export const listComments = async (req, res) => {
     });
 
     const userIds = [...new Set(comments.map((c) => c.userId))];
-    const users = userIds.length ? await User.findAll({ where: { id: { [Op.in]: userIds } }, attributes: ["id", "fullName"] }) : [];
+    const users = userIds.length ? await User.findAll({ where: { id: { [Op.in]: userIds } }, attributes: ["id", "fullName", "username"] }) : [];
     const userById = Object.fromEntries(users.map((u) => [u.id, u]));
 
     let reportedIds = new Set();
@@ -501,7 +501,7 @@ export const listComments = async (req, res) => {
       createdAt: c.createdAt,
       updatedAt: c.updatedAt,
       edited: c.status === "visible" && c.updatedAt.getTime() !== c.createdAt.getTime(),
-      author: userById[c.userId] ? { id: userById[c.userId].id, fullName: userById[c.userId].fullName } : null,
+      author: userById[c.userId] ? { id: userById[c.userId].id, fullName: userById[c.userId].fullName, username: userById[c.userId].username } : null,
       isOwner: req.user?.type === "user" && req.user.id === c.userId,
       alreadyReported: reportedIds.has(c.id),
       likeCount: voteCounts[c.id]?.like || 0,
@@ -552,7 +552,7 @@ export const createComment = async (req, res) => {
       mediaUrl: mediaUrl || null,
       mediaType: mediaUrl ? mediaType : null,
     });
-    const user = await User.findByPk(req.user.id, { attributes: ["id", "fullName"] });
+    const user = await User.findByPk(req.user.id, { attributes: ["id", "fullName", "username"] });
 
     if (parent) {
       notifyReply({ parentUserId: parent.userId, actorId: req.user.id, actorName: user?.fullName || "Someone", body: comment.body || "a GIF", link: "/my-community" });
@@ -570,7 +570,7 @@ export const createComment = async (req, res) => {
         createdAt: comment.createdAt,
         updatedAt: comment.updatedAt,
         edited: false,
-        author: user ? { id: user.id, fullName: user.fullName } : null,
+        author: user ? { id: user.id, fullName: user.fullName, username: user.username } : null,
         isOwner: true,
         alreadyReported: false,
         likeCount: 0,
@@ -757,14 +757,14 @@ export const createPost = async (req, res) => {
         )
       : [];
 
-    const user = await User.findByPk(req.user.id, { attributes: ["id", "fullName"] });
+    const user = await User.findByPk(req.user.id, { attributes: ["id", "fullName", "username"] });
 
     notifyMentions(activity.body, { actorId: req.user.id, actorName: user?.fullName || "Someone" });
 
     res.status(201).json({
       activity: {
         ...activity.toJSON(),
-        author: user ? { id: user.id, fullName: user.fullName } : null,
+        author: user ? { id: user.id, fullName: user.fullName, username: user.username } : null,
         isOwner: true,
         likeCount: 0,
         dislikeCount: 0,
@@ -822,13 +822,13 @@ export const createReel = async (req, res) => {
       publishedAt: new Date(),
     });
 
-    const user = await User.findByPk(req.user.id, { attributes: ["id", "fullName"] });
+    const user = await User.findByPk(req.user.id, { attributes: ["id", "fullName", "username"] });
     notifyMentions(activity.body, { actorId: req.user.id, actorName: user?.fullName || "Someone" });
 
     res.status(201).json({
       activity: {
         ...activity.toJSON(),
-        author: user ? { id: user.id, fullName: user.fullName } : null,
+        author: user ? { id: user.id, fullName: user.fullName, username: user.username } : null,
         isOwner: true,
         likeCount: 0,
         dislikeCount: 0,
@@ -1022,7 +1022,7 @@ export const listImageComments = async (req, res) => {
     });
 
     const userIds = [...new Set(comments.map((c) => c.userId))];
-    const users = userIds.length ? await User.findAll({ where: { id: { [Op.in]: userIds } }, attributes: ["id", "fullName"] }) : [];
+    const users = userIds.length ? await User.findAll({ where: { id: { [Op.in]: userIds } }, attributes: ["id", "fullName", "username"] }) : [];
     const userById = Object.fromEntries(users.map((u) => [u.id, u]));
 
     let reportedIds = new Set();
@@ -1069,7 +1069,7 @@ export const listImageComments = async (req, res) => {
       createdAt: c.createdAt,
       updatedAt: c.updatedAt,
       edited: c.status === "visible" && c.updatedAt.getTime() !== c.createdAt.getTime(),
-      author: userById[c.userId] ? { id: userById[c.userId].id, fullName: userById[c.userId].fullName } : null,
+      author: userById[c.userId] ? { id: userById[c.userId].id, fullName: userById[c.userId].fullName, username: userById[c.userId].username } : null,
       isOwner: req.user?.type === "user" && req.user.id === c.userId,
       alreadyReported: reportedIds.has(c.id),
       likeCount: voteCounts[c.id]?.like || 0,
@@ -1121,7 +1121,7 @@ export const createImageComment = async (req, res) => {
       userId: req.user.id,
       body: trimmedBody,
     });
-    const user = await User.findByPk(req.user.id, { attributes: ["id", "fullName"] });
+    const user = await User.findByPk(req.user.id, { attributes: ["id", "fullName", "username"] });
 
     if (parent) {
       notifyReply({ parentUserId: parent.userId, actorId: req.user.id, actorName: user?.fullName || "Someone", body: comment.body || "a GIF", link: "/my-community" });
@@ -1139,7 +1139,7 @@ export const createImageComment = async (req, res) => {
         createdAt: comment.createdAt,
         updatedAt: comment.updatedAt,
         edited: false,
-        author: user ? { id: user.id, fullName: user.fullName } : null,
+        author: user ? { id: user.id, fullName: user.fullName, username: user.username } : null,
         isOwner: true,
         alreadyReported: false,
         likeCount: 0,

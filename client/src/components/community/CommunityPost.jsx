@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { Icon } from "../Icons.jsx";
 import CommentSection from "../CommentSection.jsx";
 import PostBodyText from "../PostBodyText.jsx";
@@ -565,11 +566,17 @@ function CommunityPost({ post, user, navigate, onVote, onEdit, onDelete, onRepor
     <article id={post.id} className={`cw-post${post.featured ? " cw-post-featured" : ""}`}>
       {post.featured && <span className="cw-featured-ribbon">★ Featured</span>}
       <div className="cw-post-head">
-        <Avatar actor={post.actor} />
+        {post.type === "community_post" && post.author?.username ? (
+          <Link to={`/profile/${post.author.username}`}><Avatar actor={post.actor} /></Link>
+        ) : (
+          <Avatar actor={post.actor} />
+        )}
         <div className="cw-post-headtext">
           <div className="cw-post-name">
             {post.type === "masjid_update" && post.relatedMasjidId ? (
               <a href={`/masjid/${post.relatedMasjidId}`} className="cw-post-name-link">{post.actor.name}</a>
+            ) : post.type === "community_post" && post.author?.username ? (
+              <Link to={`/profile/${post.author.username}`} className="cw-post-name-link">{post.actor.name}</Link>
             ) : (
               post.actor.name
             )}

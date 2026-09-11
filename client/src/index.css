@@ -1988,6 +1988,9 @@ footer{
 .cmt-body-wrap{ flex:1; min-width:0; }
 .cmt-bubble{ background:var(--paper-dim); border-radius:14px; padding:10px 14px; }
 .cmt-author{ font-size:13px; font-weight:700; color:var(--text-on-paper); }
+a.cmt-avatar{ text-decoration:none; }
+.cmt-author-link{ color:inherit; text-decoration:none; }
+.cmt-author-link:hover{ text-decoration:underline; }
 .cmt-text{ margin:2px 0 0; font-size:13.5px; line-height:1.55; color:var(--text-on-paper); white-space:pre-wrap; word-break:break-word; }
 .cmt-text-deleted{ color:var(--text-on-paper-dim); font-style:italic; }
 .cmt-edit-box{ margin-top:4px; }
