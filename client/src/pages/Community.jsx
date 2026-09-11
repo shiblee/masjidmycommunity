@@ -549,6 +549,28 @@ function Community() {
                     </div>
                   )}
 
+                  {registeredUsersPreview && registeredUsersPreview.length > 0 && (
+                    <div className="cw-users-rail">
+                      <div className="cw-users-rail-head">
+                        <h4><Icon name="people" size={15} /> {t("community.registeredUsers.heading", "Registered Users")}</h4>
+                        <Link to="/explore-users" className="cw-side-link" style={{ marginTop: 0 }}>
+                          {t("communityWall.sideList.viewAllUsers", "See All Users")} <span className="btn-arrow">→</span>
+                        </Link>
+                      </div>
+                      <div className="cw-users-scroll">
+                        {registeredUsersPreview.map((u) => (
+                          <Link to={`/profile/${u.username}`} className="cw-user-tile" key={u.id}>
+                            <span className="cw-user-tile-avatar">
+                              <MediaThumb src={u.profilePhoto ? `${API_ORIGIN}${u.profilePhoto}` : null} />
+                            </span>
+                            <span className="cw-user-tile-name">{u.fullName}</span>
+                            <span className="cw-user-tile-loc">{[u.locationCity, u.locationCountry].filter(Boolean).join(", ")}</span>
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="cw-feed">
                     {filteredPosts.map((post, i) => (
                       <React.Fragment key={post.id}>
@@ -601,31 +623,6 @@ function Community() {
                 </div>
               </div>
 
-              {registeredUsersPreview && registeredUsersPreview.length > 0 && (
-                <div className="cw-side-card">
-                  <h4><Icon name="people" size={15} /> {t("community.registeredUsers.heading", "Registered Users")}</h4>
-                  <ul className="cw-side-list cw-side-my-masjids">
-                    {registeredUsersPreview.map((u) => (
-                      <li key={u.id}>
-                        <Link to={`/profile/${u.username}`} className="cw-my-masjid-item">
-                          <span className="cw-my-masjid-thumb">
-                            <MediaThumb src={u.profilePhoto ? `${API_ORIGIN}${u.profilePhoto}` : null} />
-                          </span>
-                          <span className="cw-my-masjid-body">
-                            <span className="cw-my-masjid-name">{u.fullName}</span>
-                            <span className="cw-side-card-sub" style={{ marginBottom: 0 }}>
-                              {[u.locationCity, u.locationCountry].filter(Boolean).join(", ")}
-                            </span>
-                          </span>
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                  <Link to="/explore-users" className="cw-side-link">
-                    {t("communityWall.sideList.viewAllUsers", "See All Users")} <span className="btn-arrow">→</span>
-                  </Link>
-                </div>
-              )}
 
               {nearbyMasjids && nearbyMasjids.length > 0 && (
                 <div className="cw-side-card">
