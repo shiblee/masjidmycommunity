@@ -25,6 +25,7 @@ import CampaignWizard from "./campaign/CampaignWizard.jsx";
 import JobForm from "./jobs/JobForm.jsx";
 import CommunityPost, { mapLiveActivity, timeAgo, EditCommunityPostModal, DeleteCommunityPostModal } from "../components/community/CommunityPost.jsx";
 import ReelsRail from "../components/community/ReelsRail.jsx";
+import RegisteredUsersRail from "../components/community/RegisteredUsersRail.jsx";
 
 
 // Every acct-status-pill value that can show up across the masjid/campaign/job
@@ -162,7 +163,6 @@ function Community() {
   // meaning "checked, nothing to show" so the widget cleanly hides itself.
   const [recommendedJobs, setRecommendedJobs] = useState(null);
   const [nearbyMasjids, setNearbyMasjids] = useState(null);
-  const [registeredUsersPreview, setRegisteredUsersPreview] = useState(null);
 
   useEffect(() => {
     const onSessionUpdated = (e) => setUser(e.detail);
@@ -185,18 +185,12 @@ function Community() {
     if (!user) {
       setRecommendedJobs(null);
       setNearbyMasjids(null);
-      setRegisteredUsersPreview(null);
       return;
     }
     publicJobApi
       .get("/by-skills", { params: { limit: 4 } })
       .then(({ data }) => setRecommendedJobs(data.jobs || []))
       .catch(() => setRecommendedJobs([]));
-
-    userApi
-      .get("/public", { params: { pageSize: 6 } })
-      .then(({ data }) => setRegisteredUsersPreview(data.users || []))
-      .catch(() => setRegisteredUsersPreview([]));
 
     const loadNearby = (params) => {
       userApi
@@ -549,28 +543,6 @@ function Community() {
                     </div>
                   )}
 
-                  {registeredUsersPreview && registeredUsersPreview.length > 0 && (
-                    <div className="cw-users-rail">
-                      <div className="cw-users-rail-head">
-                        <h4><Icon name="people" size={15} /> {t("community.registeredUsers.heading", "Registered Users")}</h4>
-                        <Link to="/explore-users" className="cw-side-link" style={{ marginTop: 0 }}>
-                          {t("communityWall.sideList.viewAllUsers", "See All Users")} <span className="btn-arrow">→</span>
-                        </Link>
-                      </div>
-                      <div className="cw-users-scroll">
-                        {registeredUsersPreview.map((u) => (
-                          <Link to={`/profile/${u.username}`} className="cw-user-tile" key={u.id}>
-                            <span className="cw-user-tile-avatar">
-                              <MediaThumb src={u.profilePhoto ? `${API_ORIGIN}${u.profilePhoto}` : null} />
-                            </span>
-                            <span className="cw-user-tile-name">{u.fullName}</span>
-                            <span className="cw-user-tile-loc">{[u.locationCity, u.locationCountry].filter(Boolean).join(", ")}</span>
-                          </Link>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
                   <div className="cw-feed">
                     {filteredPosts.map((post, i) => (
                       <React.Fragment key={post.id}>
@@ -593,7 +565,15 @@ function Community() {
                         />
                       </div>
                       {(i + 1) % contentLimits.reelsIntervalPosts === 0 && (
-                        <ReelsRail user={user} />
+                        // Alternates with the Registered Users rail at each
+                        // checkpoint rather than stacking both every time --
+                        // still repeats endlessly through the feed exactly
+                        // like Reels does, just taking turns with it.
+                        ((i + 1) / contentLimits.reelsIntervalPosts) % 2 === 1 ? (
+                          <ReelsRail user={user} />
+                        ) : (
+                          <RegisteredUsersRail />
+                        )
                       )}
                       </React.Fragment>
                     ))}
