@@ -24,6 +24,7 @@ import PostComposer from "../components/PostComposer.jsx";
 import CampaignWizard from "./campaign/CampaignWizard.jsx";
 import JobForm from "./jobs/JobForm.jsx";
 import CommunityPost, { mapLiveActivity, timeAgo, EditCommunityPostModal, DeleteCommunityPostModal } from "../components/community/CommunityPost.jsx";
+import ReelsRail from "../components/community/ReelsRail.jsx";
 
 
 // Every acct-status-pill value that can show up across the masjid/campaign/job
@@ -302,7 +303,7 @@ function Community() {
   // Admin-configurable character limits (Settings → Community / Content) —
   // fetched once and passed down to the composer and every comment thread so
   // they never need their own request.
-  const [contentLimits, setContentLimits] = useState({ maxPostLength: 2000, maxCommentLength: 1000, maxReplyLength: 1000 });
+  const [contentLimits, setContentLimits] = useState({ maxPostLength: 2000, maxCommentLength: 1000, maxReplyLength: 1000, reelsIntervalPosts: 3 });
   useEffect(() => {
     communityApi.get("/content-settings").then(({ data }) => setContentLimits(data)).catch(() => {});
   }, []);
@@ -550,7 +551,8 @@ function Community() {
 
                   <div className="cw-feed">
                     {filteredPosts.map((post, i) => (
-                      <div className="reveal" style={{ transitionDelay: `${Math.min(i, 6) * 0.05}s` }} key={post.id}>
+                      <React.Fragment key={post.id}>
+                      <div className="reveal" style={{ transitionDelay: `${Math.min(i, 6) * 0.05}s` }}>
                         <CommunityPost
                           post={post}
                           user={user}
@@ -568,6 +570,10 @@ function Community() {
                           onOpenImage={openImage}
                         />
                       </div>
+                      {(i + 1) % contentLimits.reelsIntervalPosts === 0 && (
+                        <ReelsRail user={user} />
+                      )}
+                      </React.Fragment>
                     ))}
                   </div>
 

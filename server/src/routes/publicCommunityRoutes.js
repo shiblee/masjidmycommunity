@@ -1,7 +1,7 @@
 import { Router } from "express";
 import auth, { requireUser } from "../middleware/auth.js";
 import optionalAuth from "../middleware/optionalAuth.js";
-import { uploadWallPostMedia } from "../middleware/upload.js";
+import { uploadWallPostMedia, uploadReelVideo } from "../middleware/upload.js";
 import gifSearchRateLimit from "../middleware/gifSearchRateLimit.js";
 import {
   listPublished,
@@ -24,6 +24,8 @@ import {
   deleteImageComment,
   searchGifsEndpoint,
   searchStickersEndpoint,
+  createReel,
+  listReels,
 } from "../controllers/publicCommunityController.js";
 
 const router = Router();
@@ -45,6 +47,9 @@ router.post("/activities/:activityId/comments/:id/vote", auth, requireUser, cast
 router.post("/posts", auth, requireUser, uploadWallPostMedia, createPost);
 router.patch("/posts/:id", auth, requireUser, updatePost);
 router.delete("/posts/:id", auth, requireUser, deletePost);
+
+router.get("/reels", optionalAuth, listReels);
+router.post("/reels", auth, requireUser, uploadReelVideo, createReel);
 
 router.post("/images/:imageId/vote", auth, requireUser, castImageVote);
 router.get("/images/:imageId/comments", optionalAuth, listImageComments);

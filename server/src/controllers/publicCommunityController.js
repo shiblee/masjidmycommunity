@@ -19,6 +19,7 @@ import ContentSettings from "../models/ContentSettings.js";
 import { notifyUser } from "../services/notificationService.js";
 import { checkRestrictedWords, RESTRICTED_CONTENT_MESSAGE } from "../utils/contentModeration.js";
 import { generateVideoThumbnail } from "../utils/videoThumbnail.js";
+import { getVideoDuration } from "../utils/videoDuration.js";
 import { searchGifs, searchStickers, isGifSearchConfigured } from "../services/gifService.js";
 
 // The only place a comment's mediaUrl is ever produced is our own GIF/
@@ -107,6 +108,7 @@ async function getContentLimits() {
     maxPostLength: settings?.maxPostLength ?? 2000,
     maxCommentLength: settings?.maxCommentLength ?? 1000,
     maxReplyLength: settings?.maxReplyLength ?? 1000,
+    reelsIntervalPosts: settings?.reelsIntervalPosts ?? 3,
   };
 }
 
@@ -191,7 +193,12 @@ export const listPublished = async (req, res) => {
       Campaign.findAll({ where: { moderationStatus: "under_review" }, attributes: ["id"] }).then((rows) => rows.map((r) => r.id)),
     ]);
 
-    const where = { status: "published" };
+    // Reels are their own rail (listReels below), never mixed into this
+    // feed query -- the Home Page positions them separately client-side.
+    // The userId/masjidId/campaignId/jobId branches below either overwrite
+    // this (userId) or leave it in place (masjidId/campaignId/jobId),
+    // keeping reels out of those embedded views too.
+    const where = { status: "published", type: { [Op.ne]: "reel" } };
     // Explicit null-safe exclusion — relatedMasjidId/relatedCampaignId are
     // NULL on most activities, and `NOT (NULL IN (...))` evaluates to NULL
     // (excluding the row) rather than true, so a plain Op.not would wrongly
@@ -765,6 +772,123 @@ export const createPost = async (req, res) => {
         commentCount: 0,
         images: createdImages.map((img) => ({ id: img.id, url: img.url, likeCount: 0, dislikeCount: 0, userVote: null, commentCount: 0 })),
       },
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const REEL_MAX_DURATION_SECONDS = 90;
+
+// A Reel is a CommunityActivity row (type: "reel") with a mandatory video
+// and a duration cap -- otherwise the same shape/rules as createPost above
+// (same caption limit/restricted-word check, same poster-generation call,
+// same @mention notifications), so it inherits Like/Comment/Share and
+// moderation for free via the shared activityId-keyed tables. Auto-
+// publishes immediately, same as a regular Wall post.
+export const createReel = async (req, res) => {
+  try {
+    const file = req.file;
+    if (!file) return res.status(400).json({ message: "Select a video to upload." });
+
+    const body = req.body.body?.trim() || null;
+    const { maxPostLength } = await getContentLimits();
+    if (body && body.length > maxPostLength) {
+      fs.unlink(file.path, () => {});
+      return res.status(400).json({ message: `Captions can be at most ${maxPostLength} characters.` });
+    }
+    if (body && (await checkRestrictedWords(body)).flagged) {
+      fs.unlink(file.path, () => {});
+      return res.status(400).json({ message: RESTRICTED_CONTENT_MESSAGE });
+    }
+
+    const duration = await getVideoDuration(file.path);
+    if (duration != null && duration > REEL_MAX_DURATION_SECONDS) {
+      fs.unlink(file.path, () => {});
+      return res.status(400).json({ message: `Reels must be ${REEL_MAX_DURATION_SECONDS} seconds or shorter (this video is ${Math.round(duration)}s).` });
+    }
+
+    const videoUrl = `/uploads/wall-post-media/${file.filename}`;
+    const posterFileName = await generateVideoThumbnail(file.path, path.dirname(file.path));
+    const videoPosterUrl = posterFileName ? `/uploads/wall-post-media/${posterFileName}` : null;
+
+    const activity = await CommunityActivity.create({
+      type: "reel",
+      body,
+      relatedUserId: req.user.id,
+      mediaVideoUrl: videoUrl,
+      mediaVideoPosterUrl: videoPosterUrl,
+      status: "published",
+      publishedAt: new Date(),
+    });
+
+    const user = await User.findByPk(req.user.id, { attributes: ["id", "fullName"] });
+    notifyMentions(activity.body, { actorId: req.user.id, actorName: user?.fullName || "Someone" });
+
+    res.status(201).json({
+      activity: {
+        ...activity.toJSON(),
+        author: user ? { id: user.id, fullName: user.fullName } : null,
+        isOwner: true,
+        likeCount: 0,
+        dislikeCount: 0,
+        userVote: null,
+        commentCount: 0,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Most-recent-first, paginated -- a plain LIMIT/OFFSET query with no
+// randomization, so the Home Page rail and "View All" feed never show the
+// same Reel twice in one section by construction.
+export const listReels = async (req, res) => {
+  try {
+    const limit = Math.min(Number(req.query.limit) || 30, 60);
+    const offset = Math.max(Number(req.query.offset) || 0, 0);
+
+    const { rows, count } = await CommunityActivity.findAndCountAll({
+      where: { type: "reel", status: "published" },
+      order: [["publishedAt", "DESC"]],
+      limit,
+      offset,
+    });
+
+    const userIds = [...new Set(rows.map((r) => r.relatedUserId).filter(Boolean))];
+    const users = userIds.length ? await User.findAll({ where: { id: userIds }, attributes: ["id", "fullName"] }) : [];
+    const userById = new Map(users.map((u) => [u.id, u]));
+
+    const activityIds = rows.map((r) => r.id);
+    const [voteCountRows, commentCountRows, userVoteRows] = await Promise.all([
+      activityIds.length
+        ? CommunityActivityVote.findAll({ where: { activityId: activityIds }, attributes: ["activityId", "value", [fn("COUNT", col("id")), "count"]], group: ["activityId", "value"], raw: true })
+        : [],
+      activityIds.length
+        ? Comment.findAll({ where: { activityId: activityIds, status: { [Op.ne]: "hidden" } }, attributes: ["activityId", [fn("COUNT", col("id")), "count"]], group: ["activityId"], raw: true })
+        : [],
+      req.user?.type === "user" && activityIds.length
+        ? CommunityActivityVote.findAll({ where: { activityId: activityIds, userId: req.user.id }, attributes: ["activityId", "value"], raw: true })
+        : [],
+    ]);
+    const likeCounts = new Map();
+    const dislikeCounts = new Map();
+    voteCountRows.forEach((r) => (r.value === "like" ? likeCounts : dislikeCounts).set(r.activityId, Number(r.count)));
+    const commentCounts = new Map(commentCountRows.map((r) => [r.activityId, Number(r.count)]));
+    const userVotes = new Map(userVoteRows.map((r) => [r.activityId, r.value]));
+
+    res.json({
+      reels: rows.map((r) => ({
+        ...r.toJSON(),
+        author: userById.has(r.relatedUserId) ? { id: r.relatedUserId, fullName: userById.get(r.relatedUserId).fullName } : null,
+        likeCount: likeCounts.get(r.id) || 0,
+        dislikeCount: dislikeCounts.get(r.id) || 0,
+        commentCount: commentCounts.get(r.id) || 0,
+        userVote: userVotes.get(r.id) || null,
+      })),
+      hasMore: offset + rows.length < count,
+      total: count,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

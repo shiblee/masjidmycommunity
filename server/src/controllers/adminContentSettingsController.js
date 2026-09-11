@@ -1,6 +1,6 @@
 import ContentSettings from "../models/ContentSettings.js";
 
-const FIELDS = ["maxPostLength", "maxCommentLength", "maxReplyLength"];
+const LENGTH_FIELDS = ["maxPostLength", "maxCommentLength", "maxReplyLength"];
 
 export const getSettings = async (req, res) => {
   try {
@@ -9,6 +9,7 @@ export const getSettings = async (req, res) => {
       maxPostLength: settings?.maxPostLength ?? 2000,
       maxCommentLength: settings?.maxCommentLength ?? 1000,
       maxReplyLength: settings?.maxReplyLength ?? 1000,
+      reelsIntervalPosts: settings?.reelsIntervalPosts ?? 3,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -18,13 +19,20 @@ export const getSettings = async (req, res) => {
 export const updateSettings = async (req, res) => {
   try {
     const updates = {};
-    for (const field of FIELDS) {
+    for (const field of LENGTH_FIELDS) {
       if (req.body[field] === undefined) continue;
       const n = Number(req.body[field]);
       if (!Number.isInteger(n) || n < 1) {
         return res.status(400).json({ message: "Each limit must be a whole number of at least 1 character." });
       }
       updates[field] = n;
+    }
+    if (req.body.reelsIntervalPosts !== undefined) {
+      const n = Number(req.body.reelsIntervalPosts);
+      if (!Number.isInteger(n) || n < 1) {
+        return res.status(400).json({ message: "The Reels interval must be a whole number of at least 1 post." });
+      }
+      updates.reelsIntervalPosts = n;
     }
 
     const [settings] = await ContentSettings.findOrCreate({ where: { id: 1 }, defaults: { id: 1, ...updates } });
@@ -35,6 +43,7 @@ export const updateSettings = async (req, res) => {
       maxPostLength: settings.maxPostLength,
       maxCommentLength: settings.maxCommentLength,
       maxReplyLength: settings.maxReplyLength,
+      reelsIntervalPosts: settings.reelsIntervalPosts,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

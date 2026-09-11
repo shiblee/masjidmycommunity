@@ -61,8 +61,8 @@ function Settings() {
   const [savingThreshold, setSavingThreshold] = useState(false);
   const [thresholdError, setThresholdError] = useState("");
 
-  const [contentLimits, setContentLimits] = useState({ maxPostLength: 2000, maxCommentLength: 1000, maxReplyLength: 1000 });
-  const [contentLimitsInput, setContentLimitsInput] = useState({ maxPostLength: "2000", maxCommentLength: "1000", maxReplyLength: "1000" });
+  const [contentLimits, setContentLimits] = useState({ maxPostLength: 2000, maxCommentLength: 1000, maxReplyLength: 1000, reelsIntervalPosts: 3 });
+  const [contentLimitsInput, setContentLimitsInput] = useState({ maxPostLength: "2000", maxCommentLength: "1000", maxReplyLength: "1000", reelsIntervalPosts: "3" });
   const [savingContentLimits, setSavingContentLimits] = useState(false);
   const [contentLimitsError, setContentLimitsError] = useState("");
 
@@ -150,6 +150,7 @@ function Settings() {
           maxPostLength: String(data.maxPostLength),
           maxCommentLength: String(data.maxCommentLength),
           maxReplyLength: String(data.maxReplyLength),
+          reelsIntervalPosts: String(data.reelsIntervalPosts),
         });
       })
       .catch(() => {});
@@ -410,6 +411,12 @@ function Settings() {
       }
       parsed[field] = n;
     }
+    const reelsInterval = Number(contentLimitsInput.reelsIntervalPosts);
+    if (!Number.isInteger(reelsInterval) || reelsInterval < 1) {
+      setContentLimitsError("The Reels interval must be a whole number of at least 1 post.");
+      return;
+    }
+    parsed.reelsIntervalPosts = reelsInterval;
     setContentLimitsError("");
     setSavingContentLimits(true);
     try {
@@ -419,6 +426,7 @@ function Settings() {
         maxPostLength: String(data.maxPostLength),
         maxCommentLength: String(data.maxCommentLength),
         maxReplyLength: String(data.maxReplyLength),
+        reelsIntervalPosts: String(data.reelsIntervalPosts),
       });
       showToast("Character limits saved.");
     } catch (err) {
@@ -1125,6 +1133,20 @@ function Settings() {
                   />
                   <div className="amx-panel-sub" style={{ marginTop: 6 }}>
                     Applies to replies at every nesting level. Current: <strong>{contentLimits.maxReplyLength}</strong> characters.
+                  </div>
+                </div>
+                <div className="amx-form-group">
+                  <label htmlFor="reels-interval-posts">Reels Section Frequency</label>
+                  <input
+                    id="reels-interval-posts"
+                    type="number"
+                    min={1}
+                    step={1}
+                    value={contentLimitsInput.reelsIntervalPosts}
+                    onChange={(e) => setContentLimitsInput((s) => ({ ...s, reelsIntervalPosts: e.target.value }))}
+                  />
+                  <div className="amx-panel-sub" style={{ marginTop: 6 }}>
+                    How many regular posts appear before a Reels section on the Home Page feed. Current: every <strong>{contentLimits.reelsIntervalPosts}</strong> posts.
                   </div>
                 </div>
                 {contentLimitsError && (

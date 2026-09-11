@@ -199,6 +199,27 @@ export function uploadWallPostMedia(req, res, next) {
   });
 }
 
+// Reels: single required video, no images -- same storage pool as wall
+// posts (both are "wall-post-media"), just a narrower filter/field.
+const reelVideoUpload = multer({
+  storage: diskStorageFor(WALL_POST_UPLOAD_ROOT),
+  limits: { fileSize: VIDEO_MAX_BYTES, files: 1 },
+  fileFilter: (req, file, cb) => {
+    if (!VIDEO_TYPES.has(file.mimetype)) return cb(new Error("Only MP4, WEBM, or MOV videos are allowed for a Reel."));
+    cb(null, true);
+  },
+});
+
+export function uploadReelVideo(req, res, next) {
+  reelVideoUpload.single("video")(req, res, (err) => {
+    if (!err) return next();
+    if (err.code === "LIMIT_FILE_SIZE") {
+      return res.status(400).json({ message: `The video must be under ${VIDEO_MAX_BYTES / (1024 * 1024)}MB.` });
+    }
+    res.status(400).json({ message: err.message || "Couldn't upload that video." });
+  });
+}
+
 const profilePhotoUpload = multer({
   storage: diskStorageFor(PROFILE_PHOTO_UPLOAD_ROOT),
   limits: { fileSize: IMAGE_MAX_BYTES, files: 1 },

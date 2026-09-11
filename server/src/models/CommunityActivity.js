@@ -14,7 +14,12 @@ const CommunityActivity = sequelize.define(
         "project_update",
         "announcement",
         "community_post",
-        "job_posted"
+        "job_posted",
+        // A short vertical video, otherwise just a community_post with a
+        // mandatory video and a duration cap -- reuses this same row shape
+        // (and therefore Comment/CommunityActivityVote, both keyed on
+        // activityId) rather than a parallel entity.
+        "reel"
       ),
       allowNull: false,
     },

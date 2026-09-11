@@ -9,6 +9,10 @@ const ContentSettings = sequelize.define(
     maxPostLength: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 2000 },
     maxCommentLength: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 1000 },
     maxReplyLength: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 1000 },
+    // How many regular posts the Home Page feed shows before inserting a
+    // Reels rail (client-side rendering transform in Community.jsx -- the
+    // main feed query itself is untouched).
+    reelsIntervalPosts: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 3 },
   },
   {
     tableName: "content_settings",

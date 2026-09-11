@@ -36,7 +36,11 @@ export function mapLiveActivity(a) {
   const isMasjid = a.type === "masjid_approved";
   const isCampaignEvent = a.type === "campaign_approved" || a.type === "donation" || a.type === "milestone";
   const isNewMember = a.type === "new_user";
-  const isCommunityPost = a.type === "community_post";
+  // A Reel is a CommunityActivity row (type: "reel") that renders exactly
+  // like a community_post -- caption + video + like/comment/share -- so it
+  // shares that whole branch rather than needing its own case here or in
+  // the render logic below.
+  const isCommunityPost = a.type === "community_post" || a.type === "reel";
   const isJobPost = a.type === "job_posted";
   const campaignCta = a.metadata?.campaignSlug ? { label: "View Campaign", href: `/campaign/${a.metadata.campaignSlug}` } : undefined;
   const jobCta = a.metadata?.jobSlug ? { label: "View Job", href: `/job/${a.metadata.jobSlug}` } : undefined;
