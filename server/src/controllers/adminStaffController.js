@@ -1,9 +1,10 @@
 import bcrypt from "bcryptjs";
-import { Op } from "sequelize";
+import { Op, fn, col, literal } from "sequelize";
 import AdminUser from "../models/AdminUser.js";
 import AdminActivityLog from "../models/AdminActivityLog.js";
 import PermissionChangeLog from "../models/PermissionChangeLog.js";
 import { PERMISSION_MODULES, isValidPermissions } from "../config/permissionModules.js";
+import { generateStaffActivitySummary, aiProviderConfigured } from "../services/aiProviderService.js";
 
 const EMAIL_RE = /^\S+@\S+\.\S+$/;
 const STATUSES = ["active", "inactive", "suspended"];
@@ -283,6 +284,115 @@ export const getPermissionHistory = async (req, res) => {
 
     const rows = await PermissionChangeLog.findAll({ where: { staffId: admin.id }, order: [["createdAt", "DESC"]], limit: 50 });
     res.json({ history: rows });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const USAGE_WINDOW_DAYS = 30;
+
+function dateKey(d) {
+  return d.toISOString().slice(0, 10);
+}
+
+// Usage Analytics (spec's Phase 3): daily activity over a trailing 30-day
+// window (zero-filled so the chart never has gaps), module usage over the
+// same window, peak activity hour, login days this calendar month, a
+// deterministic spike flag (today vs the trailing daily average), and an
+// optional AI-phrased summary of all of the above -- never a source of new
+// facts, see generateStaffActivitySummary's contract.
+export const getUsageAnalytics = async (req, res) => {
+  try {
+    const admin = await AdminUser.findOne({ where: { id: req.params.id, role: "staff" } });
+    if (!admin) return res.status(404).json({ message: "Staff member not found." });
+
+    const since = new Date();
+    since.setUTCDate(since.getUTCDate() - (USAGE_WINDOW_DAYS - 1));
+    since.setUTCHours(0, 0, 0, 0);
+    const startOfMonth = new Date();
+    startOfMonth.setUTCDate(1);
+    startOfMonth.setUTCHours(0, 0, 0, 0);
+
+    const [dailyRows, moduleRows, hourRows, loginDayRows] = await Promise.all([
+      AdminActivityLog.findAll({
+        where: { adminUserId: admin.id, createdAt: { [Op.gte]: since } },
+        attributes: [[fn("DATE", col("createdAt")), "day"], [fn("COUNT", literal("*")), "c"]],
+        group: ["day"],
+        raw: true,
+      }),
+      AdminActivityLog.findAll({
+        where: { adminUserId: admin.id, activityType: { [Op.in]: ["action", "page_view"] }, module: { [Op.ne]: null }, createdAt: { [Op.gte]: since } },
+        attributes: ["module", [fn("COUNT", literal("*")), "c"]],
+        group: ["module"],
+        order: [[literal("c"), "DESC"]],
+        raw: true,
+      }),
+      AdminActivityLog.findAll({
+        where: { adminUserId: admin.id, createdAt: { [Op.gte]: since } },
+        attributes: [[fn("HOUR", col("createdAt")), "hour"], [fn("COUNT", literal("*")), "c"]],
+        group: ["hour"],
+        order: [[literal("c"), "DESC"]],
+        raw: true,
+      }),
+      AdminActivityLog.findAll({
+        where: { adminUserId: admin.id, activityType: "login", status: "success", createdAt: { [Op.gte]: startOfMonth } },
+        attributes: [[fn("DATE", col("createdAt")), "day"]],
+        group: ["day"],
+        raw: true,
+      }),
+    ]);
+
+    const countByDay = Object.fromEntries(dailyRows.map((r) => [String(r.day).slice(0, 10), Number(r.c)]));
+    const dailyActivity = [];
+    for (let i = 0; i < USAGE_WINDOW_DAYS; i++) {
+      const d = new Date(since);
+      d.setUTCDate(d.getUTCDate() + i);
+      const key = dateKey(d);
+      dailyActivity.push({ date: key, count: countByDay[key] || 0 });
+    }
+
+    const moduleLabel = (key) => PERMISSION_MODULES.find((m) => m.key === key)?.label || key;
+    const moduleUsage = moduleRows.map((m) => ({ module: moduleLabel(m.module), count: Number(m.c) }));
+
+    const peakHour = hourRows[0] ? Number(hourRows[0].hour) : null;
+    const loginDaysThisMonth = loginDayRows.length;
+
+    const todayKey = dateKey(new Date());
+    const todayCount = dailyActivity.find((d) => d.date === todayKey)?.count || 0;
+    const priorDays = dailyActivity.filter((d) => d.date !== todayKey);
+    const priorAvg = priorDays.length ? priorDays.reduce((sum, d) => sum + d.count, 0) / priorDays.length : 0;
+    const isSpike = priorAvg >= 1 && todayCount >= priorAvg * 2 && todayCount >= 5;
+
+    const totalActivity30d = dailyActivity.reduce((sum, d) => sum + d.count, 0);
+    const avgDaily = Math.round((totalActivity30d / USAGE_WINDOW_DAYS) * 10) / 10;
+
+    const statsLines = [
+      `Login days this calendar month: ${loginDaysThisMonth}`,
+      `Total recorded activity in the last ${USAGE_WINDOW_DAYS} days: ${totalActivity30d} (average ${avgDaily} per day)`,
+      moduleUsage[0] ? `Most-used module in the last ${USAGE_WINDOW_DAYS} days: ${moduleUsage[0].module} (${moduleUsage[0].count} actions)` : "No module usage recorded yet.",
+      peakHour != null ? `Peak activity hour: ${peakHour}:00-${peakHour + 1}:00` : "No clear peak activity hour yet.",
+      isSpike ? `Today's activity (${todayCount}) is a notable spike above the recent daily average (${avgDaily}).` : `Today's activity (${todayCount}) is in line with the recent daily average (${avgDaily}).`,
+    ];
+    const statsContext = statsLines.join("\n");
+
+    let aiSummary = null;
+    if (aiProviderConfigured) {
+      const result = await generateStaffActivitySummary({ statsContext });
+      aiSummary = result?.summary || null;
+    }
+
+    res.json({
+      dailyActivity,
+      moduleUsage,
+      peakHour,
+      loginDaysThisMonth,
+      totalActivity30d,
+      avgDaily,
+      isSpike,
+      todayCount,
+      aiSummary,
+      aiConfigured: aiProviderConfigured,
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

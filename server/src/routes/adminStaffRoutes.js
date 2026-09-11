@@ -2,7 +2,7 @@ import { Router } from "express";
 import auth, { requireAdmin } from "../middleware/auth.js";
 import { requirePermission } from "../middleware/permission.js";
 import { logActivity } from "../middleware/activityLogger.js";
-import { listAll, listPermissionModules, getOne, create, update, resetPassword, setStatus, getLoginHistory, getActivity, getPermissionHistory } from "../controllers/adminStaffController.js";
+import { listAll, listPermissionModules, getOne, create, update, resetPassword, setStatus, getLoginHistory, getActivity, getPermissionHistory, getUsageAnalytics } from "../controllers/adminStaffController.js";
 
 const router = Router();
 
@@ -22,5 +22,6 @@ router.patch("/:id/status", edit, logActivity("staff", "edit"), setStatus);
 router.get("/:id/login-history", view, getLoginHistory);
 router.get("/:id/activity", view, getActivity);
 router.get("/:id/permission-history", view, getPermissionHistory);
+router.get("/:id/usage-analytics", view, getUsageAnalytics);
 
 export default router;

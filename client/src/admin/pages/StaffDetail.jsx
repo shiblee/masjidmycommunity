@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import Icon from "../components/Icons.jsx";
 import StatusBadge from "../components/StatusBadge.jsx";
 import PermissionMatrix from "../components/PermissionMatrix.jsx";
+import ActivityBarChart from "../components/ActivityBarChart.jsx";
 import adminApi from "../services/adminApi.js";
 import { formatDateTime } from "../../utils/formatDateTime.js";
 
@@ -11,6 +12,7 @@ const TABS = [
   { key: "permissions", label: "Permissions" },
   { key: "login-history", label: "Login History" },
   { key: "activity", label: "Activity" },
+  { key: "usage-analytics", label: "Usage Analytics" },
 ];
 
 function formatDuration(seconds) {
@@ -265,6 +267,83 @@ function ActivityTab({ id }) {
   );
 }
 
+function UsageAnalyticsTab({ id }) {
+  const [data, setData] = useState(null);
+
+  useEffect(() => {
+    adminApi.get(`/staff/${id}/usage-analytics`).then(({ data }) => setData(data)).catch(() => setData(false));
+  }, [id]);
+
+  if (data === null) return <p className="amx-panel-sub">Loading…</p>;
+  if (data === false) return <div className="amx-empty"><Icon name="inbox" /><strong>Couldn't load usage analytics</strong></div>;
+
+  const maxModuleCount = Math.max(...data.moduleUsage.map((m) => m.count), 1);
+
+  return (
+    <>
+      <div className="amx-card amx-panel" style={{ marginBottom: 20 }}>
+        <div className="amx-panel-head"><h3>Daily Activity (last 30 days)</h3></div>
+        <ActivityBarChart data={data.dailyActivity} />
+        <div className="amx-kpi-grid" style={{ gridTemplateColumns: "repeat(4,1fr)", marginTop: 20 }}>
+          <div className="amx-card amx-kpi">
+            <div className="amx-kpi-value">{data.totalActivity30d}</div>
+            <div className="amx-kpi-label">Total (30d)</div>
+          </div>
+          <div className="amx-card amx-kpi">
+            <div className="amx-kpi-value">{data.avgDaily}</div>
+            <div className="amx-kpi-label">Avg / Day</div>
+          </div>
+          <div className="amx-card amx-kpi">
+            <div className="amx-kpi-value">{data.peakHour != null ? `${data.peakHour}:00` : "—"}</div>
+            <div className="amx-kpi-label">Peak Hour</div>
+          </div>
+          <div className="amx-card amx-kpi">
+            <div className="amx-kpi-value">{data.loginDaysThisMonth}</div>
+            <div className="amx-kpi-label">Login Days (Month)</div>
+          </div>
+        </div>
+        {data.isSpike && (
+          <div className="amx-alert-banner warn" style={{ marginTop: 16 }}>
+            Today's activity ({data.todayCount}) is notably higher than the recent daily average ({data.avgDaily}).
+          </div>
+        )}
+      </div>
+
+      <div className="amx-card amx-panel" style={{ marginBottom: 20 }}>
+        <div className="amx-panel-head"><h3>Module Usage (last 30 days)</h3></div>
+        {data.moduleUsage.length === 0 ? (
+          <p className="amx-panel-sub">No module usage recorded yet.</p>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {data.moduleUsage.map((m) => (
+              <div key={m.module} style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <span style={{ minWidth: 140, fontSize: 13.5, fontWeight: 600, color: "var(--a-text)" }}>{m.module}</span>
+                <div style={{ flex: 1, height: 8, background: "rgba(30,58,70,.08)", borderRadius: 4, overflow: "hidden" }}>
+                  <div style={{ width: `${(m.count / maxModuleCount) * 100}%`, height: "100%", background: "var(--a-green-deep)", borderRadius: 4 }} />
+                </div>
+                <span className="amx-panel-sub" style={{ minWidth: 60, textAlign: "right" }}>{m.count}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="amx-card amx-panel">
+        <div className="amx-panel-head"><h3>AI Insights</h3></div>
+        {data.aiConfigured ? (
+          data.aiSummary ? (
+            <p>{data.aiSummary}</p>
+          ) : (
+            <p className="amx-panel-sub">Not enough activity yet to generate a summary.</p>
+          )
+        ) : (
+          <p className="amx-panel-sub">AI-generated insights aren't available yet — this requires an AI provider API key to be configured on the server.</p>
+        )}
+      </div>
+    </>
+  );
+}
+
 function LoginHistoryTab({ id }) {
   const [history, setHistory] = useState(null);
 
@@ -406,6 +485,7 @@ function StaffDetail() {
       {tab === "permissions" && <PermissionsTab id={id} staff={staff} onSaved={load} />}
       {tab === "login-history" && <LoginHistoryTab id={id} />}
       {tab === "activity" && <ActivityTab id={id} />}
+      {tab === "usage-analytics" && <UsageAnalyticsTab id={id} />}
 
       {resetOpen && <ResetPasswordModal onClose={() => setResetOpen(false)} onSubmit={resetPassword} busy={resetBusy} />}
       {toast && <div className="amx-toast"><Icon name="check" />{toast}</div>}

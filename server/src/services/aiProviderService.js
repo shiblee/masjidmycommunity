@@ -776,3 +776,43 @@ export async function generateGroundedJobAnswer({ question, contextText, history
     return null;
   }
 }
+
+const StaffActivitySummarySchema = z.object({ summary: z.string() });
+
+function staffActivitySummarySystemPrompt() {
+  return [
+    "You write a very short internal summary of one staff member's admin-panel usage, for a Platform Administrator reviewing that staff member's Usage Analytics.",
+    "Use ONLY the stats given below — never invent numbers, modules, dates, or behavior not present in them.",
+    "Write 1-3 short, plain, neutral sentences describing their overall activity level, which module they use most, and (only if the stats flag one) any unusual spike in activity — do not moralize, praise, or criticize, this is a factual usage summary, not a performance review.",
+    "If the stats show very little or no activity, say so plainly rather than padding with generic filler.",
+    "Output plain text only in the 'summary' field — no markdown, no quotation marks.",
+  ].join(" ");
+}
+
+async function callClaudeStaffActivitySummary({ statsContext }) {
+  const response = await anthropic.messages.parse({
+    model: AI_MODEL,
+    max_tokens: 200,
+    system: [{ type: "text", text: staffActivitySummarySystemPrompt(), cache_control: { type: "ephemeral" } }],
+    output_config: { format: zodOutputFormat(StaffActivitySummarySchema), effort: AI_EFFORT },
+    messages: [{ role: "user", content: `Stats:\n${statsContext}` }],
+  });
+  return response.parsed_output;
+}
+
+// Same null-on-failure/unconfigured contract as every other function here.
+// `statsContext` is a plain-text summary the caller (adminStaffController.js)
+// builds entirely from real AdminActivityLog aggregates -- this only ever
+// phrases those numbers in prose, never adds a fact of its own. The caller
+// always has the raw stats to display even when this returns null.
+export async function generateStaffActivitySummary({ statsContext }) {
+  if (!aiProviderConfigured || AI_PROVIDER !== "claude") return null;
+  try {
+    const parsed = await callClaudeStaffActivitySummary({ statsContext });
+    if (!parsed?.summary) return null;
+    return { summary: parsed.summary.trim() };
+  } catch (error) {
+    console.error("AI provider staff activity summary failed:", error.message);
+    return null;
+  }
+}
