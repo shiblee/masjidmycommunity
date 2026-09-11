@@ -12,6 +12,7 @@ function StaffForm() {
   const navigate = useNavigate();
 
   const [modules, setModules] = useState([]);
+  const [modulesStatus, setModulesStatus] = useState("loading"); // "loading" | "loaded" | "error"
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -24,9 +25,18 @@ function StaffForm() {
 
   const clearFieldError = (field) => setFieldErrors((fe) => (fe[field] ? { ...fe, [field]: null } : fe));
 
-  useEffect(() => {
-    adminApi.get("/staff/permission-modules").then(({ data }) => setModules(data.modules)).catch(() => setModules([]));
-  }, []);
+  const loadModules = () => {
+    setModulesStatus("loading");
+    adminApi
+      .get("/staff/permission-modules")
+      .then(({ data }) => {
+        setModules(data.modules || []);
+        setModulesStatus("loaded");
+      })
+      .catch(() => setModulesStatus("error"));
+  };
+
+  useEffect(() => { loadModules(); }, []);
 
   useEffect(() => {
     if (!isEdit) return;
@@ -57,6 +67,11 @@ function StaffForm() {
       return;
     }
     setFieldErrors({});
+
+    if (modulesStatus !== "loaded") {
+      setError("Couldn't load the list of modules to assign — retry that before saving.");
+      return;
+    }
 
     const hasAnyPermission = Object.values(permissions).some((a) => a.length > 0);
     if (!hasAnyPermission && !window.confirm("No permissions are assigned, so this account won't be able to access anything yet. Create it anyway?")) {
@@ -167,7 +182,14 @@ function StaffForm() {
             <h3>Module Permissions</h3>
             <div className="amx-panel-sub">Grant only the modules and actions this staff member needs.</div>
           </div>
-          <PermissionMatrix modules={modules} permissions={permissions} onChange={setPermissions} />
+          {modulesStatus === "loading" && <p className="amx-panel-sub">Loading modules…</p>}
+          {modulesStatus === "error" && (
+            <div className="amx-alert-banner warn" style={{ alignItems: "center" }}>
+              <span style={{ flex: 1 }}>Couldn't load the list of modules to assign.</span>
+              <button type="button" className="amx-btn amx-btn-sm amx-btn-outline" onClick={loadModules}>Retry</button>
+            </div>
+          )}
+          {modulesStatus === "loaded" && <PermissionMatrix modules={modules} permissions={permissions} onChange={setPermissions} />}
         </div>
 
         <div className="amx-page-actions">

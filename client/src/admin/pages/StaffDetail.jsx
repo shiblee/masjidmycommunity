@@ -102,15 +102,25 @@ function OverviewTab({ overview }) {
 
 function PermissionsTab({ id, staff, onSaved }) {
   const [modules, setModules] = useState([]);
+  const [modulesStatus, setModulesStatus] = useState("loading"); // "loading" | "loaded" | "error"
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(staff.permissions || {});
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [history, setHistory] = useState(null);
 
-  useEffect(() => {
-    adminApi.get("/staff/permission-modules").then(({ data }) => setModules(data.modules)).catch(() => setModules([]));
-  }, []);
+  const loadModules = () => {
+    setModulesStatus("loading");
+    adminApi
+      .get("/staff/permission-modules")
+      .then(({ data }) => {
+        setModules(data.modules || []);
+        setModulesStatus("loaded");
+      })
+      .catch(() => setModulesStatus("error"));
+  };
+
+  useEffect(() => { loadModules(); }, []);
 
   useEffect(() => {
     adminApi.get(`/staff/${id}/permission-history`).then(({ data }) => setHistory(data.history)).catch(() => setHistory([]));
@@ -152,10 +162,17 @@ function PermissionsTab({ id, staff, onSaved }) {
       {editing ? (
         <>
           {error && <div className="amx-alert-banner warn" style={{ marginBottom: 16 }}>{error}</div>}
-          <PermissionMatrix modules={modules} permissions={draft} onChange={setDraft} />
+          {modulesStatus === "loading" && <p className="amx-panel-sub">Loading modules…</p>}
+          {modulesStatus === "error" && (
+            <div className="amx-alert-banner warn" style={{ alignItems: "center" }}>
+              <span style={{ flex: 1 }}>Couldn't load the list of modules to assign.</span>
+              <button type="button" className="amx-btn amx-btn-sm amx-btn-outline" onClick={loadModules}>Retry</button>
+            </div>
+          )}
+          {modulesStatus === "loaded" && <PermissionMatrix modules={modules} permissions={draft} onChange={setDraft} />}
           <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
             <button type="button" className="amx-btn amx-btn-outline" disabled={saving} onClick={() => setEditing(false)}>Cancel</button>
-            <button type="button" className="amx-btn amx-btn-accent" disabled={saving} onClick={save}>{saving ? "Saving…" : "Save Changes"}</button>
+            <button type="button" className="amx-btn amx-btn-accent" disabled={saving || modulesStatus !== "loaded"} onClick={save}>{saving ? "Saving…" : "Save Changes"}</button>
           </div>
         </>
       ) : granted.length === 0 ? (
