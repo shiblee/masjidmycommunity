@@ -1595,11 +1595,11 @@ footer{
 .cw-users-rail-head{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px; flex-wrap:wrap; }
 .cw-users-rail-head h4{ display:flex; align-items:center; gap:8px; margin:0; font-size:15px; font-weight:700; color:var(--ink); }
 .cw-users-scroll{ display:flex; gap:18px; overflow-x:auto; padding-bottom:4px; }
-.cw-user-tile{ flex:0 0 auto; width:96px; display:flex; flex-direction:column; align-items:center; text-align:center; gap:8px; text-decoration:none; color:var(--ink); }
-.cw-user-tile-avatar{ width:72px; height:72px; border-radius:50%; overflow:hidden; border:1px solid var(--line); display:block; }
+.cw-user-tile{ flex:0 0 auto; width:128px; display:flex; flex-direction:column; align-items:center; text-align:center; gap:8px; text-decoration:none; color:var(--ink); }
+.cw-user-tile-avatar{ width:104px; height:104px; border-radius:50%; overflow:hidden; border:1px solid var(--line); display:block; }
 .cw-user-tile-avatar img, .cw-user-tile-avatar .msj-media-fallback{ width:100%; height:100%; object-fit:cover; display:block; }
-.cw-user-tile-name{ font-size:12.5px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:96px; }
-.cw-user-tile-loc{ font-size:11px; color:var(--text-on-paper-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:96px; }
+.cw-user-tile-name{ font-size:13px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:128px; }
+.cw-user-tile-loc{ font-size:11.5px; color:var(--text-on-paper-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:128px; }
 
 /* ===== Post composer ===== */
 .cw-composer{
