@@ -1,10 +1,11 @@
 import { Router } from "express";
 import auth, { requireAdmin } from "../middleware/auth.js";
+import { requireModuleAccess } from "../middleware/permission.js";
 import { getSettings, updateSettings, listReportedContent, getContentDetail, takeAction } from "../controllers/adminModerationController.js";
 
 const router = Router();
 
-router.use(auth, requireAdmin);
+router.use(auth, requireAdmin, requireModuleAccess("moderation"));
 
 router.get("/settings", getSettings);
 router.patch("/settings", updateSettings);

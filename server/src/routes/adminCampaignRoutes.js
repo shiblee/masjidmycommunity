@@ -1,5 +1,6 @@
 import { Router } from "express";
 import auth, { requireAdmin } from "../middleware/auth.js";
+import { requireModuleAccess } from "../middleware/permission.js";
 import { uploadCampaignPhotos, uploadCampaignDocuments } from "../middleware/upload.js";
 import {
   listAll,
@@ -28,7 +29,7 @@ import {
 
 const router = Router();
 
-router.use(auth, requireAdmin);
+router.use(auth, requireAdmin, requireModuleAccess("campaigns"));
 
 router.get("/", listAll);
 router.post("/", create);

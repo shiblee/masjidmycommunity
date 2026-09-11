@@ -633,6 +633,18 @@ table.amx-table{ width:100%; border-collapse:collapse; font-size:13.5px; }
 }
 .amx-form-hint{ font-size:12px; color:var(--a-text-faint); margin-top:6px; }
 
+/* Staff permission matrix (StaffForm.jsx / StaffDetail.jsx) */
+.amx-permission-list{ display:flex; flex-direction:column; }
+.amx-permission-row{
+  display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
+  padding:14px 0; border-top:1px solid var(--a-border);
+}
+.amx-permission-row:first-child{ border-top:none; }
+.amx-permission-row-label{ font-size:13.5px; font-weight:700; color:var(--a-text); min-width:160px; text-transform:capitalize; }
+.amx-permission-row-actions{ display:flex; flex-wrap:wrap; gap:14px; }
+.amx-permission-checkbox{ display:flex; align-items:center; gap:6px; font-size:13px; color:var(--a-text-dim); cursor:pointer; }
+.amx-permission-checkbox input{ width:auto; accent-color:var(--a-green); cursor:pointer; }
+
 /* Same embedded-mic-tab pattern as .msj-about-wrap on the public site
    (MicButton/.mic-btn-wrap itself is unstyled here — it reads the same
    global :root tokens everywhere) — a small circular mic button pinned to

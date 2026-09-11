@@ -22,68 +22,99 @@ function initialsOf(name) {
   return ((parts[0]?.[0] || "") + (parts[parts.length - 1]?.[0] || "")).toUpperCase();
 }
 
+// moduleKey on each leaf/standalone item matches permissionModules.js's
+// registry -- filterNavItems() below uses it to hide anything a staff
+// account (role !== "super_admin") wasn't granted at least one action on.
 const NAV_ITEMS = [
   {
     label: "Dashboard",
     icon: "dashboard",
     children: [
-      { to: "/admin/dashboard", label: "Overview", icon: "dashboard" },
-      { to: "/admin/fund-utilization", label: "Fund Utilization", icon: "fund" },
-      { to: "/admin/reports", label: "Reports & Analytics", icon: "reports" },
+      { to: "/admin/dashboard", label: "Overview", icon: "dashboard", moduleKey: "dashboard" },
+      { to: "/admin/fund-utilization", label: "Fund Utilization", icon: "fund", moduleKey: "reports" },
+      { to: "/admin/reports", label: "Reports & Analytics", icon: "reports", moduleKey: "reports" },
     ],
   },
   {
     label: "Users",
     icon: "globe",
     children: [
-      { to: "/admin/registered-users", label: "Users", icon: "globe" },
-      { to: "/admin/visitors", label: "Visitors", icon: "eye" },
-      { to: "/admin/synthetic-users", label: "Synthetic Users", icon: "users" },
+      { to: "/admin/registered-users", label: "Users", icon: "globe", moduleKey: "users" },
+      { to: "/admin/visitors", label: "Visitors", icon: "eye", moduleKey: "visitors" },
+      { to: "/admin/synthetic-users", label: "Synthetic Users", icon: "users", moduleKey: "users" },
     ],
   },
+  { to: "/admin/staff", label: "Staff", icon: "lock", moduleKey: "staff" },
   {
     label: "Masjids",
     icon: "mosque",
     children: [
-      { to: "/admin/masjids", label: "Masjids", icon: "mosque" },
-      { to: "/admin/masjid-corrections", label: "Correction Requests", icon: "edit" },
-      { to: "/admin/pending-reviews", label: "Pending Reviews", icon: "star" },
-      { to: "/admin/verification", label: "Green Tick", icon: "verify" },
+      { to: "/admin/masjids", label: "Masjids", icon: "mosque", moduleKey: "masjid" },
+      { to: "/admin/masjid-corrections", label: "Correction Requests", icon: "edit", moduleKey: "masjidCorrections" },
+      { to: "/admin/pending-reviews", label: "Pending Reviews", icon: "star", moduleKey: "pendingReviews" },
+      { to: "/admin/verification", label: "Green Tick", icon: "verify", moduleKey: "greenTick" },
     ],
   },
   {
     label: "Community Wall",
     icon: "megaphone",
     children: [
-      { to: "/admin/community-wall", label: "Community Wall", icon: "megaphone" },
-      { to: "/admin/moderation", label: "Reported Content", icon: "flag" },
+      { to: "/admin/community-wall", label: "Community Wall", icon: "megaphone", moduleKey: "communityWall" },
+      { to: "/admin/moderation", label: "Reported Content", icon: "flag", moduleKey: "moderation" },
     ],
   },
-  { to: "/admin/campaigns", label: "Campaigns", icon: "campaign" },
-  { to: "/admin/jobs", label: "Jobs", icon: "briefcase" },
+  { to: "/admin/campaigns", label: "Campaigns", icon: "campaign", moduleKey: "campaigns" },
+  { to: "/admin/jobs", label: "Jobs", icon: "briefcase", moduleKey: "jobs" },
   {
     label: "Support & Help",
     icon: "shield",
     children: [
-      { to: "/admin/concerns", label: "Raise a Concern", icon: "shield" },
-      { to: "/admin/contact-inquiries", label: "Contact Us", icon: "mail" },
-      { to: "/admin/faq", label: "FAQ & AI Assistant", icon: "info" },
+      { to: "/admin/concerns", label: "Raise a Concern", icon: "shield", moduleKey: "support" },
+      { to: "/admin/contact-inquiries", label: "Contact Us", icon: "mail", moduleKey: "support" },
+      { to: "/admin/faq", label: "FAQ & AI Assistant", icon: "info", moduleKey: "support" },
     ],
   },
   {
     label: "Testimonials & Stories",
     icon: "quote",
     children: [
-      { to: "/admin/testimonials", label: "Testimonials", icon: "quote" },
-      { to: "/admin/success-stories", label: "Success Stories", icon: "book" },
+      { to: "/admin/testimonials", label: "Testimonials", icon: "quote", moduleKey: "testimonials" },
+      { to: "/admin/success-stories", label: "Success Stories", icon: "book", moduleKey: "testimonials" },
     ],
   },
-  { to: "/admin/meta", label: "Meta", icon: "layers" },
-  { to: "/admin/pages", label: "Pages", icon: "fileText" },
-  { to: "/admin/translations", label: "Translations", icon: "content" },
-  { to: "/admin/notifications", label: "Notifications", icon: "bell" },
-  { to: "/admin/settings", label: "Settings", icon: "settings" },
+  { to: "/admin/meta", label: "Meta", icon: "layers", moduleKey: "meta" },
+  { to: "/admin/pages", label: "Pages", icon: "fileText", moduleKey: "pages" },
+  { to: "/admin/translations", label: "Translations", icon: "content", moduleKey: "translations" },
+  { to: "/admin/notifications", label: "Notifications", icon: "bell", moduleKey: "notifications" },
+  { to: "/admin/settings", label: "Settings", icon: "settings", moduleKey: "settings" },
 ];
+
+const ROLE_LABELS = { super_admin: "Platform Administrator", staff: "Staff" };
+
+function hasModulePermission(user, moduleKey) {
+  if (!moduleKey) return true;
+  if (!user || user.role === "super_admin") return true;
+  const granted = user.permissions?.[moduleKey];
+  return Array.isArray(granted) && granted.length > 0;
+}
+
+// Shows everything while `user` is still loading (avoids an empty-nav
+// flash on first paint) -- for a staff account this means one brief
+// full-nav render before narrowing once /auth/me resolves, which is a
+// minor, one-time cosmetic tradeoff rather than a security issue (routes
+// are enforced server-side regardless of what the nav shows).
+function filterNavItems(items, user) {
+  if (!user || user.role === "super_admin") return items;
+  return items
+    .map((item) => {
+      if (item.children) {
+        const children = item.children.filter((c) => hasModulePermission(user, c.moduleKey));
+        return children.length ? { ...item, children } : null;
+      }
+      return hasModulePermission(user, item.moduleKey) ? item : null;
+    })
+    .filter(Boolean);
+}
 
 // Nav items whose badge count is polled alongside the bell notifications —
 // each endpoint is expected to return { unresolved: <number>, ... }.
@@ -194,12 +225,13 @@ function ProfileMenu({ user }) {
   useClickOutside(ref, () => setOpen(false));
 
   const logout = () => {
+    adminApi.post("/auth/logout").catch(() => {});
     clearSession();
     navigate("/admin/login", { replace: true });
   };
 
   const name = user?.name || "Admin";
-  const role = user?.role || "Platform Administrator";
+  const role = ROLE_LABELS[user?.role] || user?.role || "Platform Administrator";
   const email = user?.email || "";
   const avatarUrl = user?.avatarUrl;
 
@@ -410,7 +442,7 @@ function AdminLayout() {
           </div>
           <div className="amx-topbar-row2">
             <nav className="amx-nav">
-              {NAV_ITEMS.map((item) =>
+              {filterNavItems(NAV_ITEMS, user).map((item) =>
                 item.children ? (
                   <NavDropdown key={item.label} item={item} badgeCounts={badgeCounts} pathname={pathname} />
                 ) : (

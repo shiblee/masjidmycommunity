@@ -38,6 +38,9 @@ import ModerationDetail from "./pages/ModerationDetail.jsx";
 import PendingReviews from "./pages/PendingReviews.jsx";
 import MasjidCorrections from "./pages/MasjidCorrections.jsx";
 import MasjidCorrectionDetail from "./pages/MasjidCorrectionDetail.jsx";
+import StaffList from "./pages/StaffList.jsx";
+import StaffForm from "./pages/StaffForm.jsx";
+import StaffDetail from "./pages/StaffDetail.jsx";
 
 function AdminApp() {
   return (
@@ -90,6 +93,11 @@ function AdminApp() {
         <Route path="pending-reviews" element={<PendingReviews />} />
         <Route path="masjid-corrections" element={<MasjidCorrections />} />
         <Route path="masjid-corrections/:id" element={<MasjidCorrectionDetail />} />
+        <Route path="staff" element={<StaffList />} />
+        <Route path="staff/new" element={<StaffForm />} />
+        <Route path="staff/:id/edit" element={<StaffForm />} />
+        <Route path="staff/:id" element={<StaffDetail />} />
+        <Route path="staff/:id/:tab" element={<StaffDetail />} />
         <Route path="settings" element={<Navigate to="/admin/settings/profile" replace />} />
         <Route path="settings/:sectionKey" element={<Settings />} />
       </Route>

@@ -1,10 +1,11 @@
 import { Router } from "express";
 import auth, { requireAdmin } from "../middleware/auth.js";
+import { requireModuleAccess } from "../middleware/permission.js";
 import { listAll, update, publish, hide, pin, unpin, remove } from "../controllers/adminCommunityController.js";
 
 const router = Router();
 
-router.use(auth, requireAdmin);
+router.use(auth, requireAdmin, requireModuleAccess("communityWall"));
 
 router.get("/", listAll);
 router.patch("/:id", update);

@@ -7,7 +7,7 @@ const DEMO_ADMIN = {
   name: "Aisha Karim",
   email: "admin@masjidmycommunity.org",
   password: "MasjidMyCommunity@2026",
-  role: "Platform Administrator",
+  role: "super_admin",
   status: "active",
   phone: "+1 (555) 019-2044",
   bio: "Managing platform operations, masjid verification, and fund transparency at Masjid My Community.",

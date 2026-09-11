@@ -23,9 +23,20 @@ const AdminUser = sequelize.define(
       defaultValue: "Platform Administrator",
     },
     status: {
-      type: DataTypes.ENUM("active", "invited", "suspended"),
+      type: DataTypes.ENUM("active", "invited", "suspended", "inactive"),
       allowNull: false,
       defaultValue: "active",
+    },
+    // null = unrestricted (super_admin bypasses permission checks entirely
+    // regardless of this field's contents). For a "staff" account, shape is
+    // { [moduleKey]: ["view","edit",...] } -- see permissionModules.js for
+    // the registry of valid keys/actions. A small structured blob, never
+    // relationally queried, so a JSON column (matching Job.skills,
+    // ModerationSettings' fields) rather than a join table.
+    permissions: {
+      type: DataTypes.JSON,
+      allowNull: true,
+      defaultValue: null,
     },
     lastLoginAt: {
       type: DataTypes.DATE,

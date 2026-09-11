@@ -1,6 +1,9 @@
+import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import AdminUser from "../models/AdminUser.js";
+import AdminActivityLog from "../models/AdminActivityLog.js";
+import { getRequestContext } from "../utils/requestContext.js";
 
 const REMEMBER_EXPIRY = "30d";
 const SESSION_EXPIRY = "12h";
@@ -34,7 +37,21 @@ function toPublicUser(admin) {
     twoFactorEnabled: admin.twoFactorEnabled,
     loginAlerts: admin.loginAlerts,
     preferences: admin.preferences || DEFAULT_PREFERENCES,
+    // null for a super_admin (unrestricted) -- the client treats "no
+    // permissions object" as "show everything", same meaning as the role
+    // check itself, so nav filtering only ever needs to read this field.
+    permissions: admin.role === "super_admin" ? null : admin.permissions || {},
   };
+}
+
+// Best-effort -- a logging failure must never block a real login/logout,
+// same contract as recordProfileChange().
+async function recordAdminActivity(fields) {
+  try {
+    await AdminActivityLog.create(fields);
+  } catch (error) {
+    console.error("AdminActivityLog write failed:", error.message);
+  }
 }
 
 export const login = async (req, res) => {
@@ -44,8 +61,10 @@ export const login = async (req, res) => {
       return res.status(400).json({ message: "Email and password are required." });
     }
 
-    const admin = await AdminUser.findOne({ where: { email: String(email).trim().toLowerCase() } });
+    const normalizedEmail = String(email).trim().toLowerCase();
+    const admin = await AdminUser.findOne({ where: { email: normalizedEmail } });
     const invalidMessage = "Invalid email or password. Please try again.";
+    const ctx = getRequestContext(req);
 
     if (!admin) {
       return res.status(401).json({ message: invalidMessage });
@@ -53,22 +72,63 @@ export const login = async (req, res) => {
 
     const matches = await bcrypt.compare(password, admin.password);
     if (!matches) {
+      recordAdminActivity({ adminUserId: admin.id, name: admin.name, email: admin.email, activityType: "login", status: "failure", failureReason: "invalid_password", ...ctx });
       return res.status(401).json({ message: invalidMessage });
     }
 
     if (admin.status !== "active") {
+      recordAdminActivity({ adminUserId: admin.id, name: admin.name, email: admin.email, activityType: "login", status: "failure", failureReason: `account_${admin.status}`, ...ctx });
       return res.status(403).json({ message: "This admin account is not active. Contact a platform administrator." });
     }
 
+    const sessionId = crypto.randomUUID();
     const expiresIn = remember ? REMEMBER_EXPIRY : SESSION_EXPIRY;
-    const token = jwt.sign({ id: admin.id, email: admin.email, role: admin.role, type: "admin" }, process.env.JWT_SECRET, {
-      expiresIn,
-    });
+    const token = jwt.sign(
+      { id: admin.id, email: admin.email, role: admin.role, permissions: admin.role === "super_admin" ? null : admin.permissions || {}, type: "admin", sid: sessionId },
+      process.env.JWT_SECRET,
+      { expiresIn }
+    );
 
     admin.lastLoginAt = new Date();
     await admin.save();
+    recordAdminActivity({ adminUserId: admin.id, name: admin.name, email: admin.email, activityType: "login", status: "success", sessionId, ...ctx });
 
     res.json({ token, expiresIn, user: toPublicUser(admin) });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Doesn't exist as a real security boundary today -- admin auth is a
+// stateless JWT with no server-side revocation (see the plan's note on why
+// this Phase skips rebuilding admin auth into a full refresh-token/session
+// system). This endpoint's job is purely to close out the activity-log
+// pair cleanly so Login History shows an accurate logout time + duration.
+export const logout = async (req, res) => {
+  try {
+    const sessionId = req.user?.sid;
+    if (sessionId) {
+      const loginRow = await AdminActivityLog.findOne({
+        where: { adminUserId: req.user.id, activityType: "login", sessionId },
+        order: [["createdAt", "DESC"]],
+      });
+      const ctx = getRequestContext(req);
+      if (loginRow) {
+        loginRow.sessionDurationSeconds = Math.max(0, Math.round((Date.now() - new Date(loginRow.createdAt).getTime()) / 1000));
+        await loginRow.save();
+      }
+      await AdminActivityLog.create({
+        adminUserId: req.user.id,
+        name: req.user.name || null,
+        email: req.user.email,
+        activityType: "logout",
+        status: "success",
+        sessionId,
+        logoutReason: req.body?.reason === "expired" ? "expired" : "user_initiated",
+        ...ctx,
+      });
+    }
+    res.status(204).end();
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
