@@ -9,14 +9,14 @@ import GeometricPattern from "./GeometricPattern.jsx";
 // browser autoplay policy; a native volume control is available whenever
 // the caller renders real `controls`.
 //
-// `programmaticRef` distinguishes a pause/play WE triggered (leaving/
-// entering the viewport) from one the user triggered by hand (clicking the
-// native controls), so a manual pause sticks even if the video scrolls
-// out and back into view — only a manual *play* clears it.
+// Deliberately stateless across visibility transitions: leaving the
+// viewport always stops AND rewinds to 0:00 (never plays in the background,
+// never just pauses in place), and re-entering always restarts from 0:00 —
+// a prior manual pause does not carry over into the next time the video
+// becomes visible, per the "visible = play from beginning" rule. A manual
+// pause is still respected while the video stays visible, since nothing
+// here re-triggers on its own without a visibility change.
 function useAutoplayOnVisible(videoRef, enabled) {
-  const userPausedRef = useRef(false);
-  const programmaticRef = useRef(false);
-
   useEffect(() => {
     if (!enabled) return;
     const el = videoRef.current;
@@ -25,21 +25,18 @@ function useAutoplayOnVisible(videoRef, enabled) {
     // React's `muted` JSX attribute doesn't always reliably sync to the
     // DOM property on first render (a long-standing React quirk) -- set it
     // imperatively once so autoplay (which browsers only allow when
-    // actually muted) doesn't silently fail. Only done here at mount, not
-    // on every resume, so a user's manual unmute via the native controls
-    // sticks across the video scrolling out and back into view.
+    // actually muted) doesn't silently fail.
     el.muted = true;
 
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
-          if (userPausedRef.current) return;
-          programmaticRef.current = true;
+          el.currentTime = 0;
           const p = el.play();
           if (p?.catch) p.catch(() => {});
-        } else if (!el.paused) {
-          programmaticRef.current = true;
+        } else {
           el.pause();
+          el.currentTime = 0;
         }
       },
       { threshold: 0.5 }
@@ -47,17 +44,6 @@ function useAutoplayOnVisible(videoRef, enabled) {
     observer.observe(el);
     return () => observer.disconnect();
   }, [videoRef, enabled]);
-
-  const handlePause = () => {
-    if (programmaticRef.current) programmaticRef.current = false;
-    else userPausedRef.current = true;
-  };
-  const handlePlay = () => {
-    if (programmaticRef.current) programmaticRef.current = false;
-    else userPausedRef.current = false;
-  };
-
-  return { handlePause, handlePlay };
 }
 
 /**
@@ -69,7 +55,7 @@ function useAutoplayOnVisible(videoRef, enabled) {
 function MediaThumb({ src, poster, mediaType = "photo", alt = "", className, style, videoProps, autoPlayOnVisible = true }) {
   const [failed, setFailed] = useState(false);
   const videoRef = useRef(null);
-  const { handlePause, handlePlay } = useAutoplayOnVisible(videoRef, mediaType === "video" && autoPlayOnVisible && !failed);
+  useAutoplayOnVisible(videoRef, mediaType === "video" && autoPlayOnVisible && !failed);
 
   if (failed || !src) {
     return (
@@ -98,8 +84,6 @@ function MediaThumb({ src, poster, mediaType = "photo", alt = "", className, sty
         className={className}
         style={style}
         onError={() => setFailed(true)}
-        onPause={handlePause}
-        onPlay={handlePlay}
         onLoadedData={
           poster
             ? undefined
