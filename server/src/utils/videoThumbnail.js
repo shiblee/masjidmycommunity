@@ -17,12 +17,13 @@ export function generateVideoThumbnail(videoAbsolutePath, outputDir) {
     // 1s in — the very first frame is often still black on phone-camera
     // recordings (lens/exposure settling), 1s is a safer, still-fast bet.
     // -vframes 1 + a JPEG target keeps this to a single quick frame grab,
-    // not a real transcode. eq=brightness/contrast lifts the extracted
-    // frame a little -- real footage grabbed at a single instant often
-    // reads darker as a static thumbnail than it does in motion.
+    // not a real transcode. gamma lifts shadow/midtone detail (real footage
+    // grabbed at a single instant often reads darker as a static thumbnail
+    // than it does in motion) without blowing out highlights the way a flat
+    // brightness boost alone would.
     execFile(
       ffmpegPath.path,
-      ["-y", "-ss", "1", "-i", videoAbsolutePath, "-vframes", "1", "-vf", "scale=640:-1,eq=brightness=0.08:contrast=1.06", "-q:v", "4", outputPath],
+      ["-y", "-ss", "1", "-i", videoAbsolutePath, "-vframes", "1", "-vf", "scale=640:-1,eq=gamma=1.6:brightness=0.05:contrast=1.05:saturation=1.1", "-q:v", "4", outputPath],
       (err) => {
         if (err) {
           resolve(null);
