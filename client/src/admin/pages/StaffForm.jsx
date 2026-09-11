@@ -13,7 +13,7 @@ function StaffForm() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [permissions, setPermissions] = useState({});
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -44,7 +44,6 @@ function StaffForm() {
     if (!email.trim()) return setError("Email is required.");
     if (!isEdit) {
       if (!password || password.length < 8) return setError("Password must be at least 8 characters.");
-      if (password !== confirmPassword) return setError("Password and confirm password don't match.");
     }
     const hasAnyPermission = Object.values(permissions).some((a) => a.length > 0);
     if (!hasAnyPermission && !window.confirm("No permissions are assigned, so this account won't be able to access anything yet. Create it anyway?")) {
@@ -56,7 +55,7 @@ function StaffForm() {
       if (isEdit) {
         await adminApi.patch(`/staff/${id}`, { name, email, permissions });
       } else {
-        await adminApi.post("/staff", { name, email, password, confirmPassword, permissions });
+        await adminApi.post("/staff", { name, email, password, permissions });
       }
       navigate(isEdit ? `/admin/staff/${id}` : "/admin/staff");
     } catch (err) {
@@ -94,16 +93,28 @@ function StaffForm() {
               <input id="staff-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
             </div>
             {!isEdit && (
-              <>
-                <div className="amx-form-group">
-                  <label htmlFor="staff-password">Password</label>
-                  <input id="staff-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} />
+              <div className="amx-form-group">
+                <label htmlFor="staff-password">Password</label>
+                <div style={{ position: "relative" }}>
+                  <input
+                    id="staff-password"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    minLength={8}
+                    style={{ paddingRight: 40, width: "100%" }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", padding: 4, cursor: "pointer", color: "var(--a-text-dim)", display: "flex" }}
+                  >
+                    <Icon name={showPassword ? "eyeOff" : "eye"} size={16} />
+                  </button>
                 </div>
-                <div className="amx-form-group">
-                  <label htmlFor="staff-confirm-password">Confirm Password</label>
-                  <input id="staff-confirm-password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required minLength={8} />
-                </div>
-              </>
+              </div>
             )}
           </div>
         </div>

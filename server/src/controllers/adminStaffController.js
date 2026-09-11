@@ -111,11 +111,10 @@ export const getOne = async (req, res) => {
 
 export const create = async (req, res) => {
   try {
-    const { name, email, password, confirmPassword, permissions } = req.body;
+    const { name, email, password, permissions } = req.body;
     if (!name?.trim()) return res.status(400).json({ message: "Name is required." });
     if (!email?.trim() || !EMAIL_RE.test(email.trim())) return res.status(400).json({ message: "Enter a valid email address." });
     if (!password || password.length < 8) return res.status(400).json({ message: "Password must be at least 8 characters." });
-    if (password !== confirmPassword) return res.status(400).json({ message: "Password and confirm password don't match." });
 
     const normalizedPermissions = permissions && typeof permissions === "object" ? permissions : {};
     if (!isValidPermissions(normalizedPermissions)) return res.status(400).json({ message: "Invalid permissions." });
