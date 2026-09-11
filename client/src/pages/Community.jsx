@@ -615,33 +615,6 @@ function Community() {
               </div>
 
 
-              {nearbyMasjids && nearbyMasjids.length > 0 && (
-                <div className="cw-side-card">
-                  <h4><Icon name="mapPin" size={15} /> {t("community.nearbyMasjids.heading", "Nearby Masjids")}</h4>
-                  <ul className="cw-side-list cw-side-my-masjids">
-                    {nearbyMasjids.map((m) => (
-                      <li key={m.id}>
-                        <Link to={`/masjid/${m.id}`} className="cw-my-masjid-item">
-                          <span className="cw-my-masjid-thumb">
-                            {m.coverPhotoUrl ? <img src={`${API_ORIGIN}${m.coverPhotoUrl}`} alt="" /> : <Icon name="mosque" size={18} />}
-                          </span>
-                          <span className="cw-my-masjid-body">
-                            <span className="cw-my-masjid-name">{m.name}</span>
-                            <span className="cw-side-card-sub" style={{ marginBottom: 0 }}>{[m.city, m.country].filter(Boolean).join(", ")}</span>
-                          </span>
-                          {m.distanceKm != null && (
-                            <span className="cw-my-masjid-time">{m.distanceKm < 1 ? `${Math.round(m.distanceKm * 1000)} m` : `${m.distanceKm.toFixed(1)} km`}</span>
-                          )}
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                  <Link to="/explore-masjids" className="cw-side-link">
-                    {t("communityWall.sideList.viewAllMasjids", "See All Masjids")} <span className="btn-arrow">→</span>
-                  </Link>
-                </div>
-              )}
-
               {user && (primaryMasjid ? (
                 <div className="cw-side-card cw-pm-card">
                   <h4><Icon name="mosque" size={15} /> {t("community.pmCard.heading", "Primary Masjid")}</h4>
@@ -668,6 +641,33 @@ function Community() {
                   </button>
                 </div>
               ) : null)}
+
+              {nearbyMasjids && nearbyMasjids.length > 0 && (
+                <div className="cw-side-card">
+                  <h4><Icon name="mapPin" size={15} /> {t("community.nearbyMasjids.heading", "Nearby Masjids")}</h4>
+                  <ul className="cw-side-list cw-side-my-masjids">
+                    {nearbyMasjids.map((m) => (
+                      <li key={m.id}>
+                        <Link to={`/masjid/${m.id}`} className="cw-my-masjid-item">
+                          <span className="cw-my-masjid-thumb">
+                            {m.coverPhotoUrl ? <img src={`${API_ORIGIN}${m.coverPhotoUrl}`} alt="" /> : <Icon name="mosque" size={18} />}
+                          </span>
+                          <span className="cw-my-masjid-body">
+                            <span className="cw-my-masjid-name">{m.name}</span>
+                            <span className="cw-side-card-sub" style={{ marginBottom: 0 }}>{[m.city, m.country].filter(Boolean).join(", ")}</span>
+                          </span>
+                          {m.distanceKm != null && (
+                            <span className="cw-my-masjid-time">{m.distanceKm < 1 ? `${Math.round(m.distanceKm * 1000)} m` : `${m.distanceKm.toFixed(1)} km`}</span>
+                          )}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                  <Link to="/explore-masjids" className="cw-side-link">
+                    {t("communityWall.sideList.viewAllMasjids", "See All Masjids")} <span className="btn-arrow">→</span>
+                  </Link>
+                </div>
+              )}
 
               {section === "masjid" && (
                 <>
