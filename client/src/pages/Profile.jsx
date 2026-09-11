@@ -345,7 +345,7 @@ function Profile() {
           </div>
         </section>
       )}
-      {(isOwner || activeViewerTab === "about") && (
+      {(isOwner || activeViewerTab === "about" || activeViewerTab === "background") && (
       <section className="py-sm">
         <div className="wrap">
           <div className="cw-layout">
@@ -440,6 +440,21 @@ function Profile() {
                   {activeSection === "skills" && <SkillsCard mode="self" />}
                   {activeSection === "security" && <SecurityCard />}
                 </div>
+              ) : activeViewerTab === "background" ? (
+                education.length === 0 && workExperience.length === 0 && skills.length === 0 && hobbies.length === 0 ? (
+                  <div className="cw-side-card" style={{ textAlign: "center" }}>
+                    <p className="cw-side-card-sub" style={{ marginBottom: 0 }}>
+                      {t("profile.backgroundTab.emptyOther", "{name} hasn't added any background information yet.").replace("{name}", profile.fullName)}
+                    </p>
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                    <EducationCard mode={mode} entries={education} />
+                    <WorkExperienceCard mode={mode} entries={workExperience} />
+                    <SkillsCard mode={mode} entries={skills} />
+                    <HobbiesCard mode={mode} entries={hobbies} />
+                  </div>
+                )
               ) : postsLoading && posts.length === 0 ? (
                 <p className="msj-note">{t("profile.posts.loading", "Loading posts…")}</p>
               ) : posts.length === 0 ? (
@@ -469,7 +484,7 @@ function Profile() {
                 </div>
               )}
 
-              {!isOwner && postsHasMore && (
+              {!isOwner && activeViewerTab === "about" && postsHasMore && (
                 <button type="button" className="btn btn-outline-ink" style={{ marginTop: 20 }} disabled={postsLoading} onClick={loadMorePosts}>
                   {postsLoading ? t("masjidWizard.loading", "Loading…") : t("profile.posts.loadMore", "Load more posts")}
                 </button>
@@ -591,29 +606,6 @@ function Profile() {
           </div>
         </div>
       </section>
-      )}
-
-      {!isOwner && activeViewerTab === "background" && (
-        <section className="py-md">
-          <div className="wrap">
-            <div className="pf-single-col">
-              {education.length === 0 && workExperience.length === 0 && skills.length === 0 && hobbies.length === 0 ? (
-                <div className="cw-side-card" style={{ textAlign: "center" }}>
-                  <p className="cw-side-card-sub" style={{ marginBottom: 0 }}>
-                    {t("profile.backgroundTab.emptyOther", "{name} hasn't added any background information yet.").replace("{name}", profile.fullName)}
-                  </p>
-                </div>
-              ) : (
-                <>
-                  <EducationCard mode={mode} entries={education} />
-                  <WorkExperienceCard mode={mode} entries={workExperience} />
-                  <SkillsCard mode={mode} entries={skills} />
-                  <HobbiesCard mode={mode} entries={hobbies} />
-                </>
-              )}
-            </div>
-          </div>
-        </section>
       )}
 
       {!isOwner && activeViewerTab === "masjid" && (
