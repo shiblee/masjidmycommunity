@@ -107,6 +107,7 @@ function Profile() {
   const [likedMasjids, setLikedMasjids] = useState([]);
   const [campaigns, setCampaigns] = useState([]);
   const [jobs, setJobs] = useState([]);
+  const [likedJobs, setLikedJobs] = useState([]);
   const [posts, setPosts] = useState([]);
   const [postsHasMore, setPostsHasMore] = useState(false);
   const [postsLoading, setPostsLoading] = useState(false);
@@ -116,6 +117,7 @@ function Profile() {
   const [showAllLikedMasjids, setShowAllLikedMasjids] = useState(false);
   const [showAllCampaigns, setShowAllCampaigns] = useState(false);
   const [showAllJobs, setShowAllJobs] = useState(false);
+  const [showAllLikedJobs, setShowAllLikedJobs] = useState(false);
   const [contentLimits, setContentLimits] = useState({ maxPostLength: 2000, maxCommentLength: 1000, maxReplyLength: 1000 });
   const [imageViewer, setImageViewer] = useState(null); // null | { post, index }
   const [postModal, setPostModal] = useState(null); // null | { type: "report"|"edit-community-post"|"delete-community-post", post }
@@ -143,6 +145,7 @@ function Profile() {
         setLikedMasjids(data.likedMasjids);
         setCampaigns(data.campaigns);
         setJobs(data.jobs);
+        setLikedJobs(data.likedJobs);
         // Keep the navbar/session copy of "my own" data in sync if I'm
         // looking at my own profile (e.g. after an admin edited it elsewhere).
         if (data.user.isOwner && viewer) updateStoredUser({ ...viewer, ...data.user });
@@ -348,7 +351,7 @@ function Profile() {
           </div>
         </section>
       )}
-      {(isOwner || activeViewerTab === "about" || activeViewerTab === "background" || activeViewerTab === "masjid") && (
+      {(isOwner || activeViewerTab === "about" || activeViewerTab === "background" || activeViewerTab === "masjid" || activeViewerTab === "jobs") && (
       <section className="py-sm">
         <div className="wrap">
           <div className="cw-layout">
@@ -493,6 +496,43 @@ function Profile() {
                       statusLabel={{ approved: t("masjidWizard.status.approved", "Approved") }}
                       nameKey="name"
                       linkBase="/masjid"
+                      icon="heart"
+                    />
+                  </div>
+                )
+              ) : activeViewerTab === "jobs" ? (
+                jobs.length === 0 && likedJobs.length === 0 ? (
+                  <div className="cw-side-card" style={{ textAlign: "center" }}>
+                    <p className="cw-side-card-sub" style={{ marginBottom: 0 }}>
+                      {t("profile.jobsTab.emptyOther", "{name} hasn't posted any jobs yet.").replace("{name}", profile.fullName)}
+                    </p>
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                    <OwnedAssetList
+                      title={t("communityWall.jobs.myJobsHeading", "My Jobs")}
+                      items={jobs}
+                      showAll={showAllJobs}
+                      onToggleShowAll={() => setShowAllJobs((v) => !v)}
+                      statusLabel={{
+                        active: t("communityWall.status.active", "Active"),
+                        closed: t("communityWall.status.closed", "Closed"),
+                        expired: t("communityWall.status.expired", "Expired"),
+                      }}
+                      nameKey="title"
+                      linkBase="/job"
+                      linkKey="slug"
+                      icon="building"
+                    />
+                    <OwnedAssetList
+                      title={t("profile.jobsTab.likedHeading", "Liked Jobs")}
+                      items={likedJobs}
+                      showAll={showAllLikedJobs}
+                      onToggleShowAll={() => setShowAllLikedJobs((v) => !v)}
+                      statusLabel={{ active: t("communityWall.status.active", "Active") }}
+                      nameKey="title"
+                      linkBase="/job"
+                      linkKey="slug"
                       icon="heart"
                     />
                   </div>
@@ -650,38 +690,6 @@ function Profile() {
       </section>
       )}
 
-
-      {!isOwner && activeViewerTab === "jobs" && (
-        <section className="py-md">
-          <div className="wrap">
-            <div className="pf-single-col">
-              {jobs.length === 0 ? (
-                <div className="cw-side-card" style={{ textAlign: "center" }}>
-                  <p className="cw-side-card-sub" style={{ marginBottom: 0 }}>
-                    {t("profile.jobsTab.emptyOther", "{name} hasn't posted any jobs yet.").replace("{name}", profile.fullName)}
-                  </p>
-                </div>
-              ) : (
-                <OwnedAssetList
-                  title={t("communityWall.jobs.myJobsHeading", "My Jobs")}
-                  items={jobs}
-                  showAll={showAllJobs}
-                  onToggleShowAll={() => setShowAllJobs((v) => !v)}
-                  statusLabel={{
-                    active: t("communityWall.status.active", "Active"),
-                    closed: t("communityWall.status.closed", "Closed"),
-                    expired: t("communityWall.status.expired", "Expired"),
-                  }}
-                  nameKey="title"
-                  linkBase="/job"
-                  linkKey="slug"
-                  icon="building"
-                />
-              )}
-            </div>
-          </div>
-        </section>
-      )}
 
       {postModal?.type === "report" && (
         <ReportModal

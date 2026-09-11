@@ -11,6 +11,7 @@ import MasjidPhoto from "../models/MasjidPhoto.js";
 import MasjidFavorite from "../models/MasjidFavorite.js";
 import Campaign from "../models/Campaign.js";
 import Job from "../models/Job.js";
+import JobFavorite from "../models/JobFavorite.js";
 
 const PUBLIC_MASJID_STATUS = "approved";
 const PUBLIC_CAMPAIGN_STATUSES = ["active", "paused", "goal_reached", "completed"];
@@ -88,7 +89,7 @@ export const getPublicProfile = async (req, res) => {
       return res.status(404).json({ message: "Profile not found." });
     }
 
-    const [education, workExperience, skillEntries, hobbyEntries, masjids, campaigns, jobs, favoriteRows] = await Promise.all([
+    const [education, workExperience, skillEntries, hobbyEntries, masjids, campaigns, jobs, favoriteRows, jobFavoriteRows] = await Promise.all([
       Education.findAll({ where: { userId: user.id }, order: [["endYear", "DESC"], ["startYear", "DESC"]] }),
       WorkExperience.findAll({ where: { userId: user.id, isActive: true }, order: [["startDate", "DESC"]] }),
       UserSkill.findAll({ where: { userId: user.id }, order: [["sortOrder", "ASC"]] }),
@@ -115,6 +116,7 @@ export const getPublicProfile = async (req, res) => {
         order: [["createdAt", "DESC"]],
       }),
       MasjidFavorite.findAll({ where: { userId: user.id }, order: [["createdAt", "DESC"]] }),
+      JobFavorite.findAll({ where: { userId: user.id }, order: [["createdAt", "DESC"]] }),
     ]);
 
     // Liked masjids, most-recently-liked first — same visibility rule as
@@ -132,6 +134,19 @@ export const getPublicProfile = async (req, res) => {
       : [];
     const likedMasjidById = new Map(likedMasjidRows.map((m) => [m.id, m]));
     const likedMasjids = likedMasjidIds.map((id) => likedMasjidById.get(id)).filter(Boolean);
+
+    // Liked jobs, mirroring likedMasjids above exactly.
+    const likedJobIds = jobFavoriteRows.map((f) => f.jobId);
+    const likedJobRows = likedJobIds.length
+      ? await Job.findAll({
+          where:
+            isOwner || isAdmin
+              ? { id: likedJobIds, status: { [Op.ne]: "deleted" } }
+              : { id: likedJobIds, status: "active", moderationStatus: "active" },
+        })
+      : [];
+    const likedJobById = new Map(likedJobRows.map((j) => [j.id, j]));
+    const likedJobs = likedJobIds.map((id) => likedJobById.get(id)).filter(Boolean);
 
     const [skills, hobbies, primaryMasjid] = await Promise.all([
       serializeSkills(skillEntries),
@@ -183,6 +198,7 @@ export const getPublicProfile = async (req, res) => {
       likedMasjids: likedMasjids.map((m) => m.toJSON()),
       campaigns: campaigns.map((c) => c.toJSON()),
       jobs: jobs.map((j) => j.toJSON()),
+      likedJobs: likedJobs.map((j) => j.toJSON()),
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
