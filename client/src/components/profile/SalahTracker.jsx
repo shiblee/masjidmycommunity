@@ -241,7 +241,11 @@ function SalahTracker({ compact = false }) {
         </div>
       )}
 
-      {toast && <div className="acct-toast"><Icon name="clock" size={16} />{toast}</div>}
+      {toast &&
+        createPortal(
+          <div className="acct-toast"><Icon name="clock" size={16} />{toast}</div>,
+          document.body
+        )}
 
       {celebration &&
         createPortal(
