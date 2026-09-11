@@ -17,6 +17,18 @@ function addDays(dateStr, delta) {
   return d.toISOString().slice(0, 10);
 }
 
+// Every prayer time on screen is the masjid's own local wall-clock "HH:mm"
+// (see formatPrayerTime.js), and the rest of the app already treats it as
+// directly comparable to the viewer's own clock (no timezone conversion
+// anywhere else in the UI) -- so `new Date()`'s local hour/minute is the
+// right "now" to gate against here too.
+function isPrayerTimeReached(time) {
+  if (!time) return true;
+  const [h, m] = time.split(":").map(Number);
+  const now = new Date();
+  return now.getHours() > h || (now.getHours() === h && now.getMinutes() >= m);
+}
+
 function formatDateLabel(dateStr) {
   return new Date(`${dateStr}T00:00:00`).toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 }
@@ -66,6 +78,12 @@ function SalahTracker({ compact = false }) {
   const [loading, setLoading] = useState(true);
   const [busyPrayerId, setBusyPrayerId] = useState(null);
   const [celebration, setCelebration] = useState(null);
+  const [toast, setToast] = useState(null);
+
+  const showToast = (message) => {
+    setToast(message);
+    setTimeout(() => setToast(null), 2600);
+  };
 
   const [historyOpen, setHistoryOpen] = useState(false);
   const [history, setHistory] = useState(null);
@@ -81,8 +99,13 @@ function SalahTracker({ compact = false }) {
   }, [date]);
 
   const toggle = async (prayer) => {
-    setBusyPrayerId(prayer.prayerId);
     const wasCompleted = prayer.completed;
+    if (!wasCompleted && date === todayStr() && !isPrayerTimeReached(prayer.time)) {
+      showToast(t("salah.notYetTime", "This prayer's time hasn't started yet."));
+      return;
+    }
+
+    setBusyPrayerId(prayer.prayerId);
     setDay((d) =>
       d && {
         ...d,
@@ -104,7 +127,8 @@ function SalahTracker({ compact = false }) {
         userApi.get("/me/salah/history", { params: { days: HISTORY_DAYS } }).then(({ data: h }) => setHistory(h.days || []));
         userApi.get("/me/salah/weekly-summary", { params: { languageCode: language } }).then(({ data: w }) => setWeekly(w));
       }
-    } catch {
+    } catch (err) {
+      showToast(err.response?.data?.message || t("salah.markFailed", "Couldn't update this prayer."));
       userApi.get("/me/salah/day", { params: { date } }).then(({ data: d }) => setDay(d));
     } finally {
       setBusyPrayerId(null);
@@ -216,6 +240,8 @@ function SalahTracker({ compact = false }) {
           )}
         </div>
       )}
+
+      {toast && <div className="acct-toast"><Icon name="clock" size={16} />{toast}</div>}
 
       {celebration &&
         createPortal(

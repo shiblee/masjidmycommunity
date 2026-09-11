@@ -2100,6 +2100,8 @@ const DEFAULTS = [
   ["salah", "salah.done", "Done", "पूर्ण", "مکمل", "مكتملة"],
   ["salah", "salah.doneLabel", "Done", "पूर्ण", "مکمل", "تم"],
   ["salah", "salah.markDone", "Mark Done", "पूर्ण चिह्नित करें", "مکمل نشان زد کریں", "تحديد كمكتملة"],
+  ["salah", "salah.notYetTime", "This prayer's time hasn't started yet.", "इस नमाज़ का समय अभी शुरू नहीं हुआ है।", "اس نماز کا وقت ابھی شروع نہیں ہوا۔", "لم يبدأ وقت هذه الصلاة بعد."],
+  ["salah", "salah.markFailed", "Couldn't update this prayer.", "इस नमाज़ को अपडेट नहीं किया जा सका।", "اس نماز کو اپ ڈیٹ نہیں کیا جا سکا۔", "تعذر تحديث هذه الصلاة."],
   ["salah", "salah.viewHistory", "View Salah History", "नमाज़ का इतिहास देखें", "نماز کی تاریخ دیکھیں", "عرض سجل الصلاة"],
   ["salah", "salah.hideHistory", "Hide Salah History", "नमाज़ का इतिहास छुपाएँ", "نماز کی تاریخ چھپائیں", "إخفاء سجل الصلاة"],
   ["salah", "salah.weekly.completeDays", "Complete Days", "पूर्ण दिन", "مکمل دن", "الأيام المكتملة"],

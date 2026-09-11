@@ -42,6 +42,21 @@ async function getUserPrimaryMasjidId(userId) {
   return masjid ? masjid.id : null;
 }
 
+// Current wall-clock "HH:mm" in the masjid's own IANA timezone -- mirrors
+// prayerCalculationEngine.js's formatLocalHHmm so it's directly comparable
+// (zero-padded, same format) to the "HH:mm" strings getEffectivePrayerTimes
+// returns. Falls back to null when a masjid has no timezone saved yet, so
+// callers can skip the gate rather than mis-block on a bad comparison.
+function currentHHmmInTimezone(timeZone) {
+  if (!timeZone) return null;
+  try {
+    const parts = new Intl.DateTimeFormat("en-GB", { timeZone, hour: "2-digit", minute: "2-digit", hour12: false }).formatToParts(new Date());
+    return `${parts.find((p) => p.type === "hour").value}:${parts.find((p) => p.type === "minute").value}`;
+  } catch {
+    return null;
+  }
+}
+
 // Walks backward from `fromDateStr`, counting consecutive fully-completed
 // (5/5) days. Stops at the first incomplete or empty day it finds.
 async function computeStreak(userId, masjidId, fromDateStr) {
@@ -83,6 +98,22 @@ export const markDone = async (req, res) => {
 
     const prayer = await PrayerMaster.findOne({ where: { id: prayerId, category: "Fard" } });
     if (!prayer) return res.status(400).json({ message: "That isn't a trackable prayer." });
+
+    // A prayer can only be marked done once its own time has actually
+    // arrived (today only -- a past day's prayers are, by definition, all
+    // over already). Backs the same restriction SalahTracker.jsx enforces
+    // client-side, so a direct API call can't mark tonight's Isha at noon.
+    if (dateStr === todayStr()) {
+      const [roster, masjid] = await Promise.all([
+        getEffectivePrayerTimes(masjidId, dateStr),
+        Masjid.findByPk(masjidId, { attributes: ["timezone"] }),
+      ]);
+      const effectiveTime = roster.find((r) => r.prayerId === Number(prayerId))?.time;
+      const nowHHmm = currentHHmmInTimezone(masjid?.timezone);
+      if (effectiveTime && nowHHmm && effectiveTime > nowHHmm) {
+        return res.status(400).json({ message: "This prayer's time hasn't started yet." });
+      }
+    }
 
     await SalahLog.findOrCreate({ where: { userId: req.user.id, prayerId, date: dateStr } });
 
