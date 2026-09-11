@@ -1,0 +1,42 @@
+name: Set PEXELS_API_KEY on server
+
+# One-off: server/.env lives outside git (deployed once, then persists
+# across deploys untouched — see deploy.yml), so a new env var can't ship
+# through the normal push-to-deploy flow. This writes it directly via SSH,
+# using the same DEPLOY_HOST/DEPLOY_USER/DEPLOY_SSH_KEY secrets deploy.yml
+# already uses, then restarts pm2 so realisticPhotoService.js picks it up.
+#
+# Builds the remote script as a local file (no SSH heredoc) so the key is
+# substituted once by this runner's own shell and never appears as a
+# remote command-line argument `ps` could see on the server.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  set-key:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Write PEXELS_API_KEY into server/.env and restart the API
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+
+          SET_LINE="PEXELS_API_KEY=${PEXELS_API_KEY}"
+          printf '%s\n' \
+            'set -e' \
+            'cd /var/www/masjidmycommunity/server' \
+            "if grep -q '^PEXELS_API_KEY=' .env; then sed -i \"s|^PEXELS_API_KEY=.*|${SET_LINE}|\" .env; else printf '\\n%s\\n' \"${SET_LINE}\" >> .env; fi" \
+            'pm2 restart masjidmycommunity-api' \
+            'sleep 5' \
+            'pm2 list' \
+            'echo "=== last 20 lines of error log after restart ==="' \
+            'pm2 logs masjidmycommunity-api --err --lines 20 --nostream || true' \
+            > remote_script.sh
+
+          ssh -i ~/.ssh/deploy_key "$DEPLOY_USER@$DEPLOY_HOST" bash -s < remote_script.sh
