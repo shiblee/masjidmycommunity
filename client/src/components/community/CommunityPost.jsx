@@ -587,7 +587,17 @@ function CommunityPost({ post, user, navigate, onVote, onEdit, onDelete, onRepor
 
       {post.videoUrl && (
         <div className="cw-post-media cw-post-video">
-          <video src={post.videoUrl} controls preload="metadata" />
+          <video
+            src={post.videoUrl}
+            controls
+            preload="metadata"
+            // Chrome/Safari often paint the very first frame (0:00) as solid
+            // black for freshly-encoded uploads instead of a real thumbnail.
+            // Nudging playback to a hair past zero once metadata is ready
+            // forces the browser to decode and paint an actual frame there,
+            // without playing or downloading the rest of the video.
+            onLoadedMetadata={(e) => { e.currentTarget.currentTime = 0.1; }}
+          />
         </div>
       )}
 
