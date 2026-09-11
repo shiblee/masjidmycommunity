@@ -2,12 +2,16 @@ import { Op } from "sequelize";
 import Masjid from "../models/Masjid.js";
 import Campaign from "../models/Campaign.js";
 import Donation from "../models/Donation.js";
+import Job from "../models/Job.js";
 
 // Same "counted publicly" definitions the public community-stats endpoint
 // and homepage footer already use (publicCommunityController.js's
 // getCommunityStats), so the admin dashboard's headline numbers agree with
 // what a visitor actually sees rather than a separately-invented definition.
 const PUBLIC_CAMPAIGN_STATUSES = ["active", "paused", "goal_reached", "completed"];
+// Same definition publicJobController.js's PUBLIC_STATUSES uses for what a
+// visitor actually sees on the Jobs board.
+const PUBLIC_JOB_STATUSES = ["active"];
 
 // Raw rows (just enough fields to bucket into a weekly trend client-side,
 // mirroring the one KPI card — Total Registered Users — that was already
@@ -15,17 +19,19 @@ const PUBLIC_CAMPAIGN_STATUSES = ["active", "paused", "goal_reached", "completed
 // genuine trend line instead of a flat "current total" with no history.
 export const getStats = async (req, res) => {
   try {
-    const [verifiedMasjids, totalMasjidsCount, activeCampaigns, donations] = await Promise.all([
+    const [verifiedMasjids, totalMasjidsCount, activeCampaigns, donations, activeJobs] = await Promise.all([
       Masjid.findAll({ where: { status: "approved", moderationStatus: "active" }, attributes: ["createdAt"] }),
       Masjid.count({ where: { status: { [Op.ne]: "deleted" } } }),
       Campaign.findAll({ where: { status: { [Op.in]: PUBLIC_CAMPAIGN_STATUSES }, moderationStatus: "active" }, attributes: ["createdAt"] }),
       Donation.findAll({ where: { status: "recorded" }, attributes: ["id", "createdAt", "amount", "userId", "donorEmail"] }),
+      Job.findAll({ where: { status: { [Op.in]: PUBLIC_JOB_STATUSES }, moderationStatus: "active" }, attributes: ["createdAt"] }),
     ]);
 
     res.json({
       totalMasjidsCount,
       verifiedMasjids: verifiedMasjids.map((m) => ({ createdAt: m.createdAt })),
       activeCampaigns: activeCampaigns.map((c) => ({ createdAt: c.createdAt })),
+      activeJobs: activeJobs.map((j) => ({ createdAt: j.createdAt })),
       donations: donations.map((d) => ({
         createdAt: d.createdAt,
         amount: Number(d.amount),

@@ -108,6 +108,7 @@ function buildKpis(dashStats) {
   if (!dashStats) return [];
   const verified = computeCountTrend(dashStats.verifiedMasjids);
   const campaigns = computeCountTrend(dashStats.activeCampaigns);
+  const jobs = computeCountTrend(dashStats.activeJobs);
   const funds = computeSumTrend(dashStats.donations, "amount");
   const donationCount = computeCountTrend(dashStats.donations);
   const donors = computeDistinctCountTrend(dashStats.donations, "donorKey");
@@ -116,6 +117,7 @@ function buildKpis(dashStats) {
   return [
     { label: "Verified Masjids", sub: `${verifiedPct}% of total`, icon: "verify", color: "#5E9A2C", ...verified },
     { label: "Active Campaigns", icon: "campaign", color: "#C9A227", ...campaigns },
+    { label: "Active Jobs", icon: "briefcase", color: "#5E9A2C", to: "/admin/jobs", ...jobs },
     { label: "Total Funds Raised", icon: "wallet", color: "#5E9A2C", ...funds },
     { label: "Total Donations", icon: "donation", color: "#C9A227", ...donationCount },
     { label: "Total Donors", icon: "donors", color: "#5E9A2C", ...donors },
