@@ -8,7 +8,10 @@ function RequireUserAuth({ children }) {
   // (the first API call on this route silently refreshes it) — not a reason
   // to bounce to /auth. Only the absence of a real session is.
   if (!getStoredUser() || !getUserRefreshToken()) {
-    return <Navigate to="/auth" state={{ from: location.pathname }} replace />;
+    // Same ?redirect= convention useLoginGatedNav and Auth.jsx already use,
+    // so signing in lands the visitor back on the page they were blocked from.
+    const target = `${location.pathname}${location.search}`;
+    return <Navigate to={`/auth?redirect=${encodeURIComponent(target)}`} replace />;
   }
   return children;
 }

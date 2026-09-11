@@ -77,7 +77,7 @@ function App() {
       <Routes>
         <Route element={<MarketingLayout />}>
           <Route path="/" element={<Auth defaultIntent="campaign" />} />
-          <Route path="/my-community" element={<Community />} />
+          <Route path="/my-community" element={<RequireUserAuth><Community /></RequireUserAuth>} />
           <Route path="/how-it-works" element={<HowItWorks />} />
           <Route path="/our-impact" element={<OurImpact />} />
           <Route path="/about" element={<AboutUs />} />
@@ -90,15 +90,15 @@ function App() {
           <Route path="/success-stories" element={<SuccessStories />} />
           <Route path="/success-stories/:slug" element={<SuccessStoryDetail />} />
           <Route path="/explore-campaigns" element={<ExploreCampaigns />} />
-          <Route path="/campaigns" element={<ActiveCampaigns />} />
-          <Route path="/jobs" element={<Jobs />} />
+          <Route path="/campaigns" element={<RequireUserAuth><ActiveCampaigns /></RequireUserAuth>} />
+          <Route path="/jobs" element={<RequireUserAuth><Jobs /></RequireUserAuth>} />
           <Route path="/verified-masjid" element={<VerifiedMasjid />} />
           <Route path="/verify-masjid/:verificationId" element={<VerifyMasjid />} />
           <Route path="/sitemap" element={<Sitemap />} />
           <Route path="/cookie-policy" element={<LegalPage slug="cookie-policy" />} />
           <Route path="/pages/:slug" element={<LegalPage />} />
           <Route path="/auth" element={<Auth />} />
-          <Route path="/explore-masjids" element={<ExploreMasjids />} />
+          <Route path="/explore-masjids" element={<RequireUserAuth><ExploreMasjids /></RequireUserAuth>} />
           <Route path="/explore-users" element={<ExploreUsers />} />
           <Route path="/reels" element={<Reels />} />
           <Route path="/masjid/:slug" element={<MasjidProfile />} />
