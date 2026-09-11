@@ -1,0 +1,27 @@
+name: Verify Salah time gate (self-cleaning)
+
+# Diagnostic: mints a JWT for a real user with a Primary Masjid and exercises
+# live POST /users/me/salah/mark against a future prayer (expect 400) and a
+# past prayer (expect 200), then cleans up any SalahLog row it creates.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run the verification script on the server
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+
+          ssh -i ~/.ssh/deploy_key "$DEPLOY_USER@$DEPLOY_HOST" '
+            set -e
+            cd /var/www/masjidmycommunity/server
+            node scripts/verifySalahTimeGate.mjs
+          '
