@@ -84,6 +84,13 @@ function OwnedAssetList({ title, items, showAll, onToggleShowAll, statusLabel, n
 
 const PROFILE_NAV_KEYS = PROFILE_NAV_SECTIONS.map((s) => s.key);
 
+const VIEWER_TABS = [
+  { key: "about", labelKey: "profile.tabs.about", label: "About" },
+  { key: "masjid", labelKey: "profile.tabs.masjid", label: "Masjid" },
+  { key: "jobs", labelKey: "profile.tabs.jobs", label: "Jobs" },
+];
+const VIEWER_TAB_KEYS = VIEWER_TABS.map((s) => s.key);
+
 function Profile() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -116,6 +123,7 @@ function Profile() {
   const [shareOpen, setShareOpen] = useState(false);
   const shareBtnRef = useRef(null);
   const activeSection = PROFILE_NAV_KEYS.includes(section) ? section : "wall";
+  const activeViewerTab = VIEWER_TAB_KEYS.includes(section) ? section : "about";
 
   useEffect(() => {
     setLoading(true);
@@ -320,8 +328,23 @@ function Profile() {
               </div>
             </div>
           </div>
+          <div className="msj-hub-tabs-bar">
+            <div className="wrap msj-hub-tabs">
+              {VIEWER_TABS.map((tabDef) => (
+                <button
+                  key={tabDef.key}
+                  type="button"
+                  className={activeViewerTab === tabDef.key ? "active" : ""}
+                  onClick={() => navigate(tabDef.key === "about" ? `/profile/${username}` : `/profile/${username}/${tabDef.key}`)}
+                >
+                  {t(tabDef.labelKey, tabDef.label)}
+                </button>
+              ))}
+            </div>
+          </div>
         </section>
       )}
+      {(isOwner || activeViewerTab === "about") && (
       <section className="py-sm">
         <div className="wrap">
           <div className="cw-layout">
@@ -490,24 +513,26 @@ function Profile() {
                   </Link>
                 </div>
               )}
-              <OwnedAssetList
-                title={t("communityWall.masjid.myMasjidsHeading", "My Masjids")}
-                items={masjids}
-                showAll={showAllMasjids}
-                onToggleShowAll={() => setShowAllMasjids((v) => !v)}
-                statusLabel={{
-                  draft: t("masjidWizard.status.draft", "Draft"),
-                  submitted: t("masjidWizard.status.submitted", "Submitted"),
-                  under_review: t("masjidWizard.status.underReview", "Under Review"),
-                  changes_requested: t("masjidWizard.status.changesRequested", "Changes Requested"),
-                  approved: t("masjidWizard.status.approved", "Approved"),
-                  rejected: t("masjidWizard.status.rejected", "Rejected"),
-                  inactive: t("masjidWizard.status.inactive", "Inactive"),
-                }}
-                nameKey="name"
-                linkBase={isOwner ? "/account/my-masjids" : "/masjid"}
-                icon="mosque"
-              />
+              {isOwner && (
+                <OwnedAssetList
+                  title={t("communityWall.masjid.myMasjidsHeading", "My Masjids")}
+                  items={masjids}
+                  showAll={showAllMasjids}
+                  onToggleShowAll={() => setShowAllMasjids((v) => !v)}
+                  statusLabel={{
+                    draft: t("masjidWizard.status.draft", "Draft"),
+                    submitted: t("masjidWizard.status.submitted", "Submitted"),
+                    under_review: t("masjidWizard.status.underReview", "Under Review"),
+                    changes_requested: t("masjidWizard.status.changesRequested", "Changes Requested"),
+                    approved: t("masjidWizard.status.approved", "Approved"),
+                    rejected: t("masjidWizard.status.rejected", "Rejected"),
+                    inactive: t("masjidWizard.status.inactive", "Inactive"),
+                  }}
+                  nameKey="name"
+                  linkBase="/account/my-masjids"
+                  icon="mosque"
+                />
+              )}
 
               {isOwner && (
                 <div className="cw-side-card cw-side-card-cta">
@@ -551,25 +576,94 @@ function Profile() {
                   </Link>
                 </div>
               )}
-              <OwnedAssetList
-                title={t("communityWall.jobs.myJobsHeading", "My Jobs")}
-                items={jobs}
-                showAll={showAllJobs}
-                onToggleShowAll={() => setShowAllJobs((v) => !v)}
-                statusLabel={{
-                  active: t("communityWall.status.active", "Active"),
-                  closed: t("communityWall.status.closed", "Closed"),
-                  expired: t("communityWall.status.expired", "Expired"),
-                }}
-                nameKey="title"
-                linkBase={isOwner ? "/account/my-jobs" : "/job"}
-                linkKey={isOwner ? "id" : "slug"}
-                icon="building"
-              />
+              {isOwner && (
+                <OwnedAssetList
+                  title={t("communityWall.jobs.myJobsHeading", "My Jobs")}
+                  items={jobs}
+                  showAll={showAllJobs}
+                  onToggleShowAll={() => setShowAllJobs((v) => !v)}
+                  statusLabel={{
+                    active: t("communityWall.status.active", "Active"),
+                    closed: t("communityWall.status.closed", "Closed"),
+                    expired: t("communityWall.status.expired", "Expired"),
+                  }}
+                  nameKey="title"
+                  linkBase="/account/my-jobs"
+                  icon="building"
+                />
+              )}
             </aside>
           </div>
         </div>
       </section>
+      )}
+
+      {!isOwner && activeViewerTab === "masjid" && (
+        <section className="py-md">
+          <div className="wrap">
+            <div className="pf-single-col">
+              {masjids.length === 0 ? (
+                <div className="cw-side-card" style={{ textAlign: "center" }}>
+                  <p className="cw-side-card-sub" style={{ marginBottom: 0 }}>
+                    {t("profile.masjidTab.emptyOther", "{name} hasn't added any masjids yet.").replace("{name}", profile.fullName)}
+                  </p>
+                </div>
+              ) : (
+                <OwnedAssetList
+                  title={t("communityWall.masjid.myMasjidsHeading", "My Masjids")}
+                  items={masjids}
+                  showAll={showAllMasjids}
+                  onToggleShowAll={() => setShowAllMasjids((v) => !v)}
+                  statusLabel={{
+                    draft: t("masjidWizard.status.draft", "Draft"),
+                    submitted: t("masjidWizard.status.submitted", "Submitted"),
+                    under_review: t("masjidWizard.status.underReview", "Under Review"),
+                    changes_requested: t("masjidWizard.status.changesRequested", "Changes Requested"),
+                    approved: t("masjidWizard.status.approved", "Approved"),
+                    rejected: t("masjidWizard.status.rejected", "Rejected"),
+                    inactive: t("masjidWizard.status.inactive", "Inactive"),
+                  }}
+                  nameKey="name"
+                  linkBase="/masjid"
+                  icon="mosque"
+                />
+              )}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {!isOwner && activeViewerTab === "jobs" && (
+        <section className="py-md">
+          <div className="wrap">
+            <div className="pf-single-col">
+              {jobs.length === 0 ? (
+                <div className="cw-side-card" style={{ textAlign: "center" }}>
+                  <p className="cw-side-card-sub" style={{ marginBottom: 0 }}>
+                    {t("profile.jobsTab.emptyOther", "{name} hasn't posted any jobs yet.").replace("{name}", profile.fullName)}
+                  </p>
+                </div>
+              ) : (
+                <OwnedAssetList
+                  title={t("communityWall.jobs.myJobsHeading", "My Jobs")}
+                  items={jobs}
+                  showAll={showAllJobs}
+                  onToggleShowAll={() => setShowAllJobs((v) => !v)}
+                  statusLabel={{
+                    active: t("communityWall.status.active", "Active"),
+                    closed: t("communityWall.status.closed", "Closed"),
+                    expired: t("communityWall.status.expired", "Expired"),
+                  }}
+                  nameKey="title"
+                  linkBase="/job"
+                  linkKey="slug"
+                  icon="building"
+                />
+              )}
+            </div>
+          </div>
+        </section>
+      )}
 
       {postModal?.type === "report" && (
         <ReportModal

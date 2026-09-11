@@ -4643,6 +4643,8 @@ a.cmt-avatar{ text-decoration:none; }
 
 /* Profile page redesign — header, tabs, stats/badges, Primary Masjid tab */
 .pf-profile-header{ display:flex; align-items:center; gap:22px; flex-wrap:wrap; }
+.pf-profile-header-avatar .profile-avatar-img,
+.pf-profile-header-avatar .profile-avatar-fallback.acct-avatar{ width:112px; height:112px; font-size:34px; }
 .pf-profile-header-info{ flex:1; min-width:0; }
 .pf-profile-header-info h1{ font-size:24px; color:var(--text-on-paper); margin:0; }
 .pf-profile-header-username{ font-size:14px; color:var(--text-on-paper-dim); margin:2px 0 0; }
