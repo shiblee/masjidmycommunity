@@ -310,7 +310,7 @@ function Profile() {
   return (
     <main className="cw-page">
       {!isOwner && (
-        <section className="py-sm">
+        <section className="py-sm pf-header-section">
           <div className="wrap">
             <div className="pf-profile-header">
               <div className="pf-profile-header-avatar">
