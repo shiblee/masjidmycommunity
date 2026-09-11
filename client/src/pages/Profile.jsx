@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Icon } from "../components/Icons.jsx";
 import { useTranslation } from "../i18n/LanguageContext.jsx";
@@ -16,6 +16,7 @@ import HobbiesCard from "../components/profile/HobbiesCard.jsx";
 import SecurityCard from "../components/profile/SecurityCard.jsx";
 import ProfileCompletion from "../components/profile/ProfileCompletion.jsx";
 import PostComposer from "../components/PostComposer.jsx";
+import ShareMenu from "../components/ShareMenu.jsx";
 import ReportModal from "../components/ReportModal.jsx";
 import ImageViewer from "../components/ImageViewer.jsx";
 import CommunityPost, { mapLiveActivity, EditCommunityPostModal, DeleteCommunityPostModal } from "../components/community/CommunityPost.jsx";
@@ -112,6 +113,8 @@ function Profile() {
   const [postError, setPostError] = useState("");
   const [reportSuccess, setReportSuccess] = useState(false);
   const [reportReasons, setReportReasons] = useState([]);
+  const [shareOpen, setShareOpen] = useState(false);
+  const shareBtnRef = useRef(null);
   const activeSection = PROFILE_NAV_KEYS.includes(section) ? section : "wall";
 
   useEffect(() => {
@@ -289,23 +292,47 @@ function Profile() {
   const isOwner = !!profile.isOwner;
   const mode = isOwner ? "self" : "view";
 
+  const badges = [
+    masjids.length > 0 && { key: "masjidOwner", icon: "mosque", label: t("profile.badge.masjidOwner", "Masjid Owner") },
+    jobs.length > 0 && { key: "jobPoster", icon: "briefcase", label: t("profile.badge.jobPoster", "Job Poster") },
+    campaigns.length > 0 && { key: "campaignOrganizer", icon: "flag", label: t("profile.badge.campaignOrganizer", "Campaign Organizer") },
+    profile.verified && { key: "verifiedMember", icon: "shieldCheck", label: t("profile.badge.verifiedMember", "Verified Member") },
+  ].filter(Boolean);
+
   return (
     <main className="cw-page">
-      <section className="py-sm">
-        <div className="wrap">
-          <div className="cw-layout">
-            <aside className="cw-side">
-              <div className="cw-side-card" style={{ textAlign: "center" }}>
-                {isOwner ? (
-                  <ProfilePhotoCard user={profile} onUserUpdated={handleUserUpdated} />
-                ) : profile.profilePhoto ? (
+      {!isOwner && (
+        <section className="py-sm">
+          <div className="wrap">
+            <div className="pf-profile-header">
+              <div className="pf-profile-header-avatar">
+                {profile.profilePhoto ? (
                   <div className="profile-avatar-wrap"><img className="profile-avatar-img" src={`${API_ORIGIN}${profile.profilePhoto}`} alt={profile.fullName} /></div>
                 ) : (
                   <div className="profile-avatar-wrap"><div className="acct-avatar profile-avatar-fallback">{initialsOf(profile.fullName)}</div></div>
                 )}
-                <h3 style={{ marginTop: 14, marginBottom: 2 }}>{profile.fullName}</h3>
-                <p className="cw-side-card-sub" style={{ marginBottom: 0 }}>@{profile.username}</p>
               </div>
+              <div className="pf-profile-header-info">
+                <h1>{profile.fullName}</h1>
+                <p className="pf-profile-header-username">@{profile.username}</p>
+                {profile.bio && <p className="pf-profile-header-bio">{profile.bio}</p>}
+                {profile.locationLabel && <span className="pf-profile-header-location"><Icon name="mapPin" size={14} />{profile.locationLabel}</span>}
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+      <section className="py-sm">
+        <div className="wrap">
+          <div className="cw-layout">
+            <aside className="cw-side">
+              {isOwner && (
+                <div className="cw-side-card" style={{ textAlign: "center" }}>
+                  <ProfilePhotoCard user={profile} onUserUpdated={handleUserUpdated} />
+                  <h3 style={{ marginTop: 14, marginBottom: 2 }}>{profile.fullName}</h3>
+                  <p className="cw-side-card-sub" style={{ marginBottom: 0 }}>@{profile.username}</p>
+                </div>
+              )}
 
               {isOwner ? (
                 <>
@@ -432,6 +459,28 @@ function Profile() {
             </div>
 
             <aside className="cw-side">
+              {!isOwner && (
+                <div className="cw-side-card">
+                  <h4>{t("profile.stats.heading", "Profile Stats")}</h4>
+                  <div className="pf-stats-grid">
+                    <div className="pf-stat-tile"><strong>{postsHasMore ? `${posts.length}+` : posts.length}</strong><span>{t("profile.stats.posts", "Posts")}</span></div>
+                    <div className="pf-stat-tile"><strong>{masjids.length}</strong><span>{t("profile.stats.masjids", "Masjids")}</span></div>
+                    <div className="pf-stat-tile"><strong>{campaigns.length}</strong><span>{t("profile.stats.campaigns", "Campaigns")}</span></div>
+                    <div className="pf-stat-tile"><strong>{jobs.length}</strong><span>{t("profile.stats.jobs", "Jobs")}</span></div>
+                  </div>
+                  {badges.length > 0 && (
+                    <div className="pf-badges-row">
+                      {badges.map((b) => (
+                        <span key={b.key} className="pf-badge"><Icon name={b.icon} size={13} />{b.label}</span>
+                      ))}
+                    </div>
+                  )}
+                  <button type="button" ref={shareBtnRef} className="btn btn-outline-ink" style={{ width: "100%", justifyContent: "center", marginTop: 16 }} onClick={() => setShareOpen((v) => !v)}>
+                    <Icon name="link" size={15} /> {t("profile.shareProfile", "Share Profile")}
+                  </button>
+                  <ShareMenu open={shareOpen} onClose={() => setShareOpen(false)} anchorRef={shareBtnRef} url={`${window.location.origin}/profile/${profile.username}`} title={profile.fullName} />
+                </div>
+              )}
               {isOwner && (
                 <div className="cw-side-card cw-side-card-cta">
                   <h4>{t("communityWall.masjid.registerHeading", "Register Your Masjid")}</h4>
