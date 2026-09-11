@@ -15,6 +15,7 @@ import HobbiesCard from "../components/profile/HobbiesCard.jsx";
 import SecurityCard from "../components/profile/SecurityCard.jsx";
 import ProfileCompletion from "../components/profile/ProfileCompletion.jsx";
 import PostComposer from "../components/PostComposer.jsx";
+import MediaThumb from "../components/MediaThumb.jsx";
 
 const SIDE_LIST_PREVIEW_COUNT = 3;
 const POSTS_PAGE_SIZE = 10;
@@ -73,6 +74,17 @@ function ProfilePostCard({ post, fallbackAuthor }) {
               <img src={`${API_ORIGIN}${img.url}`} alt="" />
             </div>
           ))}
+        </div>
+      )}
+
+      {post.mediaVideoUrl && (
+        <div className="cw-post-media cw-post-video">
+          <MediaThumb
+            src={`${API_ORIGIN}${post.mediaVideoUrl}`}
+            poster={post.mediaVideoPosterUrl ? `${API_ORIGIN}${post.mediaVideoPosterUrl}` : undefined}
+            mediaType="video"
+            videoProps={{ controls: true }}
+          />
         </div>
       )}
 
