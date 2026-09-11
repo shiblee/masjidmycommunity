@@ -1511,6 +1511,70 @@ footer{
   border:1px solid var(--line); border-radius:10px; padding:10px 12px; font-size:14px; font-family:var(--sans);
   color:var(--text-on-paper); resize:vertical;
 }
+
+/* ===== Full-screen Reels viewer (/reels) ===== */
+.reel-viewer{ position:fixed; inset:0; z-index:1500; background:#000; }
+.reel-viewer-close{
+  position:absolute; top:18px; left:18px; z-index:3; width:38px; height:38px; border-radius:50%;
+  background:rgba(255,255,255,.14); border:none; color:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer;
+}
+.reel-viewer-close:hover{ background:rgba(255,255,255,.24); }
+.reel-viewer-scroll{ height:100%; overflow-y:auto; scroll-snap-type:y mandatory; scrollbar-width:none; }
+.reel-viewer-scroll::-webkit-scrollbar{ display:none; }
+.reel-slide{
+  height:100%; width:100%; scroll-snap-align:start; scroll-snap-stop:always; position:relative;
+  display:flex; align-items:center; justify-content:center; background:#000;
+}
+.reel-slide-video-wrap{ position:relative; height:100%; max-width:100%; display:flex; align-items:center; justify-content:center; }
+.reel-slide-video-wrap video{ height:100%; max-height:100%; width:auto; max-width:100%; object-fit:contain; display:block; background:#000; }
+.reel-slide-scrim{
+  position:absolute; left:0; right:0; bottom:0; height:45%; pointer-events:none;
+  background:linear-gradient(0deg,rgba(0,0,0,.75),transparent);
+}
+.reel-slide-info{
+  position:absolute; left:16px; right:88px; bottom:20px; z-index:2; color:#fff; display:flex; flex-direction:column; gap:10px;
+}
+.reel-slide-author{ display:flex; align-items:center; gap:10px; text-decoration:none; color:#fff; }
+.reel-slide-author img, .reel-slide-author .msj-media-fallback{ width:36px; height:36px; border-radius:50%; object-fit:cover; border:1.5px solid rgba(255,255,255,.6); }
+.reel-slide-author strong{ font-size:14.5px; font-weight:700; }
+.reel-slide-caption{ font-size:14px; line-height:1.5; color:rgba(255,255,255,.92); }
+.reel-slide-caption a{ color:#fff; font-weight:700; }
+.reel-slide-actions{
+  position:absolute; right:14px; bottom:24px; z-index:2; display:flex; flex-direction:column; align-items:center; gap:18px;
+}
+.reel-action-btn{
+  display:flex; flex-direction:column; align-items:center; gap:4px; background:none; border:none; color:#fff; cursor:pointer; padding:0;
+}
+.reel-action-btn svg{ width:26px; height:26px; }
+.reel-action-icon{
+  width:44px; height:44px; border-radius:50%; background:rgba(255,255,255,.14); display:flex; align-items:center; justify-content:center;
+  transition:background .2s, transform .15s;
+}
+.reel-action-btn:hover .reel-action-icon{ background:rgba(255,255,255,.24); }
+.reel-action-btn.active .reel-action-icon{ background:var(--gold); color:var(--ink); }
+.reel-action-count{ font-size:12px; font-weight:700; }
+/* ShareButton is styled for the light card UI (icon + text label) --
+   collapsing the text via font-size:0 keeps it icon-only here, matching
+   the other circular action buttons; the SVG keeps its own explicit px
+   size so it isn't affected by the 0 font-size. */
+.reel-action-icon .cw-share{ margin:0; padding:0; color:#fff; font-size:0; }
+.reel-action-icon .cw-share svg{ width:26px; height:26px; }
+.reel-action-icon .cw-share-wrap{ display:flex; }
+.reel-viewer-loading, .reel-viewer-empty{
+  height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; color:#fff; text-align:center; padding:24px;
+}
+.reel-comments-drawer{ position:fixed; inset:0; z-index:1600; display:flex; align-items:flex-end; justify-content:center; background:rgba(0,0,0,.5); }
+.reel-comments-panel{
+  background:#fff; width:100%; max-width:560px; max-height:75vh; border-radius:18px 18px 0 0; overflow-y:auto; padding:18px;
+}
+.reel-comments-panel-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+.reel-comments-panel-head h4{ margin:0; font-size:16px; }
+@media (min-width:720px){
+  .reel-slide-video-wrap{ max-width:420px; }
+  .reel-comments-drawer{ align-items:center; }
+  .reel-comments-panel{ border-radius:18px; max-height:80vh; }
+}
+
 .cw-feed-end{
   text-align:center; padding:28px 20px; margin-top:24px; border:1px dashed var(--line); border-radius:12px;
   color:var(--text-on-paper-dim); font-size:14px; font-family:var(--mono);

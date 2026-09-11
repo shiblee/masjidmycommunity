@@ -1,28 +1,87 @@
-import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect, useRef, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import communityApi from "../services/communityApi.js";
 import reportApi from "../services/reportApi.js";
 import { getStoredUser } from "../utils/userAuthStorage.js";
-import CommunityPost, { mapLiveActivity } from "../components/community/CommunityPost.jsx";
+import { API_ORIGIN } from "../config.js";
+import { mapLiveActivity, ThumbUpIcon, CommentIcon, ShareButton } from "../components/community/CommunityPost.jsx";
+import MediaThumb from "../components/MediaThumb.jsx";
+import PostBodyText from "../components/PostBodyText.jsx";
+import CommentSection from "../components/CommentSection.jsx";
 import ReportModal from "../components/ReportModal.jsx";
 import { Icon } from "../components/Icons.jsx";
 import { useTranslation } from "../i18n/LanguageContext.jsx";
 
 const PAGE_SIZE = 10;
 
+function ReelSlide({ post, user, navigate, onVote, onOpenComments, onReport }) {
+  const { t } = useTranslation();
+  const vote = (value) => {
+    if (!user) { navigate("/auth"); return; }
+    onVote(post.activityId, value);
+  };
+
+  return (
+    <div className="reel-slide">
+      <div className="reel-slide-video-wrap">
+        <MediaThumb src={post.videoUrl} poster={post.videoPosterUrl} mediaType="video" videoProps={{ playsInline: true, loop: true }} />
+      </div>
+      <div className="reel-slide-scrim" />
+
+      <div className="reel-slide-info">
+        {post.author?.username ? (
+          <Link to={`/profile/${post.author.username}`} className="reel-slide-author">
+            <MediaThumb src={post.author.profilePhoto ? `${API_ORIGIN}${post.author.profilePhoto}` : null} />
+            <strong>{post.author.fullName}</strong>
+          </Link>
+        ) : (
+          <span className="reel-slide-author"><strong>{post.actor?.name || t("reels.viewer.anonymous", "Community Member")}</strong></span>
+        )}
+        {post.text && (
+          <p className="reel-slide-caption">
+            <PostBodyText text={post.text} onHashtagClick={(tag) => navigate(`/my-community?hashtag=${encodeURIComponent(tag)}`)} />
+          </p>
+        )}
+      </div>
+
+      <div className="reel-slide-actions">
+        <button type="button" className={`reel-action-btn${post.userVote === "like" ? " active" : ""}`} onClick={() => vote("like")} aria-label="Like">
+          <span className="reel-action-icon"><ThumbUpIcon /></span>
+          <span className="reel-action-count">{post.likeCount}</span>
+        </button>
+        <button type="button" className="reel-action-btn" onClick={() => onOpenComments(post)} aria-label="Comments">
+          <span className="reel-action-icon"><CommentIcon /></span>
+          <span className="reel-action-count">{post.commentCount}</span>
+        </button>
+        <div className="reel-action-btn">
+          <span className="reel-action-icon">
+            <ShareButton post={post} />
+          </span>
+        </div>
+        <button
+          type="button"
+          className="reel-action-btn"
+          onClick={() => { if (!user) { navigate("/auth"); return; } onReport(post); }}
+          aria-label={t("reels.viewer.report", "Report")}
+        >
+          <span className="reel-action-icon"><Icon name="flag" size={20} /></span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function Reels() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const user = getStoredUser();
+  const scrollRef = useRef(null);
+  const loadingMoreRef = useRef(false);
 
   const [reels, setReels] = useState(null);
   const [hasMore, setHasMore] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
   const [contentLimits, setContentLimits] = useState({ maxCommentLength: 1000, maxReplyLength: 1000 });
-
-  useEffect(() => {
-    communityApi.get("/content-settings").then(({ data }) => setContentLimits(data)).catch(() => {});
-  }, []);
+  const [commentsFor, setCommentsFor] = useState(null);
 
   const [reportReasons, setReportReasons] = useState([]);
   const [reportTarget, setReportTarget] = useState(null);
@@ -31,6 +90,12 @@ function Reels() {
   const [reportSuccess, setReportSuccess] = useState(false);
 
   useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = ""; };
+  }, []);
+
+  useEffect(() => {
+    communityApi.get("/content-settings").then(({ data }) => setContentLimits(data)).catch(() => {});
     reportApi.get("/reasons").then(({ data }) => setReportReasons(data.reasons)).catch(() => {});
   }, []);
 
@@ -42,14 +107,21 @@ function Reels() {
   }, []);
 
   const loadMore = () => {
-    setLoadingMore(true);
+    if (loadingMoreRef.current || !hasMore || !reels) return;
+    loadingMoreRef.current = true;
     communityApi
       .get("/reels", { params: { limit: PAGE_SIZE, offset: reels.length } })
       .then(({ data }) => {
         setReels((prev) => [...prev, ...data.reels.map(mapLiveActivity)]);
         setHasMore(data.hasMore);
       })
-      .finally(() => setLoadingMore(false));
+      .finally(() => { loadingMoreRef.current = false; });
+  };
+
+  const onScroll = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    if (el.scrollTop + el.clientHeight > el.scrollHeight - el.clientHeight) loadMore();
   };
 
   const castVote = (activityId, value) => {
@@ -72,6 +144,10 @@ function Reels() {
     communityApi.post(`/activities/${activityId}/vote`, { value }).catch(() => setReels(prev));
   };
 
+  const onCommentCountChange = (activityId, count) => {
+    setReels((list) => list.map((a) => (a.activityId === activityId ? { ...a, commentCount: count } : a)));
+  };
+
   const submitReport = async ({ reason, comment }) => {
     if (!user) { navigate("/auth"); return; }
     setReportBusy(true);
@@ -89,59 +165,55 @@ function Reels() {
   const closeReportModal = () => { setReportTarget(null); setReportError(""); setReportSuccess(false); };
 
   return (
-    <main className="msj-page">
-      <section className="cw-hero msj-explore-hero on-ink">
-        <div className="wrap">
-          <span className="eyebrow">{t("reels.rail.heading", "Reels")}</span>
-          <h1>{t("reelsPage.hero.title", "Reels from the community")}</h1>
-          <p>{t("reelsPage.hero.intro", "Short videos shared by members of Masjid My Community.")}</p>
-        </div>
-      </section>
+    <div className="reel-viewer">
+      <button type="button" className="reel-viewer-close" onClick={() => navigate(-1)} aria-label={t("reels.viewer.close", "Close")}>
+        <Icon name="x" size={20} />
+      </button>
 
-      <section className="py-md">
-        <div className="wrap" style={{ maxWidth: 640 }}>
-          {reels === null ? (
-            <p className="msj-note">{t("reels.rail.loading", "Loading…")}</p>
-          ) : reels.length === 0 ? (
-            <div className="msj-empty-state">
-              <Icon name="play" size={30} />
-              <h3>{t("reelsPage.empty.title", "No Reels yet")}</h3>
-              <p>{t("reelsPage.empty.body", "Be the first to share a Reel from the Home Page feed.")}</p>
-            </div>
-          ) : (
-            <>
-              <div className="cw-feed">
-                {reels.map((post) => (
-                  <CommunityPost
-                    key={post.id}
-                    post={post}
-                    user={user}
-                    navigate={navigate}
-                    onVote={castVote}
-                    onEdit={() => {}}
-                    onDelete={() => {}}
-                    onReport={(p) => {
-                      if (!user) { navigate("/auth"); return; }
-                      setReportTarget(p);
-                    }}
-                    onHashtagClick={(tag) => navigate(`/my-community?hashtag=${encodeURIComponent(tag)}`)}
-                    onOpenImage={() => {}}
-                    commentMaxLength={contentLimits.maxCommentLength}
-                    replyMaxLength={contentLimits.maxReplyLength}
-                  />
-                ))}
-              </div>
-              {hasMore && (
-                <div className="msj-load-more">
-                  <button type="button" className="btn btn-outline-ink" onClick={loadMore} disabled={loadingMore}>
-                    {loadingMore ? t("exploreMasjidsPage.loading", "Loading…") : t("exploreMasjidsPage.loadMore", "Load More")}
-                  </button>
-                </div>
-              )}
-            </>
-          )}
+      {reels === null ? (
+        <div className="reel-viewer-loading">{t("reels.rail.loading", "Loading…")}</div>
+      ) : reels.length === 0 ? (
+        <div className="reel-viewer-empty">
+          <Icon name="play" size={30} />
+          <h3>{t("reelsPage.empty.title", "No Reels yet")}</h3>
+          <p>{t("reelsPage.empty.body", "Be the first to share a Reel from the Home Page feed.")}</p>
         </div>
-      </section>
+      ) : (
+        <div className="reel-viewer-scroll" ref={scrollRef} onScroll={onScroll}>
+          {reels.map((post) => (
+            <ReelSlide
+              key={post.id}
+              post={post}
+              user={user}
+              navigate={navigate}
+              onVote={castVote}
+              onOpenComments={setCommentsFor}
+              onReport={setReportTarget}
+            />
+          ))}
+        </div>
+      )}
+
+      {commentsFor && (
+        <div className="reel-comments-drawer" onClick={() => setCommentsFor(null)}>
+          <div className="reel-comments-panel" onClick={(e) => e.stopPropagation()}>
+            <div className="reel-comments-panel-head">
+              <h4>{t("reels.viewer.comments", "Comments")}</h4>
+              <button type="button" className="msj-modal-close" onClick={() => setCommentsFor(null)} aria-label="Close">
+                <Icon name="x" size={16} />
+              </button>
+            </div>
+            <CommentSection
+              activityId={commentsFor.activityId}
+              user={user}
+              navigate={navigate}
+              onCountChange={(count) => onCommentCountChange(commentsFor.activityId, count)}
+              commentMaxLength={contentLimits.maxCommentLength}
+              replyMaxLength={contentLimits.maxReplyLength}
+            />
+          </div>
+        </div>
+      )}
 
       {reportTarget && (
         <ReportModal
@@ -154,7 +226,7 @@ function Reels() {
           onSubmit={submitReport}
         />
       )}
-    </main>
+    </div>
   );
 }
 

@@ -857,7 +857,7 @@ export const listReels = async (req, res) => {
     });
 
     const userIds = [...new Set(rows.map((r) => r.relatedUserId).filter(Boolean))];
-    const users = userIds.length ? await User.findAll({ where: { id: userIds }, attributes: ["id", "fullName"] }) : [];
+    const users = userIds.length ? await User.findAll({ where: { id: userIds }, attributes: ["id", "fullName", "username", "profilePhoto"] }) : [];
     const userById = new Map(users.map((u) => [u.id, u]));
 
     const activityIds = rows.map((r) => r.id);
@@ -881,7 +881,9 @@ export const listReels = async (req, res) => {
     res.json({
       reels: rows.map((r) => ({
         ...r.toJSON(),
-        author: userById.has(r.relatedUserId) ? { id: r.relatedUserId, fullName: userById.get(r.relatedUserId).fullName } : null,
+        author: userById.has(r.relatedUserId)
+          ? { id: r.relatedUserId, fullName: userById.get(r.relatedUserId).fullName, username: userById.get(r.relatedUserId).username, profilePhoto: userById.get(r.relatedUserId).profilePhoto }
+          : null,
         likeCount: likeCounts.get(r.id) || 0,
         dislikeCount: dislikeCounts.get(r.id) || 0,
         commentCount: commentCounts.get(r.id) || 0,
