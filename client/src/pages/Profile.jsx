@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { Icon } from "../components/Icons.jsx";
 import { useTranslation } from "../i18n/LanguageContext.jsx";
 import userApi from "../services/userApi.js";
 import communityApi from "../services/communityApi.js";
+import reportApi from "../services/reportApi.js";
 import { updateStoredUser, getStoredUser } from "../utils/userAuthStorage.js";
 import { API_ORIGIN } from "../config.js";
 import ProfilePhotoCard from "../components/profile/ProfilePhotoCard.jsx";
@@ -15,7 +16,9 @@ import HobbiesCard from "../components/profile/HobbiesCard.jsx";
 import SecurityCard from "../components/profile/SecurityCard.jsx";
 import ProfileCompletion from "../components/profile/ProfileCompletion.jsx";
 import PostComposer from "../components/PostComposer.jsx";
-import MediaThumb from "../components/MediaThumb.jsx";
+import ReportModal from "../components/ReportModal.jsx";
+import ImageViewer from "../components/ImageViewer.jsx";
+import CommunityPost, { mapLiveActivity, EditCommunityPostModal, DeleteCommunityPostModal } from "../components/community/CommunityPost.jsx";
 
 const SIDE_LIST_PREVIEW_COUNT = 3;
 const POSTS_PAGE_SIZE = 10;
@@ -46,60 +49,6 @@ function timeAgo(dateStr, t) {
 function initialsOf(name = "") {
   const parts = name.trim().split(/\s+/);
   return ((parts[0]?.[0] || "") + (parts.length > 1 ? parts[parts.length - 1]?.[0] || "" : "")).toUpperCase();
-}
-
-function ProfilePostCard({ post, fallbackAuthor }) {
-  const { t } = useTranslation();
-  const authorName = post.author?.fullName || fallbackAuthor?.fullName || "";
-  return (
-    <article className="cw-post">
-      <div className="cw-post-head">
-        {fallbackAuthor?.profilePhoto ? (
-          <img className="cw-composer-avatar cw-composer-avatar-photo" src={`${API_ORIGIN}${fallbackAuthor.profilePhoto}`} alt={authorName} />
-        ) : (
-          <div className="cw-composer-avatar">{initialsOf(authorName)}</div>
-        )}
-        <div className="cw-post-headtext">
-          <div className="cw-post-name">{authorName}</div>
-          <div className="cw-post-meta">{timeAgo(post.publishedAt || post.createdAt, t)}</div>
-        </div>
-      </div>
-
-      {post.body && <p className="cw-post-text">{post.body}</p>}
-
-      {post.images?.length > 0 && (
-        <div className="cw-composer-media-grid">
-          {post.images.slice(0, 4).map((img) => (
-            <div className="cw-composer-media-item" key={img.id || img.url}>
-              <img src={`${API_ORIGIN}${img.url}`} alt="" />
-            </div>
-          ))}
-        </div>
-      )}
-
-      {post.mediaVideoUrl && (
-        <div className="cw-post-media cw-post-video">
-          <MediaThumb
-            src={`${API_ORIGIN}${post.mediaVideoUrl}`}
-            poster={post.mediaVideoPosterUrl ? `${API_ORIGIN}${post.mediaVideoPosterUrl}` : undefined}
-            mediaType="video"
-            videoProps={{ controls: true }}
-          />
-        </div>
-      )}
-
-      <div className="cw-post-actions">
-        <div className="cw-post-secondary-actions">
-          <span className="cw-comment-toggle" style={{ cursor: "default" }}>
-            <Icon name="heart" size={15} /> {post.likeCount || 0}
-          </span>
-          <span className="cw-comment-toggle" style={{ cursor: "default" }}>
-            {post.commentCount || 0} {post.commentCount === 1 ? t("profile.post.commentSingular", "Comment") : t("profile.post.commentPlural", "Comments")}
-          </span>
-        </div>
-      </div>
-    </article>
-  );
 }
 
 function OwnedAssetList({ title, items, showAll, onToggleShowAll, statusLabel, nameKey, linkBase, linkKey = "id", icon }) {
@@ -136,6 +85,7 @@ const PROFILE_NAV_KEYS = PROFILE_NAV_SECTIONS.map((s) => s.key);
 
 function Profile() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { username, tab: section } = useParams();
   const viewer = getStoredUser();
 
@@ -155,7 +105,13 @@ function Profile() {
   const [showAllMasjids, setShowAllMasjids] = useState(false);
   const [showAllCampaigns, setShowAllCampaigns] = useState(false);
   const [showAllJobs, setShowAllJobs] = useState(false);
-  const [contentLimits, setContentLimits] = useState({ maxPostLength: 2000 });
+  const [contentLimits, setContentLimits] = useState({ maxPostLength: 2000, maxCommentLength: 1000, maxReplyLength: 1000 });
+  const [imageViewer, setImageViewer] = useState(null); // null | { post, index }
+  const [postModal, setPostModal] = useState(null); // null | { type: "report"|"edit-community-post"|"delete-community-post", post }
+  const [postBusy, setPostBusy] = useState(false);
+  const [postError, setPostError] = useState("");
+  const [reportSuccess, setReportSuccess] = useState(false);
+  const [reportReasons, setReportReasons] = useState([]);
   const activeSection = PROFILE_NAV_KEYS.includes(section) ? section : "wall";
 
   useEffect(() => {
@@ -183,6 +139,7 @@ function Profile() {
 
   useEffect(() => {
     communityApi.get("/content-settings").then(({ data }) => setContentLimits(data)).catch(() => {});
+    reportApi.get("/reasons").then(({ data }) => setReportReasons(data.reasons)).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -191,7 +148,7 @@ function Profile() {
     communityApi
       .get("/activities", { params: { userId: profile.id, limit: POSTS_PAGE_SIZE } })
       .then(({ data }) => {
-        setPosts(data.activities);
+        setPosts(data.activities.map(mapLiveActivity));
         setPostsHasMore(!!data.hasMore);
       })
       .finally(() => setPostsLoading(false));
@@ -202,7 +159,7 @@ function Profile() {
     communityApi
       .get("/activities", { params: { userId: profile.id, limit: POSTS_PAGE_SIZE } })
       .then(({ data }) => {
-        setPosts(data.activities);
+        setPosts(data.activities.map(mapLiveActivity));
         setPostsHasMore(!!data.hasMore);
       })
       .finally(() => setPostsLoading(false));
@@ -213,7 +170,7 @@ function Profile() {
     communityApi
       .get("/activities", { params: { userId: profile.id, limit: POSTS_PAGE_SIZE, offset: posts.length } })
       .then(({ data }) => {
-        setPosts((p) => [...p, ...data.activities]);
+        setPosts((p) => [...p, ...data.activities.map(mapLiveActivity)]);
         setPostsHasMore(!!data.hasMore);
       })
       .finally(() => setPostsLoading(false));
@@ -223,6 +180,88 @@ function Profile() {
     setProfile((p) => ({ ...p, ...updatedUser }));
     if (viewer) updateStoredUser({ ...viewer, ...updatedUser });
   };
+
+  const castVote = (activityId, value) => {
+    const prev = posts;
+    setPosts((acts) =>
+      acts.map((a) => {
+        if (a.activityId !== activityId) return a;
+        const next = { ...a };
+        if (a.userVote === value) {
+          next[value === "like" ? "likeCount" : "dislikeCount"] -= 1;
+          next.userVote = null;
+        } else {
+          if (a.userVote) next[a.userVote === "like" ? "likeCount" : "dislikeCount"] -= 1;
+          next[value === "like" ? "likeCount" : "dislikeCount"] += 1;
+          next.userVote = value;
+        }
+        return next;
+      })
+    );
+    communityApi.post(`/activities/${activityId}/vote`, { value }).catch(() => setPosts(prev));
+  };
+
+  const openImage = (post, index) => setImageViewer({ post, index });
+  const onViewerImagesChange = (images) => {
+    setPosts((acts) => acts.map((a) => (a.activityId === imageViewer.post.activityId ? { ...a, images } : a)));
+  };
+
+  const closePostModal = () => {
+    setPostModal(null);
+    setPostError("");
+    setReportSuccess(false);
+  };
+
+  const editPost = (post) => setPostModal({ type: "edit-community-post", post });
+  const deletePost = (post) => setPostModal({ type: "delete-community-post", post });
+  const reportPost = (post) => {
+    if (!viewer) { navigate("/auth"); return; }
+    setPostModal({ type: "report", post });
+  };
+
+  const saveCommunityPostEdit = async ({ body }) => {
+    setPostBusy(true);
+    setPostError("");
+    try {
+      await communityApi.patch(`/posts/${postModal.post.activityId}`, { body });
+      setPosts((acts) => acts.map((a) => (a.activityId === postModal.post.activityId ? { ...a, text: body } : a)));
+      closePostModal();
+    } catch (err) {
+      setPostError(err.response?.data?.message || t("communityWall.editPost.saveError", "Couldn't save this post. Please try again."));
+    } finally {
+      setPostBusy(false);
+    }
+  };
+
+  const confirmCommunityPostDelete = async () => {
+    setPostBusy(true);
+    setPostError("");
+    try {
+      await communityApi.delete(`/posts/${postModal.post.activityId}`);
+      setPosts((acts) => acts.filter((a) => a.activityId !== postModal.post.activityId));
+      closePostModal();
+    } catch (err) {
+      setPostError(err.response?.data?.message || t("communityWall.editPost.deleteError", "Couldn't delete this post. Please try again."));
+    } finally {
+      setPostBusy(false);
+    }
+  };
+
+  const submitReport = async ({ reason, comment }) => {
+    const post = postModal.post;
+    setPostBusy(true);
+    setPostError("");
+    try {
+      await reportApi.post("/", { targetType: "activity", targetId: post.activityId, activityId: post.activityId, reason, comment });
+      setReportSuccess(true);
+    } catch (err) {
+      setPostError(err.response?.data?.message || t("campaignProfile.post.reportError", "Couldn't submit this report. Please try again."));
+    } finally {
+      setPostBusy(false);
+    }
+  };
+
+  const openHashtag = (tag) => navigate(`/my-community?hashtag=${encodeURIComponent(tag)}`);
 
 
   if (loading) {
@@ -318,7 +357,20 @@ function Profile() {
                       ) : (
                         <div style={{ display: "flex", flexDirection: "column", gap: 20, marginTop: 20 }}>
                           {posts.map((post) => (
-                            <ProfilePostCard key={post.id} post={post} fallbackAuthor={profile} />
+                            <CommunityPost
+                              key={post.id}
+                              post={{ ...post, ownerKind: "community_post" }}
+                              user={viewer}
+                              navigate={navigate}
+                              onVote={castVote}
+                              onEdit={editPost}
+                              onDelete={deletePost}
+                              onReport={reportPost}
+                              onHashtagClick={openHashtag}
+                              commentMaxLength={contentLimits.maxCommentLength}
+                              replyMaxLength={contentLimits.maxReplyLength}
+                              onOpenImage={openImage}
+                            />
                           ))}
                         </div>
                       )}
@@ -354,7 +406,20 @@ function Profile() {
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
                   {posts.map((post) => (
-                    <ProfilePostCard key={post.id} post={post} fallbackAuthor={profile} />
+                    <CommunityPost
+                      key={post.id}
+                      post={{ ...post, ownerKind: null }}
+                      user={viewer}
+                      navigate={navigate}
+                      onVote={castVote}
+                      onEdit={editPost}
+                      onDelete={deletePost}
+                      onReport={reportPost}
+                      onHashtagClick={openHashtag}
+                      commentMaxLength={contentLimits.maxCommentLength}
+                      replyMaxLength={contentLimits.maxReplyLength}
+                      onOpenImage={openImage}
+                    />
                   ))}
                 </div>
               )}
@@ -456,6 +521,46 @@ function Profile() {
           </div>
         </div>
       </section>
+
+      {postModal?.type === "report" && (
+        <ReportModal
+          title={t("campaignProfile.post.reportTitle", "Report Post")}
+          reasons={reportReasons}
+          busy={postBusy}
+          error={postError}
+          success={reportSuccess}
+          onCancel={closePostModal}
+          onSubmit={submitReport}
+        />
+      )}
+
+      {postModal?.type === "edit-community-post" && (
+        <EditCommunityPostModal
+          post={postModal.post}
+          busy={postBusy}
+          error={postError}
+          maxLength={contentLimits.maxPostLength}
+          onCancel={closePostModal}
+          onSave={saveCommunityPostEdit}
+        />
+      )}
+
+      {postModal?.type === "delete-community-post" && (
+        <DeleteCommunityPostModal busy={postBusy} error={postError} onCancel={closePostModal} onConfirm={confirmCommunityPostDelete} />
+      )}
+
+      {imageViewer && (
+        <ImageViewer
+          post={imageViewer.post}
+          startIndex={imageViewer.index}
+          user={viewer}
+          navigate={navigate}
+          commentMaxLength={contentLimits.maxCommentLength}
+          replyMaxLength={contentLimits.maxReplyLength}
+          onClose={() => setImageViewer(null)}
+          onImagesChange={onViewerImagesChange}
+        />
+      )}
     </main>
   );
 }
