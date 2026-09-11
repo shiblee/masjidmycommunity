@@ -314,7 +314,7 @@ function Profile() {
                       {PROFILE_NAV_SECTIONS.map((s) => (
                         <Link
                           key={s.key}
-                          to={s.key === "personal" ? `/profile/${username}` : `/profile/${username}/${s.key}`}
+                          to={s.key === "wall" ? `/profile/${username}` : `/profile/${username}/${s.key}`}
                           className={`pf-section-nav-item${activeSection === s.key ? " active" : ""}`}
                         >
                           <span className="pf-section-nav-icon"><Icon name={s.icon} size={17} /></span>
