@@ -19,7 +19,11 @@ function ExploreUsers() {
   const [searchParams, setSearchParams] = useSearchParams();
   const q = searchParams.get("q") || "";
   const city = searchParams.get("city") || "";
-  const sortBy = searchParams.get("sortBy") === "oldest" ? "oldest" : "newest";
+  const sortBy = ["oldest", "newest", "random"].includes(searchParams.get("sortBy")) ? searchParams.get("sortBy") : "random";
+  // Generated once per page visit and reused for every page/loadMore call
+  // so "random" order stays stable while paging, instead of each request
+  // reshuffling independently (see listDirectory's RAND(seed) comment).
+  const [seed] = useState(() => Math.floor(Math.random() * 1_000_000));
 
   const [rawQ, setRawQ] = useState(q);
   const [rawCity, setRawCity] = useState(city);
@@ -59,16 +63,16 @@ function ExploreUsers() {
     setPage(1);
     setUsers(null);
     axios
-      .get(API, { params: { q, city, sortBy, page: 1, pageSize: PAGE_SIZE } })
+      .get(API, { params: { q, city, sortBy, seed, page: 1, pageSize: PAGE_SIZE } })
       .then(({ data }) => { setUsers(data.users); setTotal(data.total); })
       .catch(() => setUsers([]));
-  }, [q, city, sortBy]);
+  }, [q, city, sortBy, seed]);
 
   const loadMore = () => {
     const nextPage = page + 1;
     setLoadingMore(true);
     axios
-      .get(API, { params: { q, city, sortBy, page: nextPage, pageSize: PAGE_SIZE } })
+      .get(API, { params: { q, city, sortBy, seed, page: nextPage, pageSize: PAGE_SIZE } })
       .then(({ data }) => { setUsers((prev) => [...(prev || []), ...data.users]); setPage(nextPage); })
       .finally(() => setLoadingMore(false));
   };
@@ -100,6 +104,7 @@ function ExploreUsers() {
               <input value={rawCity} onChange={(e) => setRawCity(e.target.value)} placeholder={t("exploreUsersPage.search.cityPlaceholder", "Filter by city…")} />
             </div>
             <select value={sortBy} onChange={(e) => setParam({ sortBy: e.target.value })}>
+              <option value="random">{t("exploreUsersPage.sort.random", "Random order")}</option>
               <option value="newest">{t("exploreUsersPage.sort.newest", "Newest members")}</option>
               <option value="oldest">{t("exploreUsersPage.sort.oldest", "Oldest members")}</option>
             </select>
@@ -129,7 +134,6 @@ function ExploreUsers() {
                           {u.verified && <Icon name="shieldCheck" size={16} />}
                         </span>
                       </div>
-                      {u.bio && <p className="msj-explore-tagline">{u.bio}</p>}
                       {(u.locationCity || u.locationCountry) && (
                         <p className="msj-list-loc"><Icon name="mapPin" size={14} /> {[u.locationCity, u.locationCountry].filter(Boolean).join(", ")}</p>
                       )}

@@ -1398,6 +1398,7 @@ const DEFAULTS = [
   ["exploreUsersPage", "exploreUsersPage.hero.intro", "Browse and connect with members of Masjid My Community.", "Masjid My Community के सदस्यों को खोजें और उनसे जुड़ें।", "Masjid My Community کے ممبران کو تلاش کریں اور ان سے جڑیں۔", "تصفّح أعضاء Masjid My Community وتواصل معهم."],
   ["exploreUsersPage", "exploreUsersPage.search.placeholder", "Search by name…", "नाम से खोजें…", "نام سے تلاش کریں…", "ابحث بالاسم…"],
   ["exploreUsersPage", "exploreUsersPage.search.cityPlaceholder", "Filter by city…", "शहर से फ़िल्टर करें…", "شہر سے فلٹر کریں…", "تصفية حسب المدينة…"],
+  ["exploreUsersPage", "exploreUsersPage.sort.random", "Random order", "यादृच्छिक क्रम", "بے ترتیب ترتیب", "ترتيب عشوائي"],
   ["exploreUsersPage", "exploreUsersPage.sort.newest", "Newest members", "नवीनतम सदस्य", "تازہ ترین ممبران", "أحدث الأعضاء"],
   ["exploreUsersPage", "exploreUsersPage.sort.oldest", "Oldest members", "सबसे पुराने सदस्य", "قدیم ترین ممبران", "أقدم الأعضاء"],
   ["exploreUsersPage", "exploreUsersPage.empty.title", "No members found", "कोई सदस्य नहीं मिला", "کوئی ممبر نہیں ملا", "لم يتم العثور على أعضاء"],

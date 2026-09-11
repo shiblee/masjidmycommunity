@@ -1,4 +1,4 @@
-import { Op } from "sequelize";
+import { Op, fn } from "sequelize";
 import User from "../models/User.js";
 import Education from "../models/Education.js";
 import WorkExperience from "../models/WorkExperience.js";
@@ -182,7 +182,7 @@ const DIRECTORY_SAFE_ATTRIBUTES = ["id", "username", "fullName", "profilePhoto",
 // that.
 export const listDirectory = async (req, res) => {
   try {
-    const { q, city, state, country, sortBy = "newest", page = 1, pageSize = 24 } = req.query;
+    const { q, city, state, country, sortBy = "newest", seed, page = 1, pageSize = 24 } = req.query;
     const where = { status: "active" };
     if (q?.trim()) {
       const term = q.trim();
@@ -195,10 +195,20 @@ export const listDirectory = async (req, res) => {
     const limit = Math.min(Number(pageSize) || 24, 60);
     const pageNum = Math.max(Number(page) || 1, 1);
 
+    // "random" uses MySQL's seeded RAND(seed) -- the same seed produces the
+    // same shuffle order every time it's used against an unchanged row set,
+    // so a client can page through a stable random order (by reusing the
+    // one seed it generated for this browsing session) instead of each
+    // page re-shuffling independently the way a plain RAND() would.
+    const order =
+      sortBy === "random"
+        ? [[fn("RAND", Number(seed) || 1), "ASC"]]
+        : [["createdAt", sortBy === "oldest" ? "ASC" : "DESC"]];
+
     const { rows, count } = await User.findAndCountAll({
       where,
       attributes: DIRECTORY_SAFE_ATTRIBUTES,
-      order: [["createdAt", sortBy === "oldest" ? "ASC" : "DESC"]],
+      order,
       limit,
       offset: (pageNum - 1) * limit,
     });

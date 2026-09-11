@@ -429,6 +429,16 @@ function Community() {
   }, [liveActivities, user, ownedMasjidIds, ownedCampaignIds]);
   const filteredPosts = useMemo(() => allPosts.filter((p) => matchesFilter(p, filter)), [allPosts, filter]);
 
+  // Randomly picks Reels vs. Registered Users at each feed checkpoint --
+  // computed once per checkpoint count (not on every render, e.g. a vote
+  // triggering a re-render) so the choice at a given position stays put
+  // instead of flipping under the reader as they interact with the page.
+  const railCheckpointCount = Math.floor(filteredPosts.length / contentLimits.reelsIntervalPosts);
+  const railTypes = useMemo(
+    () => Array.from({ length: railCheckpointCount }, () => (Math.random() < 0.5 ? "reels" : "users")),
+    [railCheckpointCount, contentLimits.reelsIntervalPosts]
+  );
+
   useEffect(() => {
     const els = document.querySelectorAll(".reveal");
     const io = new IntersectionObserver(
@@ -565,11 +575,12 @@ function Community() {
                         />
                       </div>
                       {(i + 1) % contentLimits.reelsIntervalPosts === 0 && (
-                        // Alternates with the Registered Users rail at each
-                        // checkpoint rather than stacking both every time --
-                        // still repeats endlessly through the feed exactly
-                        // like Reels does, just taking turns with it.
-                        ((i + 1) / contentLimits.reelsIntervalPosts) % 2 === 1 ? (
+                        // Randomly Reels or Registered Users at each
+                        // checkpoint (see railTypes above) rather than
+                        // stacking both every time -- still repeats
+                        // endlessly through the feed exactly like Reels
+                        // did on its own, just in an unpredictable order.
+                        railTypes[(i + 1) / contentLimits.reelsIntervalPosts - 1] === "reels" ? (
                           <ReelsRail user={user} />
                         ) : (
                           <RegisteredUsersRail />
