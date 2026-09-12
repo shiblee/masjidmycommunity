@@ -1,6 +1,6 @@
 import { Router } from "express";
 import auth, { requireAdmin } from "../middleware/auth.js";
-import { listAll, counts, getOne, addNote, reply, markInProgress, close, reopen } from "../controllers/adminContactController.js";
+import { listAll, counts, getOne, addNote, reply, markInProgress, close, reopen, hardDelete } from "../controllers/adminContactController.js";
 
 const router = Router();
 
@@ -14,5 +14,6 @@ router.post("/:id/reply", reply);
 router.post("/:id/in-progress", markInProgress);
 router.post("/:id/close", close);
 router.post("/:id/reopen", reopen);
+router.delete("/:id", hardDelete);
 
 export default router;

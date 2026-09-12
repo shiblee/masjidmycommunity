@@ -129,3 +129,19 @@ export const reopen = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// Genuine hard delete -- no endpoint removes a Concern at all otherwise
+// (only status transitions), and deleteUser() doesn't clean these up
+// either, so a submitter's concern would silently outlive their own
+// hard-deleted account with no way to remove it afterward.
+export const hardDelete = async (req, res) => {
+  try {
+    const concern = await Concern.findByPk(req.params.id);
+    if (!concern) return res.status(404).json({ message: "Concern not found." });
+    await ConcernHistory.destroy({ where: { concernId: concern.id } });
+    await concern.destroy();
+    res.json({ deleted: true });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

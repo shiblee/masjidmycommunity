@@ -35,7 +35,7 @@ export const submit = async (req, res) => {
     // is referenced on Concern.concernType) — validated against the active
     // Meta-managed list rather than a hardcoded map, so admins can add/rename
     // topics without a code change.
-    const matchedTopic = await ContactTopic.findOne({ where: { name: topic, isActive: true } });
+    const matchedTopic = topic ? await ContactTopic.findOne({ where: { name: topic, isActive: true } }) : null;
     const fallbackTopic = matchedTopic || (await ContactTopic.findOne({ where: { isActive: true }, order: [["sortOrder", "ASC"]] }));
     const topicName = fallbackTopic?.name || "General Inquiry";
 

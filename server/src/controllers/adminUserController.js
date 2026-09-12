@@ -17,6 +17,8 @@ import CommentVote from "../models/CommentVote.js";
 import CommunityActivityVote from "../models/CommunityActivityVote.js";
 import PostImageVote from "../models/PostImageVote.js";
 import ContentReport from "../models/ContentReport.js";
+import Concern from "../models/Concern.js";
+import ConcernHistory from "../models/ConcernHistory.js";
 import { deleteActivityCascade } from "./publicCommunityController.js";
 import Follow from "../models/Follow.js";
 import UserNotification from "../models/UserNotification.js";
@@ -384,6 +386,12 @@ export const deleteUser = async (req, res) => {
       await CommentVote.destroy({ where: { commentId: ownCommentIds } });
       await ContentReport.destroy({ where: { targetType: "comment", targetId: ownCommentIds } });
       await Comment.destroy({ where: { id: ownCommentIds } });
+    }
+
+    const ownConcernIds = (await Concern.findAll({ where: { userId: user.id }, attributes: ["id"] })).map((c) => c.id);
+    if (ownConcernIds.length) {
+      await ConcernHistory.destroy({ where: { concernId: ownConcernIds } });
+      await Concern.destroy({ where: { id: ownConcernIds } });
     }
 
     await Promise.all([

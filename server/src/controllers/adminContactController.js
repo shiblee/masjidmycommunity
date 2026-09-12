@@ -153,3 +153,19 @@ export const reopen = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// Genuine hard delete -- no endpoint removes a ContactMessage at all
+// otherwise (only status transitions), and there's no userId column to
+// clean up via deleteUser() in the first place (submissions are never
+// tied to an account even when submitted while logged in).
+export const hardDelete = async (req, res) => {
+  try {
+    const contact = await ContactMessage.findByPk(req.params.id);
+    if (!contact) return res.status(404).json({ message: "Inquiry not found." });
+    await ContactMessageHistory.destroy({ where: { contactMessageId: contact.id } });
+    await contact.destroy();
+    res.json({ deleted: true });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
