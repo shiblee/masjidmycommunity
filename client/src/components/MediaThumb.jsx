@@ -22,10 +22,11 @@ function useAutoplayOnVisible(videoRef, enabled) {
     const el = videoRef.current;
     if (!el) return;
 
-    // React's `muted` JSX attribute doesn't always reliably sync to the
-    // DOM property on first render (a long-standing React quirk) -- set it
-    // imperatively once so autoplay (which browsers only allow when
-    // actually muted) doesn't silently fail.
+    // React's `muted` JSX attribute doesn't always reliably sync to the DOM
+    // property on first render (a long-standing React quirk) -- force it
+    // muted for this first, autoplay-triggering render (browsers only
+    // autoplay when actually muted). A caller that wants sound (Reels)
+    // unmutes afterward via the `muted` prop; see the sync effect below.
     el.muted = true;
 
     const observer = new IntersectionObserver(
@@ -52,10 +53,19 @@ function useAutoplayOnVisible(videoRef, enabled) {
  * (the same girih lattice used on the auth page) instead of the browser's
  * broken-image glyph.
  */
-function MediaThumb({ src, poster, mediaType = "photo", alt = "", className, style, videoProps, autoPlayOnVisible = true }) {
+function MediaThumb({ src, poster, mediaType = "photo", alt = "", className, style, videoProps, autoPlayOnVisible = true, muted = true }) {
   const [failed, setFailed] = useState(false);
   const videoRef = useRef(null);
   useAutoplayOnVisible(videoRef, mediaType === "video" && autoPlayOnVisible && !failed);
+
+  // Lets a caller like Reels offer real sound (unmuted after a user tap)
+  // without weakening the muted-by-default autoplay every other surface
+  // relies on -- the effect above always forces muted=true once, on the
+  // gesture-free autoplay itself; this one applies the caller's actual
+  // preference afterward, and again whenever it changes.
+  useEffect(() => {
+    if (videoRef.current) videoRef.current.muted = muted;
+  }, [muted]);
 
   if (failed || !src) {
     return (

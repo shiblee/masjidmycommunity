@@ -14,7 +14,7 @@ import { useTranslation } from "../i18n/LanguageContext.jsx";
 
 const PAGE_SIZE = 10;
 
-function ReelSlide({ post, user, navigate, onVote, onOpenComments, onReport }) {
+function ReelSlide({ post, user, navigate, onVote, onOpenComments, onReport, muted, onToggleMute }) {
   const { t } = useTranslation();
   const vote = (value) => {
     if (!user) { navigate("/auth"); return; }
@@ -23,8 +23,16 @@ function ReelSlide({ post, user, navigate, onVote, onOpenComments, onReport }) {
 
   return (
     <div className="reel-slide">
-      <div className="reel-slide-video-wrap">
-        <MediaThumb src={post.videoUrl} poster={post.videoPosterUrl} mediaType="video" videoProps={{ playsInline: true, loop: true }} />
+      <div className="reel-slide-video-wrap" onClick={onToggleMute}>
+        <MediaThumb src={post.videoUrl} poster={post.videoPosterUrl} mediaType="video" videoProps={{ playsInline: true, loop: true }} muted={muted} />
+        <button
+          type="button"
+          className="reel-mute-toggle"
+          onClick={(e) => { e.stopPropagation(); onToggleMute(); }}
+          aria-label={muted ? t("reels.viewer.unmute", "Unmute") : t("reels.viewer.mute", "Mute")}
+        >
+          <Icon name={muted ? "volumeOff" : "volumeOn"} size={18} />
+        </button>
       </div>
       <div className="reel-slide-scrim" />
 
@@ -80,6 +88,11 @@ function Reels() {
 
   const [reels, setReels] = useState(null);
   const [hasMore, setHasMore] = useState(false);
+  // One shared preference for the whole scroll, not per-reel -- muted by
+  // default so the very first autoplay is never blocked by the browser
+  // (autoplay requires it); once a viewer taps to unmute, every reel they
+  // scroll to afterward keeps playing with sound, same as they'd expect.
+  const [muted, setMuted] = useState(true);
   const [contentLimits, setContentLimits] = useState({ maxCommentLength: 1000, maxReplyLength: 1000 });
   const [commentsFor, setCommentsFor] = useState(null);
 
@@ -189,6 +202,8 @@ function Reels() {
               onVote={castVote}
               onOpenComments={setCommentsFor}
               onReport={setReportTarget}
+              muted={muted}
+              onToggleMute={() => setMuted((m) => !m)}
             />
           ))}
         </div>

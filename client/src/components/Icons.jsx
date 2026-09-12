@@ -57,6 +57,8 @@ const ICONS = {
   logOut: { d: ["M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4", "M16 17l5-5-5-5", "M21 12H9"] },
   emoji: { circle: { cx: 12, cy: 12, r: 9 }, d: ["M8 14s1.5 2 4 2 4-2 4-2", "M9 9h.01", "M15 9h.01"] },
   send: { d: ["M22 2L11 13", "M22 2l-7 20-4-9-9-4 20-7z"] },
+  volumeOn: { d: ["M11 5L6 9H2v6h4l5 4V5z", "M15.54 8.46a5 5 0 010 7.07", "M19.07 4.93a10 10 0 010 14.14"] },
+  volumeOff: { d: ["M11 5L6 9H2v6h4l5 4V5z", "M23 9l-6 6", "M17 9l6 6"] },
 };
 
 export function Icon({ name, size = 24 }) {
