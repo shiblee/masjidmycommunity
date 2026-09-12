@@ -45,14 +45,32 @@ const DEFAULTS = [
   "Steel Authority of India (SAIL)", "Bharat Electronics Limited (BEL)",
   "Hindustan Aeronautics Limited (HAL)", "Indian Space Research Organisation (ISRO)",
   "Defence Research and Development Organisation (DRDO)", "Government of India", "State Government",
+  "Indian Army", "Indian Air Force", "Indian Navy", "Uttar Pradesh Police",
+  "Central Reserve Police Force (CRPF)", "Border Security Force (BSF)", "Municipal Corporation",
   // Consulting / professional services
   "Deloitte India", "EY (Ernst & Young) India", "KPMG India", "PwC India",
   "McKinsey & Company India", "Boston Consulting Group (BCG) India", "Bain & Company India",
+  "Genpact", "WNS Global Services", "Concentrix", "Teleperformance India", "EXL Service",
+  "Sutherland Global Services",
   // Media & entertainment
   "Zee Entertainment Enterprises", "Sony Pictures Networks India", "Star India",
   "Times Internet", "Network18",
-  // Aviation
+  // Aviation / auto
   "Air India", "IndiGo (InterGlobe Aviation)", "SpiceJet", "Vistara",
+  "Kia India", "MG Motor India", "Skoda Auto Volkswagen India", "Toyota Kirloskar Motor",
+  // Banking / insurance
+  "Bank of India", "Central Bank of India", "Indian Bank", "UCO Bank", "New India Assurance",
+  "General Insurance Corporation of India (GIC Re)",
+  // FMCG / retail
+  "Emami", "Parle Products", "Haldiram's", "Titan Company",
+  // New economy
+  "Cars24", "Rapido", "Dunzo", "Blinkit", "Zepto", "Cult.fit",
+  // Education
+  "Central Board of Secondary Education (CBSE)", "Aakash Educational Services", "FIITJEE",
+  // Community / Islamic organizations
+  "Jamaat-e-Islami Hind", "Islamic Relief India", "Helping Hand Foundation India",
+  "Zakat Foundation of India", "All India Muslim Personal Law Board", "Waqf Board",
+  "Madrasa / Islamic School (Teaching)", "Mosque / Masjid Administration",
   // Self / other
   "Self-Employed / Freelance", "Other",
 ];

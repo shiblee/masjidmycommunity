@@ -12,7 +12,15 @@ const DEFAULTS = [
   "Collecting (Stamps / Coins)", "Astronomy / Stargazing", "Bird Watching", "Pottery",
   "Home Decor", "Fashion & Styling", "Automobiles", "Investing / Personal Finance",
   "Language Learning", "Martial Arts", "Movies & TV Shows", "Theatre", "Origami",
-  "Content Creation", "Podcasting", "Other",
+  "Content Creation", "Podcasting", "Vlogging", "Standup Comedy", "Magic Tricks",
+  "Archery", "Skating / Rollerblading", "Skateboarding", "Rock Climbing", "Kabaddi",
+  "Wrestling", "Boxing", "Golf", "Tennis", "Carrom", "Model Building", "Scuba Diving",
+  "Surfing", "Skiing", "Horse Riding", "Kite Flying", "Pet Care / Animal Care",
+  "Fishkeeping / Aquarium", "Farming / Kitchen Gardening", "Beekeeping",
+  "Interior Decorating", "Car / Bike Modification", "Trivia / Quizzing", "Journaling",
+  "Genealogy / Family History", "Nature Walks", "Wildlife Safari", "Henna / Mehndi Art",
+  "Quran Memorization (Hifz)", "Islamic Calligraphy", "Attending Islamic Lectures / Halaqas",
+  "Da'wah / Islamic Outreach", "Other",
 ];
 
 export async function ensureHobbyDefaults() {
