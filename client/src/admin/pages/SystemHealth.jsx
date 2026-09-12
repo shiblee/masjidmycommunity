@@ -46,7 +46,7 @@ function CheckList({ checks }) {
               <td className="amx-panel-sub">{CATEGORY_LABEL[c.category] || c.category}</td>
               <td><StatusBadge status={badge.status} label={badge.label} /></td>
               <td>{c.durationMs}ms</td>
-              <td className="amx-panel-sub">{c.detail || "&mdash;"}</td>
+              <td className="amx-panel-sub">{c.detail || "—"}</td>
             </tr>
           );
         })}
@@ -92,7 +92,7 @@ function SystemHealth() {
         <div>
           <span className="amx-crumb">Administration &middot; Developer</span>
           <h1>System Health</h1>
-          <p>An on-demand, real smoke test &mdash; live public API requests, a live database query, and this process's own metrics.</p>
+          <p>An on-demand, real smoke test — live public API requests, a live database query, and this process's own metrics.</p>
         </div>
         <button className="amx-btn amx-btn-primary" onClick={runCheck} disabled={running}>
           <Icon name="rotate" size={15} /> {running ? "Running…" : "Run Health Check"}
