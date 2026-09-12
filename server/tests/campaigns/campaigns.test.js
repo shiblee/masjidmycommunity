@@ -23,7 +23,7 @@ describe("Campaigns / Fundraising", () => {
     plainMasjid = await createApprovedMasjid(owner, { name: `DevTest Plain Masjid ${Date.now()}` });
     greenTickMasjid = await createApprovedMasjid(owner, { name: `DevTest GreenTick Masjid ${Date.now()}`, latitude: 21.1702, longitude: 72.8311 });
     await issueGreenTick(owner, greenTickMasjid);
-  }, 60000);
+  }, 90000);
 
   afterAll(async () => {
     const { token } = await adminAuth();

@@ -62,6 +62,12 @@ async function executeAndRecord(runId, start) {
         moduleKey,
         moduleTitle: module?.title || path.basename(fileResult.name),
         fileStatus: fileResult.status,
+        // Populated when the whole file errors out before/between tests --
+        // e.g. a beforeAll hook that threw or timed out -- so a suite-level
+        // failure (every test shows "skipped", nothing itself asserts
+        // false) is still diagnosable from the dashboard instead of only
+        // reproducible by re-running locally against production by hand.
+        fileMessage: fileResult.status !== "passed" ? fileResult.message?.split("\n").slice(0, 4).join("\n") || null : null,
         tests: fileResult.assertionResults.map((a) => ({
           title: a.title,
           status: a.status,

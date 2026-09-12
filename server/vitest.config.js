@@ -12,7 +12,14 @@ export default defineConfig({
     // two real AI content-moderation calls), and one test polls for an
     // unawaited async job (ensurePrayerScheduleForMasjid) to finish.
     testTimeout: 30000,
-    hookTimeout: 30000,
+    // Bumped from 30s after a live run on production hit this ceiling on
+    // Prayer Times' beforeAll (one full createApprovedMasjid pipeline: OTP
+    // round trips for 3 contacts, a photo upload with real AI moderation,
+    // admin approval) -- the same chain finishes well under 30s from a
+    // dev machine, but the small production box the suite now runs on
+    // (see fileParallelism below) has less headroom against a slow moment
+    // from an external OTP/AI provider.
+    hookTimeout: 60000,
     // The suite runs on the same small production instance it's testing
     // against (see adminTestingController.js) -- with 20 files' worth of
     // real HTTP+bcrypt+DB work running as vitest's default concurrent
