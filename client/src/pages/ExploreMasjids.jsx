@@ -27,6 +27,7 @@ function ExploreMasjids() {
   const q = searchParams.get("q") || "";
   const categoryParam = searchParams.get("category") || "";
   const selectedCategories = categoryParam ? categoryParam.split(",") : [];
+  const likedOnly = searchParams.get("liked") === "true";
 
   const [rawQ, setRawQ] = useState(q);
   const debounceRef = useRef(null);
@@ -72,16 +73,16 @@ function ExploreMasjids() {
     setPage(1);
     setMasjids(null);
     axios
-      .get(API, { params: { q, category: categoryParam, page: 1, pageSize: PAGE_SIZE } })
+      .get(API, { params: { q, category: categoryParam, liked: likedOnly || undefined, page: 1, pageSize: PAGE_SIZE } })
       .then(({ data }) => { setMasjids(data.masjids); setTotal(data.total); })
       .catch(() => setMasjids([]));
-  }, [q, categoryParam]);
+  }, [q, categoryParam, likedOnly]);
 
   const loadMore = () => {
     const nextPage = page + 1;
     setLoadingMore(true);
     axios
-      .get(API, { params: { q, category: categoryParam, page: nextPage, pageSize: PAGE_SIZE } })
+      .get(API, { params: { q, category: categoryParam, liked: likedOnly || undefined, page: nextPage, pageSize: PAGE_SIZE } })
       .then(({ data }) => { setMasjids((prev) => [...(prev || []), ...data.masjids]); setPage(nextPage); })
       .finally(() => setLoadingMore(false));
   };
@@ -91,10 +92,10 @@ function ExploreMasjids() {
     if (view !== "map") return;
     setMapMasjids(null);
     axios
-      .get(`${API}/map`, { params: { q, category: categoryParam } })
+      .get(`${API}/map`, { params: { q, category: categoryParam, liked: likedOnly || undefined } })
       .then(({ data }) => setMapMasjids(data.masjids))
       .catch(() => setMapMasjids([]));
-  }, [view, q, categoryParam]);
+  }, [view, q, categoryParam, likedOnly]);
 
   const requestLocation = () => {
     if (!navigator.geolocation) return;
@@ -114,10 +115,12 @@ function ExploreMasjids() {
   const activeFilters = [
     q && { key: "q", label: t('exploreMasjidsPage.filters.searchLabel', 'Search: "{q}"').replace("{q}", q) },
     ...selectedCategories.map((c) => ({ key: `category:${c}`, label: c, category: c })),
+    likedOnly && { key: "liked", label: t("exploreMasjidsPage.filters.likedLabel", "♥ Liked") },
   ].filter(Boolean);
 
   const removeFilter = (f) => {
     if (f.key === "q") { setRawQ(""); setParam({ q: "" }); return; }
+    if (f.key === "liked") { setParam({ liked: "" }); return; }
     if (f.category) {
       const next = selectedCategories.filter((c) => c !== f.category);
       setParam({ category: next.join(",") });
@@ -157,6 +160,14 @@ function ExploreMasjids() {
               selected={selectedCategories}
               onChange={(next) => setParam({ category: next.join(",") })}
             />
+            <button
+              type="button"
+              className={`msj-liked-filter-toggle${likedOnly ? " active" : ""}`}
+              aria-pressed={likedOnly}
+              onClick={() => setParam({ liked: likedOnly ? "" : "true" })}
+            >
+              <Icon name="heart" size={15} /> {t("exploreMasjidsPage.filters.liked", "Liked")}
+            </button>
             <div className="msj-view-switch">
               {VIEWS.map((v) => (
                 <button key={v.key} type="button" className={view === v.key ? "active" : ""} onClick={() => setParam({ view: v.key })} title={v.label}>
@@ -181,8 +192,12 @@ function ExploreMasjids() {
           {hasNoResults && view !== "map" && (
             <div className="msj-empty-state">
               <Icon name="mosque" size={30} />
-              <h3>{t("exploreMasjidsPage.empty.title", "No masjids found")}</h3>
-              <p>{t("exploreMasjidsPage.empty.body", "Try changing your search or removing some filters.")}</p>
+              <h3>{likedOnly ? t("exploreMasjidsPage.empty.likedTitle", "No liked masjids yet") : t("exploreMasjidsPage.empty.title", "No masjids found")}</h3>
+              <p>
+                {likedOnly
+                  ? t("exploreMasjidsPage.empty.likedBody", "Tap the heart on a masjid card to keep track of it here.")
+                  : t("exploreMasjidsPage.empty.body", "Try changing your search or removing some filters.")}
+              </p>
               <button type="button" className="btn btn-gold" onClick={clearAll}>{t("exploreMasjidsPage.empty.clear", "Clear Filters")}</button>
             </div>
           )}

@@ -3632,6 +3632,13 @@ a.cmt-avatar{ text-decoration:none; }
   font-size:14px; background:#fff; color:var(--text-on-paper); cursor:pointer; font-family:var(--sans); white-space:nowrap;
 }
 .msj-category-filter-trigger.active{ border-color:var(--teal-deep); color:var(--teal-deep); font-weight:600; }
+.msj-liked-filter-toggle{
+  display:flex; align-items:center; gap:8px; border:1px solid var(--line); border-radius:100px; padding:9px 16px;
+  font-size:14px; background:#fff; color:var(--text-on-paper); cursor:pointer; font-family:var(--sans); white-space:nowrap;
+}
+.msj-liked-filter-toggle:hover{ color:#C24B3F; }
+.msj-liked-filter-toggle.active{ border-color:#C24B3F; color:#C24B3F; font-weight:600; background:rgba(194,75,63,.08); }
+.msj-liked-filter-toggle.active svg{ fill:currentColor; }
 .msj-category-filter-panel{
   position:absolute; top:calc(100% + 8px); left:0; z-index:20; width:280px; max-height:360px; overflow-y:auto;
   background:#fff; border:1px solid var(--line); border-radius:14px; box-shadow:0 24px 44px -20px rgba(11,31,30,.28); padding:10px;

@@ -41,9 +41,15 @@ async function activeMasjidIds() {
   return rows.map((r) => r.masjidId);
 }
 
-/** `activeOnly`/`lat`+`lng` are async-derived (need a DB lookup / SQL fragment), so
+async function likedMasjidIds(userId) {
+  if (!userId) return [];
+  const rows = await MasjidFavorite.findAll({ where: { userId }, attributes: ["masjidId"], raw: true });
+  return rows.map((r) => r.masjidId);
+}
+
+/** `activeOnly`/`liked`/`lat`+`lng` are async-derived (need a DB lookup / SQL fragment), so
  * callers build the rest of the filters first and pass this pre-resolved. */
-async function baseWhere({ city, country, category, activeOnly, lat, lng }) {
+async function baseWhere({ city, country, category, activeOnly, liked, userId, lat, lng }) {
   const where = { status: PUBLIC_STATUS, moderationStatus: "active" };
   if (city) where.city = city;
   if (country) where.country = country;
@@ -52,7 +58,17 @@ async function baseWhere({ city, country, category, activeOnly, lat, lng }) {
   const categories = (category || "").split(",").map((c) => c.trim()).filter(Boolean);
   if (categories.length === 1) where.category = categories[0];
   else if (categories.length > 1) where.category = { [Op.in]: categories };
-  if (activeOnly) where.id = { [Op.in]: await activeMasjidIds() };
+
+  // Both filters constrain `id` — combined with AND (intersection), not one
+  // overwriting the other, in case a future caller ever passes both at once.
+  const idFilters = [];
+  if (activeOnly) idFilters.push(await activeMasjidIds());
+  if (liked === "true") idFilters.push(await likedMasjidIds(userId));
+  if (idFilters.length === 1) where.id = { [Op.in]: idFilters[0] };
+  else if (idFilters.length > 1) {
+    const [first, ...rest] = idFilters;
+    where.id = { [Op.in]: first.filter((id) => rest.every((set) => set.includes(id))) };
+  }
 
   const latNum = Number(lat), lngNum = Number(lng);
   if (Number.isFinite(latNum) && Number.isFinite(lngNum)) {
@@ -102,8 +118,8 @@ async function withCoverAndCampaigns(masjid, engagement) {
 export const listPublic = async (req, res) => {
   try {
     const userId = req.user?.id;
-    const { q, city, country, category, activeOnly, lat, lng, page = 1, pageSize = 12 } = req.query;
-    const where = await baseWhere({ city, country, category, activeOnly, lat, lng });
+    const { q, city, country, category, activeOnly, liked, lat, lng, page = 1, pageSize = 12 } = req.query;
+    const where = await baseWhere({ city, country, category, activeOnly, liked, userId, lat, lng });
     const limit = Math.min(Number(pageSize) || 12, 48);
     const pageNum = Math.max(Number(page) || 1, 1);
 
@@ -146,8 +162,8 @@ export const listPublic = async (req, res) => {
 export const listMapPoints = async (req, res) => {
   try {
     const userId = req.user?.id;
-    const { q, city, country, category, activeOnly, lat, lng } = req.query;
-    const where = await baseWhere({ city, country, category, activeOnly, lat, lng });
+    const { q, city, country, category, activeOnly, liked, lat, lng } = req.query;
+    const where = await baseWhere({ city, country, category, activeOnly, liked, userId, lat, lng });
     const rows = await Masjid.findAll({
       where,
       attributes: ["id", "slug", "name", "category", "city", "country", "latitude", "longitude", "status"],
