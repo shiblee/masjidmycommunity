@@ -7,9 +7,9 @@ import userApi from "../../services/userApi.js";
 import adminApi from "../../admin/services/adminApi.js";
 
 const GENDER_KEYS = [
-  { value: "", key: "personal.genderPreferNotToSay", fallback: "Prefer not to say" },
   { value: "male", key: "personal.genderMale", fallback: "Male" },
   { value: "female", key: "personal.genderFemale", fallback: "Female" },
+  { value: "", key: "personal.genderPreferNotToSay", fallback: "Prefer not to say" },
   { value: "other", key: "personal.genderOther", fallback: "Other" },
 ];
 
