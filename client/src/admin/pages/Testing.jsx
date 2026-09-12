@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import Icon from "../components/Icons.jsx";
 import StatusBadge from "../components/StatusBadge.jsx";
 import adminApi from "../services/adminApi.js";
-import { formatDate } from "../../utils/formatDateTime.js";
+import { formatDate, formatDateTime } from "../../utils/formatDateTime.js";
 
 // A real test-run dashboard, not a simulated one: "Run Tests" spawns an
 // actual `vitest run` on the server (see adminTestingController.js), which
@@ -210,7 +210,7 @@ function Testing() {
             <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
               {runs.slice(0, 8).map((r) => (
                 <li key={r.id} className="amx-health-history-item">
-                  <span>{formatDate(r.createdAt)}</span>
+                  <span>{formatDateTime(r.createdAt)}</span>
                   <span className="amx-panel-sub">
                     {r.overallStatus === "running" ? "—" : r.overallStatus === "error" ? "—" : `${r.passedTests}/${r.totalTests} passed`}
                   </span>
