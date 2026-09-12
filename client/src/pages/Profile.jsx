@@ -20,6 +20,7 @@ import ShareMenu from "../components/ShareMenu.jsx";
 import ReportModal from "../components/ReportModal.jsx";
 import ImageViewer from "../components/ImageViewer.jsx";
 import CommunityPost, { mapLiveActivity, EditCommunityPostModal, DeleteCommunityPostModal } from "../components/community/CommunityPost.jsx";
+import FollowListModal from "../components/profile/FollowListModal.jsx";
 
 const SIDE_LIST_PREVIEW_COUNT = 3;
 const POSTS_PAGE_SIZE = 10;
@@ -126,6 +127,11 @@ function Profile() {
   const [reportSuccess, setReportSuccess] = useState(false);
   const [reportReasons, setReportReasons] = useState([]);
   const [shareOpen, setShareOpen] = useState(false);
+  const [following, setFollowing] = useState(false);
+  const [followersCount, setFollowersCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
+  const [followBusy, setFollowBusy] = useState(false);
+  const [followModal, setFollowModal] = useState(null); // null | "followers" | "following"
   const shareBtnRef = useRef(null);
   const activeSection = PROFILE_NAV_KEYS.includes(section) ? section : "wall";
   const activeViewerTab = VIEWER_TAB_KEYS.includes(section) ? section : "about";
@@ -137,6 +143,9 @@ function Profile() {
       .get(`/public/${username}`)
       .then(({ data }) => {
         setProfile(data.user);
+        setFollowing(!!data.user.isFollowing);
+        setFollowersCount(data.user.followersCount || 0);
+        setFollowingCount(data.user.followingCount || 0);
         setEducation(data.education);
         setWorkExperience(data.workExperience);
         setSkills(data.skills);
@@ -237,6 +246,24 @@ function Profile() {
     setPostModal({ type: "report", post });
   };
 
+  const toggleFollow = async () => {
+    if (!viewer) { navigate("/auth"); return; }
+    if (followBusy) return;
+    setFollowBusy(true);
+    const wasFollowing = following;
+    setFollowing(!wasFollowing);
+    setFollowersCount((c) => Math.max(0, c + (wasFollowing ? -1 : 1)));
+    try {
+      if (wasFollowing) await userApi.delete(`/${profile.id}/follow`);
+      else await userApi.post(`/${profile.id}/follow`);
+    } catch {
+      setFollowing(wasFollowing);
+      setFollowersCount((c) => Math.max(0, c + (wasFollowing ? 1 : -1)));
+    } finally {
+      setFollowBusy(false);
+    }
+  };
+
   const saveCommunityPostEdit = async ({ body }) => {
     setPostBusy(true);
     setPostError("");
@@ -329,9 +356,31 @@ function Profile() {
               </div>
               <div className="pf-profile-header-info">
                 <h1>{profile.fullName}</h1>
-                <p className="pf-profile-header-username">@{profile.username}</p>
+                <p className="pf-profile-header-username">
+                  @{profile.username}
+                  {profile.isFollowedBy && <span className="pf-follows-you-badge">{t("profile.follow.followsYou", "Follows you")}</span>}
+                </p>
                 {profile.bio && <p className="pf-profile-header-bio">{profile.bio}</p>}
                 {profile.locationLabel && <span className="pf-profile-header-location"><Icon name="mapPin" size={14} />{profile.locationLabel}</span>}
+
+                <div className="pf-follow-stats">
+                  <button type="button" onClick={() => setFollowModal("followers")}>
+                    <strong>{followersCount}</strong> {t("profile.follow.followers", "Followers")}
+                  </button>
+                  <button type="button" onClick={() => setFollowModal("following")}>
+                    <strong>{followingCount}</strong> {t("profile.follow.followingCount", "Following")}
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  className={`pf-follow-btn${following ? " is-following" : ""}`}
+                  disabled={followBusy}
+                  onClick={toggleFollow}
+                >
+                  <Icon name={following ? "check" : "plus"} size={15} />
+                  {following ? t("profile.follow.following", "Following") : t("profile.follow.follow", "Follow")}
+                </button>
               </div>
             </div>
           </div>
@@ -361,6 +410,14 @@ function Profile() {
                   <ProfilePhotoCard user={profile} onUserUpdated={handleUserUpdated} />
                   <h3 style={{ marginTop: 14, marginBottom: 2 }}>{profile.fullName}</h3>
                   <p className="cw-side-card-sub" style={{ marginBottom: 0 }}>@{profile.username}</p>
+                  <div className="pf-follow-stats pf-follow-stats-center">
+                    <button type="button" onClick={() => setFollowModal("followers")}>
+                      <strong>{followersCount}</strong> {t("profile.follow.followers", "Followers")}
+                    </button>
+                    <button type="button" onClick={() => setFollowModal("following")}>
+                      <strong>{followingCount}</strong> {t("profile.follow.followingCount", "Following")}
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -690,6 +747,16 @@ function Profile() {
       </section>
       )}
 
+
+      {followModal && (
+        <FollowListModal
+          userId={profile.id}
+          type={followModal}
+          title={followModal === "followers" ? t("profile.follow.followersTitle", "Followers") : t("profile.follow.followingTitle", "Following")}
+          viewer={viewer}
+          onClose={() => setFollowModal(null)}
+        />
+      )}
 
       {postModal?.type === "report" && (
         <ReportModal

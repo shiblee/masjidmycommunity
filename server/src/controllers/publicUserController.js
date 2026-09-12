@@ -12,6 +12,7 @@ import MasjidFavorite from "../models/MasjidFavorite.js";
 import Campaign from "../models/Campaign.js";
 import Job from "../models/Job.js";
 import JobFavorite from "../models/JobFavorite.js";
+import Follow from "../models/Follow.js";
 
 const PUBLIC_MASJID_STATUS = "approved";
 const PUBLIC_CAMPAIGN_STATUSES = ["active", "paused", "goal_reached", "completed"];
@@ -148,10 +149,14 @@ export const getPublicProfile = async (req, res) => {
     const likedJobById = new Map(likedJobRows.map((j) => [j.id, j]));
     const likedJobs = likedJobIds.map((id) => likedJobById.get(id)).filter(Boolean);
 
-    const [skills, hobbies, primaryMasjid] = await Promise.all([
+    const [skills, hobbies, primaryMasjid, followersCount, followingCount, isFollowing, isFollowedBy] = await Promise.all([
       serializeSkills(skillEntries),
       serializeHobbies(hobbyEntries),
       user.primaryMasjidId ? serializePrimaryMasjid(user.primaryMasjidId) : null,
+      Follow.count({ where: { followingId: user.id } }),
+      Follow.count({ where: { followerId: user.id } }),
+      viewerId && !isOwner ? Follow.findOne({ where: { followerId: viewerId, followingId: user.id } }).then(Boolean) : false,
+      viewerId && !isOwner ? Follow.findOne({ where: { followerId: user.id, followingId: viewerId } }).then(Boolean) : false,
     ]);
 
     const profile = {
@@ -172,6 +177,10 @@ export const getPublicProfile = async (req, res) => {
       verified: !!(user.emailVerified || user.mobileVerified),
       primaryMasjidId: primaryMasjid ? primaryMasjid.id : null,
       primaryMasjid,
+      followersCount,
+      followingCount,
+      isFollowing,
+      isFollowedBy,
     };
 
     if (isOwner || isAdmin) {

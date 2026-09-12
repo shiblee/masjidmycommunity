@@ -39,7 +39,9 @@ import { listActive as listActiveEmploymentTypes } from "../controllers/adminEmp
 import { listActive as listActiveExperienceLevels } from "../controllers/adminExperienceLevelController.js";
 import { listActive as listActiveJobCategories } from "../controllers/adminJobCategoryController.js";
 import auth, { requireUser } from "../middleware/auth.js";
+import optionalAuth from "../middleware/optionalAuth.js";
 import { uploadProfilePhoto, uploadResume } from "../middleware/upload.js";
+import { followUser, unfollowUser, listFollowers, listFollowing } from "../controllers/followController.js";
 
 const router = Router();
 
@@ -111,5 +113,10 @@ router.get("/me/salah/weekly-summary", auth, requireUser, getSalahWeeklySummary)
 router.get("/notifications", auth, requireUser, listMine);
 router.patch("/notifications/read-all", auth, requireUser, markAllRead);
 router.patch("/notifications/:id/read", auth, requireUser, markRead);
+
+router.post("/:id/follow", auth, requireUser, followUser);
+router.delete("/:id/follow", auth, requireUser, unfollowUser);
+router.get("/:id/followers", optionalAuth, listFollowers);
+router.get("/:id/following", optionalAuth, listFollowing);
 
 export default router;
