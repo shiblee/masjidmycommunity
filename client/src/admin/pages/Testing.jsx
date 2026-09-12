@@ -40,6 +40,7 @@ function ModuleTestPanel({ module, latestResult }) {
           <tr>
             <th></th>
             <th>Test</th>
+            <th>Status</th>
             <th>Duration</th>
             <th>Detail</th>
           </tr>
@@ -49,6 +50,12 @@ function ModuleTestPanel({ module, latestResult }) {
             <tr key={i}>
               <td><ResultIcon status={t.status} /></td>
               <td>{t.title}</td>
+              <td>
+                <StatusBadge
+                  status={t.status === "passed" ? "active" : "rejected"}
+                  label={t.status === "passed" ? "Passed" : "Failed"}
+                />
+              </td>
               <td className="amx-panel-sub">{t.durationMs}ms</td>
               <td className="amx-panel-sub" style={{ color: t.failureMessage ? "var(--a-danger)" : undefined }}>{t.failureMessage || "—"}</td>
             </tr>
@@ -201,7 +208,7 @@ function Testing() {
                     {result ? (
                       <StatusBadge
                         status={result.tests.every((t) => t.status === "passed") ? "active" : "rejected"}
-                        label={`${result.tests.filter((t) => t.status === "passed").length}/${result.tests.length}`}
+                        label={result.tests.every((t) => t.status === "passed") ? "Passed" : "Failed"}
                       />
                     ) : (
                       <StatusBadge status="neutral" label="No tests" />
