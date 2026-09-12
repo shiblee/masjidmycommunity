@@ -12,6 +12,12 @@ import UserHobby from "../models/UserHobby.js";
 import UserSkill from "../models/UserSkill.js";
 import Job from "../models/Job.js";
 import CommunityActivity from "../models/CommunityActivity.js";
+import Comment from "../models/Comment.js";
+import CommentVote from "../models/CommentVote.js";
+import CommunityActivityVote from "../models/CommunityActivityVote.js";
+import PostImageVote from "../models/PostImageVote.js";
+import ContentReport from "../models/ContentReport.js";
+import { deleteActivityCascade } from "./publicCommunityController.js";
 import Follow from "../models/Follow.js";
 import UserNotification from "../models/UserNotification.js";
 import { sendAccountStatusEmail, sendEmailChangedEmail } from "../services/emailService.js";
@@ -364,6 +370,22 @@ export const deleteUser = async (req, res) => {
       return res.status(409).json({ message: "This user owns a masjid, campaign, or job. Remove those first before deleting the account." });
     }
 
+    // CommunityActivity.destroy({relatedUserId}) alone (the old approach)
+    // silently orphaned that user's Comment/CommentVote/PostImage/
+    // PostImageVote/ContentReport rows on their OWN posts (a raw destroy,
+    // not the real cascade the app's own deletePost() uses) -- and never
+    // touched a Comment/vote/report the user left on someone ELSE's post
+    // at all. Clean both directions properly before destroying the user.
+    const ownActivities = await CommunityActivity.findAll({ where: { relatedUserId: user.id } });
+    for (const activity of ownActivities) await deleteActivityCascade(activity);
+
+    const ownCommentIds = (await Comment.findAll({ where: { userId: user.id }, attributes: ["id"] })).map((c) => c.id);
+    if (ownCommentIds.length) {
+      await CommentVote.destroy({ where: { commentId: ownCommentIds } });
+      await ContentReport.destroy({ where: { targetType: "comment", targetId: ownCommentIds } });
+      await Comment.destroy({ where: { id: ownCommentIds } });
+    }
+
     await Promise.all([
       Education.destroy({ where: { userId: user.id } }),
       WorkExperience.destroy({ where: { userId: user.id } }),
@@ -372,7 +394,10 @@ export const deleteUser = async (req, res) => {
       UserSession.destroy({ where: { userId: user.id } }),
       UserActivityLog.destroy({ where: { userId: user.id } }),
       ProfileChangeLog.destroy({ where: { userId: user.id } }),
-      CommunityActivity.destroy({ where: { relatedUserId: user.id } }),
+      CommunityActivityVote.destroy({ where: { userId: user.id } }),
+      CommentVote.destroy({ where: { userId: user.id } }),
+      PostImageVote.destroy({ where: { userId: user.id } }),
+      ContentReport.destroy({ where: { reporterId: user.id } }),
       Follow.destroy({ where: { [Op.or]: [{ followerId: user.id }, { followingId: user.id }] } }),
       UserNotification.destroy({ where: { userId: user.id } }),
     ]);
