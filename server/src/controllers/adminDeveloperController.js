@@ -76,6 +76,10 @@ import publicCampaignRoutes from "../routes/publicCampaignRoutes.js";
 import publicJobRoutes from "../routes/publicJobRoutes.js";
 import masjidRoutes from "../routes/masjidRoutes.js";
 import adminPrayerRoutes from "../routes/adminPrayerRoutes.js";
+import campaignRoutes from "../routes/campaignRoutes.js";
+import adminCampaignRoutes from "../routes/adminCampaignRoutes.js";
+import jobRoutes from "../routes/jobRoutes.js";
+import adminJobRoutes from "../routes/adminJobRoutes.js";
 
 const ROUTE_FILES = {
   "userRoutes.js": userRoutes,
@@ -86,6 +90,10 @@ const ROUTE_FILES = {
   "publicJobRoutes.js": publicJobRoutes,
   "masjidRoutes.js": masjidRoutes,
   "adminPrayerRoutes.js": adminPrayerRoutes,
+  "campaignRoutes.js": campaignRoutes,
+  "adminCampaignRoutes.js": adminCampaignRoutes,
+  "jobRoutes.js": jobRoutes,
+  "adminJobRoutes.js": adminJobRoutes,
 };
 
 // The fixed section set every new module is seeded with, matching the

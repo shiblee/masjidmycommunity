@@ -69,10 +69,18 @@ export const MODULE_SOURCES = {
   },
   "campaigns-fundraising": {
     models: ["Campaign", "CampaignBudgetItem", "CampaignDocument", "CampaignPhoto", "CampaignUpdate", "Donation"],
-    routeFiles: [{ file: "publicCampaignRoutes.js", only: ["/", "/:slug", "/:slug/donations", "/:slug/donors"] }],
+    routeFiles: [
+      { file: "publicCampaignRoutes.js", only: ["/", "/:slug", "/:slug/donations", "/:slug/donors"] },
+      { file: "campaignRoutes.js", only: ["/", "/:id", "/:id/budget-items", "/:id/photos", "/:id/submit"] },
+      { file: "adminCampaignRoutes.js", only: ["/:id/approve", "/:id/reject", "/:id/request-changes", "/:id/pause", "/:id/resume", "/:id/complete", "/:id/cancel", "/:id/donations", "/:id/delete"] },
+    ],
   },
   "jobs": {
     models: ["Job", "JobApplication", "JobFavorite", "JobCategory", "EmploymentType", "ExperienceLevel", "Company"],
-    routeFiles: [{ file: "publicJobRoutes.js", only: ["/", "/:slug", "/:id/favorite"] }],
+    routeFiles: [
+      { file: "publicJobRoutes.js", only: ["/", "/:slug", "/:id/favorite"] },
+      { file: "jobRoutes.js", only: ["/", "/:id", "/:id/close", "/:id/reopen", "/:id/apply", "/:id/my-application", "/:id/applications", "/:id/applications/:appId"] },
+      { file: "adminJobRoutes.js", only: ["/:id/status", "/:id/moderation", "/:id"] },
+    ],
   },
 };
