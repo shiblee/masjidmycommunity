@@ -12,7 +12,7 @@ const DevDocSection = sequelize.define(
     moduleId: { type: DataTypes.INTEGER, allowNull: false },
     key: { type: DataTypes.STRING, allowNull: false },
     title: { type: DataTypes.STRING, allowNull: false },
-    bodyHtml: { type: DataTypes.TEXT("long"), allowNull: false, defaultValue: "" },
+    bodyHtml: { type: DataTypes.TEXT("long"), allowNull: false },
     sortOrder: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
   },
   {
