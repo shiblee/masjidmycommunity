@@ -20,4 +20,12 @@ export const TEST_MODULE_FILES = {
   "reels": "tests/community/reels.test.js",
   "registered-users-directory": "tests/community/directory.test.js",
   "notifications": "tests/community/notifications.test.js",
+  "user-reports-concerns": "tests/support/concerns.test.js",
+  "contact-us": "tests/support/contact.test.js",
+  "localization": "tests/support/localization.test.js",
+  // "database" has no test file mapped deliberately -- it documents
+  // cross-cutting schema conventions (naming, hard-delete-only, the
+  // moderationStatus-vs-status pattern, etc.), not a single feature with
+  // its own HTTP surface to exercise. Shown honestly as untested rather
+  // than padded with an unrelated integrity-check suite.
 };

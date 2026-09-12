@@ -54,6 +54,14 @@ import PrayerMaster from "../models/PrayerMaster.js";
 import MasjidPrayerTimeChangeLog from "../models/MasjidPrayerTimeChangeLog.js";
 import SalahLog from "../models/SalahLog.js";
 import UserNotification from "../models/UserNotification.js";
+import Concern from "../models/Concern.js";
+import ConcernHistory from "../models/ConcernHistory.js";
+import ConcernType from "../models/ConcernType.js";
+import ContactMessage from "../models/ContactMessage.js";
+import ContactMessageHistory from "../models/ContactMessageHistory.js";
+import ContactTopic from "../models/ContactTopic.js";
+import Language from "../models/Language.js";
+import Translation from "../models/Translation.js";
 
 const MODELS = {
   User, UserSession, UserActivityLog, AuthSettings, CommunityActivity, EmailTemplate, EmailLog, EmailSettings,
@@ -63,6 +71,7 @@ const MODELS = {
   CampaignBudgetItem, CampaignDocument, CampaignPhoto, CampaignUpdate, Donation,
   JobApplication, JobCategory, EmploymentType, ExperienceLevel, Company,
   PrayerMaster, MasjidPrayerTimeChangeLog, SalahLog, UserNotification,
+  Concern, ConcernHistory, ConcernType, ContactMessage, ContactMessageHistory, ContactTopic, Language, Translation,
 };
 
 // Every route file "Sync Documentation" is allowed to introspect. Reading
@@ -81,6 +90,15 @@ import campaignRoutes from "../routes/campaignRoutes.js";
 import adminCampaignRoutes from "../routes/adminCampaignRoutes.js";
 import jobRoutes from "../routes/jobRoutes.js";
 import adminJobRoutes from "../routes/adminJobRoutes.js";
+import publicConcernRoutes from "../routes/publicConcernRoutes.js";
+import adminConcernRoutes from "../routes/adminConcernRoutes.js";
+import adminConcernTypeRoutes from "../routes/adminConcernTypeRoutes.js";
+import contactRoutes from "../routes/contactRoutes.js";
+import adminContactRoutes from "../routes/adminContactRoutes.js";
+import adminContactTopicRoutes from "../routes/adminContactTopicRoutes.js";
+import publicI18nRoutes from "../routes/publicI18nRoutes.js";
+import adminLanguageRoutes from "../routes/adminLanguageRoutes.js";
+import adminTranslationRoutes from "../routes/adminTranslationRoutes.js";
 
 const ROUTE_FILES = {
   "userRoutes.js": userRoutes,
@@ -95,6 +113,15 @@ const ROUTE_FILES = {
   "adminCampaignRoutes.js": adminCampaignRoutes,
   "jobRoutes.js": jobRoutes,
   "adminJobRoutes.js": adminJobRoutes,
+  "publicConcernRoutes.js": publicConcernRoutes,
+  "adminConcernRoutes.js": adminConcernRoutes,
+  "adminConcernTypeRoutes.js": adminConcernTypeRoutes,
+  "contactRoutes.js": contactRoutes,
+  "adminContactRoutes.js": adminContactRoutes,
+  "adminContactTopicRoutes.js": adminContactTopicRoutes,
+  "publicI18nRoutes.js": publicI18nRoutes,
+  "adminLanguageRoutes.js": adminLanguageRoutes,
+  "adminTranslationRoutes.js": adminTranslationRoutes,
 };
 
 // The fixed section set every new module is seeded with, matching the

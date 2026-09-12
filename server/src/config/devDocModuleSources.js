@@ -95,4 +95,32 @@ export const MODULE_SOURCES = {
       { file: "adminJobRoutes.js", only: ["/:id/status", "/:id/moderation", "/:id"] },
     ],
   },
+  "user-reports-concerns": {
+    models: ["Concern", "ConcernHistory", "ConcernType"],
+    routeFiles: [
+      { file: "publicConcernRoutes.js", only: ["/types", "/"] },
+      { file: "adminConcernRoutes.js", only: ["/", "/counts", "/:id", "/:id/notes", "/:id/resolve", "/:id/close", "/:id/reopen"] },
+      { file: "adminConcernTypeRoutes.js", only: ["/", "/:id"] },
+    ],
+  },
+  "contact-us": {
+    models: ["ContactMessage", "ContactMessageHistory", "ContactTopic"],
+    routeFiles: [
+      { file: "contactRoutes.js", only: ["/topics", "/"] },
+      { file: "adminContactRoutes.js", only: ["/", "/counts", "/:id", "/:id/notes", "/:id/reply", "/:id/in-progress", "/:id/close", "/:id/reopen"] },
+      { file: "adminContactTopicRoutes.js", only: ["/", "/:id"] },
+    ],
+  },
+  "localization": {
+    models: ["Language", "Translation"],
+    routeFiles: [
+      { file: "publicI18nRoutes.js", only: ["/languages", "/translations/:code"] },
+      { file: "adminLanguageRoutes.js", only: ["/", "/:id"] },
+      { file: "adminTranslationRoutes.js", only: ["/", "/categories", "/coverage", "/:key"] },
+    ],
+  },
+  // "database" deliberately has no entry -- it's a cross-cutting schema/
+  // conventions overview, not one feature with its own model set, so its
+  // Database Tables/APIs sections are hand-authored prose instead of
+  // sync-generated (see the module's own dbTables section content).
 };
