@@ -58,6 +58,15 @@ export const MODULE_SOURCES = {
     models: ["Masjid", "MasjidPhoto", "MasjidPrayerTimeline", "MasjidFavorite", "MasjidReview", "MasjidCorrectionRequest", "GreenTickApplication"],
     routeFiles: [{ file: "publicMasjidRoutes.js", only: ["/", "/:id", "/:id/favorite", "/:id/prayer-times", "/:id/reviews", "/:id/suggest-edit", "/:id/likers"] }],
   },
+  "prayer-times": {
+    models: ["PrayerMaster", "MasjidPrayerTimeline", "MasjidPrayerTimeChangeLog", "SalahLog"],
+    routeFiles: [
+      { file: "masjidRoutes.js", only: ["/:id/prayer-times", "/:id/prayer-times/history", "/:id/prayer-times/changes"] },
+      { file: "publicMasjidRoutes.js", only: ["/:id/prayer-times"] },
+      { file: "adminPrayerRoutes.js", only: ["/", "/:id"] },
+      { file: "userRoutes.js", only: ["/me/salah/day", "/me/salah/mark", "/me/salah/unmark", "/me/salah/history", "/me/salah/weekly-summary"] },
+    ],
+  },
   "campaigns-fundraising": {
     models: ["Campaign", "CampaignBudgetItem", "CampaignDocument", "CampaignPhoto", "CampaignUpdate", "Donation"],
     routeFiles: [{ file: "publicCampaignRoutes.js", only: ["/", "/:slug", "/:slug/donations", "/:slug/donors"] }],
