@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { listUsers, updateUserStatus, getUserActivity, getUser, updateUserProfile, getProfileChangeLog } from "../controllers/adminUserController.js";
+import { listUsers, updateUserStatus, getUserActivity, getUser, updateUserProfile, getProfileChangeLog, deleteUser } from "../controllers/adminUserController.js";
 import * as education from "../controllers/adminUserEducationController.js";
 import * as workExperience from "../controllers/adminUserWorkExperienceController.js";
 import * as skills from "../controllers/adminUserSkillController.js";
@@ -20,6 +20,7 @@ router.patch("/:id/profile", updateUserProfile);
 router.get("/:id/activity", getUserActivity);
 router.get("/:id/profile-change-log", getProfileChangeLog);
 router.put("/:id/status", updateUserStatus);
+router.delete("/:id", deleteUser);
 
 router.get("/:userId/education", education.list);
 router.post("/:userId/education/enhance", education.enhance);

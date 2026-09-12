@@ -206,6 +206,25 @@ export const resetPassword = async (req, res) => {
   }
 };
 
+// Hard delete -- activates the "staff":"delete" permission action already
+// declared in permissionModules.js but never implemented. Scoped to
+// role:"staff" exactly like update()/setStatus() above, so this can never
+// target a super_admin account through this endpoint. Historical
+// AdminActivityLog/PermissionChangeLog rows are deliberately left in place
+// (same "never delete audit records" principle setStatus()'s own comment
+// and PermissionChangeLog.js's model comment both already establish) --
+// only the account row itself is removed.
+export const deleteStaff = async (req, res) => {
+  try {
+    const admin = await AdminUser.findOne({ where: { id: req.params.id, role: "staff" } });
+    if (!admin) return res.status(404).json({ message: "Staff member not found." });
+    await admin.destroy();
+    res.status(204).end();
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 export const setStatus = async (req, res) => {
   try {
     const admin = await AdminUser.findOne({ where: { id: req.params.id, role: "staff" } });

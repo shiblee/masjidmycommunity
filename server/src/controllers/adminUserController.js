@@ -10,6 +10,8 @@ import WorkExperience from "../models/WorkExperience.js";
 import Education from "../models/Education.js";
 import UserHobby from "../models/UserHobby.js";
 import UserSkill from "../models/UserSkill.js";
+import Job from "../models/Job.js";
+import CommunityActivity from "../models/CommunityActivity.js";
 import { sendAccountStatusEmail, sendEmailChangedEmail } from "../services/emailService.js";
 import { recordProfileChange } from "../utils/profileChangeLog.js";
 import { getRequestContext } from "../utils/requestContext.js";
@@ -334,6 +336,44 @@ export const updateUserStatus = async (req, res) => {
     await user.save();
     if (statusChanged) sendAccountStatusEmail(user, status).catch(() => {});
     res.json({ user: toAdminUser(user) });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Hard delete -- activates the "users":"delete" permission action that was
+// already declared in permissionModules.js but had no implementation.
+// Refuses to delete anyone who owns a masjid/campaign/job: those are real
+// community assets, not personal profile data, and silently cascading
+// through them is far more destructive than this action should risk. A
+// genuine deletion request for an asset-owning account should go through
+// that asset's own deletion flow first.
+export const deleteUser = async (req, res) => {
+  try {
+    const user = await User.findByPk(req.params.id);
+    if (!user) return res.status(404).json({ message: "User not found." });
+
+    const [masjidCount, campaignCount, jobCount] = await Promise.all([
+      Masjid.count({ where: { userId: user.id } }),
+      Campaign.count({ where: { createdBy: user.id } }),
+      Job.count({ where: { userId: user.id } }),
+    ]);
+    if (masjidCount || campaignCount || jobCount) {
+      return res.status(409).json({ message: "This user owns a masjid, campaign, or job. Remove those first before deleting the account." });
+    }
+
+    await Promise.all([
+      Education.destroy({ where: { userId: user.id } }),
+      WorkExperience.destroy({ where: { userId: user.id } }),
+      UserSkill.destroy({ where: { userId: user.id } }),
+      UserHobby.destroy({ where: { userId: user.id } }),
+      UserSession.destroy({ where: { userId: user.id } }),
+      UserActivityLog.destroy({ where: { userId: user.id } }),
+      ProfileChangeLog.destroy({ where: { userId: user.id } }),
+      CommunityActivity.destroy({ where: { relatedUserId: user.id } }),
+    ]);
+    await user.destroy();
+    res.status(204).end();
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
