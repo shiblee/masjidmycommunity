@@ -114,7 +114,7 @@ function ActiveCampaigns() {
               </button>
             ))}
             <button className={`filter-chip saved-chip${filter === "__saved__" ? " active" : ""}`} onClick={() => changeFilter("__saved__")}>
-              ♥ Saved{saved.size > 0 ? ` (${saved.size})` : ""}
+              ♥ Liked{saved.size > 0 ? ` (${saved.size})` : ""}
             </button>
           </div>
 
@@ -127,14 +127,14 @@ function ActiveCampaigns() {
           </div>
 
           <div className="filter-count">
-            {loading && page === 1 ? "Loading campaigns…" : filter === "__saved__" ? `${visible.length} saved campaign${visible.length === 1 ? "" : "s"}` : `Showing ${campaigns.length} of ${total} campaigns`}
+            {loading && page === 1 ? "Loading campaigns…" : filter === "__saved__" ? `${visible.length} liked campaign${visible.length === 1 ? "" : "s"}` : `Showing ${campaigns.length} of ${total} campaigns`}
           </div>
 
           {!loading && visible.length === 0 ? (
             <div className="campaign-empty">
               <p>
                 {filter === "__saved__"
-                  ? "No saved campaigns yet — tap the heart on a card to keep track of one."
+                  ? "No liked campaigns yet — tap the heart on a card to keep track of one."
                   : q
                   ? `No campaigns match "${q}" right now.`
                   : "No live campaigns right now — check back soon."}
@@ -159,7 +159,7 @@ function ActiveCampaigns() {
                       <span className="campaign-cat">{c.cat}</span>
                       <button
                         className={`campaign-save${isSaved ? " active" : ""}`}
-                        aria-label={isSaved ? "Remove from saved campaigns" : "Save campaign"}
+                        aria-label={isSaved ? "Remove from liked campaigns" : "Like campaign"}
                         aria-pressed={isSaved}
                         onClick={(e) => { e.preventDefault(); toggleSaved(c.id); }}
                       >
