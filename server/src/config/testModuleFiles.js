@@ -11,4 +11,6 @@ export const TEST_MODULE_FILES = {
   "permissions": "tests/identity/permissions.test.js",
   "masjid": "tests/masjid/masjid.test.js",
   "prayer-times": "tests/masjid/prayerTimes.test.js",
+  "campaigns-fundraising": "tests/campaigns/campaigns.test.js",
+  "jobs": "tests/jobs/jobs.test.js",
 };
