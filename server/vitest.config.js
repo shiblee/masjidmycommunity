@@ -13,5 +13,15 @@ export default defineConfig({
     // unawaited async job (ensurePrayerScheduleForMasjid) to finish.
     testTimeout: 30000,
     hookTimeout: 30000,
+    // The suite runs on the same small production instance it's testing
+    // against (see adminTestingController.js) -- with 20 files' worth of
+    // real HTTP+bcrypt+DB work running as vitest's default concurrent
+    // worker threads, the server ends up contending with itself for CPU
+    // badly enough to blow past even a 300s ceiling (confirmed: the same
+    // 186 tests that time out under default parallelism finish in ~50s
+    // serialized, with zero failures -- the one failure seen under
+    // parallelism was a cross-file race, not a real bug). Running files
+    // one at a time trades wall-clock time for actually finishing.
+    fileParallelism: false,
   },
 });

@@ -36,7 +36,7 @@ async function executeAndRecord(runId, start) {
     // whether it left behind a results file, not by the exit code.
     await execFileAsync("npx", ["vitest", "run", "--reporter=json", `--outputFile=${outputFile}`], {
       cwd: SERVER_ROOT,
-      timeout: 300000,
+      timeout: 600000,
       maxBuffer: 20 * 1024 * 1024,
     }).catch(() => {});
 
