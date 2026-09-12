@@ -54,6 +54,18 @@ export const MODULE_SOURCES = {
       only: ["/activities/:id/vote", "/images/:imageId/vote", "/activities/:activityId/comments/:id/vote", "/images/:imageId/comments/:id/vote"],
     }],
   },
+  "reels": {
+    models: ["CommunityActivity"],
+    routeFiles: [{ file: "publicCommunityRoutes.js", only: ["/reels"] }],
+  },
+  "registered-users-directory": {
+    models: ["User"],
+    routeFiles: [{ file: "publicUserRoutes.js", only: ["/"] }],
+  },
+  "notifications": {
+    models: ["UserNotification"],
+    routeFiles: [{ file: "userRoutes.js", only: ["/notifications", "/notifications/read-all", "/notifications/:id/read"] }],
+  },
   "masjid": {
     models: ["Masjid", "MasjidPhoto", "MasjidPrayerTimeline", "MasjidFavorite", "MasjidReview", "MasjidCorrectionRequest", "GreenTickApplication"],
     routeFiles: [{ file: "publicMasjidRoutes.js", only: ["/", "/:id", "/:id/favorite", "/:id/prayer-times", "/:id/reviews", "/:id/suggest-edit", "/:id/likers"] }],
