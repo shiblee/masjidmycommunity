@@ -11,6 +11,8 @@ import { firstRestrictedField, RESTRICTED_CONTENT_MESSAGE } from "../utils/conte
 import { validateFields, normalizeSkills, logJobHistory, serializeApplication, applyApplicationStatusChange } from "./jobController.js";
 import { PLATFORM_EMAIL } from "../seed/platformUserDefaults.js";
 import { recordJobPostedActivity } from "../services/communityActivityService.js";
+import CommunityActivity from "../models/CommunityActivity.js";
+import { deleteActivityCascade } from "./publicCommunityController.js";
 
 const STATUSES = ["active", "closed", "expired", "deleted"];
 
@@ -201,6 +203,12 @@ export const hardDelete = async (req, res) => {
   try {
     const job = await Job.findByPk(req.params.id);
     if (!job) return res.status(404).json({ message: "Job not found." });
+
+    // The "New opening: ..." wall post has to go through the real cascade,
+    // not a raw destroy -- same reasoning as deleteUser()'s ownActivities
+    // cleanup -- so it doesn't orphan that post's own Comment/Vote/Report rows.
+    const relatedActivities = await CommunityActivity.findAll({ where: { relatedJobId: job.id } });
+    for (const activity of relatedActivities) await deleteActivityCascade(activity);
 
     await Promise.all([
       JobApplication.destroy({ where: { jobId: job.id } }),

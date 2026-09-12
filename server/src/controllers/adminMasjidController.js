@@ -20,6 +20,8 @@ import GreenTickDocument from "../models/GreenTickDocument.js";
 import GreenTickStatusLog from "../models/GreenTickStatusLog.js";
 import Campaign from "../models/Campaign.js";
 import User from "../models/User.js";
+import CommunityActivity from "../models/CommunityActivity.js";
+import { deleteActivityCascade } from "./publicCommunityController.js";
 import { ensureMasjidRegisteredActivity } from "../seed/masjidRegisteredActivityBackfill.js";
 import { sendMasjidChangesRequestedEmail, sendMasjidApprovedEmail, sendMasjidRejectedEmail } from "../services/emailService.js";
 import { notifyUser } from "../services/notificationService.js";
@@ -714,6 +716,13 @@ export const hardDelete = async (req, res) => {
         GreenTickStatusLog.destroy({ where: { applicationId: greenTickAppIds } }),
       ]);
     }
+
+    // A masjid's own "New Masjid" welcome post (and any campaign-approved
+    // post still pointing at it) has to go through the real cascade -- a
+    // raw destroy would orphan that post's own Comment/Vote/Report rows,
+    // same reasoning as deleteUser()'s ownActivities cleanup.
+    const relatedActivities = await CommunityActivity.findAll({ where: { relatedMasjidId: masjid.id } });
+    for (const activity of relatedActivities) await deleteActivityCascade(activity);
 
     await Promise.all([
       MasjidPhoto.destroy({ where: { masjidId: masjid.id } }),

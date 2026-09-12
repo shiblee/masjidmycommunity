@@ -11,6 +11,8 @@ import CampaignUpdate from "../models/CampaignUpdate.js";
 import Donation from "../models/Donation.js";
 import Masjid from "../models/Masjid.js";
 import User from "../models/User.js";
+import CommunityActivity from "../models/CommunityActivity.js";
+import { deleteActivityCascade } from "./publicCommunityController.js";
 import { amountRaised, serializeCampaign, generateUniqueSlug } from "./campaignController.js";
 import { recordCampaignApprovedActivity, recordDonationActivity, recordMilestoneActivity } from "../services/communityActivityService.js";
 import { sendDonationConfirmationEmails } from "../services/donationNotificationService.js";
@@ -412,6 +414,13 @@ export const remove = async (req, res) => {
     }
 
     const documents = await CampaignDocument.findAll({ where: { campaignId: campaign.id } });
+
+    // The "X is now live" wall post (and any milestone/donation posts) has
+    // to go through the real cascade, not a raw destroy -- same reasoning
+    // as deleteUser()'s ownActivities cleanup -- so it doesn't orphan that
+    // post's own Comment/Vote/Report rows.
+    const relatedActivities = await CommunityActivity.findAll({ where: { relatedCampaignId: campaign.id } });
+    for (const activity of relatedActivities) await deleteActivityCascade(activity);
 
     await sequelize.transaction(async (t) => {
       await CampaignPhoto.destroy({ where: { campaignId: campaign.id }, transaction: t });
