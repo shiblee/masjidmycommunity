@@ -92,6 +92,7 @@ const NAV_ITEMS = [
     icon: "code",
     children: [
       { to: "/admin/developer", label: "Documentation", icon: "code", moduleKey: "developer" },
+      { to: "/admin/testing", label: "Automated Testing", icon: "check", moduleKey: "developer" },
       { to: "/admin/system-health", label: "System Health", icon: "activity", moduleKey: "developer" },
     ],
   },
