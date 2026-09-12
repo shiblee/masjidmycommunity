@@ -18,6 +18,49 @@ function ResultIcon({ status }) {
   return <span style={{ color: "var(--a-danger)" }}><Icon name="x" size={14} /></span>;
 }
 
+function HistoryModal({ runs, onClose }) {
+  return (
+    <div className="amx-modal-overlay" onClick={onClose}>
+      <div className="amx-modal" style={{ maxWidth: 640 }} onClick={(e) => e.stopPropagation()}>
+        <button className="amx-modal-close" onClick={onClose} aria-label="Close"><Icon name="x" size={16} /></button>
+        <h3>Test Run History</h3>
+        <p className="amx-modal-sub">Every real run recorded so far, most recent first.</p>
+        <div style={{ maxHeight: "60vh", overflowY: "auto", marginTop: 16 }}>
+          <table className="amx-table">
+            <thead>
+              <tr>
+                <th>Date &amp; Time</th>
+                <th>Triggered By</th>
+                <th>Status</th>
+                <th>Result</th>
+              </tr>
+            </thead>
+            <tbody>
+              {runs.map((r) => (
+                <tr key={r.id}>
+                  <td>{formatDateTime(r.createdAt)}</td>
+                  <td>{r.triggeredByName || "Unknown"}</td>
+                  <td>
+                    <StatusBadge
+                      status={r.overallStatus === "passed" ? "active" : r.overallStatus === "running" ? "neutral" : "rejected"}
+                      label={r.overallStatus === "passed" ? "Passed" : r.overallStatus === "running" ? "Running" : r.overallStatus === "error" ? "Error" : "Failed"}
+                    />
+                  </td>
+                  <td className="amx-panel-sub">
+                    {r.overallStatus === "running" || r.overallStatus === "error"
+                      ? r.errorMessage || "—"
+                      : `${r.passedTests}/${r.totalTests} passed · ${(r.durationMs / 1000).toFixed(1)}s`}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ModuleTestPanel({ module, latestResult }) {
   if (!latestResult) {
     return (
@@ -73,6 +116,7 @@ function Testing() {
   const [runs, setRuns] = useState(null);
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState("");
+  const [showHistory, setShowHistory] = useState(false);
 
   const load = () => {
     Promise.all([adminApi.get("/developer/modules"), adminApi.get("/testing/runs")])
@@ -171,59 +215,42 @@ function Testing() {
         </button>
       </div>
 
-      <div className="amx-grid-2" style={{ marginBottom: 24 }}>
-        <div className="amx-card amx-panel">
-          <h3 style={{ marginBottom: 14 }}>Current Status</h3>
-          {latestRun ? (
-            isRunning ? (
-              <p className="amx-panel-sub">
-                <StatusBadge status="neutral" label="Running" /> A real <code>vitest run</code> is executing on the server right now (started by {latestRun.triggeredByName || "someone"} {formatDate(latestRun.createdAt)}) — this page checks back every few seconds.
-              </p>
-            ) : latestRun.overallStatus === "error" ? (
-              <p className="amx-form-error" style={{ marginBottom: 0 }}>
-                <Icon name="info" size={16} /> {latestRun.errorMessage || "The test run didn't complete."}
-              </p>
-            ) : (
-              <>
-                <div className="amx-stat-tiles" style={{ marginBottom: 14 }}>
-                  <div className="amx-stat-tile"><strong>{latestRun.totalTests}</strong><span>Total Tests</span></div>
-                  <div className="amx-stat-tile"><strong>{latestRun.passedTests}</strong><span>Passed</span></div>
-                  <div className="amx-stat-tile"><strong>{latestRun.failedTests}</strong><span>Failed</span></div>
-                  <div className="amx-stat-tile"><strong>{testedCount}/{modules.length}</strong><span>Modules Covered</span></div>
-                </div>
-                <StatusBadge status={latestRun.overallStatus === "passed" ? "active" : "rejected"} label={latestRun.overallStatus === "passed" ? "All Passing" : "Failures Found"} />
-                <span className="amx-panel-sub" style={{ marginLeft: 10 }}>
-                  Last run {formatDate(latestRun.createdAt)} &middot; took {(latestRun.durationMs / 1000).toFixed(1)}s &middot; by {latestRun.triggeredByName || "Unknown"}
-                </span>
-              </>
-            )
+      <div className="amx-card amx-panel" style={{ marginBottom: 24 }}>
+        <h3 style={{ marginBottom: 14 }}>Current Status</h3>
+        {latestRun ? (
+          isRunning ? (
+            <p className="amx-panel-sub">
+              <StatusBadge status="neutral" label="Running" /> A real <code>vitest run</code> is executing on the server right now (started by {latestRun.triggeredByName || "someone"} {formatDate(latestRun.createdAt)}) — this page checks back every few seconds.
+            </p>
+          ) : latestRun.overallStatus === "error" ? (
+            <p className="amx-form-error" style={{ marginBottom: 0 }}>
+              <Icon name="info" size={16} /> {latestRun.errorMessage || "The test run didn't complete."}
+            </p>
           ) : (
-            <p className="amx-panel-sub">No test runs yet — click "Run Tests" to check the live application right now.</p>
-          )}
-        </div>
-
-        <div className="amx-card amx-panel">
-          <h3 style={{ marginBottom: 14 }}>History</h3>
-          {runs.length === 0 ? (
-            <p className="amx-panel-sub">No history yet.</p>
-          ) : (
-            <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-              {runs.slice(0, 8).map((r) => (
-                <li key={r.id} className="amx-health-history-item">
-                  <span>{formatDateTime(r.createdAt)}</span>
-                  <span className="amx-panel-sub">
-                    {r.overallStatus === "running" ? "—" : r.overallStatus === "error" ? "—" : `${r.passedTests}/${r.totalTests} passed`}
-                  </span>
-                  <StatusBadge
-                    status={r.overallStatus === "passed" ? "active" : r.overallStatus === "running" ? "neutral" : "rejected"}
-                    label={r.overallStatus === "passed" ? "Passed" : r.overallStatus === "running" ? "Running" : r.overallStatus === "error" ? "Error" : "Failed"}
-                  />
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+            <>
+              <div className="amx-stat-tiles" style={{ marginBottom: 14 }}>
+                <div className="amx-stat-tile"><strong>{latestRun.totalTests}</strong><span>Total Tests</span></div>
+                <div className="amx-stat-tile"><strong>{latestRun.passedTests}</strong><span>Passed</span></div>
+                <div className="amx-stat-tile"><strong>{latestRun.failedTests}</strong><span>Failed</span></div>
+                <div className="amx-stat-tile"><strong>{testedCount}/{modules.length}</strong><span>Modules Covered</span></div>
+              </div>
+              <StatusBadge status={latestRun.overallStatus === "passed" ? "active" : "rejected"} label={latestRun.overallStatus === "passed" ? "All Passing" : "Failures Found"} />
+              <span className="amx-panel-sub" style={{ marginLeft: 10 }}>
+                Last run {formatDateTime(latestRun.createdAt)} &middot; took {(latestRun.durationMs / 1000).toFixed(1)}s &middot; by {latestRun.triggeredByName || "Unknown"}
+              </span>
+            </>
+          )
+        ) : (
+          <p className="amx-panel-sub">No test runs yet — click "Run Tests" to check the live application right now.</p>
+        )}
+        {runs.length > 0 && (
+          <button className="amx-btn amx-btn-outline amx-btn-sm" style={{ marginTop: 14 }} onClick={() => setShowHistory(true)}>
+            <Icon name="clock" size={15} /> View Full Test History
+          </button>
+        )}
       </div>
+
+      {showHistory && <HistoryModal runs={runs} onClose={() => setShowHistory(false)} />}
 
       <div className="amx-settings-layout">
         <nav className="amx-settings-nav">
