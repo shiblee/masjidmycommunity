@@ -63,6 +63,10 @@ export const runTests = async (req, res) => {
           title: a.title,
           status: a.status,
           durationMs: Math.round(a.duration || 0),
+          // Set via `task.meta.detail = "..."` inside the test itself -- a
+          // one-line statement of what was actually verified (request made,
+          // status/behavior expected), not just a restatement of the title.
+          detail: a.meta?.detail || null,
           failureMessage: a.failureMessages?.[0]?.split("\n")[0] || null,
         })),
       });

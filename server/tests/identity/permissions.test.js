@@ -27,38 +27,44 @@ describe("Permissions", () => {
     if (staffId) await api(`/api/admin/staff/${staffId}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
   });
 
-  it("logs the staff account in with only its granted permissions", async () => {
+  it("logs the staff account in with only its granted permissions", async ({ task }) => {
     expect(staffToken).toBeTypeOf("string");
+    task.meta.detail = "A staff account created with permissions {developer:[view]} logs in normally and receives a real JWT.";
   });
 
-  it("blocks the staff account from a module it wasn't granted", async () => {
+  it("blocks the staff account from a module it wasn't granted", async ({ task }) => {
     const { status, body } = await api("/api/admin/staff", { headers: { Authorization: `Bearer ${staffToken}` } });
     expect(status).toBe(403);
     expect(body.message).toMatch(/don't have (permission|access)/i);
+    task.meta.detail = "GET /api/admin/staff with a token that only has developer:view -> 403, staff module was never granted.";
   });
 
-  it("allows the staff account into the one module it was granted", async () => {
+  it("allows the staff account into the one module it was granted", async ({ task }) => {
     const { status } = await api("/api/admin/developer/modules", { headers: { Authorization: `Bearer ${staffToken}` } });
     expect(status).toBe(200);
+    task.meta.detail = "GET /api/admin/developer/modules with the same token -> 200, developer:view was granted.";
   });
 
-  it("blocks the write action on a module the account can only view (developer:edit was never granted)", async () => {
+  it("blocks the write action on a module the account can only view (developer:edit was never granted)", async ({ task }) => {
     const { status, body } = await api("/api/admin/developer/sync", {
       method: "POST",
       headers: { Authorization: `Bearer ${staffToken}` },
     });
     expect(status).toBe(403);
     expect(body.message).toMatch(/edit/i);
+    task.meta.detail = "POST /api/admin/developer/sync (a write action) with a view-only token -> 403 -- view and edit are enforced separately, not just module-level access.";
   });
 
-  it("a super_admin bypasses every permission check regardless of the permissions column", async () => {
+  it("a super_admin bypasses every permission check regardless of the permissions column", async ({ task }) => {
     const { token } = await adminAuth();
     const { status } = await api("/api/admin/staff", { headers: { Authorization: `Bearer ${token}` } });
     expect(status).toBe(200);
+    task.meta.detail = "The same GET /api/admin/staff with a super_admin token -> 200, role:\"super_admin\" bypasses the permissions object entirely.";
   });
 
-  it("rejects a request with no token at all on a permission-gated route", async () => {
+  it("rejects a request with no token at all on a permission-gated route", async ({ task }) => {
     const { status } = await api("/api/admin/developer/modules");
     expect(status).toBe(401);
+    task.meta.detail = "GET /api/admin/developer/modules with no Authorization header -> 401, before permission checks even run.";
   });
 });

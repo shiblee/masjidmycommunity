@@ -57,7 +57,7 @@ function ModuleTestPanel({ module, latestResult }) {
                 />
               </td>
               <td className="amx-panel-sub">{t.durationMs}ms</td>
-              <td className="amx-panel-sub" style={{ color: t.failureMessage ? "var(--a-danger)" : undefined }}>{t.failureMessage || "—"}</td>
+              <td className="amx-panel-sub" style={{ color: t.failureMessage ? "var(--a-danger)" : undefined }}>{t.failureMessage || t.detail || "—"}</td>
             </tr>
           ))}
         </tbody>

@@ -12,6 +12,8 @@ import UserHobby from "../models/UserHobby.js";
 import UserSkill from "../models/UserSkill.js";
 import Job from "../models/Job.js";
 import CommunityActivity from "../models/CommunityActivity.js";
+import Follow from "../models/Follow.js";
+import UserNotification from "../models/UserNotification.js";
 import { sendAccountStatusEmail, sendEmailChangedEmail } from "../services/emailService.js";
 import { recordProfileChange } from "../utils/profileChangeLog.js";
 import { getRequestContext } from "../utils/requestContext.js";
@@ -371,6 +373,8 @@ export const deleteUser = async (req, res) => {
       UserActivityLog.destroy({ where: { userId: user.id } }),
       ProfileChangeLog.destroy({ where: { userId: user.id } }),
       CommunityActivity.destroy({ where: { relatedUserId: user.id } }),
+      Follow.destroy({ where: { [Op.or]: [{ followerId: user.id }, { followingId: user.id }] } }),
+      UserNotification.destroy({ where: { userId: user.id } }),
     ]);
     await user.destroy();
     res.status(204).end();

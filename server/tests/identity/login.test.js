@@ -12,7 +12,7 @@ describe("Login / Authentication", () => {
     await deleteTestUser(account?.userId);
   });
 
-  it("logs in successfully with the correct mobile + password", async () => {
+  it("logs in successfully with the correct mobile + password", async ({ task }) => {
     const { status, body } = await api("/api/users/login", {
       method: "POST",
       body: { identifier: account.mobile, password: account.password },
@@ -21,27 +21,30 @@ describe("Login / Authentication", () => {
     expect(body.token).toBeTypeOf("string");
     expect(body.refreshToken).toBeTypeOf("string");
     expect(body.user.id).toBe(account.userId);
+    task.meta.detail = "POST /api/users/login with the correct mobile+password -> 200, token+refreshToken for the right user id.";
   });
 
-  it("rejects an incorrect password with the generic credentials message", async () => {
+  it("rejects an incorrect password with the generic credentials message", async ({ task }) => {
     const { status, body } = await api("/api/users/login", {
       method: "POST",
       body: { identifier: account.mobile, password: "WrongPass123" },
     });
     expect(status).toBe(401);
     expect(body.message).toMatch(/invalid credentials/i);
+    task.meta.detail = "POST /api/users/login with the wrong password -> 401 \"Invalid credentials\".";
   });
 
-  it("rejects an unknown identifier with the same message (no account enumeration)", async () => {
+  it("rejects an unknown identifier with the same message (no account enumeration)", async ({ task }) => {
     const { status, body } = await api("/api/users/login", {
       method: "POST",
       body: { identifier: "9999999999", password: "whatever123" },
     });
     expect(status).toBe(401);
     expect(body.message).toMatch(/invalid credentials/i);
+    task.meta.detail = "POST /api/users/login with an unregistered mobile -> 401, same generic message as a wrong password (no enumeration).";
   });
 
-  it("issues a new access token from a valid refresh token", async () => {
+  it("issues a new access token from a valid refresh token", async ({ task }) => {
     const login = await api("/api/users/login", {
       method: "POST",
       body: { identifier: account.mobile, password: account.password },
@@ -52,18 +55,20 @@ describe("Login / Authentication", () => {
     });
     expect(status).toBe(200);
     expect(body.token).toBeTypeOf("string");
+    task.meta.detail = "POST /api/users/refresh-token with a real refresh token -> 200, a new access token is issued.";
   });
 
-  it("rejects a bogus refresh token", async () => {
+  it("rejects a bogus refresh token", async ({ task }) => {
     const { status, body } = await api("/api/users/refresh-token", {
       method: "POST",
       body: { refreshToken: "not-a-real-refresh-token" },
     });
     expect(status).toBe(401);
     expect(body.message).toMatch(/session has expired/i);
+    task.meta.detail = "POST /api/users/refresh-token with a made-up token -> 401 \"session has expired\".";
   });
 
-  it("blocks login for an account that hasn't verified its OTP yet", async () => {
+  it("blocks login for an account that hasn't verified its OTP yet", async ({ task }) => {
     const unverifiedMobile = `9${Date.now().toString().slice(-9)}`;
     const reg = await api("/api/users/register", {
       method: "POST",
@@ -84,6 +89,7 @@ describe("Login / Authentication", () => {
       expect([403, 429]).toContain(status);
       if (status === 403) expect(body.code).toBe("UNVERIFIED");
       if (status === 429) expect(body.code).toBe("COOLDOWN");
+      task.meta.detail = `POST /api/users/login on a pending_verification account -> blocked, got ${status} (${body.code}); login never succeeds for an unverified account.`;
     } finally {
       await deleteTestUser(reg.body.userId);
     }
