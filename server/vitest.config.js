@@ -6,7 +6,12 @@ import { defineConfig } from "vitest/config";
 // login, for example).
 export default defineConfig({
   test: {
-    testTimeout: 20000,
-    hookTimeout: 20000,
+    // Bumped from 20s: the Masjid/Prayer Times suite chains a much longer
+    // real pipeline per masjid (create, verify 3 office-bearer contacts via
+    // real OTP round trips, upload a photo, submit, admin-approve -- plus
+    // two real AI content-moderation calls), and one test polls for an
+    // unawaited async job (ensurePrayerScheduleForMasjid) to finish.
+    testTimeout: 30000,
+    hookTimeout: 30000,
   },
 });

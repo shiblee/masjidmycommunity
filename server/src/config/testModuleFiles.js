@@ -9,4 +9,6 @@ export const TEST_MODULE_FILES = {
   "other-user-profile": "tests/identity/otherUserProfile.test.js",
   "admin-staff": "tests/identity/adminStaff.test.js",
   "permissions": "tests/identity/permissions.test.js",
+  "masjid": "tests/masjid/masjid.test.js",
+  "prayer-times": "tests/masjid/prayerTimes.test.js",
 };

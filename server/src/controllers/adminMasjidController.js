@@ -9,6 +9,12 @@ import MasjidContactDesignation from "../models/MasjidContactDesignation.js";
 import MasjidContactPerson from "../models/MasjidContactPerson.js";
 import MasjidReview from "../models/MasjidReview.js";
 import MasjidFavorite from "../models/MasjidFavorite.js";
+import MasjidPrayerTimeline from "../models/MasjidPrayerTimeline.js";
+import MasjidPrayerTimeChangeLog from "../models/MasjidPrayerTimeChangeLog.js";
+import MasjidCorrectionRequest from "../models/MasjidCorrectionRequest.js";
+import MasjidView from "../models/MasjidView.js";
+import MasjidImportSource from "../models/MasjidImportSource.js";
+import GreenTickApplication from "../models/GreenTickApplication.js";
 import Campaign from "../models/Campaign.js";
 import User from "../models/User.js";
 import { ensureMasjidRegisteredActivity } from "../seed/masjidRegisteredActivityBackfill.js";
@@ -670,6 +676,47 @@ export const remove = async (req, res) => {
     await masjid.save();
     await logHistory(masjid.id, "deleted", comment ? `${reason} — ${comment}` : reason, req.user.email);
 
+    res.json({ deleted: true });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Genuine hard delete -- distinct from remove() above, which only ever soft
+// -deletes (status: "deleted", row kept for history). This permanently
+// purges a masjid and everything that references it, for real spam/test
+// cleanup where the soft-deleted row itself shouldn't linger forever (it
+// would otherwise block the owning user from ever being hard-deleted too,
+// since deleteUser() refuses to remove a user who owns any masjid row
+// regardless of status). Same masjid:delete permission as remove().
+export const hardDelete = async (req, res) => {
+  try {
+    const masjid = await Masjid.findByPk(req.params.id);
+    if (!masjid) return res.status(404).json({ message: "Masjid not found." });
+
+    const campaignCount = await Campaign.count({ where: { masjidId: masjid.id } });
+    if (campaignCount > 0) {
+      return res.status(409).json({
+        message: "This masjid is associated with one or more campaigns. Remove those first before deleting the masjid.",
+        campaignCount,
+      });
+    }
+
+    await Promise.all([
+      MasjidPhoto.destroy({ where: { masjidId: masjid.id } }),
+      MasjidContactPerson.destroy({ where: { masjidId: masjid.id } }),
+      MasjidPrayerTimeline.destroy({ where: { masjidId: masjid.id } }),
+      MasjidPrayerTimeChangeLog.destroy({ where: { masjidId: masjid.id } }),
+      MasjidReview.destroy({ where: { masjidId: masjid.id } }),
+      MasjidCorrectionRequest.destroy({ where: { masjidId: masjid.id } }),
+      MasjidView.destroy({ where: { masjidId: masjid.id } }),
+      MasjidDonationAccount.destroy({ where: { masjidId: masjid.id } }),
+      GreenTickApplication.destroy({ where: { masjidId: masjid.id } }),
+      MasjidFavorite.destroy({ where: { masjidId: masjid.id } }),
+      MasjidHistory.destroy({ where: { masjidId: masjid.id } }),
+      MasjidImportSource.destroy({ where: { masjidId: masjid.id } }),
+    ]);
+    await masjid.destroy();
     res.json({ deleted: true });
   } catch (error) {
     res.status(500).json({ message: error.message });

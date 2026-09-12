@@ -20,6 +20,7 @@ import {
   activate,
   deactivate,
   remove,
+  hardDelete,
   verifyDonationAccount,
   setReviewVisibility,
   listMasjidReviews,
@@ -104,6 +105,7 @@ router.post("/:id/notes", edit, addNote);
 router.post("/:id/activate", decide, logDecide, activate);
 router.post("/:id/deactivate", decide, logDecide, deactivate);
 router.post("/:id/delete", del, logDelete, remove);
+router.delete("/:id", del, logDelete, hardDelete);
 router.post("/:id/donation-account/verify", decide, logDecide, verifyDonationAccount);
 router.patch("/reviews/:reviewId/visibility", edit, setReviewVisibility);
 router.get("/:id/prayer-times", view, getPrayerRoster);
