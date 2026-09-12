@@ -2,6 +2,83 @@ import { Op } from "sequelize";
 import DevDocModule from "../models/DevDocModule.js";
 import DevDocSection from "../models/DevDocSection.js";
 import DevDocVersion from "../models/DevDocVersion.js";
+import { MODULE_SOURCES } from "../config/devDocModuleSources.js";
+
+// Every model "Sync Documentation" is allowed to introspect, keyed by the
+// exact name used in devDocModuleSources.js. Re-importing an already-loaded
+// ES module returns the same cached class -- this doesn't re-register
+// anything, it just gives sync a handle to read real column definitions
+// straight off the live model.
+import User from "../models/User.js";
+import UserSession from "../models/UserSession.js";
+import UserActivityLog from "../models/UserActivityLog.js";
+import AuthSettings from "../models/AuthSettings.js";
+import CommunityActivity from "../models/CommunityActivity.js";
+import EmailTemplate from "../models/EmailTemplate.js";
+import EmailLog from "../models/EmailLog.js";
+import EmailSettings from "../models/EmailSettings.js";
+import Education from "../models/Education.js";
+import WorkExperience from "../models/WorkExperience.js";
+import UserSkill from "../models/UserSkill.js";
+import Skill from "../models/Skill.js";
+import UserHobby from "../models/UserHobby.js";
+import Hobby from "../models/Hobby.js";
+import Masjid from "../models/Masjid.js";
+import Campaign from "../models/Campaign.js";
+import Job from "../models/Job.js";
+import MasjidFavorite from "../models/MasjidFavorite.js";
+import JobFavorite from "../models/JobFavorite.js";
+import Comment from "../models/Comment.js";
+import CommunityActivityVote from "../models/CommunityActivityVote.js";
+import CommentVote from "../models/CommentVote.js";
+import PostImage from "../models/PostImage.js";
+import PostImageVote from "../models/PostImageVote.js";
+import ContentSettings from "../models/ContentSettings.js";
+import ContentReport from "../models/ContentReport.js";
+import MasjidPhoto from "../models/MasjidPhoto.js";
+import MasjidPrayerTimeline from "../models/MasjidPrayerTimeline.js";
+import MasjidReview from "../models/MasjidReview.js";
+import MasjidCorrectionRequest from "../models/MasjidCorrectionRequest.js";
+import GreenTickApplication from "../models/GreenTickApplication.js";
+import CampaignBudgetItem from "../models/CampaignBudgetItem.js";
+import CampaignDocument from "../models/CampaignDocument.js";
+import CampaignPhoto from "../models/CampaignPhoto.js";
+import CampaignUpdate from "../models/CampaignUpdate.js";
+import Donation from "../models/Donation.js";
+import JobApplication from "../models/JobApplication.js";
+import JobCategory from "../models/JobCategory.js";
+import EmploymentType from "../models/EmploymentType.js";
+import ExperienceLevel from "../models/ExperienceLevel.js";
+import Company from "../models/Company.js";
+
+const MODELS = {
+  User, UserSession, UserActivityLog, AuthSettings, CommunityActivity, EmailTemplate, EmailLog, EmailSettings,
+  Education, WorkExperience, UserSkill, Skill, UserHobby, Hobby, Masjid, Campaign, Job, MasjidFavorite, JobFavorite,
+  Comment, CommunityActivityVote, CommentVote, PostImage, PostImageVote, ContentSettings, ContentReport,
+  MasjidPhoto, MasjidPrayerTimeline, MasjidReview, MasjidCorrectionRequest, GreenTickApplication,
+  CampaignBudgetItem, CampaignDocument, CampaignPhoto, CampaignUpdate, Donation,
+  JobApplication, JobCategory, EmploymentType, ExperienceLevel, Company,
+};
+
+// Every route file "Sync Documentation" is allowed to introspect. Reading
+// an already-imported router's own .stack (Express's real registered-route
+// list) rather than parsing source text as regex -- this is what Express
+// itself will actually match at request time, not an approximation of it.
+import userRoutes from "../routes/userRoutes.js";
+import publicUserRoutes from "../routes/publicUserRoutes.js";
+import publicCommunityRoutes from "../routes/publicCommunityRoutes.js";
+import publicMasjidRoutes from "../routes/publicMasjidRoutes.js";
+import publicCampaignRoutes from "../routes/publicCampaignRoutes.js";
+import publicJobRoutes from "../routes/publicJobRoutes.js";
+
+const ROUTE_FILES = {
+  "userRoutes.js": userRoutes,
+  "publicUserRoutes.js": publicUserRoutes,
+  "publicCommunityRoutes.js": publicCommunityRoutes,
+  "publicMasjidRoutes.js": publicMasjidRoutes,
+  "publicCampaignRoutes.js": publicCampaignRoutes,
+  "publicJobRoutes.js": publicJobRoutes,
+};
 
 // The fixed section set every new module is seeded with, matching the
 // Developer module spec's own structure exactly. Admins can still add/
@@ -209,6 +286,114 @@ export const search = async (req, res) => {
     ];
 
     res.json({ results });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+function renderTable(headers, rows) {
+  const th = headers.map((h) => `<th style="border:1px solid #ccc;padding:6px 8px;text-align:left;background:#f4f4f4">${h}</th>`).join("");
+  const trs = rows.map((r) => `<tr>${r.map((c) => `<td style="border:1px solid #ccc;padding:6px 8px;">${c}</td>`).join("")}</tr>`).join("");
+  return `<table style="border-collapse:collapse;width:100%;font-size:13px"><thead><tr>${th}</tr></thead><tbody>${trs}</tbody></table>`;
+}
+
+// One row per real column, read straight off the live Sequelize model --
+// name, type, nullability, default, and whether it's the primary key.
+function introspectModel(name) {
+  const Model = MODELS[name];
+  if (!Model) return null;
+  const attrs = Model.rawAttributes;
+  const rows = Object.entries(attrs).map(([field, def]) => [
+    `<code>${field}</code>`,
+    String(def.type),
+    def.primaryKey ? "PK" : def.allowNull === false ? "NOT NULL" : "nullable",
+    def.defaultValue !== undefined ? String(typeof def.defaultValue === "function" ? def.defaultValue() : def.defaultValue) : "&mdash;",
+  ]);
+  return { table: Model.getTableName(), rows };
+}
+
+// One row per real registered route (path + every HTTP method mounted on
+// it), read off the Express Router's own .stack -- the same structure
+// Express itself uses to match incoming requests.
+function introspectRoutes(fileName, only) {
+  const router = ROUTE_FILES[fileName];
+  if (!router) return [];
+  const byPath = new Map();
+  for (const layer of router.stack) {
+    if (!layer.route) continue;
+    const path = layer.route.path;
+    if (only && !only.includes(path)) continue;
+    const methods = Object.keys(layer.route.methods).map((m) => m.toUpperCase());
+    if (!byPath.has(path)) byPath.set(path, new Set());
+    methods.forEach((m) => byPath.get(path).add(m));
+  }
+  return [...byPath.entries()].map(([path, methods]) => [`<code>${[...methods].join(" / ")} ${path}</code>`]);
+}
+
+function buildDbTablesHtml(modelNames) {
+  const sections = modelNames.map((name) => {
+    const info = introspectModel(name);
+    if (!info) return `<p><em>${name} (model not found)</em></p>`;
+    return `<p><strong>${name}</strong> &mdash; table <code>${info.table}</code></p>` + renderTable(["Column", "Type", "Constraint", "Default"], info.rows);
+  });
+  return sections.join("");
+}
+
+function buildApisHtml(routeFiles) {
+  const sections = routeFiles.map(({ file, only }) => {
+    const rows = introspectRoutes(file, only);
+    if (rows.length === 0) return "";
+    return `<p><strong>${file}</strong></p>` + renderTable(["Endpoint"], rows);
+  });
+  return sections.filter(Boolean).join("");
+}
+
+// Regenerates only the Database Tables and APIs sections of every module
+// listed in devDocModuleSources.js, straight from the live models/routes.
+// Narrative sections (Overview, Business Logic, Flow, Security, ...) are
+// never touched here -- no static analysis can write those accurately.
+export const syncDocumentation = async (req, res) => {
+  try {
+    const updated = [];
+    const unchanged = [];
+
+    for (const [moduleKey, source] of Object.entries(MODULE_SOURCES)) {
+      const module = await DevDocModule.findOne({ where: { key: moduleKey } });
+      if (!module) continue;
+
+      const freshDbTables = buildDbTablesHtml(source.models);
+      const freshApis = buildApisHtml(source.routeFiles);
+      const sections = await DevDocSection.findAll({ where: { moduleId: module.id } });
+      const dbTablesSection = sections.find((s) => s.key === "dbTables");
+      const apisSection = sections.find((s) => s.key === "apis");
+
+      let touched = false;
+      if (dbTablesSection && dbTablesSection.bodyHtml !== freshDbTables) {
+        await dbTablesSection.update({ bodyHtml: freshDbTables });
+        touched = true;
+      }
+      if (apisSection && apisSection.bodyHtml !== freshApis) {
+        await apisSection.update({ bodyHtml: freshApis });
+        touched = true;
+      }
+
+      if (touched) {
+        const freshSections = await DevDocSection.findAll({ where: { moduleId: module.id }, order: [["sortOrder", "ASC"]] });
+        const lastVersion = await DevDocVersion.max("versionNumber", { where: { moduleId: module.id } });
+        await DevDocVersion.create({
+          moduleId: module.id,
+          versionNumber: (Number.isFinite(lastVersion) ? lastVersion : 0) + 1,
+          updatedByName: "Sync",
+          changeSummary: "Structural sync: Database Tables / APIs refreshed from source.",
+          snapshotJson: freshSections.map((s) => ({ key: s.key, title: s.title, bodyHtml: s.bodyHtml })),
+        });
+        updated.push(module.title);
+      } else {
+        unchanged.push(module.title);
+      }
+    }
+
+    res.json({ updated, unchanged });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

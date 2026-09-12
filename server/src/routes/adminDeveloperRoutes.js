@@ -11,6 +11,7 @@ import {
   saveSections,
   listVersions,
   search,
+  syncDocumentation,
 } from "../controllers/adminDeveloperController.js";
 
 const router = Router();
@@ -21,6 +22,7 @@ const view = requirePermission("developer", "view");
 const edit = requirePermission("developer", "edit");
 
 router.get("/search", view, search);
+router.post("/sync", edit, logActivity("developer", "edit"), syncDocumentation);
 router.get("/modules", view, listModules);
 router.post("/modules", edit, logActivity("developer", "add"), createModule);
 router.get("/modules/:id", view, getModule);
