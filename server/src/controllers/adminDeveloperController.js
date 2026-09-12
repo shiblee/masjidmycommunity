@@ -53,6 +53,7 @@ import Company from "../models/Company.js";
 import PrayerMaster from "../models/PrayerMaster.js";
 import MasjidPrayerTimeChangeLog from "../models/MasjidPrayerTimeChangeLog.js";
 import SalahLog from "../models/SalahLog.js";
+import UserNotification from "../models/UserNotification.js";
 
 const MODELS = {
   User, UserSession, UserActivityLog, AuthSettings, CommunityActivity, EmailTemplate, EmailLog, EmailSettings,
@@ -61,7 +62,7 @@ const MODELS = {
   MasjidPhoto, MasjidPrayerTimeline, MasjidReview, MasjidCorrectionRequest, GreenTickApplication,
   CampaignBudgetItem, CampaignDocument, CampaignPhoto, CampaignUpdate, Donation,
   JobApplication, JobCategory, EmploymentType, ExperienceLevel, Company,
-  PrayerMaster, MasjidPrayerTimeChangeLog, SalahLog,
+  PrayerMaster, MasjidPrayerTimeChangeLog, SalahLog, UserNotification,
 };
 
 // Every route file "Sync Documentation" is allowed to introspect. Reading
