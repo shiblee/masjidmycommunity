@@ -1,17 +1,14 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import axios from "axios";
+import publicMasjidApi from "../services/publicMasjidApi.js";
 import { Icon } from "../components/Icons.jsx";
 import MicButton from "../components/MicButton.jsx";
-import { API_BASE } from "../config.js";
 import ExploreMasjidsGrid from "./exploreMasjids/ExploreMasjidsGrid.jsx";
 import ExploreMasjidsList from "./exploreMasjids/ExploreMasjidsList.jsx";
 import ExploreMasjidsMap from "./exploreMasjids/ExploreMasjidsMap.jsx";
 import MasjidReviewModal from "./exploreMasjids/MasjidReviewModal.jsx";
 import CategoryFilter from "./exploreMasjids/CategoryFilter.jsx";
 import { useTranslation } from "../i18n/LanguageContext.jsx";
-
-const API = `${API_BASE}/masjids/public`;
 const VIEW_KEYS = [
   { key: "grid", fallback: "Grid", icon: "grid" },
   { key: "list", fallback: "List", icon: "list" },
@@ -65,15 +62,15 @@ function ExploreMasjids() {
   }, [rawQ]);
 
   useEffect(() => {
-    axios.get(`${API}/categories`).then(({ data }) => setCategories(data.categories)).catch(() => {});
+    publicMasjidApi.get("/categories").then(({ data }) => setCategories(data.categories)).catch(() => {});
   }, []);
 
   // Grid/List: paginated fetch, reset to page 1 whenever the filters change.
   useEffect(() => {
     setPage(1);
     setMasjids(null);
-    axios
-      .get(API, { params: { q, category: categoryParam, liked: likedOnly || undefined, page: 1, pageSize: PAGE_SIZE } })
+    publicMasjidApi
+      .get("/", { params: { q, category: categoryParam, liked: likedOnly || undefined, page: 1, pageSize: PAGE_SIZE } })
       .then(({ data }) => { setMasjids(data.masjids); setTotal(data.total); })
       .catch(() => setMasjids([]));
   }, [q, categoryParam, likedOnly]);
@@ -81,8 +78,8 @@ function ExploreMasjids() {
   const loadMore = () => {
     const nextPage = page + 1;
     setLoadingMore(true);
-    axios
-      .get(API, { params: { q, category: categoryParam, liked: likedOnly || undefined, page: nextPage, pageSize: PAGE_SIZE } })
+    publicMasjidApi
+      .get("/", { params: { q, category: categoryParam, liked: likedOnly || undefined, page: nextPage, pageSize: PAGE_SIZE } })
       .then(({ data }) => { setMasjids((prev) => [...(prev || []), ...data.masjids]); setPage(nextPage); })
       .finally(() => setLoadingMore(false));
   };
@@ -91,8 +88,8 @@ function ExploreMasjids() {
   useEffect(() => {
     if (view !== "map") return;
     setMapMasjids(null);
-    axios
-      .get(`${API}/map`, { params: { q, category: categoryParam, liked: likedOnly || undefined } })
+    publicMasjidApi
+      .get("/map", { params: { q, category: categoryParam, liked: likedOnly || undefined } })
       .then(({ data }) => setMapMasjids(data.masjids))
       .catch(() => setMapMasjids([]));
   }, [view, q, categoryParam, likedOnly]);
