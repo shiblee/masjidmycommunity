@@ -4660,9 +4660,10 @@ a.cmt-avatar{ text-decoration:none; }
 .pf-follow-stats button:hover strong{ color:var(--teal-deep); }
 .pf-follow-stats-center{ justify-content:center; margin-top:10px; margin-bottom:2px; }
 
+.pf-profile-header-actions{ align-self:flex-start; margin-left:auto; padding-top:4px; }
 .pf-follow-btn{
-  display:inline-flex; align-items:center; gap:7px; margin-top:14px; padding:9px 20px; border-radius:100px;
-  border:1.5px solid var(--teal-deep); background:var(--teal-deep); color:#fff; font-size:14px; font-weight:700; cursor:pointer; transition:all .15s;
+  display:inline-flex; align-items:center; gap:7px; padding:9px 22px; border-radius:100px;
+  border:1.5px solid var(--teal-deep); background:var(--teal-deep); color:#fff; font-size:14px; font-weight:700; cursor:pointer; transition:all .15s; white-space:nowrap;
 }
 .pf-follow-btn:hover{ background:var(--teal); border-color:var(--teal); }
 .pf-follow-btn.is-following{ background:#fff; color:var(--teal-deep); }
@@ -4784,6 +4785,8 @@ a.cmt-avatar{ text-decoration:none; }
 
 @media (max-width:760px){
   .pf-profile-header{ text-align:center; justify-content:center; }
+  .pf-profile-header-actions{ margin-left:0; width:100%; display:flex; justify-content:center; }
+  .pf-follow-stats{ justify-content:center; }
   .pf-stats-grid{ grid-template-columns:repeat(4,1fr); }
   .pf-pm-header{ justify-content:center; text-align:center; }
   .pf-pm-header-actions{ width:100%; justify-content:center; }

@@ -371,7 +371,8 @@ function Profile() {
                     <strong>{followingCount}</strong> {t("profile.follow.followingCount", "Following")}
                   </button>
                 </div>
-
+              </div>
+              <div className="pf-profile-header-actions">
                 <button
                   type="button"
                   className={`pf-follow-btn${following ? " is-following" : ""}`}
