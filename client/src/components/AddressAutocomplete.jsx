@@ -16,6 +16,9 @@ function AddressAutocomplete({ value, onChange, onResolved, placeholder }) {
   // Set while applying a selection, so the resulting value change doesn't
   // immediately trigger a fresh search for the text we just filled in.
   const skipNextSearch = useRef(false);
+  // Only true once the user has actually typed in this field — keeps an
+  // already-saved address from popping the suggestions list open on load.
+  const userEditedRef = useRef(false);
 
   useEffect(() => {
     function onDocClick(e) {
@@ -30,6 +33,7 @@ function AddressAutocomplete({ value, onChange, onResolved, placeholder }) {
       skipNextSearch.current = false;
       return;
     }
+    if (!userEditedRef.current) return;
     const query = value?.trim() || "";
     if (query.length < MIN_CHARS) {
       setSuggestions([]);
@@ -97,7 +101,10 @@ function AddressAutocomplete({ value, onChange, onResolved, placeholder }) {
     <div className="msj-addr-wrap" ref={wrapRef}>
       <input
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e) => {
+          userEditedRef.current = true;
+          onChange(e.target.value);
+        }}
         onFocus={() => suggestions.length > 0 && setOpen(true)}
         onKeyDown={onKeyDown}
         placeholder={placeholder}
