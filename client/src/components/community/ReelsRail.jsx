@@ -154,7 +154,6 @@ function ReelsRail({ user }) {
               <Icon name="upload" size={14} /> {t("reels.rail.upload", "Upload Reel")}
             </button>
           )}
-          <Link to="/reels" className="cw-side-link">{t("reels.rail.viewAll", "View All")} <span className="btn-arrow">→</span></Link>
         </div>
       </div>
 
