@@ -8,6 +8,7 @@ import {
   update,
   updateStatus,
   updateModeration,
+  hardDelete,
   listApplications,
   updateApplicationStatus,
   downloadApplicantResume,
@@ -23,6 +24,7 @@ router.get("/:id", getOne);
 router.patch("/:id", update);
 router.patch("/:id/status", updateStatus);
 router.patch("/:id/moderation", updateModeration);
+router.delete("/:id", hardDelete);
 
 router.get("/:id/applications", listApplications);
 router.patch("/:id/applications/:appId", updateApplicationStatus);

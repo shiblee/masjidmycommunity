@@ -4,6 +4,7 @@ import { Op } from "sequelize";
 import Job from "../models/Job.js";
 import JobHistory from "../models/JobHistory.js";
 import JobApplication from "../models/JobApplication.js";
+import JobFavorite from "../models/JobFavorite.js";
 import User from "../models/User.js";
 import { generateUniqueSlug } from "../utils/slugify.js";
 import { firstRestrictedField, RESTRICTED_CONTENT_MESSAGE } from "../utils/contentModeration.js";
@@ -185,6 +186,29 @@ export const updateModeration = async (req, res) => {
     await job.save();
     await logJobHistory(job.id, "moderation_changed", moderationStatus === "active" ? "Restored to public view" : "Hidden from public view", "admin", req.user.email);
     res.json({ job });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Genuine hard delete -- activates the "jobs":"delete" permission action
+// already declared in permissionModules.js, which had no implementation at
+// all before this (only the "deleted" status value on updateStatus, which
+// keeps the row). Needed so a user who has ever posted a job can still be
+// hard-deleted (deleteUser() refuses while any Job row references them),
+// mirroring the same real gap already fixed for users/staff/masjids.
+export const hardDelete = async (req, res) => {
+  try {
+    const job = await Job.findByPk(req.params.id);
+    if (!job) return res.status(404).json({ message: "Job not found." });
+
+    await Promise.all([
+      JobApplication.destroy({ where: { jobId: job.id } }),
+      JobFavorite.destroy({ where: { jobId: job.id } }),
+      JobHistory.destroy({ where: { jobId: job.id } }),
+    ]);
+    await job.destroy();
+    res.json({ deleted: true });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

@@ -15,6 +15,9 @@ import MasjidCorrectionRequest from "../models/MasjidCorrectionRequest.js";
 import MasjidView from "../models/MasjidView.js";
 import MasjidImportSource from "../models/MasjidImportSource.js";
 import GreenTickApplication from "../models/GreenTickApplication.js";
+import GreenTickRepresentative from "../models/GreenTickRepresentative.js";
+import GreenTickDocument from "../models/GreenTickDocument.js";
+import GreenTickStatusLog from "../models/GreenTickStatusLog.js";
 import Campaign from "../models/Campaign.js";
 import User from "../models/User.js";
 import { ensureMasjidRegisteredActivity } from "../seed/masjidRegisteredActivityBackfill.js";
@@ -700,6 +703,16 @@ export const hardDelete = async (req, res) => {
         message: "This masjid is associated with one or more campaigns. Remove those first before deleting the masjid.",
         campaignCount,
       });
+    }
+
+    const greenTickApps = await GreenTickApplication.findAll({ where: { masjidId: masjid.id }, attributes: ["id"] });
+    const greenTickAppIds = greenTickApps.map((a) => a.id);
+    if (greenTickAppIds.length) {
+      await Promise.all([
+        GreenTickRepresentative.destroy({ where: { applicationId: greenTickAppIds } }),
+        GreenTickDocument.destroy({ where: { applicationId: greenTickAppIds } }),
+        GreenTickStatusLog.destroy({ where: { applicationId: greenTickAppIds } }),
+      ]);
     }
 
     await Promise.all([

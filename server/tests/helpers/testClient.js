@@ -120,6 +120,7 @@ export async function createApprovedMasjid(owner, overrides = {}) {
   });
   if (patch.status !== 200) throw new Error(`Test masjid field update failed: ${patch.body?.message || patch.status}`);
 
+  const contactIds = {};
   for (const designation of ["Imam", "Mutawalli", "Secretary"]) {
     const contactCreate = await api(`/api/masjids/${masjidId}/contacts`, {
       method: "POST",
@@ -128,6 +129,7 @@ export async function createApprovedMasjid(owner, overrides = {}) {
     });
     if (contactCreate.status !== 201) throw new Error(`Test contact (${designation}) creation failed: ${contactCreate.body?.message}`);
     const contactId = contactCreate.body.contact.id;
+    contactIds[designation] = contactId;
 
     const sendOtp = await api(`/api/masjids/${masjidId}/contacts/${contactId}/send-otp`, { method: "POST", headers: authHeaders });
     if (sendOtp.status !== 200) throw new Error(`Test contact (${designation}) send-otp failed: ${sendOtp.body?.message}`);
@@ -150,5 +152,104 @@ export async function createApprovedMasjid(owner, overrides = {}) {
   const approve = await api(`/api/admin/masjids/${masjidId}/approve`, { method: "POST", headers: { Authorization: `Bearer ${adminToken}` } });
   if (approve.status !== 200) throw new Error(`Test masjid approve failed: ${approve.body?.message}`);
 
-  return { masjidId, name, latitude, longitude };
+  return { masjidId, name, latitude, longitude, contactIds };
+}
+
+function greenTickDocFormData(documentTypeId, representativeId) {
+  const bytes = Buffer.from(TEST_PNG_BASE64, "base64");
+  const fd = new FormData();
+  fd.append("documents", new Blob([bytes], { type: "image/png" }), "devtest-doc.png");
+  fd.append("documentTypeId", String(documentTypeId));
+  if (representativeId) fd.append("representativeId", String(representativeId));
+  fd.append("documentNumber", `DEVTEST-${Date.now()}`);
+  return fd;
+}
+
+// Real Verification Document Type ids seeded on this platform (Admin Panel
+// -> Meta -> Verification Document Types): 1 = Government Photo ID
+// (category "representative"), 8 = Masjid Registration Certificate
+// (category "masjid"), 12 = Property/Land Ownership Document (category
+// "property") -- the three that are currently isRequired:true.
+const GREEN_TICK_DOC_TYPES = { representative: 1, masjid: 8, property: 12 };
+
+// Takes an already-approved masjid (see createApprovedMasjid, whose 3
+// verified office-bearer contacts double as the Green Tick's required
+// representatives) all the way to green_tick_issued -- the only way a
+// masjid can create a Campaign, which gates on isGreenTick. Real pipeline,
+// not a shortcut: adds each contact as a representative, uploads one
+// identity document per representative plus the two required masjid/
+// property documents, submits, then has admin approve every
+// representative's identity + authorization, approve both documents,
+// approve the application, and finally issue the Green Tick.
+export async function issueGreenTick(owner, masjid) {
+  const authHeaders = { Authorization: `Bearer ${owner.token}` };
+  const { token: adminToken } = await adminAuth();
+  const adminHeaders = { Authorization: `Bearer ${adminToken}` };
+
+  const repIds = [];
+  for (const designation of ["Imam", "Mutawalli", "Secretary"]) {
+    const contactPersonId = masjid.contactIds[designation];
+    const addRep = await api(`/api/masjids/${masjid.masjidId}/green-tick/representatives`, {
+      method: "POST",
+      headers: authHeaders,
+      body: { contactPersonId },
+    });
+    if (addRep.status !== 201) throw new Error(`Green Tick representative (${designation}) failed: ${addRep.body?.message}`);
+    const repId = addRep.body.representative.id;
+    repIds.push(repId);
+
+    const doc = await api(`/api/masjids/${masjid.masjidId}/green-tick/documents`, {
+      method: "POST",
+      headers: authHeaders,
+      formData: greenTickDocFormData(GREEN_TICK_DOC_TYPES.representative, repId),
+    });
+    if (doc.status !== 201) throw new Error(`Green Tick identity document (${designation}) failed: ${doc.body?.message}`);
+  }
+
+  const docIds = [];
+  for (const category of ["masjid", "property"]) {
+    const doc = await api(`/api/masjids/${masjid.masjidId}/green-tick/documents`, {
+      method: "POST",
+      headers: authHeaders,
+      formData: greenTickDocFormData(GREEN_TICK_DOC_TYPES[category]),
+    });
+    if (doc.status !== 201) throw new Error(`Green Tick ${category} document failed: ${doc.body?.message}`);
+    docIds.push(doc.body.documents[0].id);
+  }
+
+  const submit = await api(`/api/masjids/${masjid.masjidId}/green-tick/submit`, { method: "POST", headers: authHeaders, body: { confirmed: true } });
+  if (submit.status !== 200) throw new Error(`Green Tick submit failed: ${submit.body?.message}`);
+
+  for (const repId of repIds) {
+    const identity = await api(`/api/admin/masjids/${masjid.masjidId}/green-tick/representatives/${repId}/identity`, {
+      method: "PATCH",
+      headers: adminHeaders,
+      body: { decision: "approved" },
+    });
+    if (identity.status !== 200) throw new Error(`Green Tick identity approval failed: ${identity.body?.message}`);
+
+    const authz = await api(`/api/admin/masjids/${masjid.masjidId}/green-tick/representatives/${repId}/authorization`, {
+      method: "PATCH",
+      headers: adminHeaders,
+      body: { decision: "approved" },
+    });
+    if (authz.status !== 200) throw new Error(`Green Tick authorization approval failed: ${authz.body?.message}`);
+  }
+
+  for (const docId of docIds) {
+    const approveDoc = await api(`/api/admin/masjids/${masjid.masjidId}/green-tick/documents/${docId}`, {
+      method: "PATCH",
+      headers: adminHeaders,
+      body: { decision: "approved" },
+    });
+    if (approveDoc.status !== 200) throw new Error(`Green Tick document approval failed: ${approveDoc.body?.message}`);
+  }
+
+  const approveApp = await api(`/api/admin/masjids/${masjid.masjidId}/green-tick/approve`, { method: "POST", headers: adminHeaders });
+  if (approveApp.status !== 200) throw new Error(`Green Tick application approval failed: ${approveApp.body?.message}`);
+
+  const issue = await api(`/api/admin/masjids/${masjid.masjidId}/green-tick/issue`, { method: "POST", headers: adminHeaders });
+  if (issue.status !== 200) throw new Error(`Green Tick issuance failed: ${issue.body?.message}`);
+
+  return issue.body.application;
 }
