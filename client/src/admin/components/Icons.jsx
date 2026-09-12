@@ -1,6 +1,7 @@
 import React from "react";
 
 const paths = {
+  code: ["M8 6l-6 6 6 6", "M16 6l6 6-6 6"],
   dashboard: ["M4 4h7v7H4z", "M13 4h7v4h-7z", "M13 10h7v10h-7z", "M4 13h7v7H4z"],
   mosque: ["M4 21V11l8-6 8 6v10", "M9 21v-6a3 3 0 016 0v6", "M12 5V2"],
   campaign: ["M3 11l18-7-7 18-3-7-8-4z"],

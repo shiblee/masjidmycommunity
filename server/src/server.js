@@ -48,6 +48,7 @@ import { ensureTranslationDefaults } from "./seed/translationDefaults.js";
 import { ensurePageDefaults } from "./seed/pageDefaults.js";
 import { ensureMetaEntityTranslationDefaults } from "./seed/metaEntityTranslationDefaults.js";
 import { ensureAdminRoleDefaults } from "./seed/adminRoleBackfill.js";
+import { ensureDevDocDefaults } from "./seed/devDocsDefaults.js";
 // import { ensureJobPostedActivities } from "./seed/jobPostedActivityBackfill.js"; // "jobs as community posts" disabled — see below
 import { ensureAllMasjidRegisteredActivities } from "./seed/masjidRegisteredActivityBackfill.js";
 
@@ -95,6 +96,7 @@ connectDB()
       ensureAuthSettings(),
       ensureLanguageDefaults(),
       ensureTranslationDefaults(),
+      ensureDevDocDefaults(),
     ])
   )
   .then(() => ensurePageDefaults())

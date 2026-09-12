@@ -28,6 +28,7 @@ export const PERMISSION_MODULES = [
   { key: "settings", label: "Settings", actions: ["view", "edit"] },
   { key: "support", label: "Support & Help", actions: ["view", "edit"] },
   { key: "testimonials", label: "Testimonials & Stories", actions: ["view", "edit"] },
+  { key: "developer", label: "Developer", actions: ["view", "edit"] },
 ];
 
 export const PERMISSION_MODULE_KEYS = new Set(PERMISSION_MODULES.map((m) => m.key));

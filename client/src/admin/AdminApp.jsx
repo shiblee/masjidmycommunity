@@ -41,6 +41,7 @@ import MasjidCorrectionDetail from "./pages/MasjidCorrectionDetail.jsx";
 import StaffList from "./pages/StaffList.jsx";
 import StaffForm from "./pages/StaffForm.jsx";
 import StaffDetail from "./pages/StaffDetail.jsx";
+import Developer from "./pages/Developer.jsx";
 
 function AdminApp() {
   return (
@@ -100,6 +101,8 @@ function AdminApp() {
         <Route path="staff/:id/:tab" element={<StaffDetail />} />
         <Route path="settings" element={<Navigate to="/admin/settings/profile" replace />} />
         <Route path="settings/:sectionKey" element={<Settings />} />
+        <Route path="developer" element={<Developer />} />
+        <Route path="developer/:moduleKey" element={<Developer />} />
       </Route>
 
       <Route index element={<Navigate to="login" replace />} />
