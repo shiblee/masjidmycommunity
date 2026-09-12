@@ -71,7 +71,7 @@ function Testing() {
   const navigate = useNavigate();
   const [modules, setModules] = useState(null);
   const [runs, setRuns] = useState(null);
-  const [running, setRunning] = useState(false);
+  const [starting, setStarting] = useState(false);
   const [error, setError] = useState("");
 
   const load = () => {
@@ -85,24 +85,44 @@ function Testing() {
 
   useEffect(load, []);
 
+  const latestRun = runs?.[0] || null;
+  const isRunning = latestRun?.overallStatus === "running";
+
+  // The suite has grown past what the infrastructure's own reverse-proxy
+  // timeout allows for one synchronous request/response, so POST /run
+  // returns immediately with a "running" placeholder row (see
+  // adminTestingController.js) and this polls GET /runs every few seconds
+  // until that row updates in place to its final passed/failed/error state.
+  useEffect(() => {
+    if (!isRunning) return;
+    const id = setInterval(() => {
+      adminApi.get("/testing/runs").then(({ data }) => setRuns(data.runs)).catch(() => {});
+    }, 4000);
+    return () => clearInterval(id);
+  }, [isRunning]);
+
   const runTests = async () => {
-    setRunning(true);
+    setStarting(true);
     setError("");
     try {
       const { data } = await adminApi.post("/testing/run");
       setRuns((rs) => [data.run, ...(rs || [])]);
     } catch (err) {
-      setError(err.response?.data?.message || "Test run failed.");
+      setError(err.response?.data?.message || "Couldn't start the test run.");
     } finally {
-      setRunning(false);
+      setStarting(false);
     }
   };
 
-  const latestRun = runs?.[0] || null;
+  // While a run is in progress (or if the latest one errored), keep showing
+  // the last real completed results in the module list/tabs below instead
+  // of blanking them out to "no tests" -- the "Current Status" panel above
+  // is what shows the running/error state itself.
+  const latestCompletedRun = useMemo(() => (runs || []).find((r) => r.overallStatus === "passed" || r.overallStatus === "failed") || null, [runs]);
   const resultByModuleKey = useMemo(() => {
-    if (!latestRun) return new Map();
-    return new Map(latestRun.resultsJson.filter((r) => r.moduleKey).map((r) => [r.moduleKey, r]));
-  }, [latestRun]);
+    if (!latestCompletedRun?.resultsJson) return new Map();
+    return new Map(latestCompletedRun.resultsJson.filter((r) => r.moduleKey).map((r) => [r.moduleKey, r]));
+  }, [latestCompletedRun]);
 
   const categorized = useMemo(() => {
     if (!modules) return [];
@@ -146,8 +166,8 @@ function Testing() {
           <h1>Automated Testing</h1>
           <p>Real test runs against the live API — see server/tests/. Each run makes real requests and cleans up after itself; results below are exactly what ran, nothing simulated.</p>
         </div>
-        <button className="amx-btn amx-btn-primary" onClick={runTests} disabled={running}>
-          <Icon name="rotate" size={15} /> {running ? "Running… (up to ~2 min)" : "Run Tests"}
+        <button className="amx-btn amx-btn-primary" onClick={runTests} disabled={starting || isRunning}>
+          <Icon name="rotate" size={15} /> {isRunning ? "Running…" : starting ? "Starting…" : "Run Tests"}
         </button>
       </div>
 
@@ -155,18 +175,28 @@ function Testing() {
         <div className="amx-card amx-panel">
           <h3 style={{ marginBottom: 14 }}>Current Status</h3>
           {latestRun ? (
-            <>
-              <div className="amx-stat-tiles" style={{ marginBottom: 14 }}>
-                <div className="amx-stat-tile"><strong>{latestRun.totalTests}</strong><span>Total Tests</span></div>
-                <div className="amx-stat-tile"><strong>{latestRun.passedTests}</strong><span>Passed</span></div>
-                <div className="amx-stat-tile"><strong>{latestRun.failedTests}</strong><span>Failed</span></div>
-                <div className="amx-stat-tile"><strong>{testedCount}/{modules.length}</strong><span>Modules Covered</span></div>
-              </div>
-              <StatusBadge status={latestRun.overallStatus === "passed" ? "active" : "rejected"} label={latestRun.overallStatus === "passed" ? "All Passing" : "Failures Found"} />
-              <span className="amx-panel-sub" style={{ marginLeft: 10 }}>
-                Last run {formatDate(latestRun.createdAt)} &middot; took {(latestRun.durationMs / 1000).toFixed(1)}s &middot; by {latestRun.triggeredByName || "Unknown"}
-              </span>
-            </>
+            isRunning ? (
+              <p className="amx-panel-sub">
+                <StatusBadge status="neutral" label="Running" /> A real <code>vitest run</code> is executing on the server right now (started by {latestRun.triggeredByName || "someone"} {formatDate(latestRun.createdAt)}) — this page checks back every few seconds.
+              </p>
+            ) : latestRun.overallStatus === "error" ? (
+              <p className="amx-form-error" style={{ marginBottom: 0 }}>
+                <Icon name="info" size={16} /> {latestRun.errorMessage || "The test run didn't complete."}
+              </p>
+            ) : (
+              <>
+                <div className="amx-stat-tiles" style={{ marginBottom: 14 }}>
+                  <div className="amx-stat-tile"><strong>{latestRun.totalTests}</strong><span>Total Tests</span></div>
+                  <div className="amx-stat-tile"><strong>{latestRun.passedTests}</strong><span>Passed</span></div>
+                  <div className="amx-stat-tile"><strong>{latestRun.failedTests}</strong><span>Failed</span></div>
+                  <div className="amx-stat-tile"><strong>{testedCount}/{modules.length}</strong><span>Modules Covered</span></div>
+                </div>
+                <StatusBadge status={latestRun.overallStatus === "passed" ? "active" : "rejected"} label={latestRun.overallStatus === "passed" ? "All Passing" : "Failures Found"} />
+                <span className="amx-panel-sub" style={{ marginLeft: 10 }}>
+                  Last run {formatDate(latestRun.createdAt)} &middot; took {(latestRun.durationMs / 1000).toFixed(1)}s &middot; by {latestRun.triggeredByName || "Unknown"}
+                </span>
+              </>
+            )
           ) : (
             <p className="amx-panel-sub">No test runs yet — click "Run Tests" to check the live application right now.</p>
           )}
@@ -181,8 +211,13 @@ function Testing() {
               {runs.slice(0, 8).map((r) => (
                 <li key={r.id} className="amx-health-history-item">
                   <span>{formatDate(r.createdAt)}</span>
-                  <span className="amx-panel-sub">{r.passedTests}/{r.totalTests} passed</span>
-                  <StatusBadge status={r.overallStatus === "passed" ? "active" : "rejected"} label={r.overallStatus === "passed" ? "Passed" : "Failed"} />
+                  <span className="amx-panel-sub">
+                    {r.overallStatus === "running" ? "—" : r.overallStatus === "error" ? "—" : `${r.passedTests}/${r.totalTests} passed`}
+                  </span>
+                  <StatusBadge
+                    status={r.overallStatus === "passed" ? "active" : r.overallStatus === "running" ? "neutral" : "rejected"}
+                    label={r.overallStatus === "passed" ? "Passed" : r.overallStatus === "running" ? "Running" : r.overallStatus === "error" ? "Error" : "Failed"}
+                  />
                 </li>
               ))}
             </ul>

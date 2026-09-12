@@ -22,13 +22,12 @@ function moduleKeyForTestFile(absolutePath) {
   return FILE_TO_MODULE_KEY[relative] || null;
 }
 
-// Actually runs `vitest run` as a real child process -- not a simulated or
-// cached result. Takes up to two minutes: every test in this suite makes
-// real network calls to the live API (see tests/helpers/testClient.js).
-export const runTests = async (req, res) => {
-  const start = Date.now();
+// The actual `vitest run` execution -- runs fully detached from the HTTP
+// request that triggered it (see runTests below). Always resolves; never
+// throws, since there's no request left listening for a rejection by the
+// time this settles.
+async function executeAndRecord(runId, start) {
   const outputFile = path.join(os.tmpdir(), `vitest-results-${Date.now()}-${Math.random().toString(36).slice(2)}.json`);
-
   try {
     // vitest exits non-zero whenever any test fails -- that's an expected,
     // informative outcome to report, not a failure to run the suite at
@@ -37,14 +36,18 @@ export const runTests = async (req, res) => {
     // whether it left behind a results file, not by the exit code.
     await execFileAsync("npx", ["vitest", "run", "--reporter=json", `--outputFile=${outputFile}`], {
       cwd: SERVER_ROOT,
-      timeout: 120000,
+      timeout: 300000,
       maxBuffer: 20 * 1024 * 1024,
     }).catch(() => {});
 
     const raw = await readFile(outputFile, "utf8").catch(() => null);
     await unlink(outputFile).catch(() => {});
     if (!raw) {
-      return res.status(500).json({ message: "The test run didn't produce a result file -- it may have timed out or crashed before finishing." });
+      await TestRun.update(
+        { overallStatus: "error", errorMessage: "The test run didn't produce a result file -- it may have timed out or crashed before finishing.", durationMs: Date.now() - start },
+        { where: { id: runId } }
+      );
+      return;
     }
 
     const report = JSON.parse(raw);
@@ -73,19 +76,39 @@ export const runTests = async (req, res) => {
     }
 
     const overallStatus = report.numFailedTests > 0 ? "failed" : "passed";
-    const run = await TestRun.create({
-      overallStatus,
-      totalTests: report.numTotalTests,
-      passedTests: report.numPassedTests,
-      failedTests: report.numFailedTests,
-      resultsJson: byModule,
-      durationMs: Date.now() - start,
-      triggeredByName: req.user.name || req.user.email,
-    });
-
-    res.json({ run });
+    await TestRun.update(
+      {
+        overallStatus,
+        totalTests: report.numTotalTests,
+        passedTests: report.numPassedTests,
+        failedTests: report.numFailedTests,
+        resultsJson: byModule,
+        durationMs: Date.now() - start,
+      },
+      { where: { id: runId } }
+    );
   } catch (error) {
     await unlink(outputFile).catch(() => {});
+    await TestRun.update({ overallStatus: "error", errorMessage: error.message, durationMs: Date.now() - start }, { where: { id: runId } }).catch(() => {});
+  }
+}
+
+// Starts a real `vitest run` child process and returns immediately with a
+// "running" placeholder row -- doesn't wait for the suite to finish. The
+// suite now takes long enough (100+ real network-calling tests) that a
+// synchronous response regularly outlives the infrastructure's own ~60s
+// reverse-proxy timeout in front of this app, which is shorter than and
+// independent of this handler's own (much larger) internal budget -- no
+// amount of raising a timeout inside this process fixes a timeout enforced
+// in front of it. The client polls GET /testing/runs and shows this row
+// updating in place once it's done (see listTestRuns below).
+export const runTests = async (req, res) => {
+  const start = Date.now();
+  try {
+    const run = await TestRun.create({ overallStatus: "running", triggeredByName: req.user.name || req.user.email });
+    executeAndRecord(run.id, start);
+    res.status(202).json({ run });
+  } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
