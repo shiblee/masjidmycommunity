@@ -50,6 +50,9 @@ import JobCategory from "../models/JobCategory.js";
 import EmploymentType from "../models/EmploymentType.js";
 import ExperienceLevel from "../models/ExperienceLevel.js";
 import Company from "../models/Company.js";
+import PrayerMaster from "../models/PrayerMaster.js";
+import MasjidPrayerTimeChangeLog from "../models/MasjidPrayerTimeChangeLog.js";
+import SalahLog from "../models/SalahLog.js";
 
 const MODELS = {
   User, UserSession, UserActivityLog, AuthSettings, CommunityActivity, EmailTemplate, EmailLog, EmailSettings,
@@ -58,6 +61,7 @@ const MODELS = {
   MasjidPhoto, MasjidPrayerTimeline, MasjidReview, MasjidCorrectionRequest, GreenTickApplication,
   CampaignBudgetItem, CampaignDocument, CampaignPhoto, CampaignUpdate, Donation,
   JobApplication, JobCategory, EmploymentType, ExperienceLevel, Company,
+  PrayerMaster, MasjidPrayerTimeChangeLog, SalahLog,
 };
 
 // Every route file "Sync Documentation" is allowed to introspect. Reading
@@ -70,6 +74,8 @@ import publicCommunityRoutes from "../routes/publicCommunityRoutes.js";
 import publicMasjidRoutes from "../routes/publicMasjidRoutes.js";
 import publicCampaignRoutes from "../routes/publicCampaignRoutes.js";
 import publicJobRoutes from "../routes/publicJobRoutes.js";
+import masjidRoutes from "../routes/masjidRoutes.js";
+import adminPrayerRoutes from "../routes/adminPrayerRoutes.js";
 
 const ROUTE_FILES = {
   "userRoutes.js": userRoutes,
@@ -78,6 +84,8 @@ const ROUTE_FILES = {
   "publicMasjidRoutes.js": publicMasjidRoutes,
   "publicCampaignRoutes.js": publicCampaignRoutes,
   "publicJobRoutes.js": publicJobRoutes,
+  "masjidRoutes.js": masjidRoutes,
+  "adminPrayerRoutes.js": adminPrayerRoutes,
 };
 
 // The fixed section set every new module is seeded with, matching the
