@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { api, registerAndVerify, deleteTestUser } from "../helpers/testClient.js";
+import { api, adminAuth, registerAndVerify, deleteTestUser } from "../helpers/testClient.js";
 
 // A minimal fake "video" upload -- same tiny PNG bytes used elsewhere in
 // this suite, just declared with a video mimetype. getVideoDuration() runs
@@ -87,9 +87,76 @@ describe("Reels", () => {
     task.meta.detail = "Voting and commenting on a reel use the exact same /api/community/activities/:id/vote and /comments endpoints as a post -- Reels have no vote/comment model of their own, they reuse CommunityActivityVote/Comment via the shared activityId.";
   });
 
-  it("there is no update endpoint for a reel -- only creation and admin removal exist", async ({ task }) => {
+  it("there is no update endpoint for a reel -- only creation and deletion exist", async ({ task }) => {
     const { status } = await api(`/api/community/reels/${reelId}`, { method: "PATCH", headers: { Authorization: `Bearer ${user.token}` }, body: { body: "trying to edit" } });
     expect(status).toBe(404);
-    task.meta.detail = "PATCH /api/community/reels/:id -> 404 (route doesn't exist). Unlike a post, a reel can't be edited by its owner at all -- only removed, and only by an admin via DELETE /api/admin/community/:id.";
+    task.meta.detail = "PATCH /api/community/reels/:id -> 404 (route doesn't exist). Unlike a post, a reel can't be edited by its owner at all -- only deleted (DELETE /api/community/reels/:id, with a required reason) or removed outright by an admin (DELETE /api/admin/community/:id).";
+  });
+
+  it("rejects a non-owner deleting someone else's reel", async ({ task }) => {
+    const other = await registerAndVerify({ fullName: "DevTest ReelsOther" });
+    const { status } = await api(`/api/community/reels/${reelId}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${other.token}` },
+      body: { reason: "Wrong video" },
+    });
+    expect(status).toBe(403);
+    await deleteTestUser(other.userId);
+    task.meta.detail = "DELETE /api/community/reels/:id from a different user's token -> 403.";
+  });
+
+  it("rejects deleting a reel with no reason, or an invalid one", async ({ task }) => {
+    const noReason = await api(`/api/community/reels/${reelId}`, { method: "DELETE", headers: { Authorization: `Bearer ${user.token}` }, body: {} });
+    expect(noReason.status).toBe(400);
+
+    const badReason = await api(`/api/community/reels/${reelId}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${user.token}` },
+      body: { reason: "DevTest-Nonexistent-Reason" },
+    });
+    expect(badReason.status).toBe(400);
+    task.meta.detail = "DELETE /api/community/reels/:id with no reason, or one that isn't a real active ReelDeletionReason -> 400 both times -- unlike Contact Us, there's no silent fallback here.";
+  });
+
+  it("requires a comment when the reason is \"Other\"", async ({ task }) => {
+    const { status, body } = await api(`/api/community/reels/${reelId}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${user.token}` },
+      body: { reason: "Other" },
+    });
+    expect(status).toBe(400);
+    expect(body.message).toMatch(/describe/i);
+    task.meta.detail = "DELETE .../reels/:id with reason:\"Other\" and no comment -> 400, mirroring Masjid's own delete-with-reason rule exactly.";
+  });
+
+  it("deletes the reel with a real reason -- it disappears from the public feed but stays on record for admins", async ({ task }) => {
+    const del = await api(`/api/community/reels/${reelId}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${user.token}` },
+      body: { reason: "Wrong video", comment: "" },
+    });
+    expect(del.status).toBe(200);
+
+    const list = await api("/api/community/reels?limit=50");
+    expect(list.body.reels.some((a) => a.id === reelId)).toBe(false);
+
+    const { token: adminToken } = await adminAuth();
+    const deletedList = await api("/api/admin/community/deleted-reels?pageSize=50", { headers: { Authorization: `Bearer ${adminToken}` } });
+    const found = deletedList.body.reels.find((r) => r.id === reelId);
+    expect(found).toBeTruthy();
+    expect(found.deletionReason).toBe("Wrong video");
+    expect(found.author.id).toBe(user.userId);
+    task.meta.detail = "DELETE .../reels/:id -> 200, a soft delete (status:\"deleted\") -- gone from GET /api/community/reels immediately, but listed on GET /api/admin/community/deleted-reels with the real reason and author, not hard-removed the way an admin's own DELETE /api/admin/community/:id is.";
+  });
+
+  it("rejects deleting a reel that's already deleted", async ({ task }) => {
+    const { status, body } = await api(`/api/community/reels/${reelId}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${user.token}` },
+      body: { reason: "Wrong video" },
+    });
+    expect(status).toBe(400);
+    expect(body.message).toMatch(/already been deleted/i);
+    task.meta.detail = "A second DELETE on an already-deleted reel -> 400.";
   });
 });
