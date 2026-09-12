@@ -297,6 +297,17 @@ function renderTable(headers, rows) {
   return `<table style="border-collapse:collapse;width:100%;font-size:13px"><thead><tr>${th}</tr></thead><tbody>${trs}</tbody></table>`;
 }
 
+// Sequelize DataType instances aren't safely String()-able outside a live
+// dialect context -- ENUM's own toString() reaches for a dialect-bound
+// escape() function that's never set up on a raw rawAttributes read, and
+// throws. .key (a plain string like "STRING"/"ENUM"/"INTEGER") is always
+// safe; ENUM additionally exposes its allowed values via .values.
+function typeLabel(type) {
+  if (!type) return "unknown";
+  if (type.key === "ENUM" && Array.isArray(type.values)) return `ENUM(${type.values.join(", ")})`;
+  return type.key || "unknown";
+}
+
 // One row per real column, read straight off the live Sequelize model --
 // name, type, nullability, default, and whether it's the primary key.
 function introspectModel(name) {
@@ -305,7 +316,7 @@ function introspectModel(name) {
   const attrs = Model.rawAttributes;
   const rows = Object.entries(attrs).map(([field, def]) => [
     `<code>${field}</code>`,
-    String(def.type),
+    typeLabel(def.type),
     def.primaryKey ? "PK" : def.allowNull === false ? "NOT NULL" : "nullable",
     def.defaultValue !== undefined ? String(typeof def.defaultValue === "function" ? def.defaultValue() : def.defaultValue) : "&mdash;",
   ]);
