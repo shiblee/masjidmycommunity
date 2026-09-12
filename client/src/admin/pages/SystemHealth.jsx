@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import Icon from "../components/Icons.jsx";
 import StatusBadge from "../components/StatusBadge.jsx";
 import adminApi from "../services/adminApi.js";
-import { formatDate } from "../../utils/formatDateTime.js";
+import { formatDateTime } from "../../utils/formatDateTime.js";
 
 // A real on-demand smoke test, not a simulated dashboard: "Run Health
 // Check" makes actual requests to this app's own public API endpoints,
@@ -122,12 +122,12 @@ function SystemHealth() {
           <div className="amx-card amx-panel">
             <div className="amx-panel-head">
               <h3>
-                {selectedRun.id === runs[0].id ? "Latest Run" : `Run from ${formatDate(selectedRun.createdAt)}`}
+                {selectedRun.id === runs[0].id ? "Latest Run" : `Run from ${formatDateTime(selectedRun.createdAt)}`}
               </h3>
               <StatusBadge {...(OVERALL_BADGE[selectedRun.overallStatus] || OVERALL_BADGE.critical)} />
             </div>
             <p className="amx-panel-sub">
-              {formatDate(selectedRun.createdAt)} &middot; took {selectedRun.durationMs}ms &middot; triggered by {selectedRun.triggeredByName || "Unknown"}
+              {formatDateTime(selectedRun.createdAt)} &middot; took {selectedRun.durationMs}ms &middot; triggered by {selectedRun.triggeredByName || "Unknown"}
             </p>
             <CheckList checks={selectedRun.checksJson} />
           </div>
@@ -144,7 +144,7 @@ function SystemHealth() {
                       onClick={() => setSelectedRunId(r.id)}
                       className={`amx-health-history-item${r.id === selectedRun.id ? " active" : ""}`}
                     >
-                      <span>{formatDate(r.createdAt)}</span>
+                      <span>{formatDateTime(r.createdAt)}</span>
                       <StatusBadge status={badge.status} label={badge.label} />
                     </button>
                   </li>
