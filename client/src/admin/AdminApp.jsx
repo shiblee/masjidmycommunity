@@ -42,6 +42,7 @@ import StaffList from "./pages/StaffList.jsx";
 import StaffForm from "./pages/StaffForm.jsx";
 import StaffDetail from "./pages/StaffDetail.jsx";
 import Developer from "./pages/Developer.jsx";
+import SystemHealth from "./pages/SystemHealth.jsx";
 
 function AdminApp() {
   return (
@@ -103,6 +104,7 @@ function AdminApp() {
         <Route path="settings/:sectionKey" element={<Settings />} />
         <Route path="developer" element={<Developer />} />
         <Route path="developer/:moduleKey" element={<Developer />} />
+        <Route path="system-health" element={<SystemHealth />} />
       </Route>
 
       <Route index element={<Navigate to="login" replace />} />

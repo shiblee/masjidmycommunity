@@ -87,7 +87,14 @@ const NAV_ITEMS = [
   { to: "/admin/translations", label: "Translations", icon: "content", moduleKey: "translations" },
   { to: "/admin/notifications", label: "Notifications", icon: "bell", moduleKey: "notifications" },
   { to: "/admin/settings", label: "Settings", icon: "settings", moduleKey: "settings" },
-  { to: "/admin/developer", label: "Developer", icon: "code", moduleKey: "developer" },
+  {
+    label: "Developer",
+    icon: "code",
+    children: [
+      { to: "/admin/developer", label: "Documentation", icon: "code", moduleKey: "developer" },
+      { to: "/admin/system-health", label: "System Health", icon: "activity", moduleKey: "developer" },
+    ],
+  },
 ];
 
 // Flat (path, moduleKey) pairs derived from NAV_ITEMS, longest path first, so
