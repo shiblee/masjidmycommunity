@@ -13,4 +13,11 @@ export const TEST_MODULE_FILES = {
   "prayer-times": "tests/masjid/prayerTimes.test.js",
   "campaigns-fundraising": "tests/campaigns/campaigns.test.js",
   "jobs": "tests/jobs/jobs.test.js",
+  "community-wall": "tests/community/communityWall.test.js",
+  "posts": "tests/community/posts.test.js",
+  "comments-replies": "tests/community/comments.test.js",
+  "likes-engagement": "tests/community/likes.test.js",
+  "reels": "tests/community/reels.test.js",
+  "registered-users-directory": "tests/community/directory.test.js",
+  "notifications": "tests/community/notifications.test.js",
 };
