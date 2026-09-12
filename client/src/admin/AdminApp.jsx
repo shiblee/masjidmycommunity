@@ -8,6 +8,7 @@ import Dashboard from "./pages/Dashboard.jsx";
 import Masjids from "./pages/Masjids.jsx";
 import MasjidReview from "./pages/MasjidReview.jsx";
 import CommunityWall from "./pages/CommunityWall.jsx";
+import DeletedReels from "./pages/DeletedReels.jsx";
 import Campaigns from "./pages/Campaigns.jsx";
 import CampaignReview from "./pages/CampaignReview.jsx";
 import Jobs from "./pages/Jobs.jsx";
@@ -62,6 +63,7 @@ function AdminApp() {
         <Route path="masjids/:id" element={<MasjidReview />} />
         <Route path="masjids/:id/:tab" element={<MasjidReview />} />
         <Route path="community-wall" element={<CommunityWall />} />
+        <Route path="deleted-reels" element={<DeletedReels />} />
         <Route path="campaigns" element={<Campaigns />} />
         <Route path="campaigns/:id" element={<CampaignReview />} />
         <Route path="campaigns/:id/:tab" element={<CampaignReview />} />

@@ -9,13 +9,15 @@ import MediaThumb from "../components/MediaThumb.jsx";
 import PostBodyText from "../components/PostBodyText.jsx";
 import CommentSection from "../components/CommentSection.jsx";
 import ReportModal from "../components/ReportModal.jsx";
+import ReelDeleteFlow from "../components/community/ReelDeleteFlow.jsx";
 import { Icon } from "../components/Icons.jsx";
 import { useTranslation } from "../i18n/LanguageContext.jsx";
 
 const PAGE_SIZE = 10;
 
-function ReelSlide({ post, user, navigate, onVote, onOpenComments, onReport, muted, onToggleMute }) {
+function ReelSlide({ post, user, navigate, onVote, onOpenComments, onReport, onDelete, muted, onToggleMute }) {
   const { t } = useTranslation();
+  const isOwner = !!user && user.id === post.relatedUserId;
   const vote = (value) => {
     if (!user) { navigate("/auth"); return; }
     onVote(post.activityId, value);
@@ -66,14 +68,25 @@ function ReelSlide({ post, user, navigate, onVote, onOpenComments, onReport, mut
             <ShareButton post={post} />
           </span>
         </div>
-        <button
-          type="button"
-          className="reel-action-btn"
-          onClick={() => { if (!user) { navigate("/auth"); return; } onReport(post); }}
-          aria-label={t("reels.viewer.report", "Report")}
-        >
-          <span className="reel-action-icon"><Icon name="flag" size={20} /></span>
-        </button>
+        {isOwner ? (
+          <button
+            type="button"
+            className="reel-action-btn"
+            onClick={() => onDelete(post.activityId)}
+            aria-label={t("reels.viewer.delete", "Delete")}
+          >
+            <span className="reel-action-icon"><Icon name="trash" size={20} /></span>
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="reel-action-btn"
+            onClick={() => { if (!user) { navigate("/auth"); return; } onReport(post); }}
+            aria-label={t("reels.viewer.report", "Report")}
+          >
+            <span className="reel-action-icon"><Icon name="flag" size={20} /></span>
+          </button>
+        )}
       </div>
     </div>
   );
@@ -101,6 +114,8 @@ function Reels() {
   const [reportBusy, setReportBusy] = useState(false);
   const [reportError, setReportError] = useState("");
   const [reportSuccess, setReportSuccess] = useState(false);
+
+  const [deletingReelId, setDeletingReelId] = useState(null);
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -177,6 +192,10 @@ function Reels() {
 
   const closeReportModal = () => { setReportTarget(null); setReportError(""); setReportSuccess(false); };
 
+  const onReelDeleted = (activityId) => {
+    setReels((list) => list.filter((a) => a.activityId !== activityId));
+  };
+
   return (
     <div className="reel-viewer">
       <button type="button" className="reel-viewer-close" onClick={() => navigate(-1)} aria-label={t("reels.viewer.close", "Close")}>
@@ -202,6 +221,7 @@ function Reels() {
               onVote={castVote}
               onOpenComments={setCommentsFor}
               onReport={setReportTarget}
+              onDelete={setDeletingReelId}
               muted={muted}
               onToggleMute={() => setMuted((m) => !m)}
             />
@@ -239,6 +259,14 @@ function Reels() {
           success={reportSuccess}
           onCancel={closeReportModal}
           onSubmit={submitReport}
+        />
+      )}
+
+      {deletingReelId && (
+        <ReelDeleteFlow
+          activityId={deletingReelId}
+          onClose={() => setDeletingReelId(null)}
+          onDeleted={onReelDeleted}
         />
       )}
     </div>

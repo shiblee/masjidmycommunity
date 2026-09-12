@@ -12,6 +12,7 @@ import ConcernTypePanel from "./meta/ConcernTypePanel.jsx";
 import ContactTopicPanel from "./meta/ContactTopicPanel.jsx";
 import BankPanel from "./meta/BankPanel.jsx";
 import DeletionReasonPanel from "./meta/DeletionReasonPanel.jsx";
+import ReelDeletionReasonPanel from "./meta/ReelDeletionReasonPanel.jsx";
 import ReportReasonPanel from "./meta/ReportReasonPanel.jsx";
 import SkillPanel from "./meta/SkillPanel.jsx";
 import HobbyPanel from "./meta/HobbyPanel.jsx";
@@ -46,6 +47,7 @@ const META_ENTITIES = [
   { key: "contact-topic", label: META_ENTITY_LABELS["contact-topic"], icon: "mail", Component: ContactTopicPanel, path: "contact-topics", countKey: "topics" },
   { key: "bank", label: META_ENTITY_LABELS.bank, icon: "wallet", Component: BankPanel, path: "banks", countKey: "banks" },
   { key: "deletion-reason", label: META_ENTITY_LABELS["deletion-reason"], icon: "trash", Component: DeletionReasonPanel, path: "deletion-reasons", countKey: "reasons" },
+  { key: "reel-deletion-reason", label: META_ENTITY_LABELS["reel-deletion-reason"], icon: "camera", Component: ReelDeletionReasonPanel, path: "reel-deletion-reasons", countKey: "reasons" },
   { key: "report-reason", label: META_ENTITY_LABELS["report-reason"], icon: "flag", Component: ReportReasonPanel, path: "report-reasons", countKey: "reasons" },
   { key: "skill", label: META_ENTITY_LABELS.skill, icon: "target", Component: SkillPanel, path: "skills", countKey: "skills" },
   { key: "hobby", label: META_ENTITY_LABELS.hobby, icon: "layers", Component: HobbyPanel, path: "hobbies", countKey: "hobbies" },

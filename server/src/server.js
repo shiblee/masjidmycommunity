@@ -39,6 +39,7 @@ import { ensureContactTopicDefaults } from "./seed/contactTopicDefaults.js";
 import { ensureFaqDefaults } from "./seed/faqDefaults.js";
 import { ensureBankDefaults } from "./seed/bankDefaults.js";
 import { ensureDeletionReasonDefaults } from "./seed/deletionReasonDefaults.js";
+import { ensureReelDeletionReasonDefaults } from "./seed/reelDeletionReasonDefaults.js";
 import { ensureReportReasonDefaults } from "./seed/reportReasonDefaults.js";
 import { ensureModerationSettings } from "./seed/moderationSettingsDefaults.js";
 import { ensureContentSettings } from "./seed/contentSettingsDefaults.js";
@@ -90,6 +91,7 @@ connectDB()
       ensureFaqDefaults(),
       ensureBankDefaults(),
       ensureDeletionReasonDefaults(),
+      ensureReelDeletionReasonDefaults(),
       ensureReportReasonDefaults(),
       ensureModerationSettings(),
       ensureContentSettings(),

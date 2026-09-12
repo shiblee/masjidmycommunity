@@ -49,7 +49,13 @@ const CommunityActivity = sequelize.define(
     metadata: { type: DataTypes.JSON, allowNull: true },
 
     status: {
-      type: DataTypes.ENUM("published", "pending_review", "hidden"),
+      // "deleted" is only ever set by a user deleting their own Reel (see
+      // deleteReel in publicCommunityController.js) -- a soft delete, not
+      // the hard deleteActivityCascade() used elsewhere, specifically so it
+      // stays visible to admins on the Deleted Reels page. Distinct from
+      // "hidden" (an admin moderation action) on purpose: the two have
+      // different actors and different reasons.
+      type: DataTypes.ENUM("published", "pending_review", "hidden", "deleted"),
       allowNull: false,
       defaultValue: "published",
     },
@@ -59,6 +65,15 @@ const CommunityActivity = sequelize.define(
     // Community-report moderation, for activity posts with no masjid/campaign
     // to attach the report to instead (e.g. a new-member post).
     reportCount: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+
+    // Set only when status becomes "deleted" -- the ReelDeletionReason name
+    // the author picked (kept as a plain string, same "name referenced
+    // directly, not as an FK" pattern as Concern.concernType), an optional
+    // free-text comment (required by the client when reason === "Other"),
+    // and when it happened.
+    deletionReason: { type: DataTypes.STRING, allowNull: true },
+    deletionComment: { type: DataTypes.TEXT, allowNull: true },
+    deletedAt: { type: DataTypes.DATE, allowNull: true },
   },
   {
     tableName: "community_activities",

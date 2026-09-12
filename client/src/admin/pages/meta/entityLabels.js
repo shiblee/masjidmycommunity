@@ -15,6 +15,7 @@ export const META_ENTITY_LABELS = {
   "contact-topic": "Contact Topics",
   bank: "Banks",
   "deletion-reason": "Masjid Deletion Reasons",
+  "reel-deletion-reason": "Reel Deletion Reasons",
   "report-reason": "Report Post Reasons",
   skill: "Skills",
   hobby: "Hobbies",

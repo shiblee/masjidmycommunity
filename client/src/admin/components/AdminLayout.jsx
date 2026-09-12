@@ -60,6 +60,7 @@ const NAV_ITEMS = [
     icon: "megaphone",
     children: [
       { to: "/admin/community-wall", label: "Community Wall", icon: "megaphone", moduleKey: "communityWall" },
+      { to: "/admin/deleted-reels", label: "Deleted Reels", icon: "trash", moduleKey: "communityWall" },
       { to: "/admin/moderation", label: "Reported Content", icon: "flag", moduleKey: "moderation" },
     ],
   },

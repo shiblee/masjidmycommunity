@@ -21,6 +21,7 @@ import { checkRestrictedWords, RESTRICTED_CONTENT_MESSAGE } from "../utils/conte
 import { generateVideoThumbnail } from "../utils/videoThumbnail.js";
 import { getVideoDuration } from "../utils/videoDuration.js";
 import { searchGifs, searchStickers, isGifSearchConfigured } from "../services/gifService.js";
+import ReelDeletionReason from "../models/ReelDeletionReason.js";
 
 // The only place a comment's mediaUrl is ever produced is our own GIF/
 // sticker search responses below, so a create request is trusted only if
@@ -967,6 +968,51 @@ export const deletePost = async (req, res) => {
     if (activity.relatedUserId !== req.user.id) return res.status(403).json({ message: "You can only delete your own posts." });
 
     await deleteActivityCascade(activity);
+    res.json({ deleted: true });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const listReelDeletionReasons = async (req, res) => {
+  try {
+    const reasons = await ReelDeletionReason.findAll({
+      where: { isActive: true },
+      order: [["sortOrder", "ASC"]],
+      attributes: ["id", "name"],
+    });
+    res.json({ reasons });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// A deliberate soft delete, unlike deletePost()'s real cascade -- the
+// author picks a reason (mirrors Masjid.deleteMasjid's own pattern exactly)
+// and the Reel disappears from every public listing (listReels filters on
+// status:"published") while staying on record for the admin-only Deleted
+// Reels page. Comments/votes/reports on it are left untouched rather than
+// destroyed, since this isn't a removal, just an author-initiated retraction.
+export const deleteReel = async (req, res) => {
+  try {
+    const activity = await CommunityActivity.findOne({ where: { id: req.params.id, type: "reel" } });
+    if (!activity) return res.status(404).json({ message: "Reel not found." });
+    if (activity.relatedUserId !== req.user.id) return res.status(403).json({ message: "You can only delete your own Reels." });
+    if (activity.status === "deleted") return res.status(400).json({ message: "This Reel has already been deleted." });
+
+    const { reason, comment } = req.body;
+    const validReason = reason?.trim() && (await ReelDeletionReason.findOne({ where: { name: reason.trim(), isActive: true } }));
+    if (!validReason) return res.status(400).json({ message: "Please select a reason for deletion." });
+    if (reason.trim() === "Other" && !comment?.trim()) {
+      return res.status(400).json({ message: "Please describe the reason for deletion." });
+    }
+
+    activity.status = "deleted";
+    activity.deletionReason = reason.trim();
+    activity.deletionComment = comment?.trim() || null;
+    activity.deletedAt = new Date();
+    await activity.save();
+
     res.json({ deleted: true });
   } catch (error) {
     res.status(500).json({ message: error.message });

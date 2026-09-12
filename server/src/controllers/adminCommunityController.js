@@ -69,6 +69,39 @@ export const listAll = async (req, res) => {
   }
 };
 
+// A separate, dedicated view rather than a status filter on the general
+// Community Wall table -- deleted Reels have their own author-supplied
+// reason/comment to show, which no other row in that table carries.
+export const listDeletedReels = async (req, res) => {
+  try {
+    const { page = 1, pageSize = 20 } = req.query;
+    const limit = Math.min(Number(pageSize) || 20, 100);
+    const offset = (Math.max(Number(page) || 1, 1) - 1) * limit;
+
+    const { rows, count } = await CommunityActivity.findAndCountAll({
+      where: { type: "reel", status: "deleted" },
+      order: [["deletedAt", "DESC"]],
+      limit,
+      offset,
+    });
+
+    const userIds = [...new Set(rows.map((a) => a.relatedUserId).filter(Boolean))];
+    const users = userIds.length ? await User.findAll({ where: { id: { [Op.in]: userIds } } }) : [];
+    const userById = new Map(users.map((u) => [u.id, u]));
+
+    const reels = rows.map((a) => {
+      const json = a.toJSON();
+      const u = a.relatedUserId ? userById.get(a.relatedUserId) : null;
+      json.author = u ? { id: u.id, fullName: u.fullName, username: u.username, email: u.email } : null;
+      return json;
+    });
+
+    res.json({ reels, total: count, page: Number(page) || 1, pageSize: limit });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 async function findOr404(req, res) {
   const activity = await CommunityActivity.findByPk(req.params.id);
   if (!activity) {

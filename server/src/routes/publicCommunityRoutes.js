@@ -26,6 +26,8 @@ import {
   searchStickersEndpoint,
   createReel,
   listReels,
+  listReelDeletionReasons,
+  deleteReel,
 } from "../controllers/publicCommunityController.js";
 
 const router = Router();
@@ -50,6 +52,8 @@ router.delete("/posts/:id", auth, requireUser, deletePost);
 
 router.get("/reels", optionalAuth, listReels);
 router.post("/reels", auth, requireUser, uploadReelVideo, createReel);
+router.get("/reel-deletion-reasons", listReelDeletionReasons);
+router.delete("/reels/:id", auth, requireUser, deleteReel);
 
 router.post("/images/:imageId/vote", auth, requireUser, castImageVote);
 router.get("/images/:imageId/comments", optionalAuth, listImageComments);
