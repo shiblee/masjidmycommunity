@@ -6,8 +6,6 @@ import adminApi from "../services/adminApi.js";
 import { setSession } from "../authStorage.js";
 
 const REMEMBER_KEY = "mmc-admin-remember-email";
-const DEMO_EMAIL = "admin@masjidmycommunity.org";
-const DEMO_PASSWORD = "MasjidMyCommunity@2026";
 
 function AdminLogin() {
   const navigate = useNavigate();
@@ -196,9 +194,6 @@ function AdminLogin() {
             <div className="amx-login-secure">
               <Icon name="shield" size={14} />
               Secured admin access · Masjid My Community
-            </div>
-            <div className="amx-login-demo">
-              Demo credentials — <strong>{DEMO_EMAIL}</strong> / <strong>{DEMO_PASSWORD}</strong>
             </div>
           </div>
         </div>
