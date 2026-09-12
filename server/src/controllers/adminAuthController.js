@@ -134,6 +134,29 @@ export const logout = async (req, res) => {
   }
 };
 
+// Self-service history -- unlike getLoginHistory() on the staff controller
+// (which is scoped to role:"staff" and reachable only by someone with the
+// staff:view permission), this is "show me my own sessions" and has no role
+// restriction, so it's the only place a super_admin can see their own
+// login/logout history.
+export const getMyLoginHistory = async (req, res) => {
+  try {
+    const page = Math.max(Number(req.query.page) || 1, 1);
+    const limit = Math.min(Number(req.query.pageSize) || 20, 100);
+
+    const { rows, count } = await AdminActivityLog.findAndCountAll({
+      where: { adminUserId: req.user.id, activityType: ["login", "logout"] },
+      order: [["createdAt", "DESC"]],
+      limit,
+      offset: (page - 1) * limit,
+    });
+
+    res.json({ history: rows, total: count, page, pageSize: limit });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 export const me = async (req, res) => {
   try {
     const admin = await AdminUser.findByPk(req.user.id);

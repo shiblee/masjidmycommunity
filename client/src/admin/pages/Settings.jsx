@@ -2,9 +2,78 @@ import React, { useEffect, useRef, useState } from "react";
 import { NavLink, Navigate, Link, useParams } from "react-router-dom";
 import Icon from "../components/Icons.jsx";
 import Toggle from "../components/Toggle.jsx";
+import StatusBadge from "../components/StatusBadge.jsx";
 import adminApi from "../services/adminApi.js";
 import { updateStoredUser } from "../authStorage.js";
 import MicButton from "../../components/MicButton.jsx";
+import { formatDateTime } from "../../utils/formatDateTime.js";
+
+function formatSessionDuration(seconds) {
+  if (seconds == null) return "—";
+  const h = Math.floor(seconds / 3600);
+  const m = Math.round((seconds % 3600) / 60);
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
+
+function MyLoginHistory() {
+  const [history, setHistory] = useState(null);
+
+  useEffect(() => {
+    adminApi.get("/auth/login-history").then(({ data }) => setHistory(data.history)).catch(() => setHistory([]));
+  }, []);
+
+  const sessions = React.useMemo(() => {
+    if (!history) return [];
+    const logins = history.filter((h) => h.activityType === "login");
+    const logoutBySession = new Map(history.filter((h) => h.activityType === "logout").map((h) => [h.sessionId, h]));
+    return logins.map((login) => ({ login, logout: logoutBySession.get(login.sessionId) }));
+  }, [history]);
+
+  return (
+    <div style={{ marginTop: 30, paddingTop: 24, borderTop: "1px solid var(--a-border)" }}>
+      <div className="amx-panel-head">
+        <div>
+          <h3>Login History</h3>
+          <div className="amx-panel-sub">Recent sign-ins to your own admin account</div>
+        </div>
+      </div>
+      {!history ? (
+        <p className="amx-panel-sub">Loading…</p>
+      ) : sessions.length === 0 ? (
+        <div className="amx-empty"><Icon name="inbox" /><strong>No login activity yet</strong></div>
+      ) : (
+        <div className="amx-table-wrap">
+          <table className="amx-table">
+            <thead>
+              <tr>
+                <th>Login</th>
+                <th>Logout</th>
+                <th>Duration</th>
+                <th>IP Address</th>
+                <th>Browser / OS</th>
+                <th>Device</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sessions.map(({ login, logout }) => (
+                <tr key={login.id}>
+                  <td>{formatDateTime(login.createdAt)}</td>
+                  <td>{logout ? formatDateTime(logout.createdAt) : "—"}</td>
+                  <td>{formatSessionDuration(login.sessionDurationSeconds)}</td>
+                  <td>{login.ipAddress || "—"}</td>
+                  <td>{[login.browser, login.os].filter(Boolean).join(" / ") || "—"}</td>
+                  <td style={{ textTransform: "capitalize" }}>{login.deviceType || "—"}</td>
+                  <td><StatusBadge status={login.status === "success" ? "active" : "failed"} label={login.status === "success" ? "Success" : login.failureReason || "Failed"} /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
 
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
 const ALLOWED_AVATAR_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif"];
@@ -954,6 +1023,8 @@ function Settings() {
                 </div>
                 <Toggle on={security.loginAlerts} onClick={() => toggleSecurity("loginAlerts")} />
               </div>
+
+              <MyLoginHistory />
             </form>
           )}
 
