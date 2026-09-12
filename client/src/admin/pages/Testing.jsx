@@ -216,7 +216,15 @@ function Testing() {
       </div>
 
       <div className="amx-card amx-panel" style={{ marginBottom: 24 }}>
-        <h3 style={{ marginBottom: 14 }}>Current Status</h3>
+        <div className="amx-panel-head">
+          <h3>Current Status</h3>
+          {runs.length > 0 && (
+            <button type="button" className="amx-panel-link" onClick={() => setShowHistory(true)}>
+              View Full Test History
+              <Icon name="arrowRight" />
+            </button>
+          )}
+        </div>
         {latestRun ? (
           isRunning ? (
             <p className="amx-panel-sub">
@@ -242,11 +250,6 @@ function Testing() {
           )
         ) : (
           <p className="amx-panel-sub">No test runs yet — click "Run Tests" to check the live application right now.</p>
-        )}
-        {runs.length > 0 && (
-          <button className="amx-btn amx-btn-outline amx-btn-sm" style={{ marginTop: 14 }} onClick={() => setShowHistory(true)}>
-            <Icon name="clock" size={15} /> View Full Test History
-          </button>
         )}
       </div>
 
