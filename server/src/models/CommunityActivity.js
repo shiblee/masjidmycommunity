@@ -77,9 +77,28 @@ const CommunityActivity = sequelize.define(
   },
   {
     tableName: "community_activities",
+    // Replaces the old lone `status`/`type` single-column indexes (fully
+    // subsumed by these composites as a leading-column prefix, so keeping
+    // both would only add write overhead for no read benefit). Chosen to
+    // match the real WHERE/ORDER BY shapes listPublished() actually runs
+    // (see the Community Wall Performance & Scalability audit) -- every
+    // feed variant filters on `status` and sorts by `publishedAt`, so that
+    // pair anchors every index below; the leading column is whichever
+    // filter narrows that particular feed variant down.
     indexes: [
-      { fields: ["status"], name: "activities_status_idx" },
-      { fields: ["type"], name: "activities_type_idx" },
+      // The main Wall feed (no masjid/campaign/user/job filter).
+      { fields: ["status", "publishedAt"], name: "activities_status_published_idx" },
+      // The Reels rail (type="reel") and a profile's own feed (type="community_post").
+      { fields: ["type", "status", "publishedAt"], name: "activities_type_status_published_idx" },
+      // Masjid Community Hub's Wall tab.
+      { fields: ["relatedMasjidId", "status", "publishedAt"], name: "activities_masjid_status_published_idx" },
+      // Campaign Detail Page's embedded post.
+      { fields: ["relatedCampaignId", "status", "publishedAt"], name: "activities_campaign_status_published_idx" },
+      // A user's own profile feed, keyed by author rather than type.
+      { fields: ["relatedUserId", "status", "publishedAt"], name: "activities_user_status_published_idx" },
+      // Job Detail Page's embedded post -- low-cardinality/low-traffic
+      // enough that publishedAt isn't worth adding to this one.
+      { fields: ["relatedJobId", "status"], name: "activities_job_status_idx" },
     ],
   }
 );

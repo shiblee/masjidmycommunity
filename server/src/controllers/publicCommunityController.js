@@ -123,6 +123,16 @@ export const getContentSettings = async (req, res) => {
 
 const PUBLIC_CAMPAIGN_STATUSES = ["active", "paused", "goal_reached", "completed"];
 
+// A leading-wildcard LIKE can never use an index (see the Community Wall
+// Performance & Scalability audit), so a hashtag search always has to scan
+// candidate rows rather than seek them. This bounds that scan to the most
+// recent N candidates instead of the whole table -- a real cap, not a full
+// fix (a hashtag with more than this many recent mentions only ever surfaces
+// its most recent ones, same "most recent first" rule as everything else on
+// the Wall). A proper fix would be a MySQL FULLTEXT index or a dedicated
+// search table; out of scope for a cap.
+const HASHTAG_SEARCH_CANDIDATE_CAP = 500;
+
 // Powers the Wall's left-sidebar stats tiles — a snapshot of community-wide
 // numbers, scoped the same way the public masjid/campaign listings are (only
 // approved/moderation-active records) so a viewer never sees counts that
@@ -253,7 +263,7 @@ export const listPublished = async (req, res) => {
         ["isPinned", "DESC"],
         ["publishedAt", "DESC"],
       ],
-      limit: hashtag ? undefined : limit + 1,
+      limit: hashtag ? HASHTAG_SEARCH_CANDIDATE_CAP : limit + 1,
       offset: hashtag ? undefined : offset,
     });
 
