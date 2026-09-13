@@ -107,6 +107,19 @@ function MasjidProfile() {
   const [suggestSent, setSuggestSent] = useState(false);
   const loggedIn = !!getUserToken();
 
+  // For the Nearby Masjids panel's distance chip -- same one-time,
+  // silently-fails-if-denied request Explore Masjids already uses, so this
+  // page can show "how far is that mosque from ME", not from the masjid
+  // currently being viewed.
+  const [coords, setCoords] = useState(null);
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => {}
+    );
+  }, []);
+
   // A previous slugParam's fetch resolving AFTER the user has already
   // navigated to another masjid (e.g. clicking two Nearby Masjid entries in
   // quick succession) used to setMasjid() with stale data, and separately
@@ -240,7 +253,7 @@ function MasjidProfile() {
       <section className="py-md msj-hub-content">
         <div className="wrap msj-hub-layout">
           <div className="msj-hub-left">
-            <NearbyMasjidPanel activeId={id} onSelect={(newSlug) => navigate(`/masjid/${newSlug}/${tab}`)} />
+            <NearbyMasjidPanel activeId={id} onSelect={(newSlug) => navigate(`/masjid/${newSlug}/${tab}`)} userLocation={coords} />
           </div>
           <div className="msj-hub-main">
             {tab === "about" && (

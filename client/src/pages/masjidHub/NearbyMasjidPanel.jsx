@@ -6,6 +6,7 @@ import MicButton from "../../components/MicButton.jsx";
 import { API_BASE, API_ORIGIN } from "../../config.js";
 import EngagementRow from "../../components/masjid/EngagementRow.jsx";
 import GreenTickBadge from "../../components/masjid/GreenTickBadge.jsx";
+import { distanceToMasjid } from "../exploreMasjids/exploreMasjidsShared.jsx";
 
 const API = `${API_BASE}/masjids/public`;
 const PAGE_SIZE = 20;
@@ -19,8 +20,16 @@ function formatDistanceKm(km) {
 /** Left-side discovery panel: every OTHER masjid (the one being viewed is
  * excluded server-side), nearest-to-the-one-being-viewed first. Re-fetches
  * (from page 1) whenever `activeId` changes, since "nearest first" is
- * relative to whichever masjid is currently open. */
-function NearbyMasjidPanel({ activeId, onSelect }) {
+ * relative to whichever masjid is currently open.
+ *
+ * The ORDER stays relative to the masjid being viewed (a deliberate "other
+ * masjids in this area" discovery order), but the DISTANCE CHIP shown on
+ * each row is computed client-side from `userLocation` (the viewer's own
+ * browser geolocation, same as Explore Masjids' DistanceBadge) instead of
+ * the server's masjid-to-masjid distanceKm -- showing "0.4 km" next to a
+ * mosque on the other side of the world from the viewer read as a bug,
+ * even though it was correctly the distance from the masjid being viewed. */
+function NearbyMasjidPanel({ activeId, onSelect, userLocation }) {
   const [rawQuery, setRawQuery] = useState("");
   const [query, setQuery] = useState("");
   const [masjids, setMasjids] = useState([]);
@@ -80,9 +89,9 @@ function NearbyMasjidPanel({ activeId, onSelect }) {
               </span>
               <EngagementRow masjid={m} variant="map" className="msj-nearby-item-engagement" />
             </span>
-            {formatDistanceKm(m.distanceKm) && (
+            {formatDistanceKm(distanceToMasjid(userLocation, m)) && (
               <span className="msj-nearby-distance">
-                <Icon name="mapPin" size={11} /> {formatDistanceKm(m.distanceKm)}
+                <Icon name="mapPin" size={11} /> {formatDistanceKm(distanceToMasjid(userLocation, m))}
               </span>
             )}
           </button>

@@ -445,7 +445,16 @@ export const listNearbyAll = async (req, res) => {
         category: r.category,
         city: r.city,
         country: r.country,
+        latitude: r.latitude,
+        longitude: r.longitude,
         coverPhotoUrl: coverByMasjid.get(r.id) || null,
+        // Distance FROM THE MASJID BEING VIEWED -- what this list is sorted
+        // by (closest to that masjid first, a discovery ordering, not a
+        // "near me" one). The client separately computes and displays
+        // distance from the viewer's own location using latitude/longitude
+        // above, matching Explore Masjids' DistanceBadge -- showing this
+        // value instead read as "wrong" to a viewer who isn't standing at
+        // the masjid they're looking at.
         distanceKm: r.get("distanceKm") != null ? Number(r.get("distanceKm")) : null,
         ...(engagementMap.get(r.id) || { likeCount: 0, avgRating: 0, reviewCount: 0, likedByMe: false }),
         ...(greenTickMap.get(r.id) || { greenTickStatus: null, verificationId: null, issuedAt: null, isGreenTick: false }),
