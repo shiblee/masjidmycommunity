@@ -1822,6 +1822,11 @@ footer{
 .cw-post-stats span{ display:block; font-size:12px; color:var(--text-on-paper-dim); margin-top:2px; }
 
 .cw-post-actions{ display:flex; align-items:center; justify-content:space-between; gap:16px; margin-top:18px; padding-top:16px; border-top:1px solid var(--paper-dim); flex-wrap:wrap; }
+/* Tighter gap specifically when a photo/video sits directly above the
+   action row -- the image itself keeps its full width/height, only the
+   empty space between it and Like/Comment/Share shrinks. Text-only posts
+   (no media directly before .cw-post-actions) keep the wider gap above. */
+.cw-gallery + .cw-post-actions, .cw-post-media + .cw-post-actions{ margin-top:8px; padding-top:10px; }
 .cw-post-ctas{ display:flex; gap:10px; flex-wrap:wrap; }
 .cw-cta{ padding:10px 18px; font-size:13.5px; }
 .cw-share{
