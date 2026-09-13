@@ -22,7 +22,6 @@ function useNavLinks(t) {
 function useAccountLinks(t, username) {
   return [
     { href: "/account/my-masjids", label: t("nav.myMasjids", "My Masjids"), icon: "building" },
-    { href: "/account/liked-masjids", label: t("nav.likedMasjids", "Liked Masjids"), icon: "heart" },
     { href: "/account/my-campaigns", label: t("nav.myCampaigns", "My Campaigns"), icon: "chartUp" },
     { href: "/account/my-jobs", label: t("nav.myJobs", "My Jobs"), icon: "briefcase" },
     { href: "/account/my-applications", label: t("nav.myApplications", "My Applications"), icon: "fileText" },
@@ -255,9 +254,6 @@ function Navbar() {
                     </div>
                     <Link to="/account/my-masjids" onClick={() => setMenuOpen(false)}>
                       {t("nav.myMasjids", "My Masjids")}
-                    </Link>
-                    <Link to="/account/liked-masjids" onClick={() => setMenuOpen(false)}>
-                      {t("nav.likedMasjids", "Liked Masjids")}
                     </Link>
                     <Link to="/account/my-campaigns" onClick={() => setMenuOpen(false)}>
                       {t("nav.myCampaigns", "My Campaigns")}
