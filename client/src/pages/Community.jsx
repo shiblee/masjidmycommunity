@@ -56,6 +56,8 @@ const JOB_STATUS_PILL_CLASS = { active: "active", closed: "inactive", expired: "
 // Registry of top-level community categories shown in the right-hand menu.
 // Adding a future real category is one more entry here (plus its own action
 // panel below, mirroring "masjid"/"campaign") — nothing else needs to change.
+const FEED_PAGE_SIZE = 30;
+
 const COMMUNITY_SECTIONS = [
   { key: "masjid", labelKey: "community.explore.masjid", label: "Masjid", icon: "mosque", wallFilter: "masjid_update" },
   { key: "campaign", labelKey: "community.explore.campaign", label: "Campaign", icon: "flag", wallFilter: "fundraising" },
@@ -140,6 +142,13 @@ function Community() {
   };
 
   const [liveActivities, setLiveActivities] = useState([]);
+  // Tracked separately from liveActivities.length -- addNewPost() prepends a
+  // freshly-created post locally without the server knowing, which would
+  // shift a length-derived offset by one and skip/duplicate a row at the
+  // next page boundary.
+  const [feedOffset, setFeedOffset] = useState(0);
+  const [feedHasMore, setFeedHasMore] = useState(false);
+  const [loadingMoreFeed, setLoadingMoreFeed] = useState(false);
   const [user, setUser] = useState(() => getStoredUser());
   const [myMasjids, setMyMasjids] = useState(null);
   const [myMasjidsError, setMyMasjidsError] = useState("");
@@ -211,10 +220,28 @@ function Community() {
 
   useEffect(() => {
     communityApi
-      .get("/activities", { params: hashtag ? { hashtag } : undefined })
-      .then(({ data }) => setLiveActivities(data.activities.map(mapLiveActivity)))
+      .get("/activities", { params: { limit: FEED_PAGE_SIZE, offset: 0, ...(hashtag ? { hashtag } : {}) } })
+      .then(({ data }) => {
+        setLiveActivities(data.activities.map(mapLiveActivity));
+        setFeedOffset(data.activities.length);
+        setFeedHasMore(data.hasMore);
+      })
       .catch(() => {});
   }, [user, hashtag]);
+
+  const loadMoreFeed = () => {
+    if (loadingMoreFeed || !feedHasMore) return;
+    setLoadingMoreFeed(true);
+    communityApi
+      .get("/activities", { params: { limit: FEED_PAGE_SIZE, offset: feedOffset, ...(hashtag ? { hashtag } : {}) } })
+      .then(({ data }) => {
+        setLiveActivities((acts) => [...acts, ...data.activities.map(mapLiveActivity)]);
+        setFeedOffset((o) => o + data.activities.length);
+        setFeedHasMore(data.hasMore);
+      })
+      .catch(() => {})
+      .finally(() => setLoadingMoreFeed(false));
+  };
 
   const openHashtag = (tag) => {
     setSearchParams((prev) => {
@@ -236,6 +263,11 @@ function Community() {
 
   const addNewPost = (activity) => {
     setLiveActivities((acts) => [mapLiveActivity(activity), ...acts]);
+    // The new post now genuinely occupies position 0 in the server's own
+    // ordering too -- bump the offset so the next "Load More" still starts
+    // exactly where this page left off, instead of re-fetching (and
+    // duplicating) whichever post that shift pushed across the boundary.
+    setFeedOffset((o) => o + 1);
   };
 
   // The image viewer/lightbox — open on a specific post's image at a given
@@ -364,6 +396,7 @@ function Community() {
     try {
       await communityApi.delete(`/posts/${postModal.post.activityId}`);
       setLiveActivities((acts) => acts.filter((a) => a.activityId !== postModal.post.activityId));
+      setFeedOffset((o) => Math.max(0, o - 1));
       closePostModal();
     } catch (err) {
       setPostError(err.response?.data?.message || t("communityWall.editPost.deleteError", "Couldn't delete this post. Please try again."));
@@ -590,9 +623,17 @@ function Community() {
                     ))}
                   </div>
 
-                  <div className="cw-feed-end">
-                    <span>{t("communityWall.feedEnd", "You're all caught up — check back soon for new activity.")}</span>
-                  </div>
+                  {feedHasMore ? (
+                    <div className="msj-load-more">
+                      <button type="button" className="btn btn-outline-ink" onClick={loadMoreFeed} disabled={loadingMoreFeed}>
+                        {loadingMoreFeed ? t("communityWall.loading", "Loading…") : t("communityWall.loadMore", "Load More")}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="cw-feed-end">
+                      <span>{t("communityWall.feedEnd", "You're all caught up — check back soon for new activity.")}</span>
+                    </div>
+                  )}
                 </>
               )}
             </div>
@@ -859,7 +900,11 @@ function Community() {
           masjid={deleteFlowMasjid}
           onClose={() => setDeleteFlowMasjid(null)}
           onDeleted={() => {
-            setLiveActivities((acts) => acts.filter((a) => a.relatedMasjidId !== deleteFlowMasjid.id));
+            setLiveActivities((acts) => {
+              const kept = acts.filter((a) => a.relatedMasjidId !== deleteFlowMasjid.id);
+              setFeedOffset((o) => Math.max(0, o - (acts.length - kept.length)));
+              return kept;
+            });
             setMyMasjids((ms) => (ms || []).filter((m) => m.id !== deleteFlowMasjid.id));
           }}
         />
