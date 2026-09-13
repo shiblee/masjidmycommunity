@@ -135,6 +135,18 @@ const PUBLIC_CAMPAIGN_STATUSES = ["active", "paused", "goal_reached", "completed
 // search table; out of scope for a cap.
 const HASHTAG_SEARCH_CANDIDATE_CAP = 500;
 
+// A comment thread has no depth limit and was previously fetched in one
+// fully unbounded query, every time it's opened (see the Community Wall
+// Performance & Scalability audit). Same honest trade-off as the hashtag
+// cap above rather than a schema/API redesign: bound the pull instead of
+// truly paginating it, since replies are always rendered together with
+// their full ancestor chain (a real cursor-paginated thread would need a
+// recursive "all descendants of this page's top-level comments" query --
+// out of scope for a cap). 2000 is generous headroom over any real thread
+// today; a thread that somehow exceeds it silently drops its oldest
+// comments (order is createdAt ASC) rather than growing the query further.
+const COMMENT_THREAD_CAP = 2000;
+
 // Powers the Wall's left-sidebar stats tiles — a snapshot of community-wide
 // numbers, scoped the same way the public masjid/campaign listings are (only
 // approved/moderation-active records) so a viewer never sees counts that
@@ -473,6 +485,7 @@ export const listComments = async (req, res) => {
     const comments = await Comment.findAll({
       where: { activityId, imageId: null, status: { [Op.ne]: "hidden" } },
       order: [["createdAt", "ASC"]],
+      limit: COMMENT_THREAD_CAP,
     });
 
     const userIds = [...new Set(comments.map((c) => c.userId))];
@@ -1090,6 +1103,7 @@ export const listImageComments = async (req, res) => {
     const comments = await Comment.findAll({
       where: { imageId, status: { [Op.ne]: "hidden" } },
       order: [["createdAt", "ASC"]],
+      limit: COMMENT_THREAD_CAP,
     });
 
     const userIds = [...new Set(comments.map((c) => c.userId))];
