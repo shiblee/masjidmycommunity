@@ -88,7 +88,7 @@ function popupHtml(m, distanceLabel, t) {
   `;
 }
 
-function ExploreMasjidsMap({ masjids, selectedId, onSelect, userLocation, onLocateMe, onOpenReviews }) {
+function ExploreMasjidsMap({ masjids, selectedId, onSelect, userLocation, onLocateMe, onOpenReviews, onLikeChange }) {
   const { t } = useTranslation();
   const containerRef = useRef(null);
   const mapRef = useRef(null);
@@ -212,7 +212,7 @@ function ExploreMasjidsMap({ masjids, selectedId, onSelect, userLocation, onLoca
                 const d = distanceToMasjid(userLocation, m);
                 return d != null && <span className="msj-explore-map-item-distance">{formatDistance(d)}</span>;
               })()}
-              <EngagementRow masjid={m} variant="map" onOpenReviews={() => onOpenReviews?.(m, "reviews")} />
+              <EngagementRow masjid={m} variant="map" onOpenReviews={() => onOpenReviews?.(m, "reviews")} onLikeChange={onLikeChange} />
             </div>
             <GetDirectionsButton m={m} className="msj-explore-map-item-link" />
           </button>

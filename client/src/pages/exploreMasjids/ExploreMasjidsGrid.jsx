@@ -7,13 +7,19 @@ import { locationOf, ActiveCampaignBadge, DistanceBadge, GetDirectionsButton } f
 import EngagementRow from "../../components/masjid/EngagementRow.jsx";
 import GreenTickBadge from "../../components/masjid/GreenTickBadge.jsx";
 
-function ExploreMasjidsGrid({ masjids, userLocation, onOpenReviews }) {
+function ExploreMasjidsGrid({ masjids, userLocation, onOpenReviews, onLikeChange, leavingIds }) {
   return (
     <div className="msj-explore-grid">
       {masjids.map((m) => (
         // A plain div (not <Link>) so the Get Directions <a> below can nest safely —
         // an <a> can't be a valid descendant of another <a>.
-        <div className="msj-explore-card" key={m.id} onClick={() => onOpenReviews(m)} role="link" tabIndex={0}>
+        <div
+          className={`msj-explore-card${leavingIds?.has(m.id) ? " msj-card-leaving" : ""}`}
+          key={m.id}
+          onClick={() => onOpenReviews(m)}
+          role="link"
+          tabIndex={0}
+        >
           <div className="msj-explore-thumb">
             <MediaThumb src={m.coverPhotoUrl ? `${API_ORIGIN}${m.coverPhotoUrl}` : null} />
             <MediaCountBadge photoCount={m.photoCount} videoCount={m.videoCount} />
@@ -30,7 +36,7 @@ function ExploreMasjidsGrid({ masjids, userLocation, onOpenReviews }) {
             {m.tagline && <p className="msj-explore-tagline">{m.tagline}</p>}
             <p className="msj-list-loc"><Icon name="mapPin" size={14} /> {locationOf(m)}</p>
             <div className="msj-explore-row-meta">
-              <EngagementRow masjid={m} variant="grid" onOpenReviews={() => onOpenReviews(m, "reviews")} />
+              <EngagementRow masjid={m} variant="grid" onOpenReviews={() => onOpenReviews(m, "reviews")} onLikeChange={onLikeChange} />
               <ActiveCampaignBadge m={m} />
               <DistanceBadge userLocation={userLocation} m={m} />
             </div>

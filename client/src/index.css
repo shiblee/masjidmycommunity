@@ -3815,9 +3815,13 @@ a.cmt-avatar{ text-decoration:none; }
 .msj-explore-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:24px; }
 .msj-explore-card{
   display:block; background:#fff; border:1px solid var(--line); border-radius:16px; overflow:hidden; cursor:pointer;
-  transition:transform .25s var(--ease), box-shadow .25s var(--ease);
+  transition:transform .25s var(--ease), box-shadow .25s var(--ease), opacity .25s var(--ease);
 }
 .msj-explore-card:hover{ transform:translateY(-4px); box-shadow:0 24px 44px -28px rgba(11,31,30,.25); }
+/* Unliking a card from inside the Liked view fades/shrinks it out over
+   LEAVE_ANIMATION_MS (ExploreMasjids.jsx) before it's actually removed from
+   the list, rather than vanishing instantly. */
+.msj-card-leaving{ opacity:0; transform:scale(.92); pointer-events:none; }
 .msj-explore-card-top{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
 
 .msj-directions-btn{
@@ -3853,6 +3857,7 @@ a.cmt-avatar{ text-decoration:none; }
 .msj-explore-row-list{ display:flex; flex-direction:column; gap:16px; margin-top:8px; }
 .msj-explore-row{
   display:flex; gap:20px; background:#fff; border:1px solid var(--line); border-radius:14px; padding:16px; align-items:flex-start;
+  transition:transform .25s var(--ease), opacity .25s var(--ease);
 }
 .msj-explore-row-clickable{ cursor:pointer; transition:box-shadow .2s, border-color .2s; }
 .msj-explore-row-clickable:hover{ border-color:var(--teal); box-shadow:0 12px 28px -20px rgba(11,31,30,.25); }

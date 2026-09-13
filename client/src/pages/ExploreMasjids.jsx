@@ -15,6 +15,7 @@ const VIEW_KEYS = [
   { key: "map", fallback: "Map", icon: "map" },
 ];
 const PAGE_SIZE = 12;
+const LEAVE_ANIMATION_MS = 260;
 
 function ExploreMasjids() {
   const { t } = useTranslation();
@@ -37,6 +38,11 @@ function ExploreMasjids() {
   const [page, setPage] = useState(1);
   const [loadingMore, setLoadingMore] = useState(false);
   const [likedCount, setLikedCount] = useState(0);
+  // Ids currently mid-fade-out after being unliked from inside the Liked
+  // view -- kept in the list one more render so the card can animate away
+  // instead of vanishing instantly, then actually removed once that
+  // transition has had time to finish (see .msj-card-leaving in index.css).
+  const [leavingIds, setLeavingIds] = useState(() => new Set());
 
   const [mapMasjids, setMapMasjids] = useState(null);
   const [selectedId, setSelectedId] = useState(null);
@@ -148,6 +154,27 @@ function ExploreMasjids() {
     setParam({ view: "map" });
   };
 
+  // Fires from any masjid card's heart, in any view -- keeps the Liked
+  // chip's count correct everywhere, and additionally animates a card out
+  // of the grid/list the moment it's unliked while already inside the
+  // Liked view (where every visible card is, by definition, about to no
+  // longer belong there).
+  const onLikeChange = (masjidId, liked) => {
+    setLikedCount((c) => Math.max(0, c + (liked ? 1 : -1)));
+    if (!likedOnly || liked) return;
+    setTotal((t) => Math.max(0, t - 1));
+    setLeavingIds((prev) => new Set(prev).add(masjidId));
+    setTimeout(() => {
+      setMasjids((prev) => (prev || []).filter((m) => m.id !== masjidId));
+      setMapMasjids((prev) => (prev || []).filter((m) => m.id !== masjidId));
+      setLeavingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(masjidId);
+        return next;
+      });
+    }, LEAVE_ANIMATION_MS);
+  };
+
   const hasResults = masjids && masjids.length > 0;
   const hasNoResults = masjids && masjids.length === 0;
 
@@ -218,7 +245,7 @@ function ExploreMasjids() {
 
           {view === "grid" && hasResults && (
             <>
-              <ExploreMasjidsGrid masjids={masjids} userLocation={coords} onOpenReviews={openReviews} />
+              <ExploreMasjidsGrid masjids={masjids} userLocation={coords} onOpenReviews={openReviews} onLikeChange={onLikeChange} leavingIds={leavingIds} />
               {masjids.length < total && (
                 <div className="msj-load-more"><button type="button" className="btn btn-outline-ink" onClick={loadMore} disabled={loadingMore}>{loadingMore ? t("exploreMasjidsPage.loading", "Loading…") : t("exploreMasjidsPage.loadMore", "Load More")}</button></div>
               )}
@@ -227,7 +254,7 @@ function ExploreMasjids() {
 
           {view === "list" && hasResults && (
             <>
-              <ExploreMasjidsList masjids={masjids} onViewOnMap={handleViewOnMap} userLocation={coords} onOpenReviews={openReviews} />
+              <ExploreMasjidsList masjids={masjids} onViewOnMap={handleViewOnMap} userLocation={coords} onOpenReviews={openReviews} onLikeChange={onLikeChange} leavingIds={leavingIds} />
               {masjids.length < total && (
                 <div className="msj-load-more"><button type="button" className="btn btn-outline-ink" onClick={loadMore} disabled={loadingMore}>{loadingMore ? t("exploreMasjidsPage.loading", "Loading…") : t("exploreMasjidsPage.loadMore", "Load More")}</button></div>
               )}
@@ -237,7 +264,7 @@ function ExploreMasjids() {
           {view === "map" && (
             mapMasjids == null
               ? <p className="msj-explore-map-loading">{t("exploreMasjidsPage.map.loading", "Loading map…")}</p>
-              : <ExploreMasjidsMap masjids={mapMasjids} selectedId={selectedId} onSelect={setSelectedId} userLocation={coords} onLocateMe={requestLocation} onOpenReviews={openReviews} />
+              : <ExploreMasjidsMap masjids={mapMasjids} selectedId={selectedId} onSelect={setSelectedId} userLocation={coords} onLocateMe={requestLocation} onOpenReviews={openReviews} onLikeChange={onLikeChange} />
           )}
         </div>
       </section>

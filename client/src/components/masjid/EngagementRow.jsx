@@ -14,7 +14,7 @@ import { useTranslation } from "../../i18n/LanguageContext.jsx";
 // Pass `onOpenReviews` to make the rating piece clickable (reuses the
 // existing RatingChip exactly, so Explore's click-to-review behavior is
 // unchanged); omit it for a plain, non-interactive display.
-function EngagementRow({ masjid, variant = "list", onOpenReviews, className = "" }) {
+function EngagementRow({ masjid, variant = "list", onOpenReviews, onLikeChange, className = "" }) {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { liked, likeCount, toggle, busy } = useMasjidLike(masjid.id, {
@@ -24,8 +24,10 @@ function EngagementRow({ masjid, variant = "list", onOpenReviews, className = ""
 
   const handleToggle = async (e) => {
     e.stopPropagation();
+    const wasLiked = liked;
     const result = await toggle();
     if (result?.needsLogin) navigate("/auth");
+    else if (result?.ok) onLikeChange?.(masjid.id, !wasLiked);
   };
 
   const verbose = variant === "list" || variant === "detail";
