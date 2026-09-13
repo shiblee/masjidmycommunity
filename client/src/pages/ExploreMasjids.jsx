@@ -36,6 +36,7 @@ function ExploreMasjids() {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [likedCount, setLikedCount] = useState(0);
 
   const [mapMasjids, setMapMasjids] = useState(null);
   const [selectedId, setSelectedId] = useState(null);
@@ -71,9 +72,25 @@ function ExploreMasjids() {
     setMasjids(null);
     publicMasjidApi
       .get("/", { params: { q, category: categoryParam, liked: likedOnly || undefined, page: 1, pageSize: PAGE_SIZE } })
-      .then(({ data }) => { setMasjids(data.masjids); setTotal(data.total); })
+      .then(({ data }) => {
+        setMasjids(data.masjids);
+        setTotal(data.total);
+        // Piggyback on this response for the chip's count whenever it's
+        // already filtering to liked-only -- no extra request needed.
+        if (likedOnly) setLikedCount(data.total);
+      })
       .catch(() => setMasjids([]));
   }, [q, categoryParam, likedOnly]);
+
+  // A separate, minimal fetch just for the chip's count -- so it shows a
+  // real number even before the viewer ever switches into the Liked view
+  // (q/category don't matter here, this is the true total across everything).
+  useEffect(() => {
+    publicMasjidApi
+      .get("/", { params: { liked: true, page: 1, pageSize: 1 } })
+      .then(({ data }) => setLikedCount(data.total))
+      .catch(() => {});
+  }, []);
 
   const loadMore = () => {
     const nextPage = page + 1;
@@ -163,7 +180,7 @@ function ExploreMasjids() {
               aria-pressed={likedOnly}
               onClick={() => setParam({ liked: likedOnly ? "" : "true" })}
             >
-              <Icon name="heart" size={15} /> {t("exploreMasjidsPage.filters.liked", "Liked")}
+              <Icon name="heart" size={15} /> {t("exploreMasjidsPage.filters.liked", "Liked")}{likedCount > 0 ? ` (${likedCount})` : ""}
             </button>
             <div className="msj-view-switch">
               {VIEWS.map((v) => (
