@@ -1481,6 +1481,10 @@ footer{
 
 .cw-layout{ display:grid; grid-template-columns:280px 1fr 320px; gap:44px; align-items:start; }
 .cw-main{ min-width:0; }
+/* My Community wall only (not Profile, which also uses .cw-main) -- 20%
+   narrower, split evenly as empty space on each side within the center
+   column, leaving the sidebars/grid columns themselves untouched. */
+.cw-main-narrow{ max-width:80%; margin:0 auto; }
 .cw-filters{ margin:0 0 24px; }
 
 .cw-feed{ display:flex; flex-direction:column; gap:20px; }
@@ -2220,6 +2224,10 @@ a.cmt-avatar{ text-decoration:none; }
   .cw-layout{ grid-template-columns:1fr; }
   .cw-side{ position:static; flex-direction:row; overflow-x:auto; overflow-y:visible; max-height:none; gap:14px; padding-bottom:4px; }
   .cw-side-card{ flex:0 0 260px; }
+  /* The 20% desktop inset is a 3-column layout choice -- once everything
+     stacks into one column there's no side content to visually balance
+     against, so the wall goes back to full width here. */
+  .cw-main-narrow{ max-width:none; margin:0; }
 }
 @media (max-width:560px){
   .cw-hero{ padding:48px 0 32px; }

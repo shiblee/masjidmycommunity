@@ -525,7 +525,7 @@ function Community() {
               )}
             </aside>
 
-            <div className="cw-main">
+            <div className="cw-main cw-main-narrow">
               {showMasjidWizard ? (
                 <RequireUserAuth>
                   <MasjidWizard embedded />
