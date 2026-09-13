@@ -107,28 +107,43 @@ function MasjidProfile() {
   const [suggestSent, setSuggestSent] = useState(false);
   const loggedIn = !!getUserToken();
 
-  const load = () => {
+  // A previous slugParam's fetch resolving AFTER the user has already
+  // navigated to another masjid (e.g. clicking two Nearby Masjid entries in
+  // quick succession) used to setMasjid() with stale data, and separately
+  // the old "canonicalize a legacy URL" effect compared that stale
+  // masjid.slug against the NEW slugParam -- a mismatch it could never
+  // actually resolve, since it kept navigating back to the stale slug,
+  // which re-triggered a fetch for THAT slug, which came back mismatched
+  // against the id-based/other slug the user was trying to reach, forever.
+  // In production this was a genuine infinite navigate() loop between two
+  // masjid URLs, which is what visually reads as the whole page "blurring"
+  // (continuous re-render/flicker), not an actual CSS blur.
+  //
+  // Fixed by doing both the state update and the canonicalize check inside
+  // the same resolved response, guarded against being stale, so the
+  // comparison only ever runs against data that's actually the answer to
+  // the slugParam that's still current.
+  useEffect(() => {
+    let cancelled = false;
     axios
       .get(`${API}/${slugParam}`)
       .then(({ data }) => {
+        if (cancelled) return;
         setMasjid(data.masjid);
         setPhotos(data.photos);
         trackMasjidView(data.masjid.id, "detail");
+        // A link built before this masjid had a slug, or a legacy
+        // numeric-id link (still fully supported server-side) — settle the
+        // address bar on the one canonical URL rather than leaving it
+        // showing the id.
+        if (data.masjid.slug && slugParam !== data.masjid.slug) {
+          navigate(`/masjid/${data.masjid.slug}${tabParam ? `/${tabParam}` : ""}`, { replace: true });
+        }
       })
-      .catch(() => setNotFound(true));
-  };
-
-  useEffect(() => { load(); }, [slugParam]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // A link built before this masjid had a slug, or a legacy numeric-id link
-  // (still fully supported server-side) — once loaded, settle the address
-  // bar on the one canonical URL rather than leaving it showing the id.
-  useEffect(() => {
-    if (masjid?.slug && slugParam !== masjid.slug) {
-      navigate(`/masjid/${masjid.slug}${tabParam ? `/${tabParam}` : ""}`, { replace: true });
-    }
+      .catch(() => { if (!cancelled) setNotFound(true); });
+    return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [masjid?.slug, slugParam]);
+  }, [slugParam]);
 
   const toggleFavorite = async () => {
     const result = await toggleLike();
