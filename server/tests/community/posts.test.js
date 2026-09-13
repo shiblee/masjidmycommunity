@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { api, registerAndVerify, deleteTestUser, createApprovedMasjid, deleteTestMasjid } from "../helpers/testClient.js";
+import sharp from "sharp";
+import { api, BASE_URL, registerAndVerify, deleteTestUser, createApprovedMasjid, deleteTestMasjid } from "../helpers/testClient.js";
 
 describe("Posts", () => {
   let author, otherUser, masjidOwner, mentionedMasjid;
@@ -77,6 +78,43 @@ describe("Posts", () => {
     expect(status).toBe(200);
     expect(body.activity.body).toBe("DevTest post, edited.");
     task.meta.detail = "PATCH /api/community/posts/:id as the owner -> 200, body updated.";
+  });
+
+  it("a large uploaded photo is resized/re-compressed and served with a long-lived immutable cache header", async ({ task }) => {
+    // Real random-noise pixels, not a solid color -- a flat test color
+    // compresses to near-nothing regardless of dimensions, which would
+    // make the "did it actually get smaller" assertion meaningless. Noise
+    // is closer to a real photo's entropy and scales with pixel count.
+    const width = 2400, height = 1800;
+    const raw = Buffer.alloc(width * height * 3);
+    for (let i = 0; i < raw.length; i++) raw[i] = Math.floor(Math.random() * 256);
+    const original = await sharp(raw, { raw: { width, height, channels: 3 } }).jpeg({ quality: 90 }).toBuffer();
+
+    const fd = new FormData();
+    fd.append("media", new Blob([original], { type: "image/jpeg" }), "devtest-large.jpg");
+    fd.append("body", `DevTest resize check ${Date.now()}`);
+    const upload = await api("/api/community/posts", { method: "POST", headers: { Authorization: `Bearer ${author.token}` }, formData: fd });
+    expect(upload.status).toBe(201);
+    const uploadedId = upload.body.activity.id;
+    try {
+      const imageUrl = upload.body.activity.images[0]?.url;
+      expect(imageUrl).toBeTruthy();
+
+      const fileRes = await fetch(`${BASE_URL}${imageUrl}`);
+      expect(fileRes.status).toBe(200);
+      expect(fileRes.headers.get("cache-control")).toMatch(/immutable/);
+      expect(fileRes.headers.get("cache-control")).toMatch(/max-age=\d+/);
+
+      const downloaded = Buffer.from(await fileRes.arrayBuffer());
+      const meta = await sharp(downloaded).metadata();
+      expect(Math.max(meta.width, meta.height)).toBeLessThanOrEqual(1600);
+      expect(downloaded.length).toBeLessThan(original.length);
+      task.meta.detail = `A real 2400x1800 (${original.length} bytes) JPEG upload comes back resized to <=1600px on its longest side and smaller on disk (${downloaded.length} bytes) -- optimizeImageInPlace() actually runs before the post is created, not just accepted as-is. The served file also carries Cache-Control: max-age=2592000, immutable (Express's express.static maxAge/immutable options) instead of the old default max-age=0.`;
+    } finally {
+      // Cleanup must run even if an assertion above fails, or a failing
+      // run strands a real post+image instead of just reporting a red test.
+      await api(`/api/community/posts/${uploadedId}`, { method: "DELETE", headers: { Authorization: `Bearer ${author.token}` } });
+    }
   });
 
   it("mentioning a masjid notifies its owner, but not when mentioning your own masjid", async ({ task }) => {

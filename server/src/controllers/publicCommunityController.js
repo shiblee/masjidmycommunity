@@ -23,6 +23,7 @@ import { getVideoDuration } from "../utils/videoDuration.js";
 import { searchGifs, searchStickers, isGifSearchConfigured } from "../services/gifService.js";
 import ReelDeletionReason from "../models/ReelDeletionReason.js";
 import { withTtlCache } from "../utils/ttlCache.js";
+import { optimizeImageInPlace } from "../utils/imageOptimize.js";
 
 // The only place a comment's mediaUrl is ever produced is our own GIF/
 // sticker search responses below, so a create request is trusted only if
@@ -736,6 +737,10 @@ export const createPost = async (req, res) => {
     }
 
     const imageFiles = files.filter((f) => mediaTypeOf(f.mimetype) === "photo");
+    // Resize/re-compress before the PostImage rows (and their URLs) ever
+    // exist, so the very first thing served is already the optimized file --
+    // see server/src/utils/imageOptimize.js.
+    await Promise.all(imageFiles.map((f) => optimizeImageInPlace(f.path, f.mimetype)));
     const videoUrl = videoFiles.length ? `/uploads/wall-post-media/${videoFiles[0].filename}` : null;
     let videoPosterUrl = null;
     if (videoFiles.length) {

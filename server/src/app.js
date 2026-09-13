@@ -108,7 +108,13 @@ app.set("trust proxy", parseTrustProxy(process.env.TRUST_PROXY));
 app.use(cors({ origin: true, credentials: true }));
 app.use(cookieParser());
 app.use(express.json({ limit: "5mb" }));
-app.use("/uploads", express.static(path.resolve("uploads")));
+// Every uploaded filename already carries a timestamp+random suffix (see
+// each upload middleware's diskStorage), so a given URL's content never
+// changes after upload -- genuinely safe to cache long and mark immutable,
+// unlike the default maxAge:0 this previously ran with (see the Community
+// Wall Performance & Scalability audit: "zero Cache-Control/ETag
+// configuration... every repeat view re-downloads the same file").
+app.use("/uploads", express.static(path.resolve("uploads"), { maxAge: "30d", immutable: true }));
 
 app.get("/", (req, res) => {
   res.json({ message: "Coming soon" });
