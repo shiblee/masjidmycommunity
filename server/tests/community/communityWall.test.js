@@ -85,4 +85,15 @@ describe("Community Wall", () => {
     expect(body).toBeTypeOf("object");
     task.meta.detail = "GET /api/community/stats -> 200, real platform-wide community counters.";
   });
+
+  it("stats are genuinely cached -- a brand new active member isn't reflected immediately", async ({ task }) => {
+    const before = await api("/api/community/stats");
+    const newUser = await registerAndVerify({ fullName: "DevTest StatsCacheUser" });
+
+    const after = await api("/api/community/stats");
+    expect(after.body.memberCount).toBe(before.body.memberCount);
+
+    await deleteTestUser(newUser.userId);
+    task.meta.detail = "A freshly registered+verified user is a real, immediately-committed status:\"active\" row (memberCount's own WHERE clause), yet GET /api/community/stats called right after still returns the exact same memberCount as before -- proof this endpoint is served from the in-process TTL cache (server/src/utils/ttlCache.js, 60s), not recomputed on every request.";
+  });
 });

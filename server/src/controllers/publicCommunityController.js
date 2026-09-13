@@ -22,6 +22,7 @@ import { generateVideoThumbnail } from "../utils/videoThumbnail.js";
 import { getVideoDuration } from "../utils/videoDuration.js";
 import { searchGifs, searchStickers, isGifSearchConfigured } from "../services/gifService.js";
 import ReelDeletionReason from "../models/ReelDeletionReason.js";
+import { withTtlCache } from "../utils/ttlCache.js";
 
 // The only place a comment's mediaUrl is ever produced is our own GIF/
 // sticker search responses below, so a create request is trusted only if
@@ -137,21 +138,30 @@ const HASHTAG_SEARCH_CANDIDATE_CAP = 500;
 // numbers, scoped the same way the public masjid/campaign listings are (only
 // approved/moderation-active records) so a viewer never sees counts that
 // include drafts or hidden content.
+async function computeCommunityStats() {
+  const [masjidCount, publicCampaigns, memberCount] = await Promise.all([
+    Masjid.count({ where: { status: "approved", moderationStatus: "active" } }),
+    Campaign.findAll({
+      where: { status: { [Op.in]: PUBLIC_CAMPAIGN_STATUSES }, moderationStatus: "active" },
+      attributes: ["id"],
+    }),
+    User.count({ where: { status: "active" } }),
+  ]);
+  const campaignIds = publicCampaigns.map((c) => c.id);
+  const totalRaised = campaignIds.length
+    ? Number(await Donation.sum("amount", { where: { campaignId: { [Op.in]: campaignIds }, status: "recorded" } })) || 0
+    : 0;
+  return { masjidCount, campaignCount: campaignIds.length, memberCount, totalRaised };
+}
+// These counts change slowly (a new masjid/campaign approval, a donation) --
+// there's no need to re-run 4 queries for every single Wall page load. See
+// server/src/utils/ttlCache.js for why this is a plain in-process cache
+// rather than Redis.
+const getCachedCommunityStats = withTtlCache(computeCommunityStats, 60_000);
+
 export const getCommunityStats = async (req, res) => {
   try {
-    const [masjidCount, publicCampaigns, memberCount] = await Promise.all([
-      Masjid.count({ where: { status: "approved", moderationStatus: "active" } }),
-      Campaign.findAll({
-        where: { status: { [Op.in]: PUBLIC_CAMPAIGN_STATUSES }, moderationStatus: "active" },
-        attributes: ["id"],
-      }),
-      User.count({ where: { status: "active" } }),
-    ]);
-    const campaignIds = publicCampaigns.map((c) => c.id);
-    const totalRaised = campaignIds.length
-      ? Number(await Donation.sum("amount", { where: { campaignId: { [Op.in]: campaignIds }, status: "recorded" } })) || 0
-      : 0;
-    res.json({ masjidCount, campaignCount: campaignIds.length, memberCount, totalRaised });
+    res.json(await getCachedCommunityStats());
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
