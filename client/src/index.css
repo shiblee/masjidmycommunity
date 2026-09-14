@@ -4804,6 +4804,38 @@ a.cmt-avatar{ text-decoration:none; }
 .st-celebrate-badge{ font-size:15px; font-weight:800; color:var(--teal-deep); margin-bottom:12px; }
 .st-celebrate-msg{ font-size:14px; color:var(--text-on-paper); line-height:1.6; margin-bottom:20px; }
 
+/* Next-prayer highlighting -- merged straight into that prayer's own row
+   (SalahTracker's .st-row) or tile (PrayerTimesTab's
+   .msj-review-prayer-card) rather than shown a second time in a separate
+   card, so the same prayer's time never appears twice on screen. */
+.st-row-next{
+  flex-wrap:wrap; row-gap:8px; background:rgba(255,255,255,.09); border-radius:10px; padding:11px 8px; margin:0 -6px; border-top:none;
+}
+.st-row-next-meta{ flex-basis:100%; display:flex; align-items:center; justify-content:flex-end; gap:10px; }
+.st-row-countdown{ font-family:var(--mono); font-size:13px; font-weight:700; color:var(--gold-bright); }
+.st-row-bell{
+  display:flex; align-items:center; justify-content:center; width:24px; height:24px; border-radius:50%; flex-shrink:0;
+  background:rgba(255,255,255,.16); border:none; color:rgba(255,255,255,.8); cursor:pointer; transition:all .15s;
+}
+.st-row-bell:hover{ background:rgba(255,255,255,.28); }
+.st-row-bell.on{ background:var(--gold); color:var(--ink); }
+
+.msj-review-prayer-card-next{ background:rgba(141,198,63,.14); border:1px solid var(--gold); position:relative; }
+.msj-review-prayer-countdown{ font-family:var(--mono); font-size:12px; font-weight:700; color:var(--teal-deep); margin-top:2px; }
+.msj-review-prayer-bell{
+  display:flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:50%; margin-top:6px;
+  background:var(--paper-dim); border:none; color:var(--text-on-paper-dim); cursor:pointer; transition:all .15s;
+}
+.msj-review-prayer-bell:hover{ background:var(--line); }
+.msj-review-prayer-bell.on{ background:var(--gold); color:var(--ink); }
+
+.npc-banner{
+  position:fixed; bottom:28px; left:50%; transform:translateX(-50%); z-index:200; display:flex; align-items:center; gap:10px;
+  background:var(--ink); color:#fff; padding:16px 24px; border-radius:12px; font-size:14.5px; font-weight:600;
+  box-shadow:0 20px 40px -20px rgba(11,31,30,.5);
+}
+.npc-banner svg{ color:var(--gold-bright); flex-shrink:0; }
+
 /* .st-compact: the Community Wall sidebar's ~280px column -- icon-only
    date-nav/mark buttons and a 2-column weekly grid instead of wrapping. */
 .st-compact .st-datenav-btn-label,

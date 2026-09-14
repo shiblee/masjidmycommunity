@@ -42,6 +42,12 @@ async function getUserPrimaryMasjidId(userId) {
   return masjid ? masjid.id : null;
 }
 
+async function getUserPrimaryMasjid(userId) {
+  const user = await User.findByPk(userId, { attributes: ["primaryMasjidId"] });
+  if (!user?.primaryMasjidId) return null;
+  return Masjid.findOne({ where: { id: user.primaryMasjidId, status: PUBLIC_STATUS }, attributes: ["id", "timezone"] });
+}
+
 // Current wall-clock "HH:mm" in the masjid's own IANA timezone -- mirrors
 // prayerCalculationEngine.js's formatLocalHHmm so it's directly comparable
 // (zero-padded, same format) to the "HH:mm" strings getEffectivePrayerTimes
@@ -77,11 +83,11 @@ export const getDay = async (req, res) => {
     const dateStr = req.query.date || todayStr();
     if (!isValidDateStr(dateStr)) return res.status(400).json({ message: "Invalid date." });
 
-    const masjidId = await getUserPrimaryMasjidId(req.user.id);
-    if (!masjidId) return res.json({ hasPrimaryMasjid: false });
+    const masjid = await getUserPrimaryMasjid(req.user.id);
+    if (!masjid) return res.json({ hasPrimaryMasjid: false });
 
-    const summary = await buildDaySummary(req.user.id, masjidId, dateStr);
-    res.json({ hasPrimaryMasjid: true, ...summary });
+    const summary = await buildDaySummary(req.user.id, masjid.id, dateStr);
+    res.json({ hasPrimaryMasjid: true, masjidId: masjid.id, timezone: masjid.timezone || null, ...summary });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

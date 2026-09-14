@@ -1,14 +1,22 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import userApi from "../../services/userApi.js";
 import { Icon } from "../Icons.jsx";
 import { useTranslation } from "../../i18n/LanguageContext.jsx";
 import { formatPrayerTime } from "../../utils/formatPrayerTime.js";
+import { useNextPrayer } from "../../hooks/useNextPrayer.js";
+import PrayerAlertBanner from "../prayer/PrayerAlertBanner.jsx";
 
 const HISTORY_DAYS = 7;
 
+// The viewer's own local calendar date -- NOT toISOString()'s UTC date,
+// which silently shows "yesterday" for up to several hours after midnight
+// for anyone east of UTC (and "tomorrow" for part of the day for anyone
+// west of it). getFullYear/getMonth/getDate read the browser's local
+// clock, so this always matches what the viewer's own device calls "today".
 function todayStr() {
-  return new Date().toISOString().slice(0, 10);
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 function addDays(dateStr, delta) {
@@ -135,6 +143,14 @@ function SalahTracker({ compact = false }) {
     }
   };
 
+  const fetchRoster = useCallback(
+    (dateStr) =>
+      userApi
+        .get("/me/salah/day", { params: { date: dateStr } })
+        .then(({ data }) => (data.prayers || []).map((p) => ({ prayerId: p.prayerId, name: p.name, time: p.time }))),
+    []
+  );
+
   const loadHistory = () => {
     if (history) {
       setHistoryOpen((o) => !o);
@@ -146,6 +162,15 @@ function SalahTracker({ compact = false }) {
   };
 
   const isToday = date === todayStr();
+
+  const { next, h, m, s, alarmOn, toggleAlarm, unlockAudio, banner } = useNextPrayer({
+    masjidId: day?.masjidId,
+    timezone: day?.timezone,
+    todayDateStr: date,
+    todayRoster: day?.prayers || [],
+    fetchRoster,
+    enabled: isToday && !!day?.masjidId,
+  });
 
   if (loading && !day) {
     return <div className="st-card"><p className="msj-note" style={{ color: "rgba(255,255,255,.8)" }}>{t("masjidWizard.loading", "Loading…")}</p></div>;
@@ -178,24 +203,46 @@ function SalahTracker({ compact = false }) {
               <span className="st-progress-count">{day.completedCount} / {day.total} {t("salah.done", "Done")}</span>
             </div>
 
-            <div className="st-rows">
-              {day.prayers.map((p) => (
-                <div className="st-row" key={p.prayerId}>
-                  <span className="st-row-icon"><Icon name={prayerIconFor(p.name)} size={14} /></span>
-                  <span className="st-row-name">{t(`prayer.${p.name.toLowerCase()}`, p.name)}</span>
-                  <span className="st-row-time">{formatPrayerTime(p.time)}</span>
-                  <button
-                    type="button"
-                    className={`st-mark-btn${p.completed ? " done" : ""}`}
-                    disabled={busyPrayerId === p.prayerId}
-                    onClick={() => toggle(p)}
-                    aria-label={p.completed ? t("salah.doneLabel", "Done") : t("salah.markDone", "Mark Done")}
-                  >
-                    <Icon name={p.completed ? "check" : "clock"} size={13} />
-                    <span className="st-mark-btn-label">{p.completed ? t("salah.doneLabel", "Done") : t("salah.markDone", "Mark Done")}</span>
-                  </button>
-                </div>
-              ))}
+            <div className="st-rows" onClick={next ? unlockAudio : undefined}>
+              {day.prayers.map((p) => {
+                const isNext = isToday && next && next.prayerId === p.prayerId && next.dateStr === date;
+                return (
+                  <div className={`st-row${isNext ? " st-row-next" : ""}`} key={p.prayerId}>
+                    <span className="st-row-icon"><Icon name={prayerIconFor(p.name)} size={14} /></span>
+                    <span className="st-row-name">{t(`prayer.${p.name.toLowerCase()}`, p.name)}</span>
+                    <span className="st-row-time">{formatPrayerTime(p.time)}</span>
+                    <button
+                      type="button"
+                      className={`st-mark-btn${p.completed ? " done" : ""}`}
+                      disabled={busyPrayerId === p.prayerId}
+                      onClick={() => toggle(p)}
+                      aria-label={p.completed ? t("salah.doneLabel", "Done") : t("salah.markDone", "Mark Done")}
+                    >
+                      <Icon name={p.completed ? "check" : "clock"} size={13} />
+                      <span className="st-mark-btn-label">{p.completed ? t("salah.doneLabel", "Done") : t("salah.markDone", "Mark Done")}</span>
+                    </button>
+                    {isNext && (
+                      <div className="st-row-next-meta">
+                        <span className="st-row-countdown">
+                          {h}:{m}:{s}
+                        </span>
+                        <button
+                          type="button"
+                          className={`st-row-bell${alarmOn ? " on" : ""}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleAlarm();
+                          }}
+                          aria-pressed={alarmOn}
+                          aria-label={alarmOn ? t("prayer.next.alarmOn", "Alarm ON") : t("prayer.next.alarmOff", "Alarm OFF")}
+                        >
+                          <Icon name={alarmOn ? "bell" : "bellOff"} size={13} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </>
         )}
@@ -246,6 +293,8 @@ function SalahTracker({ compact = false }) {
           <div className="acct-toast"><Icon name="clock" size={16} />{toast}</div>,
           document.body
         )}
+
+      <PrayerAlertBanner text={banner} />
 
       {celebration &&
         createPortal(

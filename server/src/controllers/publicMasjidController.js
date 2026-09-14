@@ -13,7 +13,7 @@ import MasjidFavorite from "../models/MasjidFavorite.js";
 import MasjidView from "../models/MasjidView.js";
 import User from "../models/User.js";
 import MapSettings from "../models/MapSettings.js";
-import { getEffectivePrayerTimes, isValidDateStr } from "../services/prayerTimeService.js";
+import { getEffectivePrayerTimes, isValidDateStr, todayInTimezone } from "../services/prayerTimeService.js";
 import { getEngagementFor, getEngagementForMany } from "../services/masjidEngagementService.js";
 import { getGreenTickBadgeInfo, getGreenTickBadgeInfoForMany } from "../services/greenTickService.js";
 import GreenTickApplication from "../models/GreenTickApplication.js";
@@ -349,11 +349,11 @@ export const getPublicPrayerTimes = async (req, res) => {
     const masjid = await Masjid.findOne({ where: { id: req.params.id, status: PUBLIC_STATUS, moderationStatus: "active" } });
     if (!masjid) return res.status(404).json({ message: "Masjid not found." });
 
-    const dateStr = req.query.date || new Date().toISOString().slice(0, 10);
+    const dateStr = req.query.date || todayInTimezone(masjid.timezone);
     if (!isValidDateStr(dateStr)) return res.status(400).json({ message: "Invalid date." });
 
     const roster = await getEffectivePrayerTimes(masjid.id, dateStr);
-    res.json({ date: dateStr, roster: roster.filter((r) => r.time) });
+    res.json({ date: dateStr, timezone: masjid.timezone || null, roster: roster.filter((r) => r.time) });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

@@ -45,6 +45,25 @@ export function isValidDateStr(dateStr) {
   return d.getUTCFullYear() === year && d.getUTCMonth() === month - 1 && d.getUTCDate() === day;
 }
 
+// "Today" as the masjid's own wall clock sees it, not the server's UTC
+// date -- a masjid west of UTC can still be "yesterday" there when the
+// server has already rolled to a new UTC day, and vice versa east of UTC.
+// Falls back to the server's UTC date when the masjid has no resolved
+// timezone yet (mirrors currentHHmmInTimezone's fallback in
+// salahController.js).
+export function todayInTimezone(timeZone) {
+  if (!timeZone) return new Date().toISOString().slice(0, 10);
+  try {
+    const parts = new Intl.DateTimeFormat("en-CA", { timeZone, year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date());
+    const year = parts.find((p) => p.type === "year").value;
+    const month = parts.find((p) => p.type === "month").value;
+    const day = parts.find((p) => p.type === "day").value;
+    return `${year}-${month}-${day}`;
+  } catch {
+    return new Date().toISOString().slice(0, 10);
+  }
+}
+
 /**
  * The row that determines a prayer's effective time on `dateStr`, or null
  * if never configured. Candidates are every timeline row for this

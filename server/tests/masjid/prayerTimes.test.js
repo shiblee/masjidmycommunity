@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { api, adminAuth, registerAndVerify, deleteTestUser, deleteTestMasjid, createApprovedMasjid } from "../helpers/testClient.js";
+import { todayInTimezone } from "../../src/services/prayerTimeService.js";
 
 function dateStr(daysFromToday) {
   const d = new Date();
@@ -62,10 +63,17 @@ describe("Prayer Times", () => {
     task.meta.detail = "The API includes Jumu'ah in the roster for a date regardless of weekday -- day-restriction is a UI concern, not enforced server-side.";
   });
 
-  it("defaults to today's date when no ?date is given", async ({ task }) => {
+  it("defaults to today's date in the masjid's own timezone when no ?date is given", async ({ task }) => {
     const { body } = await api(`/api/masjids/public/${masjid.masjidId}/prayer-times`);
-    expect(body.date).toBe(dateStr(0));
-    task.meta.detail = "GET .../prayer-times with no ?date param -> defaults to today's date in the response.";
+    expect(body.timezone).toBeTruthy();
+    expect(body.date).toBe(todayInTimezone(body.timezone));
+    task.meta.detail = `GET .../prayer-times with no ?date param -> defaults to "today" as of the masjid's own timezone (${body.timezone}), not the server's UTC date.`;
+  });
+
+  it("includes the masjid's resolved IANA timezone in the response", async ({ task }) => {
+    const { body } = await api(`/api/masjids/public/${masjid.masjidId}/prayer-times`);
+    expect(body.timezone).toBe("Asia/Kolkata");
+    task.meta.detail = "GET .../prayer-times -> timezone resolves to \"Asia/Kolkata\" for the Lucknow test masjid's coordinates, exposed so clients can compute an exact countdown to each prayer.";
   });
 
   it("rejects an invalid date parameter", async ({ task }) => {
