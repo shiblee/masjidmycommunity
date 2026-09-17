@@ -656,6 +656,25 @@ const DEFAULT_TEMPLATES = [
     status: "active",
     availableVariables: ["user_name", "job_title", "poster_name", "new_status", "job_slug", "platform_name", "current_year"],
   },
+  {
+    key: "requirement_submitted_confirmation",
+    name: "Requirement Submitted – Confirmation",
+    purpose: "Sent to a user immediately after they submit a Requirement, confirming their submission with its details.",
+    subject: "Your requirement has been submitted successfully",
+    heading: "Your Requirement Has Been Submitted",
+    message:
+      "Your requirement has been submitted successfully.\n\nCategory: {{category_name}}\nSubcategory: {{subcategory_name}}\nDetails: {{remark}}\nAddress: {{address}}\nSubmitted On: {{submission_date}}\n\nWe'll notify relevant service providers in your area, and you can track this anytime from My Requirements.",
+    ctaText: "View My Requirements",
+    ctaLink: "https://masjidmycommunity.com/account/my-requirements",
+    footerText:
+      "{{platform_name}} — Empowering Masjids. Strengthening Communities.\n© {{current_year}} {{platform_name}}. All rights reserved.",
+    quoteEnabled: true,
+    quoteTransliteration: "Man farraja 'an mu'minin kurbatan, farrajallahu 'anhu kurbatan min kurubati yawmil-qiyamah",
+    quoteTranslation: "Whoever removes a hardship from a believer, Allah will remove from him one of the hardships of the Day of Resurrection.",
+    quoteSource: "Sahih Muslim 2699",
+    status: "active",
+    availableVariables: ["user_name", "category_name", "subcategory_name", "remark", "address", "submission_date", "platform_name", "current_year"],
+  },
 ];
 
 export async function ensureEmailDefaults() {

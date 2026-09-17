@@ -36,6 +36,8 @@ import CampaignProfile from "./pages/CampaignProfile.jsx";
 import MyJobs from "./pages/jobs/MyJobs.jsx";
 import JobApplicants from "./pages/jobs/JobApplicants.jsx";
 import MyApplications from "./pages/jobs/MyApplications.jsx";
+import MyRequirements from "./pages/requirements/MyRequirements.jsx";
+import RequirementForm from "./pages/requirements/RequirementForm.jsx";
 import JobProfile from "./pages/JobProfile.jsx";
 import RequireUserAuth from "./components/RequireUserAuth.jsx";
 import AdminApp from "./admin/AdminApp.jsx";
@@ -154,6 +156,22 @@ function App() {
           />
           <Route path="/account/my-jobs/new" element={<Community />} />
           <Route path="/account/my-jobs/:id" element={<Community />} />
+          <Route
+            path="/account/my-requirements"
+            element={
+              <RequireUserAuth>
+                <MyRequirements />
+              </RequireUserAuth>
+            }
+          />
+          <Route
+            path="/account/my-requirements/new"
+            element={
+              <RequireUserAuth>
+                <RequirementForm />
+              </RequireUserAuth>
+            }
+          />
           <Route
             path="/account/my-jobs/:id/applications"
             element={

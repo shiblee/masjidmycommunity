@@ -767,4 +767,20 @@ export async function sendJobApplicationStatusUpdatedEmail(application, job, app
   });
 }
 
+export async function sendRequirementSubmittedEmail(requirement, user) {
+  if (!user.email) return { sent: false, skipped: true };
+  return sendNotification("requirement_submitted_confirmation", {
+    to: user.email,
+    variables: {
+      user_name: user.fullName,
+      category_name: requirement.categoryName,
+      subcategory_name: requirement.subcategoryName,
+      remark: requirement.remark,
+      address: requirement.address,
+      submission_date: new Date(requirement.createdAt).toLocaleString("en-GB"),
+    },
+    userMeta: { userId: user.id, userName: user.fullName, userEmail: user.email },
+  });
+}
+
 export const emailServiceConfigured = isConfigured;

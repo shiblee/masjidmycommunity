@@ -6,6 +6,7 @@ import communityApi from "../services/communityApi.js";
 import masjidApi from "../services/masjidApi.js";
 import campaignApi from "../services/campaignApi.js";
 import jobApi from "../services/jobApi.js";
+import requirementApi from "../services/requirementApi.js";
 import reportApi from "../services/reportApi.js";
 import userApi from "../services/userApi.js";
 import publicJobApi from "../services/publicJobApi.js";
@@ -48,10 +49,13 @@ const STATUS_LABEL_ENTRIES = {
   closed: ["communityWall.status.closed", "Closed"],
   expired: ["communityWall.status.expired", "Expired"],
   deleted: ["communityWall.status.deleted", "Deleted"],
+  open: ["communityWall.status.open", "Open"],
+  fulfilled: ["communityWall.status.fulfilled", "Fulfilled"],
 };
 // Reuses the acct-status-pill classes already styled for other statuses,
 // same mapping as pages/jobs/MyJobs.jsx, rather than adding new CSS.
 const JOB_STATUS_PILL_CLASS = { active: "active", closed: "inactive", expired: "cancelled", deleted: "cancelled" };
+const REQUIREMENT_STATUS_PILL_CLASS = { open: "active", fulfilled: "active", closed: "cancelled" };
 
 // Registry of top-level community categories shown in the right-hand menu.
 // Adding a future real category is one more entry here (plus its own action
@@ -62,6 +66,7 @@ const COMMUNITY_SECTIONS = [
   { key: "masjid", labelKey: "community.explore.masjid", label: "Masjid", icon: "mosque", wallFilter: "masjid_update" },
   { key: "campaign", labelKey: "community.explore.campaign", label: "Campaign", icon: "flag", wallFilter: "fundraising" },
   { key: "jobs", labelKey: "community.explore.jobs", label: "Jobs", icon: "building", wallFilter: "job_posted" },
+  { key: "requirement", labelKey: "community.explore.requirement", label: "Requirement", icon: "list" },
 ];
 
 const SIDE_LIST_PREVIEW_COUNT = 3;
@@ -159,6 +164,9 @@ function Community() {
   const [showAllJobs, setShowAllJobs] = useState(false);
   const [myJobs, setMyJobs] = useState(null);
   const [myJobsError, setMyJobsError] = useState("");
+  const [showAllRequirements, setShowAllRequirements] = useState(false);
+  const [myRequirements, setMyRequirements] = useState(null);
+  const [myRequirementsError, setMyRequirementsError] = useState("");
 
   // undefined = not checked yet, null = checked and none set, object = set.
   // Drives the right-side masjid card / empty CTA only now -- the left
@@ -316,6 +324,17 @@ function Community() {
       .get("/mine")
       .then(({ data }) => setMyJobs(data.jobs))
       .catch(() => setMyJobsError(t("communityWall.jobs.loadError", "Couldn't load your jobs.")));
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) {
+      setMyRequirements(null);
+      return;
+    }
+    requirementApi
+      .get("/mine")
+      .then(({ data }) => setMyRequirements(data.requirements))
+      .catch(() => setMyRequirementsError(t("communityWall.requirement.loadError", "Couldn't load your requirements.")));
   }, [user]);
 
   const ownedMasjidIds = useMemo(() => new Set((myMasjids || []).map((m) => m.id)), [myMasjids]);
@@ -796,7 +815,54 @@ function Community() {
                 </>
               )}
 
-              {section && !["masjid", "campaign", "jobs"].includes(section) && (
+              {section === "requirement" && (
+                <>
+                  <div className="cw-side-card cw-side-card-cta">
+                    <h4>{t("communityWall.requirement.addHeading", "Add a Requirement")}</h4>
+                    <p className="cw-side-card-sub">{t("communityWall.requirement.sub", "Tell us what you need help with.")}</p>
+                    <Link to="/account/my-requirements/new" className="btn btn-gold" style={{ width: "100%", justifyContent: "center" }}>
+                      <Icon name="plus" size={16} /> {t("communityWall.requirement.addRequirement", "Add a Requirement")}
+                    </Link>
+                  </div>
+
+                  {user && (
+                    <div className="cw-side-card">
+                      <h4>{t("communityWall.requirement.myRequirementsHeading", "My Requirements")}</h4>
+                      {myRequirementsError && <p className="cw-side-card-sub">{myRequirementsError}</p>}
+                      {myRequirements && myRequirements.length === 0 && (
+                        <p className="cw-side-card-sub">{t("communityWall.requirement.empty", "You haven't submitted a requirement yet — add one above to get started.")}</p>
+                      )}
+                      {myRequirements && myRequirements.length > 0 && (
+                        <>
+                          <ul className="cw-side-list cw-side-my-masjids">
+                            {(showAllRequirements ? myRequirements : myRequirements.slice(0, SIDE_LIST_PREVIEW_COUNT)).map((r) => (
+                              <li key={r.id}>
+                                <Link to="/account/my-requirements" className="cw-my-masjid-item">
+                                  <span className="cw-my-masjid-thumb">
+                                    <MediaThumb src={null} />
+                                  </span>
+                                  <span className="cw-my-masjid-body">
+                                    <span className="cw-my-masjid-name">{r.categoryName} — {r.subcategoryName}</span>
+                                    <span className={`acct-status-pill ${REQUIREMENT_STATUS_PILL_CLASS[r.status] || r.status}`}>{statusLabel(r.status)}</span>
+                                  </span>
+                                  <span className="cw-my-masjid-time">{timeAgo(r.createdAt)}</span>
+                                </Link>
+                              </li>
+                            ))}
+                          </ul>
+                          {myRequirements.length > SIDE_LIST_PREVIEW_COUNT && (
+                            <button type="button" className="cw-side-link" onClick={() => setShowAllRequirements((v) => !v)}>
+                              {showAllRequirements ? t("communityWall.sideList.showLess", "Show less") : t("communityWall.sideList.viewAll", "View All ({count})").replace("{count}", myRequirements.length)} <span className="btn-arrow">{showAllRequirements ? "↑" : "→"}</span>
+                            </button>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+
+              {section && !["masjid", "campaign", "jobs", "requirement"].includes(section) && (
                 <div className="cw-side-card cw-side-card-soon">
                   <h4>
                     <Icon name={COMMUNITY_SECTIONS.find((s) => s.key === section)?.icon} size={15} />{" "}

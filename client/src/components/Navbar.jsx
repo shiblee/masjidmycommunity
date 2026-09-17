@@ -13,6 +13,7 @@ function useNavLinks(t) {
     { href: "/my-community", label: t("nav.myCommunity", "My Community"), icon: "people" },
     { href: "/campaigns", label: t("nav.campaign", "Campaign"), icon: "megaphone" },
     { href: "/jobs", label: t("nav.jobs", "Jobs"), icon: "briefcase" },
+    { href: "/requirements", label: t("nav.requirements", "Requirement"), icon: "list" },
   ];
 }
 
@@ -25,6 +26,7 @@ function useAccountLinks(t, username) {
     { href: "/account/my-campaigns", label: t("nav.myCampaigns", "My Campaigns"), icon: "chartUp" },
     { href: "/account/my-jobs", label: t("nav.myJobs", "My Jobs"), icon: "briefcase" },
     { href: "/account/my-applications", label: t("nav.myApplications", "My Applications"), icon: "fileText" },
+    { href: "/account/my-requirements", label: t("nav.myRequirements", "My Requirements"), icon: "list" },
     { href: `/profile/${username}`, label: t("nav.myProfile", "My Profile"), icon: "user" },
   ];
 }
@@ -263,6 +265,9 @@ function Navbar() {
                     </Link>
                     <Link to="/account/my-applications" onClick={() => setMenuOpen(false)}>
                       {t("nav.myApplications", "My Applications")}
+                    </Link>
+                    <Link to="/account/my-requirements" onClick={() => setMenuOpen(false)}>
+                      {t("nav.myRequirements", "My Requirements")}
                     </Link>
                     <Link to={`/profile/${user.username}`} onClick={() => setMenuOpen(false)}>
                       {t("nav.myProfile", "My Profile")}

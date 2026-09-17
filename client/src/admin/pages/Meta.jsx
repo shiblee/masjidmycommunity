@@ -26,6 +26,7 @@ import CompanyPanel from "./meta/CompanyPanel.jsx";
 import EmploymentTypePanel from "./meta/EmploymentTypePanel.jsx";
 import ExperienceLevelPanel from "./meta/ExperienceLevelPanel.jsx";
 import JobCategoryPanel from "./meta/JobCategoryPanel.jsx";
+import RequirementCategoryPanel from "./meta/RequirementCategoryPanel.jsx";
 import MetaChangeLogPanel from "./meta/MetaChangeLogPanel.jsx";
 import { META_ENTITY_LABELS } from "./meta/entityLabels.js";
 import Icon from "../components/Icons.jsx";
@@ -61,6 +62,7 @@ const META_ENTITIES = [
   { key: "employment-type", label: META_ENTITY_LABELS["employment-type"], icon: "clock", Component: EmploymentTypePanel, path: "employment-types", countKey: "employmentTypes" },
   { key: "experience-level", label: META_ENTITY_LABELS["experience-level"], icon: "trendUp", Component: ExperienceLevelPanel, path: "experience-levels", countKey: "experienceLevels" },
   { key: "job-category", label: META_ENTITY_LABELS["job-category"], icon: "briefcase", Component: JobCategoryPanel, path: "job-categories", countKey: "jobCategories" },
+  { key: "requirement-category", label: META_ENTITY_LABELS["requirement-category"], icon: "building", Component: RequirementCategoryPanel, path: "requirement-categories", countKey: "requirementCategories" },
   { key: "change-log", label: "Change Log", icon: "activity", Component: MetaChangeLogPanel },
 ];
 

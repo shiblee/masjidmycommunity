@@ -38,6 +38,7 @@ import { listActive as listActiveCompanies } from "../controllers/adminCompanyCo
 import { listActive as listActiveEmploymentTypes } from "../controllers/adminEmploymentTypeController.js";
 import { listActive as listActiveExperienceLevels } from "../controllers/adminExperienceLevelController.js";
 import { listActive as listActiveJobCategories } from "../controllers/adminJobCategoryController.js";
+import { listActive as listActiveRequirementCategories, listActiveSubcategories as listActiveRequirementSubcategories } from "../controllers/adminRequirementCategoryController.js";
 import auth, { requireUser } from "../middleware/auth.js";
 import optionalAuth from "../middleware/optionalAuth.js";
 import { uploadProfilePhoto, uploadResume } from "../middleware/upload.js";
@@ -95,6 +96,8 @@ router.get("/meta/companies", auth, requireUser, listActiveCompanies);
 router.get("/meta/employment-types", auth, requireUser, listActiveEmploymentTypes);
 router.get("/meta/experience-levels", auth, requireUser, listActiveExperienceLevels);
 router.get("/meta/job-categories", auth, requireUser, listActiveJobCategories);
+router.get("/meta/requirement-categories", auth, requireUser, listActiveRequirementCategories);
+router.get("/meta/requirement-subcategories", auth, requireUser, listActiveRequirementSubcategories);
 router.get("/me/hobbies", auth, requireUser, hobbies.listMine);
 router.post("/me/hobbies", auth, requireUser, hobbies.create);
 router.delete("/me/hobbies/:id", auth, requireUser, hobbies.remove);
