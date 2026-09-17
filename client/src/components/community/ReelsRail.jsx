@@ -7,7 +7,21 @@ import { API_ORIGIN } from "../../config.js";
 import { useTranslation } from "../../i18n/LanguageContext.jsx";
 
 const REEL_MAX_DURATION_SECONDS = 90;
-const RAIL_LIMIT = 6;
+// The rail shows a random slice of RAIL_DISPLAY_COUNT reels each load, drawn
+// from a larger recent pool (RAIL_FETCH_LIMIT, the server's own max) rather
+// than just the newest RAIL_DISPLAY_COUNT -- otherwise "random" would really
+// just mean "the same newest 20 every time".
+const RAIL_FETCH_LIMIT = 60;
+const RAIL_DISPLAY_COUNT = 20;
+
+function shuffled(arr) {
+  const copy = [...arr];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
 
 // Client-side pre-check so a user finds out their video is too long before
 // waiting through a full upload -- the server enforces the real cap
@@ -134,14 +148,17 @@ function ReelsRail({ user }) {
   const [uploadOpen, setUploadOpen] = useState(false);
 
   const load = () => {
-    communityApi.get("/reels", { params: { limit: RAIL_LIMIT } }).then(({ data }) => setReels(data.reels || [])).catch(() => setReels([]));
+    communityApi
+      .get("/reels", { params: { limit: RAIL_FETCH_LIMIT } })
+      .then(({ data }) => setReels(shuffled(data.reels || []).slice(0, RAIL_DISPLAY_COUNT)))
+      .catch(() => setReels([]));
   };
 
   useEffect(() => { load(); }, []);
 
   const handleUploaded = (activity) => {
     setUploadOpen(false);
-    setReels((prev) => [activity, ...(prev || [])].slice(0, RAIL_LIMIT));
+    setReels((prev) => [activity, ...(prev || [])].slice(0, RAIL_DISPLAY_COUNT));
   };
 
   return (
