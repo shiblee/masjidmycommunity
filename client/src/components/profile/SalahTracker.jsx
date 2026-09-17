@@ -209,7 +209,10 @@ function SalahTracker({ compact = false }) {
                 return (
                   <div className={`st-row${isNext ? " st-row-next" : ""}`} key={p.prayerId}>
                     <span className="st-row-icon"><Icon name={prayerIconFor(p.name)} size={14} /></span>
-                    <span className="st-row-name">{t(`prayer.${p.name.toLowerCase()}`, p.name)}</span>
+                    <span className="st-row-name">
+                      {t(`prayer.${p.name.toLowerCase()}`, p.name)}
+                      {isNext && <span className="st-row-upcoming-badge">{t("salah.upcoming", "Upcoming")}</span>}
+                    </span>
                     <span className="st-row-time">{formatPrayerTime(p.time)}</span>
                     <button
                       type="button"

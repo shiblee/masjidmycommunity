@@ -4811,6 +4811,10 @@ a.cmt-avatar{ text-decoration:none; }
 .st-row-next{
   flex-wrap:wrap; row-gap:8px; background:rgba(255,255,255,.09); border-radius:10px; padding:11px 8px; margin:0 -6px; border-top:none;
 }
+.st-row-upcoming-badge{
+  display:inline-block; margin-left:8px; font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:.03em;
+  color:var(--ink); background:var(--gold-bright); border-radius:100px; padding:2px 8px; vertical-align:middle;
+}
 .st-row-next-meta{ flex-basis:100%; display:flex; align-items:center; justify-content:flex-end; gap:10px; }
 .st-row-countdown{ font-family:var(--mono); font-size:13px; font-weight:700; color:var(--gold-bright); }
 .st-row-bell{

@@ -65,7 +65,10 @@ function PrayerTimesTab({ masjidId }) {
             const isNext = next && next.prayerId === p.prayerId && next.dateStr === date;
             return (
               <div className={`msj-review-prayer-card${isNext ? " msj-review-prayer-card-next" : ""}`} key={p.prayerId} onClick={isNext ? unlockAudio : undefined}>
-                <span className="msj-review-prayer-name">{t(`prayer.${p.name.toLowerCase()}`, p.name)}</span>
+                <span className="msj-review-prayer-name">
+                  {t(`prayer.${p.name.toLowerCase()}`, p.name)}
+                  {isNext && <span className="st-row-upcoming-badge">{t("salah.upcoming", "Upcoming")}</span>}
+                </span>
                 <span className="msj-review-prayer-time">{formatPrayerTime(p.time)}</span>
                 {isNext && (
                   <>
