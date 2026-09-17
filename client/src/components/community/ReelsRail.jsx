@@ -184,7 +184,7 @@ function ReelsRail({ user }) {
       ) : (
         <div className="cw-reels-scroll">
           {reels.map((r) => (
-            <Link to="/reels" className="cw-reel-tile" key={r.id}>
+            <Link to={`/reels?start=${r.id}`} className="cw-reel-tile" key={r.id}>
               <MediaThumb
                 src={`${API_ORIGIN}${r.mediaVideoUrl}`}
                 poster={r.mediaVideoPosterUrl ? `${API_ORIGIN}${r.mediaVideoPosterUrl}` : undefined}

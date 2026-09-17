@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import communityApi from "../services/communityApi.js";
 import reportApi from "../services/reportApi.js";
 import { getStoredUser } from "../utils/userAuthStorage.js";
@@ -14,6 +14,10 @@ import { Icon } from "../components/Icons.jsx";
 import { useTranslation } from "../i18n/LanguageContext.jsx";
 
 const PAGE_SIZE = 10;
+// Matches ReelsRail's own fetch pool depth -- any Reel a viewer could click
+// from the rail is guaranteed to be found within this many, so seeking to it
+// never turns into unbounded pagination for a stale/deleted id.
+const MAX_SEEK_OFFSET = 60;
 
 function ReelSlide({ post, user, navigate, onVote, onOpenComments, onReport, onDelete, muted, onToggleMute }) {
   const { t } = useTranslation();
@@ -96,8 +100,11 @@ function Reels() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const user = getStoredUser();
+  const [searchParams] = useSearchParams();
+  const startId = searchParams.get("start") ? Number(searchParams.get("start")) : null;
   const scrollRef = useRef(null);
   const loadingMoreRef = useRef(false);
+  const seekedRef = useRef(false);
 
   const [reels, setReels] = useState(null);
   const [hasMore, setHasMore] = useState(false);
@@ -128,11 +135,42 @@ function Reels() {
   }, []);
 
   useEffect(() => {
-    communityApi
-      .get("/reels", { params: { limit: PAGE_SIZE, offset: 0 } })
-      .then(({ data }) => { setReels(data.reels.map(mapLiveActivity)); setHasMore(data.hasMore); })
-      .catch(() => setReels([]));
-  }, []);
+    let cancelled = false;
+
+    // A Reel opened from the rail can sit anywhere in the shuffled pool it
+    // drew from, not just the first page -- keep paging (same offset-based
+    // fetch loadMore uses) until that specific Reel shows up, so opening it
+    // lands on the right one instead of always the newest.
+    async function loadInitial() {
+      let all = [];
+      let more = true;
+      let offset = 0;
+      while (more) {
+        const { data } = await communityApi.get("/reels", { params: { limit: PAGE_SIZE, offset } });
+        if (cancelled) return;
+        all = all.concat(data.reels.map(mapLiveActivity));
+        more = data.hasMore;
+        offset = all.length;
+        if (!startId || all.some((r) => r.activityId === startId) || offset >= MAX_SEEK_OFFSET) break;
+      }
+      if (cancelled) return;
+      setReels(all);
+      setHasMore(more);
+    }
+
+    loadInitial().catch(() => { if (!cancelled) setReels([]); });
+    return () => { cancelled = true; };
+  }, [startId]);
+
+  // Jump straight to the requested Reel once it's loaded -- an instant
+  // scrollIntoView (not smooth), so it reads as "this Reel opened", not as a
+  // visible scroll past every Reel before it. Runs once per mount.
+  useEffect(() => {
+    if (seekedRef.current || !reels || reels.length === 0 || !startId) return;
+    const index = reels.findIndex((r) => r.activityId === startId);
+    if (index > 0) scrollRef.current?.children[index]?.scrollIntoView({ block: "start" });
+    seekedRef.current = true;
+  }, [reels, startId]);
 
   const loadMore = () => {
     if (loadingMoreRef.current || !hasMore || !reels) return;
